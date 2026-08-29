@@ -1,0 +1,110 @@
+{
+  "common": {
+    "appName": "RW Crew",
+    "loading": "Bezig met laden…",
+    "logout": "Uitloggen",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "create": "Aanmaken",
+    "back": "Terug"
+  },
+  "theme": {
+    "light": "Licht",
+    "dark": "Donker",
+    "toggleLabel": "Wissel tussen licht en donker thema"
+  },
+  "language": {
+    "nl": "Nederlands",
+    "en": "Engels",
+    "switchLabel": "Wissel van taal"
+  },
+  "login": {
+    "title": "Inloggen bij RW Crew",
+    "emailLabel": "E-mailadres",
+    "passwordLabel": "Wachtwoord",
+    "submit": "Inloggen",
+    "invalidCredentials": "Ongeldig e-mailadres of wachtwoord.",
+    "genericError": "Inloggen is niet gelukt. Probeer het opnieuw."
+  },
+  "landing": {
+    "title": "Modules Overview",
+    "subtitle": "Kies hieronder een module om te starten.",
+    "noAccess": "Je hebt nog geen toegang tot een module. Vraag de beheerder om je toegang te geven."
+  },
+  "sidebar": {
+    "manageAccess": "Toegangsbeheer",
+    "masterData": "Stamgegevens",
+    "masterDataSeason": "Season",
+    "landing": "Hoofdpagina"
+  },
+  "modulePage": {
+    "comingSoon": "Deze module is nog in ontwikkeling.",
+    "yourRole": "Jouw rol in deze module: {role}",
+    "noRole": "Je hebt nog geen specifieke rol in deze module."
+  },
+  "roles": {
+    "admin": "Beheerder",
+    "editor": "Bewerker",
+    "reader": "Lezer"
+  },
+  "admin": {
+    "access": {
+      "title": "Toegangsbeheer",
+      "description": "Bepaal hier tot welke modules elke gebruiker toegang heeft.",
+      "newUser": "Nieuwe gebruiker",
+      "userTableName": "Naam",
+      "userTableEmail": "E-mailadres",
+      "userTableSuperAdmin": "Super admin",
+      "userTableModules": "Modules",
+      "userTableActions": "Acties",
+      "createUserTitle": "Nieuwe gebruiker aanmaken",
+      "createUserDescription": "Maak een account aan voor een nieuwe gebruiker. Zelfregistratie is niet mogelijk.",
+      "displayNameLabel": "Naam",
+      "emailLabel": "E-mailadres",
+      "passwordLabel": "Tijdelijk wachtwoord",
+      "superAdminLabel": "Super admin",
+      "accessUpdated": "Toegang bijgewerkt.",
+      "accessUpdateFailed": "Bijwerken van toegang is mislukt.",
+      "userCreated": "Gebruiker aangemaakt.",
+      "createUserFailed": "Aanmaken van gebruiker is mislukt.",
+      "change": "Wijzigen",
+      "delete": "Verwijderen",
+      "changeAccessTitle": "Toegang wijzigen voor {name}",
+      "changeAccessDescription": "Bepaal welke modules {name} mag openen.",
+      "deleteConfirmTitle": "Gebruiker verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert {name} en al hun moduletoegang definitief. Dit kan niet ongedaan worden gemaakt.",
+      "userDeleted": "Gebruiker verwijderd.",
+      "deleteUserFailed": "Verwijderen van gebruiker is mislukt."
+    },
+    "masterData": {
+      "title": "Stamgegevens",
+      "comingSoon": "Stamgegevensbeheer wordt in een latere fase toegevoegd.",
+      "season": {
+        "title": "Season",
+        "description": "Beheer de lijst van seizoenen die in de app gebruikt kunnen worden.",
+        "tableName": "Naam",
+        "tableActions": "Acties",
+        "newSeason": "Nieuw seizoen",
+        "nameLabel": "Seizoen naam",
+        "createTitle": "Nieuw seizoen aanmaken",
+        "createDescription": "Voeg een nieuw seizoen toe aan de lijst.",
+        "seasonCreated": "Seizoen aangemaakt.",
+        "createFailed": "Aanmaken van seizoen is mislukt.",
+        "change": "Wijzigen",
+        "delete": "Verwijderen",
+        "changeTitle": "Seizoen wijzigen",
+        "changeDescription": "Pas de naam van dit seizoen aan.",
+        "seasonUpdated": "Seizoen bijgewerkt.",
+        "updateFailed": "Bijwerken van seizoen is mislukt.",
+        "deleteConfirmTitle": "Seizoen verwijderen?",
+        "deleteConfirmDescription": "Dit verwijdert seizoen \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+        "seasonDeleted": "Seizoen verwijderd.",
+        "deleteFailed": "Verwijderen van seizoen is mislukt."
+      }
+    }
+  },
+  "errors": {
+    "forbidden": "Je hebt geen toegang tot deze pagina.",
+    "generic": "Er is iets misgegaan. Probeer het later opnieuw."
+  }
+}

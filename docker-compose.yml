@@ -1,0 +1,31 @@
+# This file describes the extra "services" (background programs) our app needs
+# while we develop it on our own computers. Right now that's just the database.
+#
+# Run "docker compose up -d db" from this folder to start a PostgreSQL database
+# in the background. Docker downloads and runs it in an isolated container, so
+# you don't have to install PostgreSQL directly on your computer.
+services:
+  # The "db" service is our PostgreSQL database, used by the FastAPI backend.
+  db:
+    # Use the official PostgreSQL image, version 16.
+    image: postgres:16
+    # Give the container a friendly, recognizable name.
+    container_name: rwcrew_db
+    # These environment variables configure the database when it first starts.
+    environment:
+      POSTGRES_USER: rwcrew
+      POSTGRES_PASSWORD: rwcrew_dev_password
+      POSTGRES_DB: rwcrew
+    # Make the database reachable from our computer at localhost:5433.
+    # (Port 5433, not the default 5432, because another project's Postgres
+    # container on this machine already occupies 5432.)
+    ports:
+      - "5433:5432"
+    # Store the database files in a named Docker volume, so data survives
+    # even if the container is stopped and restarted.
+    volumes:
+      - rwcrew_db_data:/var/lib/postgresql/data
+
+# Declare the named volume used above.
+volumes:
+  rwcrew_db_data:

@@ -1,0 +1,110 @@
+{
+  "common": {
+    "appName": "RW Crew",
+    "loading": "Loading…",
+    "logout": "Log out",
+    "cancel": "Cancel",
+    "save": "Save",
+    "create": "Create",
+    "back": "Back"
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark",
+    "toggleLabel": "Switch between light and dark theme"
+  },
+  "language": {
+    "nl": "Dutch",
+    "en": "English",
+    "switchLabel": "Switch language"
+  },
+  "login": {
+    "title": "Log in to RW Crew",
+    "emailLabel": "Email address",
+    "passwordLabel": "Password",
+    "submit": "Log in",
+    "invalidCredentials": "Invalid email address or password.",
+    "genericError": "Logging in failed. Please try again."
+  },
+  "landing": {
+    "title": "Modules Overview",
+    "subtitle": "Choose a module below to get started.",
+    "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access."
+  },
+  "sidebar": {
+    "manageAccess": "Manage Access",
+    "masterData": "Master data",
+    "masterDataSeason": "Season",
+    "landing": "Main page"
+  },
+  "modulePage": {
+    "comingSoon": "This module is still under development.",
+    "yourRole": "Your role in this module: {role}",
+    "noRole": "You don't have a specific role in this module yet."
+  },
+  "roles": {
+    "admin": "Admin",
+    "editor": "Editor",
+    "reader": "Reader"
+  },
+  "admin": {
+    "access": {
+      "title": "Manage Access",
+      "description": "Decide here which modules each user has access to.",
+      "newUser": "New user",
+      "userTableName": "Name",
+      "userTableEmail": "Email address",
+      "userTableSuperAdmin": "Super admin",
+      "userTableModules": "Modules",
+      "userTableActions": "Actions",
+      "createUserTitle": "Create a new user",
+      "createUserDescription": "Create an account for a new user. Self-registration is not possible.",
+      "displayNameLabel": "Name",
+      "emailLabel": "Email address",
+      "passwordLabel": "Temporary password",
+      "superAdminLabel": "Super admin",
+      "accessUpdated": "Access updated.",
+      "accessUpdateFailed": "Failed to update access.",
+      "userCreated": "User created.",
+      "createUserFailed": "Failed to create the user.",
+      "change": "Change",
+      "delete": "Delete",
+      "changeAccessTitle": "Change access for {name}",
+      "changeAccessDescription": "Decide which modules {name} can open.",
+      "deleteConfirmTitle": "Delete user?",
+      "deleteConfirmDescription": "This will permanently remove {name} and all their module access. This cannot be undone.",
+      "userDeleted": "User deleted.",
+      "deleteUserFailed": "Failed to delete the user."
+    },
+    "masterData": {
+      "title": "Master data",
+      "comingSoon": "Master data management will be added in a later phase.",
+      "season": {
+        "title": "Season",
+        "description": "Manage the list of seasons that can be used throughout the app.",
+        "tableName": "Name",
+        "tableActions": "Actions",
+        "newSeason": "New season",
+        "nameLabel": "Season Name",
+        "createTitle": "Create a new season",
+        "createDescription": "Add a new season to the list.",
+        "seasonCreated": "Season created.",
+        "createFailed": "Failed to create the season.",
+        "change": "Change",
+        "delete": "Delete",
+        "changeTitle": "Change season",
+        "changeDescription": "Update this season's name.",
+        "seasonUpdated": "Season updated.",
+        "updateFailed": "Failed to update the season.",
+        "deleteConfirmTitle": "Delete season?",
+        "deleteConfirmDescription": "This will permanently remove the season \"{name}\". This cannot be undone.",
+        "seasonDeleted": "Season deleted.",
+        "deleteFailed": "Failed to delete the season."
+      }
+    }
+  },
+  "errors": {
+    "forbidden": "You don't have access to this page.",
+    "generic": "Something went wrong. Please try again later."
+  }
+}
