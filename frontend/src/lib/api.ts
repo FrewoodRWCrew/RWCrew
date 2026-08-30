@@ -10,7 +10,20 @@ import type {
   ModuleRoleAssignment,
   ModuleRoleName,
   ModuleStatus,
+  MasterDataMyPermissions,
+  MasterDataRole,
+  MasterDataScreen,
+  MasterDataUserSummary,
+  Product,
+  ProductInput,
   Season,
+  TagscanFileContent,
+  TagscanFileEntry,
+  TagscanFolderNode,
+  TagscanMyPermissions,
+  TagscanRole,
+  TagscanScreen,
+  TagscanUserSummary,
   UserSummary,
 } from "./types";
 
@@ -130,26 +143,208 @@ export function deleteUser(userId: number): Promise<void> {
   return apiFetch<void>(`/api/admin/users/${userId}`, { method: "DELETE" });
 }
 
-// --- Master data (super-admin-only) -----------------------------------
+// --- Season (module-9's "masterdata.season" screen) ---------------------
 
 export function listSeasons(): Promise<Season[]> {
-  return apiFetch<Season[]>("/api/admin/master-data/seasons");
+  return apiFetch<Season[]>("/api/modules/module-9/seasons");
 }
 
 export function createSeason(name: string): Promise<Season> {
-  return apiFetch<Season>("/api/admin/master-data/seasons", {
+  return apiFetch<Season>("/api/modules/module-9/seasons", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function updateSeason(seasonId: number, name: string): Promise<Season> {
-  return apiFetch<Season>(`/api/admin/master-data/seasons/${seasonId}`, {
+  return apiFetch<Season>(`/api/modules/module-9/seasons/${seasonId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
 }
 
 export function deleteSeason(seasonId: number): Promise<void> {
-  return apiFetch<void>(`/api/admin/master-data/seasons/${seasonId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-9/seasons/${seasonId}`, { method: "DELETE" });
+}
+
+// --- Products (module-9's "masterdata.products" screen) -----------------
+
+export function listProducts(): Promise<Product[]> {
+  return apiFetch<Product[]>("/api/modules/module-9/products");
+}
+
+export function createProduct(payload: ProductInput): Promise<Product> {
+  return apiFetch<Product>("/api/modules/module-9/products", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateProduct(productId: number, payload: ProductInput): Promise<Product> {
+  return apiFetch<Product>(`/api/modules/module-9/products/${productId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteProduct(productId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/products/${productId}`, { method: "DELETE" });
+}
+
+// --- Tagscan (module-1) -------------------------------------------------
+
+export function getTagscanMyPermissions(): Promise<TagscanMyPermissions> {
+  return apiFetch<TagscanMyPermissions>("/api/modules/module-1/me/permissions");
+}
+
+export function listTagscanScreens(): Promise<TagscanScreen[]> {
+  return apiFetch<TagscanScreen[]>("/api/modules/module-1/screens");
+}
+
+export function listTagscanRoles(): Promise<TagscanRole[]> {
+  return apiFetch<TagscanRole[]>("/api/modules/module-1/roles");
+}
+
+export function createTagscanRole(name: string): Promise<TagscanRole> {
+  return apiFetch<TagscanRole>("/api/modules/module-1/roles", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameTagscanRole(roleId: number, name: string): Promise<TagscanRole> {
+  return apiFetch<TagscanRole>(`/api/modules/module-1/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteTagscanRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-1/roles/${roleId}`, { method: "DELETE" });
+}
+
+export interface TagscanPermissionUpdate {
+  screen_id: number;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+export function setTagscanRolePermissions(
+  roleId: number,
+  permissions: TagscanPermissionUpdate[],
+): Promise<TagscanRole> {
+  return apiFetch<TagscanRole>(`/api/modules/module-1/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function listTagscanUsers(): Promise<TagscanUserSummary[]> {
+  return apiFetch<TagscanUserSummary[]>("/api/modules/module-1/users");
+}
+
+export function setTagscanUserRole(userId: number, roleId: number | null): Promise<TagscanUserSummary> {
+  return apiFetch<TagscanUserSummary>(`/api/modules/module-1/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantTagscanUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<TagscanUserSummary> {
+  return apiFetch<TagscanUserSummary>("/api/modules/module-1/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getTagscanFolderTree(): Promise<TagscanFolderNode> {
+  return apiFetch<TagscanFolderNode>("/api/modules/module-1/files/tree");
+}
+
+export function listTagscanFiles(path: string): Promise<TagscanFileEntry[]> {
+  return apiFetch<TagscanFileEntry[]>(`/api/modules/module-1/files?path=${encodeURIComponent(path)}`);
+}
+
+export function getTagscanFileContent(path: string): Promise<TagscanFileContent> {
+  return apiFetch<TagscanFileContent>(`/api/modules/module-1/files/content?path=${encodeURIComponent(path)}`);
+}
+
+// --- MasterData (module-9) -------------------------------------------------
+
+export function getMasterDataMyPermissions(): Promise<MasterDataMyPermissions> {
+  return apiFetch<MasterDataMyPermissions>("/api/modules/module-9/me/permissions");
+}
+
+export function listMasterDataScreens(): Promise<MasterDataScreen[]> {
+  return apiFetch<MasterDataScreen[]>("/api/modules/module-9/screens");
+}
+
+export function listMasterDataRoles(): Promise<MasterDataRole[]> {
+  return apiFetch<MasterDataRole[]>("/api/modules/module-9/roles");
+}
+
+export function createMasterDataRole(name: string): Promise<MasterDataRole> {
+  return apiFetch<MasterDataRole>("/api/modules/module-9/roles", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameMasterDataRole(roleId: number, name: string): Promise<MasterDataRole> {
+  return apiFetch<MasterDataRole>(`/api/modules/module-9/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteMasterDataRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/roles/${roleId}`, { method: "DELETE" });
+}
+
+export interface MasterDataPermissionUpdate {
+  screen_id: number;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+export function setMasterDataRolePermissions(
+  roleId: number,
+  permissions: MasterDataPermissionUpdate[],
+): Promise<MasterDataRole> {
+  return apiFetch<MasterDataRole>(`/api/modules/module-9/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function listMasterDataUsers(): Promise<MasterDataUserSummary[]> {
+  return apiFetch<MasterDataUserSummary[]>("/api/modules/module-9/users");
+}
+
+export function setMasterDataUserRole(userId: number, roleId: number | null): Promise<MasterDataUserSummary> {
+  return apiFetch<MasterDataUserSummary>(`/api/modules/module-9/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantMasterDataUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<MasterDataUserSummary> {
+  return apiFetch<MasterDataUserSummary>("/api/modules/module-9/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

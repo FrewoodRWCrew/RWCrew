@@ -28,11 +28,11 @@ cp .env.example .env
 ## Running the API
 
 ```bash
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8010
+.venv/Scripts/python -m uvicorn app.main:app --reload --port 8020
 ```
 
-The API is then available at http://localhost:8010 (interactive docs at
-http://localhost:8010/docs).
+The API is then available at http://localhost:8020 (interactive docs at
+http://localhost:8020/docs).
 
 ## Running the tests
 

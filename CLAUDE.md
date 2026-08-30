@@ -21,7 +21,10 @@ backend/
   app/core/      Settings (.env), DB session, password hashing, JWT create/decode
   app/db/models/ SQLAlchemy models: User, Module, UserModuleAccess, ModuleRole, RefreshToken
   app/landing/   Auth endpoints (/api/auth/*) + super-admin endpoints (/api/admin/*)
-  app/modules/   One package per module (module_1 .. module_9), all built on app/modules/common.py
+  app/modules/   One package per module (module_1 .. module_9). module_2 .. module_9 are thin
+                 wrappers around the shared app/modules/common.py factory; module_1 (TagScan) has
+                 its own bespoke custom-roles-with-per-screen-permissions system instead — see
+                 docs/module-custom-roles-pattern.md if another module needs the same thing
   app/shared/    Small cross-module helpers (e.g. computing a user's accessible module keys)
   app/cli/seed.py   Seeds the 9 modules + the first super-admin user
   migrations/    Alembic
@@ -36,7 +39,10 @@ frontend/
     admin/master-data/           Redirects to its first sub-item (season/)
     admin/master-data/season/    "Season" master data (id, unique name) — sidebar groups
                                   future master-data entities as siblings here
-    modules/module-1..9/         One route folder per module, thin wrapper around
+    modules/module-1/             TagScan: CSV-intake module with its own custom-roles system
+                                  (Roles + Users under "Access Rights") — see
+                                  docs/module-custom-roles-pattern.md
+    modules/module-2..9/         One route folder per module, thin wrapper around
                                   ModulePlaceholderPage until real content is designed
   src/lib/api.ts               Browser-side API client (fetch with credentials: "include")
   src/lib/server-auth.ts, server-api.ts   Server-Component-side fetchers (forward cookies() manually)
@@ -55,7 +61,7 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # first 
 cp .env.example .env                         # first time
 .venv/Scripts/python -m alembic upgrade head
 .venv/Scripts/python -m app.cli.seed --email admin@example.com --password "ChangeMe123!" --name "Your Name"
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8010
+.venv/Scripts/python -m uvicorn app.main:app --reload --port 8020
 ```
 
 Frontend (from `frontend/`, in a second terminal):
@@ -96,13 +102,24 @@ tests for core logic only).
 - **Local Postgres runs on port 5433, not 5432** — the other "RWCrew.be" project's own Postgres
   container already occupies 5432 on this machine. See `docker-compose.yml` /
   `backend/.env.example`.
-- **Backend runs on port 8010, not 8000.** `netstat -ano` on this machine shows TWO processes
-  LISTENING on `127.0.0.1:8000` simultaneously, neither of which `Get-Process`/`tasklist` can
-  identify by PID (likely something tied to Docker Desktop's WSL2 networking) — requests to 8000
-  get routed to whichever one wins the race, so our own routes appear to 404 at random even
-  though the app itself is correct (confirmed via FastAPI's in-process `TestClient`, which always
-  worked). Moving the dev server to 8010 sidesteps it entirely. If this ever needs 8000 back,
-  check `netstat -ano | findstr :8000` for a second LISTENING PID first.
+- **Backend runs on port 8020, and dev mode does NOT use `--reload`.** Root cause found:
+  `uvicorn --reload` on Windows launches its actual worker via Python's `multiprocessing` (you can
+  see it as a `python.exe -c "from multiprocessing.spawn import spawn_main; spawn_main(parent_pid=...,
+  ...)"` process in `Get-CimInstance Win32_Process`). Killing the reloader/parent PID that
+  `Get-NetTCPConnection`'s `OwningProcess` reports does **not** kill that spawned child — it's left
+  running as an orphan, still holding the listening socket with whatever code was loaded when it
+  was spawned. Every subsequent request has a race between the orphan (stale code) and any new
+  process on the same port, so routes intermittently 404/405/500 or behave as if a fix was never
+  applied — confirmed by comparing against FastAPI's in-process `TestClient`, which always reflects
+  the real, current code. This cost real time across ports 8000, 8010, and 8020 before being found.
+  **Fix / prevention**: run the dev server *without* `--reload`
+  (`uvicorn app.main:app --port 8020`) and restart it manually after backend changes; if you must
+  use `--reload`, after killing it always check `Get-CimInstance Win32_Process -Filter "Name =
+  'python.exe'"` for lingering `multiprocessing.spawn` children and kill those specific PIDs too —
+  killing only the reloader PID is not enough. If a port ever seems haunted again despite this,
+  `netstat -ano | findstr :<port>` for a stray LISTENING PID and moving to a fresh port remains the
+  fallback (update `frontend/.env.local(.example)`, `frontend/src/lib/config.ts`, `backend/README.md`,
+  and this file).
 - **JWTs must include a random `jti`.** `app/core/security.py`'s `_create_token` adds one
   specifically because two tokens for the same user issued within the same second would
   otherwise be byte-for-byte identical (all other claims round to the same second), silently

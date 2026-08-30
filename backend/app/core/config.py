@@ -6,6 +6,8 @@
 # pydantic-settings gives us a convenient way to declare which settings we
 # expect, and to automatically read them from a ".env" file or the real
 # operating-system environment variables.
+from pathlib import Path
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -45,6 +47,14 @@ class Settings(BaseSettings):
     # (Cross-Origin Resource Sharing). During local development this is
     # the address the Next.js frontend runs on.
     cors_allowed_origins: list[str] = ["http://localhost:3000"]
+
+    # Where TagScan's incoming CSV files currently land. This is a
+    # temporary location (see CLAUDE.md/the TagScan module docs) — it's a
+    # setting rather than a hard-coded path so it can move later without a
+    # code change. Defaults to the "TagScans" folder at the repo root
+    # (this file lives at backend/app/core/config.py, so parents[3] is the
+    # repo root).
+    tagscan_source_dir: str = str(Path(__file__).resolve().parents[3] / "TagScans")
 
 
 # Create one shared Settings object that the rest of the app can import

@@ -1,8 +1,11 @@
 "use client";
 
-// The super admin's "Season" master-data screen: a simple table of
-// seasons with add/change/delete, following the exact same dialog/table
-// pattern as the "Manage Access" user table (see access-management.tsx).
+// MasterData's "Season" screen: a simple table of seasons with add/
+// change/delete, following the exact same dialog/table pattern as the
+// "Manage Access" user table (see access-management.tsx). Moved here
+// from components/admin/season-management.tsx now that Season is gated
+// by MasterData's own per-screen permissions ("masterdata.season")
+// instead of a flat "super admin only" check.
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -41,7 +44,7 @@ interface SeasonManagementProps {
 }
 
 export function SeasonManagement({ initialSeasons }: SeasonManagementProps) {
-  const t = useTranslations("admin.masterData.season");
+  const t = useTranslations("masterdata.season");
   const router = useRouter();
 
   // Kept in local state so create/change/delete update the table
@@ -52,8 +55,8 @@ export function SeasonManagement({ initialSeasons }: SeasonManagementProps) {
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">{t("title")}</h2>
-          <p className="text-sm text-muted-foreground">{t("description")}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <CreateSeasonDialog
           onCreated={(newSeason) => {
@@ -111,7 +114,7 @@ interface CreateSeasonDialogProps {
 }
 
 function CreateSeasonDialog({ onCreated }: CreateSeasonDialogProps) {
-  const t = useTranslations("admin.masterData.season");
+  const t = useTranslations("masterdata.season");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState("");
@@ -162,7 +165,7 @@ interface ChangeSeasonDialogProps {
 }
 
 function ChangeSeasonDialog({ season, onChanged }: ChangeSeasonDialogProps) {
-  const t = useTranslations("admin.masterData.season");
+  const t = useTranslations("masterdata.season");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [name, setName] = useState(season.name);
@@ -231,7 +234,7 @@ interface DeleteSeasonAlertDialogProps {
 }
 
 function DeleteSeasonAlertDialog({ season, onDeleted }: DeleteSeasonAlertDialogProps) {
-  const t = useTranslations("admin.masterData.season");
+  const t = useTranslations("masterdata.season");
   const tCommon = useTranslations("common");
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

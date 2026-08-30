@@ -1,24 +1,28 @@
 "use client";
 
 // The left-hand navigation menu, shown only to the super admin. It links
-// to the admin screens (managing user access, and — later — master
-// data), plus a link back to the tile grid.
+// to the site-wide admin screens (managing user access), plus a link
+// back to the tile grid. Modules with their own complete shell (TagScan,
+// MasterData) get their own sidebar instead — see MODULES_WITH_OWN_SIDEBAR.
 
-import { Database, LayoutGrid, ShieldCheck } from "lucide-react";
+import { LayoutGrid, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
-// The "Master Data" section is a group of sub-items rather than a single
-// link — "Season" is the first one; more can be added here later without
-// touching anything else in this file.
-const MASTER_DATA_CHILDREN = [{ href: "/admin/master-data/season", labelKey: "masterDataSeason" as const }];
+// Modules that have their own complete left-hand navigation (see
+// tagscan-sidebar.tsx / masterdata-sidebar.tsx) — showing this site-wide
+// menu alongside one of them would just be a redundant second sidebar.
+// The Topbar's logo link already covers "back to the landing page" while
+// this is hidden.
+const MODULES_WITH_OWN_SIDEBAR = ["/modules/module-1", "/modules/module-9"];
 
 export function AdminSidebar() {
   const t = useTranslations("sidebar");
   const pathname = usePathname();
 
-  // The plain (non-grouped) links this sidebar offers, in order.
+  if (MODULES_WITH_OWN_SIDEBAR.some((prefix) => pathname.startsWith(prefix))) return null;
+
   const links = [
     { href: "/", label: t("landing"), icon: LayoutGrid },
     { href: "/admin/access", label: t("manageAccess"), icon: ShieldCheck },
@@ -45,31 +49,6 @@ export function AdminSidebar() {
           >
             <Icon className="size-4" />
             {label}
-          </Link>
-        );
-      })}
-
-      {/* "Master Data" itself is just a group heading — it has no page of
-          its own, only the sub-items nested underneath it. */}
-      <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
-        <Database className="size-4" />
-        {t("masterData")}
-      </div>
-      {MASTER_DATA_CHILDREN.map(({ href, labelKey }) => {
-        const isActive = pathname === href;
-
-        return (
-          <Link
-            key={href}
-            href={href}
-            className={cn(
-              "ml-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-              isActive
-                ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-            )}
-          >
-            {t(labelKey)}
           </Link>
         );
       })}

@@ -55,3 +55,139 @@ export interface Season {
   id: number;
   name: string;
 }
+
+/** One product, as managed on MasterData's Products screen. */
+export interface Product {
+  id: number;
+  name: string;
+  type: string | null;
+  warehouse: string | null;
+  warehouse_location: string | null;
+  category: string | null;
+  is_consumable: boolean;
+  is_blocked: boolean;
+  is_logistics_product: boolean;
+  limit_mode: string | null;
+  description: string | null;
+}
+
+/** The fields sent to create or fully update a product. */
+export interface ProductInput {
+  name: string;
+  type?: string | null;
+  warehouse?: string | null;
+  warehouse_location?: string | null;
+  category?: string | null;
+  is_consumable?: boolean;
+  is_blocked?: boolean;
+  is_logistics_product?: boolean;
+  limit_mode?: string | null;
+  description?: string | null;
+}
+
+// --- Tagscan (module-1): custom roles with per-screen permissions ---------
+
+/** One screen registered inside the Tagscan module. */
+export interface TagscanScreen {
+  id: number;
+  key: string;
+  label: string;
+  sort_order: number;
+}
+
+/** One Tagscan role's permissions on one specific screen. */
+export interface TagscanScreenPermission {
+  screen_id: number;
+  screen_key: string;
+  screen_label: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+/** One Tagscan role, with its full permission matrix. */
+export interface TagscanRole {
+  id: number;
+  name: string;
+  permissions: TagscanScreenPermission[];
+}
+
+/** One user with access to Tagscan, and their current role (if any). */
+export interface TagscanUserSummary {
+  user_id: number;
+  email: string;
+  display_name: string;
+  role_id: number | null;
+  role_name: string | null;
+}
+
+/** Which Tagscan screens the current user is allowed to view. */
+export interface TagscanMyPermissions {
+  viewable_screen_keys: string[];
+}
+
+/** One folder in the CSV intake directory's tree, with its subfolders nested inside. */
+export interface TagscanFolderNode {
+  name: string;
+  /** Empty string for the root folder; otherwise "/"-separated, relative to the root. */
+  path: string;
+  children: TagscanFolderNode[];
+}
+
+/** One file inside a folder, as shown in the Dashboard screen's file-list pane. */
+export interface TagscanFileEntry {
+  name: string;
+  path: string;
+  size_bytes: number;
+  modified_at: string;
+}
+
+/** One file's text content, for the Dashboard screen's "notepad" preview pane. */
+export interface TagscanFileContent {
+  path: string;
+  content: string;
+  truncated: boolean;
+}
+
+// --- MasterData (module-9): custom roles with per-screen permissions ------
+
+/** One screen registered inside the MasterData module. */
+export interface MasterDataScreen {
+  id: number;
+  key: string;
+  label: string;
+  sort_order: number;
+}
+
+/** One MasterData role's permissions on one specific screen. */
+export interface MasterDataScreenPermission {
+  screen_id: number;
+  screen_key: string;
+  screen_label: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+/** One MasterData role, with its full permission matrix. */
+export interface MasterDataRole {
+  id: number;
+  name: string;
+  permissions: MasterDataScreenPermission[];
+}
+
+/** One user with access to MasterData, and their current role (if any). */
+export interface MasterDataUserSummary {
+  user_id: number;
+  email: string;
+  display_name: string;
+  role_id: number | null;
+  role_name: string | null;
+}
+
+/** Which MasterData screens the current user is allowed to view. */
+export interface MasterDataMyPermissions {
+  viewable_screen_keys: string[];
+}

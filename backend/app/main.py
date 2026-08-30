@@ -4,17 +4,21 @@
 #
 # Start it during development (from the "backend" folder, with the
 # virtual environment active) with:
-#   uvicorn app.main:app --reload --port 8000
+#   uvicorn app.main:app --reload --port 8010
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
+from app.core.database import SessionLocal
 from app.landing.admin import router as admin_router
 from app.landing.auth import router as auth_router
-from app.landing.master_data import router as master_data_router
 from app.landing.modules import router as modules_router
 from app.modules.module_1.router import router as module_1_router
+from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
 from app.modules.module_2.router import router as module_2_router
 from app.modules.module_3.router import router as module_3_router
 from app.modules.module_4.router import router as module_4_router
@@ -23,9 +27,25 @@ from app.modules.module_6.router import router as module_6_router
 from app.modules.module_7.router import router as module_7_router
 from app.modules.module_8.router import router as module_8_router
 from app.modules.module_9.router import router as module_9_router
+from app.modules.module_9.screens import sync_screens as sync_masterdata_screens
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    """Runs once when the backend starts up, before it accepts any
+    requests. Used to keep TagScan's and MasterData's screen registries
+    (Tagscan_screens / MasterData_screens) in sync with the
+    SCREEN_DEFINITIONS lists in code — see app/modules/module_1/screens.py
+    and app/modules/module_9/screens.py for what that means in practice.
+    """
+    with SessionLocal() as db:
+        sync_tagscan_screens(db)
+        sync_masterdata_screens(db)
+    yield
+
 
 # Create the actual FastAPI application object.
-app = FastAPI(title="RW Crew API")
+app = FastAPI(title="RW Crew API", lifespan=lifespan)
 
 # Allow the Next.js frontend (running on a different port during
 # development, and a different domain in production) to call this API
@@ -42,7 +62,6 @@ app.add_middleware(
 # URL prefix (e.g. "/api/auth"), so we don't repeat that here.
 app.include_router(auth_router)
 app.include_router(admin_router)
-app.include_router(master_data_router)
 app.include_router(modules_router)
 app.include_router(module_1_router)
 app.include_router(module_2_router)

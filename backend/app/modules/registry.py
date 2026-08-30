@@ -19,8 +19,19 @@ class ModuleDefinition:
     sort_order: int
 
 
-# The 9 placeholder modules. Replace "Module 1".."Module 9" with real
-# names here once they're decided — nothing else needs to change.
+# The name each module should seed with. Most are still placeholders
+# ("Module 2".."Module 8") — replace them here once real names are
+# decided, nothing else needs to change. module-1 (TagScan) and module-9
+# (MasterData) already have real names and their own bespoke routers (see
+# app/modules/module_1, app/modules/module_9) instead of the shared
+# create_module_router() factory used by the placeholders.
+_MODULE_NAMES = {"module-1": "TagScan", "module-9": "MasterData"}
+
 MODULE_DEFINITIONS: list[ModuleDefinition] = [
-    ModuleDefinition(key=f"module-{number}", name=f"Module {number}", sort_order=number) for number in range(1, 10)
+    ModuleDefinition(
+        key=f"module-{number}",
+        name=_MODULE_NAMES.get(f"module-{number}", f"Module {number}"),
+        sort_order=number,
+    )
+    for number in range(1, 10)
 ]

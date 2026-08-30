@@ -125,6 +125,13 @@ def set_user_module_access(
     for grant in existing_grants:
         db.delete(grant)
 
+    # ...sending those deletes to the database now (instead of leaving
+    # them queued alongside the inserts below), since otherwise
+    # SQLAlchemy is free to run the inserts first — which would collide
+    # with the unique (user_id, module_id) constraint whenever a module
+    # that was already granted is being "re-granted" unchanged.
+    db.flush()
+
     # ...then re-add exactly the ones that were requested.
     for module in requested_modules:
         db.add(UserModuleAccess(user_id=user_id, module_id=module.id))

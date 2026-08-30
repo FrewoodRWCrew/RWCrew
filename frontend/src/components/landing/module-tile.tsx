@@ -20,22 +20,35 @@ interface ModuleTileProps {
 export function ModuleTile({ module, hasAccess }: ModuleTileProps) {
   const theme = getModuleTheme(module.key);
   const number = getModuleNumber(module.key);
+  const Icon = theme.icon;
 
   const tileContent = (
     <div
       className={cn(
-        "flex h-36 flex-col justify-between rounded-xl p-4 shadow-sm transition-all",
+        "relative flex h-36 flex-col rounded-xl p-4 shadow-sm transition-all",
         theme.tileClassName,
         hasAccess ? "hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110" : "opacity-50",
       )}
     >
-      <span className="text-3xl font-bold" aria-hidden="true">
-        {number}
-      </span>
-      <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold">{module.name}</span>
-        {!hasAccess && <Lock className="size-4" aria-hidden="true" />}
+      {/* Locked tiles show a padlock badge in the corner instead of next
+          to the (now centered) title. */}
+      {!hasAccess && (
+        <Lock className="absolute top-4 right-4 size-4" aria-hidden="true" />
+      )}
+      {/* Modules with a real icon designed for them show it here instead
+          of their plain number — see module-theme.ts. Sized to about 2/3
+          of the tile's height (h-36) and centered in the space above the
+          title. */}
+      <div className="flex flex-1 items-center justify-center">
+        {Icon ? (
+          <Icon className="size-24" aria-hidden="true" />
+        ) : (
+          <span className="text-3xl font-bold" aria-hidden="true">
+            {number}
+          </span>
+        )}
       </div>
+      <span className="text-center text-sm font-semibold">{module.name}</span>
     </div>
   );
 

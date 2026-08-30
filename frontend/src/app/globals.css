@@ -55,6 +55,10 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
+  /* Site-wide font, per explicit request. Verdana ships with essentially
+     every mainstream OS, but a generic sans-serif fallback is included in
+     case it's ever missing. */
+  --font-sans: Verdana, Geneva, sans-serif;
   /* RW Crew's brand colour is green (used for the landing page's primary
      buttons/links/accents). We reuse Tailwind's own built-in "green"
      colour scale (exposed automatically as CSS variables once Tailwind is
@@ -97,6 +101,7 @@
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
+  --font-sans: Verdana, Geneva, sans-serif;
   /* A slightly lighter green than the light theme's, so it stays bright
      and readable against RW Crew's near-black dark background. */
   --primary: var(--color-green-500);

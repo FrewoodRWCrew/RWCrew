@@ -1,6 +1,6 @@
 # This script prepares a freshly-created database for first use:
 #   1. It makes sure all 9 modules exist as rows in the "Landing_modules" table.
-#   2. It makes sure a starting set of seasons exists in "landing_md_season".
+#   2. It makes sure a starting set of seasons exists in "MasterData_season".
 #   3. It creates the very first super-admin user account, so there is
 #      someone who can log in and start granting access to everyone else.
 #

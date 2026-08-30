@@ -5,9 +5,18 @@
 # list of models.
 
 from app.core.database import Base  # noqa: F401  (re-exported for convenience)
+from app.db.models.masterdata_role import MasterDataRole  # noqa: F401
+from app.db.models.masterdata_role_permission import MasterDataRolePermission  # noqa: F401
+from app.db.models.masterdata_screen import MasterDataScreen  # noqa: F401
+from app.db.models.masterdata_user_role import MasterDataUserRole  # noqa: F401
 from app.db.models.module import Module  # noqa: F401
 from app.db.models.module_role import ModuleRole  # noqa: F401
+from app.db.models.product import Product  # noqa: F401
 from app.db.models.refresh_token import RefreshToken  # noqa: F401
 from app.db.models.season import Season  # noqa: F401
+from app.db.models.tagscan_role import TagscanRole  # noqa: F401
+from app.db.models.tagscan_role_permission import TagscanRolePermission  # noqa: F401
+from app.db.models.tagscan_screen import TagscanScreen  # noqa: F401
+from app.db.models.tagscan_user_role import TagscanUserRole  # noqa: F401
 from app.db.models.user import User  # noqa: F401
 from app.db.models.user_module_access import UserModuleAccess  # noqa: F401

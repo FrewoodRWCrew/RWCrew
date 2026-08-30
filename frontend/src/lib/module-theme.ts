@@ -6,6 +6,8 @@
 // Once real module names/branding are decided, these colours (and their
 // order) can simply be reassigned here without touching any component.
 
+import { Database, Nfc, type LucideIcon } from "lucide-react";
+
 export interface ModuleTheme {
   /** Classes for the module's tile on the landing page: a solid background
    *  covering the whole tile, plus a text colour readable on top of it. */
@@ -13,12 +15,20 @@ export interface ModuleTheme {
   /** Classes for the softer, pill-shaped badge shown on the module's own
    *  page (see ModulePlaceholderPage) — a light tint rather than solid fill. */
   badgeClassName: string;
+  /** A real icon for this module's tile, shown instead of its number.
+   *  Left unset for modules that don't have one designed yet — those
+   *  fall back to showing their plain number (see ModuleTile). */
+  icon?: LucideIcon;
 }
 
 const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
   "module-1": {
     tileClassName: "bg-blue-600 text-white",
     badgeClassName: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    // Tagscan reads RFID/contactless tags — lucide's "Nfc" icon is the
+    // same "tag + radiating waves" contactless symbol, already drawn in
+    // the same stroke style as every other icon used across the app.
+    icon: Nfc,
   },
   "module-2": {
     tileClassName: "bg-purple-600 text-white",
@@ -51,6 +61,12 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
   "module-9": {
     tileClassName: "bg-cyan-600 text-white",
     badgeClassName: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300",
+    // MasterData's picture (Attachment/MasterData.jpg) shows a person
+    // linked to two databases — lucide's "Database" icon captures the
+    // same idea, and is already this app's own established icon for
+    // "master data" (it was used for the admin sidebar's old Master Data
+    // heading before that screen moved into this module).
+    icon: Database,
   },
 };
 
