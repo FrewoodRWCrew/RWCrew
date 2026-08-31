@@ -60,29 +60,53 @@ export interface Season {
 export interface Product {
   id: number;
   name: string;
-  type: string | null;
-  warehouse: string | null;
+  type_id: number | null;
+  warehouse_id: number | null;
   warehouse_location: string | null;
-  category: string | null;
+  category_id: number | null;
   is_consumable: boolean;
   is_blocked: boolean;
   is_logistics_product: boolean;
-  limit_mode: string | null;
+  limit_id: number | null;
   description: string | null;
 }
 
 /** The fields sent to create or fully update a product. */
 export interface ProductInput {
   name: string;
-  type?: string | null;
-  warehouse?: string | null;
+  type_id?: number | null;
+  warehouse_id?: number | null;
   warehouse_location?: string | null;
-  category?: string | null;
+  category_id?: number | null;
   is_consumable?: boolean;
   is_blocked?: boolean;
   is_logistics_product?: boolean;
-  limit_mode?: string | null;
+  limit_id?: number | null;
   description?: string | null;
+}
+
+/** One product type, as managed on MasterData's Type screen. */
+export interface ProductType {
+  id: number;
+  name: string;
+}
+
+/** One warehouse (Magazijn), as managed on MasterData's Magazijn screen. */
+export interface Warehouse {
+  id: number;
+  name: string;
+}
+
+/** One product category (Categorie), as managed on MasterData's Categorie screen. */
+export interface ProductCategory {
+  id: number;
+  name: string;
+}
+
+/** One limit option (Limiet), as managed on MasterData's Limiet screen. */
+export interface ProductLimit {
+  id: number;
+  name: string;
 }
 
 // --- Tagscan (module-1): custom roles with per-screen permissions ---------

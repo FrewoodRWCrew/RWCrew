@@ -15,7 +15,10 @@ import type {
   MasterDataScreen,
   MasterDataUserSummary,
   Product,
+  ProductCategory,
   ProductInput,
+  ProductLimit,
+  ProductType,
   Season,
   TagscanFileContent,
   TagscanFileEntry,
@@ -25,6 +28,7 @@ import type {
   TagscanScreen,
   TagscanUserSummary,
   UserSummary,
+  Warehouse,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -189,6 +193,102 @@ export function updateProduct(productId: number, payload: ProductInput): Promise
 
 export function deleteProduct(productId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/products/${productId}`, { method: "DELETE" });
+}
+
+// --- Product types (module-9's "masterdata.product-types" screen) -------
+
+export function listProductTypes(): Promise<ProductType[]> {
+  return apiFetch<ProductType[]>("/api/modules/module-9/product-types");
+}
+
+export function createProductType(name: string): Promise<ProductType> {
+  return apiFetch<ProductType>("/api/modules/module-9/product-types", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateProductType(productTypeId: number, name: string): Promise<ProductType> {
+  return apiFetch<ProductType>(`/api/modules/module-9/product-types/${productTypeId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteProductType(productTypeId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/product-types/${productTypeId}`, { method: "DELETE" });
+}
+
+// --- Warehouses (module-9's "masterdata.warehouses" screen) -------------
+
+export function listWarehouses(): Promise<Warehouse[]> {
+  return apiFetch<Warehouse[]>("/api/modules/module-9/warehouses");
+}
+
+export function createWarehouse(name: string): Promise<Warehouse> {
+  return apiFetch<Warehouse>("/api/modules/module-9/warehouses", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateWarehouse(warehouseId: number, name: string): Promise<Warehouse> {
+  return apiFetch<Warehouse>(`/api/modules/module-9/warehouses/${warehouseId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteWarehouse(warehouseId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/warehouses/${warehouseId}`, { method: "DELETE" });
+}
+
+// --- Product categories (module-9's "masterdata.product-categories" screen) ---
+
+export function listProductCategories(): Promise<ProductCategory[]> {
+  return apiFetch<ProductCategory[]>("/api/modules/module-9/product-categories");
+}
+
+export function createProductCategory(name: string): Promise<ProductCategory> {
+  return apiFetch<ProductCategory>("/api/modules/module-9/product-categories", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateProductCategory(productCategoryId: number, name: string): Promise<ProductCategory> {
+  return apiFetch<ProductCategory>(`/api/modules/module-9/product-categories/${productCategoryId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteProductCategory(productCategoryId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/product-categories/${productCategoryId}`, { method: "DELETE" });
+}
+
+// --- Product limits (module-9's "masterdata.product-limits" screen) -----
+
+export function listProductLimits(): Promise<ProductLimit[]> {
+  return apiFetch<ProductLimit[]>("/api/modules/module-9/product-limits");
+}
+
+export function createProductLimit(name: string): Promise<ProductLimit> {
+  return apiFetch<ProductLimit>("/api/modules/module-9/product-limits", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateProductLimit(productLimitId: number, name: string): Promise<ProductLimit> {
+  return apiFetch<ProductLimit>(`/api/modules/module-9/product-limits/${productLimitId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteProductLimit(productLimitId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/product-limits/${productLimitId}`, { method: "DELETE" });
 }
 
 // --- Tagscan (module-1) -------------------------------------------------

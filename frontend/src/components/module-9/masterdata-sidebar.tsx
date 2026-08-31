@@ -7,6 +7,11 @@
 // ("masterdata.season"), unlike TagScan's unconditional "Dashboard" link
 // — Season is real gated content here, not an always-visible landing
 // placeholder, so it should behave like every other screen link.
+//
+// Type/Magazijn/Categorie/Limiet are the four "selection criteria" lookup
+// lists used by the Products form — shown indented directly under the
+// "Products" link, the same indentation treatment used for Roles/Users
+// under "Access Rights" below.
 
 import { ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -24,6 +29,10 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   // separate key, so the sidebar and the page heading can never drift apart.
   const tSeason = useTranslations("masterdata.season");
   const tProducts = useTranslations("masterdata.products");
+  const tProductTypes = useTranslations("masterdata.productTypes");
+  const tWarehouses = useTranslations("masterdata.warehouses");
+  const tProductCategories = useTranslations("masterdata.productCategories");
+  const tProductLimits = useTranslations("masterdata.productLimits");
   const tRoles = useTranslations("masterdata.roles");
   const tUsers = useTranslations("masterdata.users");
   const pathname = usePathname();
@@ -33,6 +42,10 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
 
   const canViewSeason = viewableScreenKeys.includes("masterdata.season");
   const canViewProducts = viewableScreenKeys.includes("masterdata.products");
+  const canViewProductTypes = viewableScreenKeys.includes("masterdata.product-types");
+  const canViewWarehouses = viewableScreenKeys.includes("masterdata.warehouses");
+  const canViewProductCategories = viewableScreenKeys.includes("masterdata.product-categories");
+  const canViewProductLimits = viewableScreenKeys.includes("masterdata.product-limits");
   const canViewRoles = viewableScreenKeys.includes("masterdata.roles");
   const canViewUsers = viewableScreenKeys.includes("masterdata.users");
 
@@ -61,6 +74,42 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
       {canViewProducts && (
         <Link href="/modules/module-9/products" className={linkClassName("/modules/module-9/products")}>
           {tProducts("title")}
+        </Link>
+      )}
+
+      {canViewProductTypes && (
+        <Link
+          href="/modules/module-9/products/types"
+          className={linkClassName("/modules/module-9/products/types", true)}
+        >
+          {tProductTypes("title")}
+        </Link>
+      )}
+
+      {canViewWarehouses && (
+        <Link
+          href="/modules/module-9/products/warehouses"
+          className={linkClassName("/modules/module-9/products/warehouses", true)}
+        >
+          {tWarehouses("title")}
+        </Link>
+      )}
+
+      {canViewProductCategories && (
+        <Link
+          href="/modules/module-9/products/categories"
+          className={linkClassName("/modules/module-9/products/categories", true)}
+        >
+          {tProductCategories("title")}
+        </Link>
+      )}
+
+      {canViewProductLimits && (
+        <Link
+          href="/modules/module-9/products/limits"
+          className={linkClassName("/modules/module-9/products/limits", true)}
+        >
+          {tProductLimits("title")}
         </Link>
       )}
 

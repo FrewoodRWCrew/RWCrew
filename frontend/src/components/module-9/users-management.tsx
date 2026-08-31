@@ -71,7 +71,7 @@ export function UsersManagement({ roles, initialUsers }: UsersManagementProps) {
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <CreateOrGrantUserDialog roles={roles} onSaved={upsertUser} />
@@ -81,9 +81,9 @@ export function UsersManagement({ roles, initialUsers }: UsersManagementProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("userTableName")}</TableHead>
-              <TableHead>{t("userTableEmail")}</TableHead>
-              <TableHead>{t("userTableRole")}</TableHead>
+              <TableHead className="font-bold underline">{t("userTableName")}</TableHead>
+              <TableHead className="font-bold underline">{t("userTableEmail")}</TableHead>
+              <TableHead className="font-bold underline">{t("userTableRole")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

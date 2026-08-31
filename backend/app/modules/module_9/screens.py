@@ -28,13 +28,19 @@ class ScreenDefinition:
 
 
 # Every screen MasterData currently has. "Season" and "Products" are its
-# actual pieces of master data; "Roles" and "Users" are the two
-# access-rights screens. All four are gated independently of one another.
+# actual pieces of master data; "Type"/"Warehouses"/"Product categories"/
+# "Product limits" are the four lookup lists ("selection criteria") nested
+# under Products; "Roles" and "Users" are the two access-rights screens.
+# All are gated independently of one another.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
-    ScreenDefinition(key="masterdata.season", label="Season", sort_order=1),
+    ScreenDefinition(key="masterdata.season", label="Seasons", sort_order=1),
     ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
-    ScreenDefinition(key="masterdata.roles", label="Roles", sort_order=3),
-    ScreenDefinition(key="masterdata.users", label="Users", sort_order=4),
+    ScreenDefinition(key="masterdata.product-types", label="Type", sort_order=3),
+    ScreenDefinition(key="masterdata.warehouses", label="Magazijnen", sort_order=4),
+    ScreenDefinition(key="masterdata.product-categories", label="Categorieën", sort_order=5),
+    ScreenDefinition(key="masterdata.product-limits", label="Limieten", sort_order=6),
+    ScreenDefinition(key="masterdata.roles", label="Roles", sort_order=7),
+    ScreenDefinition(key="masterdata.users", label="Users", sort_order=8),
 ]
 
 

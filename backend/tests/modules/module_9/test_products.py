@@ -14,8 +14,10 @@ from app.db.models.masterdata_screen import MasterDataScreen
 from app.db.models.masterdata_user_role import MasterDataUserRole
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.product_category import ProductCategory
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.db.models.warehouse import Warehouse
 from app.modules.module_9.screens import sync_screens
 
 
@@ -159,27 +161,32 @@ def test_create_product_with_full_field_set(client: TestClient, db_session: Sess
     module = _create_masterdata_module(db_session)
     admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     _grant_module_access(db_session, admin, module)
+    warehouse = Warehouse(name="Uitleendienst")
+    category = ProductCategory(name="Gereedschap")
+    db_session.add_all([warehouse, category])
+    db_session.commit()
+    db_session.refresh(warehouse)
+    db_session.refresh(category)
     _login(client, "admin@example.com")
 
     response = client.post(
         "/api/modules/module-9/products",
         json={
             "name": "KBC Lint",
-            "type": "Standaard",
-            "warehouse": "Uitleendienst",
+            "warehouse_id": warehouse.id,
             "warehouse_location": "4RECHTS",
-            "category": "Gereedschap",
+            "category_id": category.id,
             "is_consumable": True,
             "is_blocked": False,
             "is_logistics_product": False,
-            "limit_mode": "Automatisch",
             "description": "Por rol",
         },
     )
 
     assert response.status_code == 201
     body = response.json()
-    assert body["warehouse"] == "Uitleendienst"
+    assert body["warehouse_id"] == warehouse.id
+    assert body["category_id"] == category.id
     assert body["is_consumable"] is True
 
 

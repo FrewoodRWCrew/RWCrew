@@ -131,34 +131,111 @@ class ProductResponse(BaseModel):
 
     id: int
     name: str
-    type: str | None
-    warehouse: str | None
+    type_id: int | None
+    warehouse_id: int | None
     warehouse_location: str | None
-    category: str | None
+    category_id: int | None
     is_consumable: bool
     is_blocked: bool
     is_logistics_product: bool
-    limit_mode: str | None
+    limit_id: int | None
     description: str | None
 
 
 class ProductCreateRequest(BaseModel):
     """What's sent to create a brand-new product. Only the name is
-    required — every other field is optional, matching how loosely
-    defined they currently are (plain text, no fixed value list yet).
+    required — every other field is optional. type_id/warehouse_id/
+    category_id/limit_id, if given, must reference an existing row in the
+    matching lookup table (checked by the endpoint, not here).
     """
 
     name: str = Field(min_length=1, max_length=255)
-    type: str | None = Field(default=None, max_length=255)
-    warehouse: str | None = Field(default=None, max_length=255)
+    type_id: int | None = None
+    warehouse_id: int | None = None
     warehouse_location: str | None = Field(default=None, max_length=255)
-    category: str | None = Field(default=None, max_length=255)
+    category_id: int | None = None
     is_consumable: bool = False
     is_blocked: bool = False
     is_logistics_product: bool = False
-    limit_mode: str | None = Field(default=None, max_length=255)
+    limit_id: int | None = None
     description: str | None = None
 
 
 class ProductUpdateRequest(ProductCreateRequest):
     """What's sent to update an existing product — same shape as creating one."""
+
+
+class ProductTypeResponse(BaseModel):
+    """One product type, as shown on the Type screen."""
+
+    id: int
+    name: str
+
+
+class ProductTypeCreateRequest(BaseModel):
+    """What's sent to create a brand-new product type."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ProductTypeUpdateRequest(BaseModel):
+    """What's sent to rename an existing product type."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ProductCategoryResponse(BaseModel):
+    """One product category, as shown on the Categorie screen."""
+
+    id: int
+    name: str
+
+
+class ProductCategoryCreateRequest(BaseModel):
+    """What's sent to create a brand-new product category."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ProductCategoryUpdateRequest(BaseModel):
+    """What's sent to rename an existing product category."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class WarehouseResponse(BaseModel):
+    """One warehouse (Magazijn), as shown on the Magazijn screen."""
+
+    id: int
+    name: str
+
+
+class WarehouseCreateRequest(BaseModel):
+    """What's sent to create a brand-new warehouse."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class WarehouseUpdateRequest(BaseModel):
+    """What's sent to rename an existing warehouse."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ProductLimitResponse(BaseModel):
+    """One limit option (Limiet), as shown on the Limiet screen."""
+
+    id: int
+    name: str
+
+
+class ProductLimitCreateRequest(BaseModel):
+    """What's sent to create a brand-new limit option."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ProductLimitUpdateRequest(BaseModel):
+    """What's sent to rename an existing limit option."""
+
+    name: str = Field(min_length=1, max_length=255)

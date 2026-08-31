@@ -13,7 +13,6 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createUser, deleteUser, setUserModuleAccess } from "@/lib/api";
 import type { ModuleInfo, UserSummary } from "@/lib/types";
-import { getModuleNumber } from "@/lib/module-theme";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -85,7 +84,7 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <CreateUserDialog
@@ -100,15 +99,28 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("userTableName")}</TableHead>
-              <TableHead>{t("userTableEmail")}</TableHead>
-              <TableHead>{t("userTableSuperAdmin")}</TableHead>
+              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableName")}</TableHead>
+              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableEmail")}</TableHead>
+              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableSuperAdmin")}</TableHead>
               {sortedModules.map((module) => (
-                <TableHead key={module.key} className="text-center" title={module.name}>
-                  {getModuleNumber(module.key)}
+                <TableHead key={module.key} className="h-32 text-center align-bottom pb-3 font-bold underline">
+                  {/* writing-mode lays the text out in a column exactly as
+                      wide as the vertical text itself, so it's centered
+                      directly above this same column's checkboxes below —
+                      a rotate() transform on horizontal text does NOT do
+                      this, since its layout box stays as wide as the
+                      un-rotated text and can drift off-center. rotate-180
+                      flips the vertical-rl default (top-to-bottom) so the
+                      text reads bottom-to-top instead, matching the usual
+                      spreadsheet column-header convention. */}
+                  <div className="inline-block [writing-mode:vertical-rl] rotate-180 whitespace-nowrap">
+                    {module.name}
+                  </div>
                 </TableHead>
               ))}
-              <TableHead className="text-right">{t("userTableActions")}</TableHead>
+              <TableHead className="align-bottom pb-3 text-right font-bold underline">
+                {t("userTableActions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

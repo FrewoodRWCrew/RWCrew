@@ -68,7 +68,7 @@ export function RolesManagement({ initialScreens, initialRoles }: RolesManagemen
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <CreateRoleDialog onCreated={upsertRole} />
@@ -78,8 +78,8 @@ export function RolesManagement({ initialScreens, initialRoles }: RolesManagemen
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("tableName")}</TableHead>
-              <TableHead className="text-right">{t("tableActions")}</TableHead>
+              <TableHead className="font-bold underline">{t("tableName")}</TableHead>
+              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -354,11 +354,11 @@ function EditPermissionsDialog({ role, screens, onSaved }: EditPermissionsDialog
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>{t("screenColumn")}</TableHead>
-                <TableHead className="text-center">{t("viewColumn")}</TableHead>
-                <TableHead className="text-center">{t("createColumn")}</TableHead>
-                <TableHead className="text-center">{t("editColumn")}</TableHead>
-                <TableHead className="text-center">{t("deleteColumn")}</TableHead>
+                <TableHead className="font-bold underline">{t("screenColumn")}</TableHead>
+                <TableHead className="text-center font-bold underline">{t("viewColumn")}</TableHead>
+                <TableHead className="text-center font-bold underline">{t("createColumn")}</TableHead>
+                <TableHead className="text-center font-bold underline">{t("editColumn")}</TableHead>
+                <TableHead className="text-center font-bold underline">{t("deleteColumn")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -1,6 +1,8 @@
 // The "Mainpage": the tile grid every logged-in user lands on after
-// signing in. Rendered on the server so the tiles (and which of them are
-// locked) show up immediately, with no loading spinner.
+// signing in. Rendered on the server so the tiles show up immediately,
+// with no loading spinner. Only modules the user actually has access to
+// are shown — see ModuleTile for why a locked-tile treatment is no
+// longer needed.
 
 import { getTranslations } from "next-intl/server";
 import { getCurrentUserOnServer } from "@/lib/server-auth";
@@ -17,7 +19,9 @@ export default async function LandingPage() {
   const [user, modules] = await Promise.all([getCurrentUserOnServer(), serverApiFetch<ModuleInfo[]>("/api/modules")]);
 
   const accessibleModuleKeys = new Set(user?.accessible_module_keys ?? []);
-  const hasAnyAccess = accessibleModuleKeys.size > 0;
+  const accessibleModules = modules
+    .filter((module) => accessibleModuleKeys.has(module.key))
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   return (
     <div className="flex flex-col gap-6">
@@ -26,18 +30,15 @@ export default async function LandingPage() {
         <p className="text-muted-foreground">{t("subtitle")}</p>
       </div>
 
-      {!hasAnyAccess && (
+      {accessibleModules.length === 0 ? (
         <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{t("noAccess")}</p>
-      )}
-
-      {/* A fixed 3x3 grid — there are always exactly 9 modules. */}
-      <div className="grid max-w-2xl grid-cols-3 gap-4">
-        {modules
-          .sort((a, b) => a.sort_order - b.sort_order)
-          .map((module) => (
-            <ModuleTile key={module.key} module={module} hasAccess={accessibleModuleKeys.has(module.key)} />
+      ) : (
+        <div className="grid max-w-2xl grid-cols-3 gap-4">
+          {accessibleModules.map((module) => (
+            <ModuleTile key={module.key} module={module} />
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

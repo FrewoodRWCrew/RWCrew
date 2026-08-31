@@ -1,51 +1,50 @@
 "use client";
 
-// MasterData's "Seasons" screen: a thin wrapper around the shared
+// MasterData's "Type" screen: a thin wrapper around the shared
 // LookupManagement component (see lookup-management.tsx), supplying its
-// own translated labels and api.ts functions. Moved here from
-// components/admin/season-management.tsx now that Season is gated by
-// MasterData's own per-screen permissions ("masterdata.season") instead
-// of a flat "super admin only" check.
+// own translated labels and api.ts functions — one of the four lookup
+// lists ("selection criteria") nested under Products, alongside
+// Magazijn, Categorie, and Limiet.
 
 import { useTranslations } from "next-intl";
-import { createSeason, deleteSeason, updateSeason } from "@/lib/api";
-import type { Season } from "@/lib/types";
+import { createProductType, deleteProductType, updateProductType } from "@/lib/api";
+import type { ProductType } from "@/lib/types";
 import { LookupManagement } from "@/components/module-9/lookup-management";
 
-interface SeasonManagementProps {
-  initialSeasons: Season[];
+interface ProductTypeManagementProps {
+  initialProductTypes: ProductType[];
 }
 
-export function SeasonManagement({ initialSeasons }: SeasonManagementProps) {
-  const t = useTranslations("masterdata.season");
+export function ProductTypeManagement({ initialProductTypes }: ProductTypeManagementProps) {
+  const t = useTranslations("masterdata.productTypes");
   const tCommon = useTranslations("common");
 
   return (
     <LookupManagement
-      initialItems={initialSeasons}
-      create={createSeason}
-      update={updateSeason}
-      remove={deleteSeason}
+      initialItems={initialProductTypes}
+      create={createProductType}
+      update={updateProductType}
+      remove={deleteProductType}
       labels={{
         title: t("title"),
         description: t("description"),
         tableName: t("tableName"),
         tableActions: t("tableActions"),
-        newItem: t("newSeason"),
+        newItem: t("newProductType"),
         nameLabel: t("nameLabel"),
         createTitle: t("createTitle"),
         createDescription: t("createDescription"),
-        itemCreated: t("seasonCreated"),
+        itemCreated: t("productTypeCreated"),
         createFailed: t("createFailed"),
         change: t("change"),
         delete: t("delete"),
         changeTitle: t("changeTitle"),
         changeDescription: t("changeDescription"),
-        itemUpdated: t("seasonUpdated"),
+        itemUpdated: t("productTypeUpdated"),
         updateFailed: t("updateFailed"),
         deleteConfirmTitle: t("deleteConfirmTitle"),
         deleteConfirmDescription: (name) => t("deleteConfirmDescription", { name }),
-        itemDeleted: t("seasonDeleted"),
+        itemDeleted: t("productTypeDeleted"),
         deleteFailed: t("deleteFailed"),
         cancel: tCommon("cancel"),
       }}

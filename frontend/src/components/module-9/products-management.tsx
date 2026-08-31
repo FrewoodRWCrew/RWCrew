@@ -11,7 +11,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createProduct, deleteProduct, updateProduct } from "@/lib/api";
-import type { Product, ProductInput } from "@/lib/types";
+import type { Product, ProductCategory, ProductInput, ProductLimit, ProductType, Warehouse } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,46 +36,73 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
 interface ProductsManagementProps {
   initialProducts: Product[];
+  productTypes: ProductType[];
+  warehouses: Warehouse[];
+  productCategories: ProductCategory[];
+  productLimits: ProductLimit[];
 }
+
+// Base UI's Select needs every item to have a non-empty value, so "no
+// selection" is represented by this sentinel string instead of "".
+const NO_SELECTION_VALUE = "none";
 
 const EMPTY_FORM: ProductInput = {
   name: "",
-  type: "",
-  warehouse: "",
+  type_id: null,
+  warehouse_id: null,
   warehouse_location: "",
-  category: "",
+  category_id: null,
   is_consumable: false,
   is_blocked: false,
   is_logistics_product: false,
-  limit_mode: "",
+  limit_id: null,
   description: "",
 };
 
 function toFormValues(product: Product): ProductInput {
   return {
     name: product.name,
-    type: product.type ?? "",
-    warehouse: product.warehouse ?? "",
+    type_id: product.type_id,
+    warehouse_id: product.warehouse_id,
     warehouse_location: product.warehouse_location ?? "",
-    category: product.category ?? "",
+    category_id: product.category_id,
     is_consumable: product.is_consumable,
     is_blocked: product.is_blocked,
     is_logistics_product: product.is_logistics_product,
-    limit_mode: product.limit_mode ?? "",
+    limit_id: product.limit_id,
     description: product.description ?? "",
   };
 }
 
-export function ProductsManagement({ initialProducts }: ProductsManagementProps) {
+export function ProductsManagement({
+  initialProducts,
+  productTypes,
+  warehouses,
+  productCategories,
+  productLimits,
+}: ProductsManagementProps) {
   const t = useTranslations("masterdata.products");
   const router = useRouter();
 
   const [products, setProducts] = useState(initialProducts);
+
+  function typeLabelFor(typeId: number | null) {
+    return productTypes.find((productType) => productType.id === typeId)?.name ?? "";
+  }
+
+  function warehouseLabelFor(warehouseId: number | null) {
+    return warehouses.find((warehouse) => warehouse.id === warehouseId)?.name ?? "";
+  }
+
+  function categoryLabelFor(categoryId: number | null) {
+    return productCategories.find((productCategory) => productCategory.id === categoryId)?.name ?? "";
+  }
 
   function upsert(updated: Product) {
     setProducts((current) => {
@@ -91,30 +118,37 @@ export function ProductsManagement({ initialProducts }: ProductsManagementProps)
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <ProductFormDialog trigger={<Button>{t("newProduct")}</Button>} onSaved={upsert} />
+        <ProductFormDialog
+          trigger={<Button>{t("newProduct")}</Button>}
+          onSaved={upsert}
+          productTypes={productTypes}
+          warehouses={warehouses}
+          productCategories={productCategories}
+          productLimits={productLimits}
+        />
       </div>
 
       <div className="overflow-x-auto rounded-md border">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>{t("columnName")}</TableHead>
-              <TableHead>{t("columnType")}</TableHead>
-              <TableHead>{t("columnWarehouse")}</TableHead>
-              <TableHead>{t("columnCategory")}</TableHead>
-              <TableHead className="text-right">{t("tableActions")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnName")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnType")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnWarehouse")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnCategory")}</TableHead>
+              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {products.map((product) => (
               <TableRow key={product.id}>
                 <TableCell className="font-medium">{product.name}</TableCell>
-                <TableCell className="text-muted-foreground">{product.type}</TableCell>
-                <TableCell className="text-muted-foreground">{product.warehouse}</TableCell>
-                <TableCell className="text-muted-foreground">{product.category}</TableCell>
+                <TableCell className="text-muted-foreground">{typeLabelFor(product.type_id)}</TableCell>
+                <TableCell className="text-muted-foreground">{warehouseLabelFor(product.warehouse_id)}</TableCell>
+                <TableCell className="text-muted-foreground">{categoryLabelFor(product.category_id)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <ProductFormDialog
@@ -125,6 +159,10 @@ export function ProductsManagement({ initialProducts }: ProductsManagementProps)
                         </Button>
                       }
                       onSaved={upsert}
+                      productTypes={productTypes}
+                      warehouses={warehouses}
+                      productCategories={productCategories}
+                      productLimits={productLimits}
                     />
                     <DeleteProductAlertDialog
                       product={product}
@@ -148,9 +186,21 @@ interface ProductFormDialogProps {
   product?: Product;
   trigger: React.ReactElement;
   onSaved: (product: Product) => void;
+  productTypes: ProductType[];
+  warehouses: Warehouse[];
+  productCategories: ProductCategory[];
+  productLimits: ProductLimit[];
 }
 
-function ProductFormDialog({ product, trigger, onSaved }: ProductFormDialogProps) {
+function ProductFormDialog({
+  product,
+  trigger,
+  onSaved,
+  productTypes,
+  warehouses,
+  productCategories,
+  productLimits,
+}: ProductFormDialogProps) {
   const t = useTranslations("masterdata.products");
   const isEditing = product !== undefined;
   const [isOpen, setIsOpen] = useState(false);
@@ -201,15 +251,49 @@ function ProductFormDialog({ product, trigger, onSaved }: ProductFormDialogProps
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-type">{t("typeLabel")}</Label>
-            <Input id="product-type" value={form.type ?? ""} onChange={(event) => updateField("type", event.target.value)} />
+            <Select
+              value={form.type_id ? String(form.type_id) : NO_SELECTION_VALUE}
+              onValueChange={(value) => updateField("type_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
+            >
+              <SelectTrigger id="product-type">
+                <SelectValue>
+                  {(value: string | null) =>
+                    productTypes.find((productType) => String(productType.id) === value)?.name ?? t("noSelection")
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
+                {productTypes.map((productType) => (
+                  <SelectItem key={productType.id} value={String(productType.id)}>
+                    {productType.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-warehouse">{t("warehouseLabel")}</Label>
-            <Input
-              id="product-warehouse"
-              value={form.warehouse ?? ""}
-              onChange={(event) => updateField("warehouse", event.target.value)}
-            />
+            <Select
+              value={form.warehouse_id ? String(form.warehouse_id) : NO_SELECTION_VALUE}
+              onValueChange={(value) => updateField("warehouse_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
+            >
+              <SelectTrigger id="product-warehouse">
+                <SelectValue>
+                  {(value: string | null) =>
+                    warehouses.find((warehouse) => String(warehouse.id) === value)?.name ?? t("noSelection")
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
+                {warehouses.map((warehouse) => (
+                  <SelectItem key={warehouse.id} value={String(warehouse.id)}>
+                    {warehouse.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-warehouse-location">{t("warehouseLocationLabel")}</Label>
@@ -221,19 +305,50 @@ function ProductFormDialog({ product, trigger, onSaved }: ProductFormDialogProps
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-category">{t("categoryLabel")}</Label>
-            <Input
-              id="product-category"
-              value={form.category ?? ""}
-              onChange={(event) => updateField("category", event.target.value)}
-            />
+            <Select
+              value={form.category_id ? String(form.category_id) : NO_SELECTION_VALUE}
+              onValueChange={(value) => updateField("category_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
+            >
+              <SelectTrigger id="product-category">
+                <SelectValue>
+                  {(value: string | null) =>
+                    productCategories.find((productCategory) => String(productCategory.id) === value)?.name ??
+                    t("noSelection")
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
+                {productCategories.map((productCategory) => (
+                  <SelectItem key={productCategory.id} value={String(productCategory.id)}>
+                    {productCategory.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-limit">{t("limitLabel")}</Label>
-            <Input
-              id="product-limit"
-              value={form.limit_mode ?? ""}
-              onChange={(event) => updateField("limit_mode", event.target.value)}
-            />
+            <Select
+              value={form.limit_id ? String(form.limit_id) : NO_SELECTION_VALUE}
+              onValueChange={(value) => updateField("limit_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
+            >
+              <SelectTrigger id="product-limit">
+                <SelectValue>
+                  {(value: string | null) =>
+                    productLimits.find((productLimit) => String(productLimit.id) === value)?.name ?? t("noSelection")
+                  }
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
+                {productLimits.map((productLimit) => (
+                  <SelectItem key={productLimit.id} value={String(productLimit.id)}>
+                    {productLimit.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="col-span-2 flex flex-col gap-3 pt-2">
