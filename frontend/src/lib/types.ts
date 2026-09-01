@@ -174,6 +174,93 @@ export interface TagscanFileContent {
   truncated: boolean;
 }
 
+/** The fixed, closed set of states an RFID tag can be in. */
+export type RfidTagStatus = "active" | "inactive" | "lost" | "damaged" | "retired";
+
+/** One RFID tag, as managed on TagScan's TagManagement screen. */
+export interface RfidTag {
+  id: number;
+  epc_uid: string;
+  status: RfidTagStatus;
+  assigned_product_id: number | null;
+  assigned_serial_number: string | null;
+  date_registered: string;
+  date_assigned: string | null;
+  last_read_at: string | null;
+  last_reader_id: string | null;
+  last_location: string | null;
+  manufacturer: string | null;
+  batch_number: string | null;
+  notes_1: string | null;
+  notes_2: string | null;
+  notes_3: string | null;
+  notes_4: string | null;
+  notes_5: string | null;
+}
+
+/** The fields sent to create or fully update an RFID tag. */
+export interface RfidTagInput {
+  epc_uid: string;
+  status?: RfidTagStatus;
+  assigned_product_id?: number | null;
+  assigned_serial_number?: string | null;
+  date_assigned?: string | null;
+  last_read_at?: string | null;
+  last_reader_id?: string | null;
+  last_location?: string | null;
+  manufacturer?: string | null;
+  batch_number?: string | null;
+  notes_1?: string | null;
+  notes_2?: string | null;
+  notes_3?: string | null;
+  notes_4?: string | null;
+  notes_5?: string | null;
+}
+
+/** What happened to one row of an uploaded CSV import. */
+export interface RfidTagImportRowResult {
+  row_number: number;
+  epc_uid: string | null;
+  outcome: "created" | "updated" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a CSV import — one result per row, in order. */
+export interface RfidTagImportResponse {
+  results: RfidTagImportRowResult[];
+}
+
+/** How many tags are in one status — one entry per fixed status value. */
+export interface TagStatusBreakdownItem {
+  status: RfidTagStatus;
+  count: number;
+}
+
+/** How many tags were registered in one ISO week (Monday start). */
+export interface TagWeeklyRegistrationItem {
+  week_start: string;
+  count: number;
+}
+
+/** One product and how many tags are currently assigned to it. */
+export interface TagTopProductItem {
+  product_name: string;
+  tag_count: number;
+}
+
+/** Aggregate KPI stats for TagScan's landing dashboard. */
+export interface TagDashboardStats {
+  total_tags: number;
+  active_tags: number;
+  assigned_tags: number;
+  unassigned_tags: number;
+  lost_or_damaged_tags: number;
+  registered_this_month: number;
+  status_breakdown: TagStatusBreakdownItem[];
+  registrations_by_week: TagWeeklyRegistrationItem[];
+  top_products: TagTopProductItem[];
+}
+
 // --- MasterData (module-9): custom roles with per-screen permissions ------
 
 /** One screen registered inside the MasterData module. */

@@ -3,7 +3,7 @@
 # custom-roles-with-per-screen-permissions system, so its endpoints are
 # written out in full here.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -11,6 +11,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.module import Module
+from app.db.models.product import Product
+from app.db.models.rfid_tag import RfidTag
 from app.db.models.tagscan_role import TagscanRole
 from app.db.models.tagscan_role_permission import TagscanRolePermission
 from app.db.models.tagscan_screen import TagscanScreen
@@ -31,12 +33,18 @@ from app.modules.module_1.file_browser import (
     read_file_preview,
     resolve_safe_path,
 )
+from app.modules.module_1.tag_dashboard import build_dashboard_stats
+from app.modules.module_1.tag_import import build_template_xlsx, import_tags_from_xlsx
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
     FileEntryResponse,
     FolderNode,
     MyPermissionsResponse,
+    RfidTagCreateRequest,
+    RfidTagImportResponse,
+    RfidTagResponse,
+    RfidTagUpdateRequest,
     RoleCreateRequest,
     RoleResponse,
     RoleUpdateRequest,
@@ -44,10 +52,24 @@ from app.schemas.tagscan import (
     ScreenResponse,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    TagDashboardResponse,
     TagscanUserSummaryResponse,
 )
 
 router = APIRouter(prefix="/api/modules/module-1", tags=["Tagscan"])
+
+
+@router.get("/dashboard", response_model=TagDashboardResponse)
+def get_dashboard(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> TagDashboardResponse:
+    """Aggregate KPI stats for TagScan's landing dashboard — gated by
+    plain module access only, matching the landing page's own
+    unconditional visibility (no specific screen permission needed, same
+    as the placeholder it replaces).
+    """
+    return build_dashboard_stats(db)
 
 
 def _build_role_response(db: Session, role: TagscanRole) -> RoleResponse:
@@ -117,6 +139,119 @@ def get_file_content(
 
     content, truncated = read_file_preview(file)
     return FileContentResponse(path=path, content=content, truncated=truncated)
+
+
+def _validate_tag_lookup_ids(db: Session, payload: RfidTagCreateRequest | RfidTagUpdateRequest) -> None:
+    """Make sure assigned_product_id, if given, actually exists — the
+    same pattern used for Product's own type_id/warehouse_id/category_id/
+    limit_id (see app/modules/module_9/router.py) — otherwise a bad id
+    would only surface as an opaque foreign-key IntegrityError instead of
+    a clear 404.
+    """
+    if payload.assigned_product_id is not None and db.get(Product, payload.assigned_product_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+
+@router.get("/tags", response_model=list[RfidTagResponse])
+def list_tags(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "view")),
+) -> list[RfidTag]:
+    """List every registered RFID tag, for the TagManagement screen's table."""
+    return list(db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all())
+
+
+@router.post("/tags", response_model=RfidTagResponse, status_code=status.HTTP_201_CREATED)
+def create_tag(
+    payload: RfidTagCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "create")),
+) -> RfidTag:
+    """Register a brand-new RFID tag."""
+    _validate_tag_lookup_ids(db, payload)
+
+    new_tag = RfidTag(**payload.model_dump())
+    db.add(new_tag)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A tag with this EPC/UID already exists"
+        ) from error
+
+    db.refresh(new_tag)
+    return new_tag
+
+
+@router.put("/tags/{tag_id}", response_model=RfidTagResponse)
+def update_tag(
+    tag_id: int,
+    payload: RfidTagUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "edit")),
+) -> RfidTag:
+    """Update every field of an existing tag."""
+    tag = db.get(RfidTag, tag_id)
+    if tag is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+
+    _validate_tag_lookup_ids(db, payload)
+
+    for field, value in payload.model_dump().items():
+        setattr(tag, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A tag with this EPC/UID already exists"
+        ) from error
+
+    db.refresh(tag)
+    return tag
+
+
+@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tag(
+    tag_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
+) -> None:
+    """Permanently delete a tag."""
+    tag = db.get(RfidTag, tag_id)
+    if tag is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+
+    db.delete(tag)
+    db.commit()
+
+
+@router.get("/tags/template")
+def download_tag_import_template(
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-importing tags."""
+    return Response(
+        content=build_template_xlsx(),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="tag-import-template.xlsx"'},
+    )
+
+
+@router.post("/tags/import", response_model=RfidTagImportResponse)
+def import_tags(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "create")),
+) -> RfidTagImportResponse:
+    """Bulk-import tags from an uploaded XLSX workbook — best-effort:
+    every row is applied independently, so invalid rows are skipped (and
+    reported) rather than failing the whole upload.
+    """
+    results = import_tags_from_xlsx(db, file.file.read())
+    return RfidTagImportResponse(results=results)
 
 
 @router.get("/screens", response_model=list[ScreenResponse])

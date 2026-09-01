@@ -19,7 +19,11 @@ import type {
   ProductInput,
   ProductLimit,
   ProductType,
+  RfidTag,
+  RfidTagImportResponse,
+  RfidTagInput,
   Season,
+  TagDashboardStats,
   TagscanFileContent,
   TagscanFileEntry,
   TagscanFolderNode,
@@ -374,6 +378,59 @@ export function listTagscanFiles(path: string): Promise<TagscanFileEntry[]> {
 
 export function getTagscanFileContent(path: string): Promise<TagscanFileContent> {
   return apiFetch<TagscanFileContent>(`/api/modules/module-1/files/content?path=${encodeURIComponent(path)}`);
+}
+
+// --- RFID tags (module-1's "tagscan.tag-management" screen) -------------
+
+export function listRfidTags(): Promise<RfidTag[]> {
+  return apiFetch<RfidTag[]>("/api/modules/module-1/tags");
+}
+
+export function createRfidTag(payload: RfidTagInput): Promise<RfidTag> {
+  return apiFetch<RfidTag>("/api/modules/module-1/tags", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateRfidTag(tagId: number, payload: RfidTagInput): Promise<RfidTag> {
+  return apiFetch<RfidTag>(`/api/modules/module-1/tags/${tagId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteRfidTag(tagId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-1/tags/${tagId}`, { method: "DELETE" });
+}
+
+/**
+ * Uploads a CSV file to bulk-import tags. Uses a plain fetch instead of
+ * apiFetch: the body is FormData, not JSON, and the browser must set its
+ * own multipart Content-Type (with boundary) — setting it manually would
+ * break the upload.
+ */
+export async function importRfidTags(file: File): Promise<RfidTagImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as RfidTagImportResponse;
+}
+
+export function getTagDashboardStats(): Promise<TagDashboardStats> {
+  return apiFetch<TagDashboardStats>("/api/modules/module-1/dashboard");
 }
 
 // --- MasterData (module-9) -------------------------------------------------

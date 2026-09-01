@@ -9,7 +9,7 @@
 // independently gated — passed in from the server, which already knows
 // how to resolve that — see app/modules/module_1/deps.py).
 
-import { ShieldCheck } from "lucide-react";
+import { Database, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -23,7 +23,9 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const t = useTranslations("tagscan");
   // Each link's label reuses that screen's own title, rather than a
   // separate key, so the sidebar and the page heading can never drift apart.
+  const tLanding = useTranslations("tagscan.landing");
   const tDashboard = useTranslations("tagscan.dashboard");
+  const tTagManagement = useTranslations("tagscan.tagManagement");
   const tRoles = useTranslations("tagscan.roles");
   const tUsers = useTranslations("tagscan.users");
   const pathname = usePathname();
@@ -31,6 +33,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   // page (see module-theme.ts), so the two can never drift apart.
   const { tileClassName } = getModuleTheme("module-1");
 
+  const canViewTagManagement = viewableScreenKeys.includes("tagscan.tag-management");
   const canViewRoles = viewableScreenKeys.includes("tagscan.roles");
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
 
@@ -58,8 +61,31 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         )}
       >
+        {tLanding("title")}
+      </Link>
+
+      <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+        <Zap className="size-4" />
+        {t("actionsGroup")}
+      </div>
+      <Link href="/modules/module-1/files" className={subLinkClassName("/modules/module-1/files")}>
         {tDashboard("title")}
       </Link>
+
+      {canViewTagManagement && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <Database className="size-4" />
+            {t("masterDataGroup")}
+          </div>
+          <Link
+            href="/modules/module-1/tag-management"
+            className={subLinkClassName("/modules/module-1/tag-management")}
+          >
+            {tTagManagement("title")}
+          </Link>
+        </>
+      )}
 
       {(canViewRoles || canViewUsers) && (
         <>

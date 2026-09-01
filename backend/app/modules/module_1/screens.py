@@ -27,13 +27,16 @@ class ScreenDefinition:
     sort_order: int
 
 
-# Every screen Tagscan currently has. "Dashboard" is where the eventual
-# CSV-import functionality will live; "Roles" and "Users" are the two
-# access-rights screens, gated independently of one another.
+# Every screen Tagscan currently has. "Dashboard" (label kept in sync
+# with its current sidebar name, "CSV Source Files") is the read-only CSV
+# file browser; "TagManagement" is the RFID tag registry; "Roles" and
+# "Users" are the two access-rights screens. All are gated independently
+# of one another.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
-    ScreenDefinition(key="tagscan.dashboard", label="Dashboard", sort_order=1),
-    ScreenDefinition(key="tagscan.roles", label="Roles", sort_order=2),
-    ScreenDefinition(key="tagscan.users", label="Users", sort_order=3),
+    ScreenDefinition(key="tagscan.dashboard", label="CSV Source Files", sort_order=1),
+    ScreenDefinition(key="tagscan.tag-management", label="TagManagement", sort_order=2),
+    ScreenDefinition(key="tagscan.roles", label="Roles", sort_order=3),
+    ScreenDefinition(key="tagscan.users", label="Users", sort_order=4),
 ]
 
 

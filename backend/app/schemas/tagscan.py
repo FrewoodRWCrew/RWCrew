@@ -1,9 +1,13 @@
-# Schemas describing Tagscan's screens, custom roles, permissions, and the
-# read-only file browser over its incoming-CSV folder.
+# Schemas describing Tagscan's screens, custom roles, permissions, the
+# read-only file browser over its incoming-CSV folder, and the
+# TagManagement RFID tag registry.
 
-from datetime import datetime
+from datetime import date, datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
+
+RfidTagStatus = Literal["active", "inactive", "lost", "damaged", "retired"]
 
 
 class ScreenResponse(BaseModel):
@@ -137,3 +141,109 @@ class FileContentResponse(BaseModel):
     content: str
     # True if the file was larger than the preview cap and only partially read.
     truncated: bool
+
+
+class RfidTagResponse(BaseModel):
+    """One RFID tag, as shown on the TagManagement screen."""
+
+    id: int
+    epc_uid: str
+    status: RfidTagStatus
+    assigned_product_id: int | None
+    assigned_serial_number: str | None
+    date_registered: datetime
+    date_assigned: date | None
+    last_read_at: datetime | None
+    last_reader_id: str | None
+    last_location: str | None
+    manufacturer: str | None
+    batch_number: str | None
+    notes_1: str | None
+    notes_2: str | None
+    notes_3: str | None
+    notes_4: str | None
+    notes_5: str | None
+
+
+class RfidTagCreateRequest(BaseModel):
+    """What's sent to register a brand-new RFID tag. Only the EPC/UID is
+    required — every other field is optional, since a tag can be
+    registered before it's assigned to a product or ever read by a
+    reader.
+    """
+
+    epc_uid: str = Field(min_length=1, max_length=255)
+    status: RfidTagStatus = "active"
+    assigned_product_id: int | None = None
+    assigned_serial_number: str | None = Field(default=None, max_length=255)
+    date_assigned: date | None = None
+    last_read_at: datetime | None = None
+    last_reader_id: str | None = Field(default=None, max_length=255)
+    last_location: str | None = Field(default=None, max_length=255)
+    manufacturer: str | None = Field(default=None, max_length=255)
+    batch_number: str | None = Field(default=None, max_length=255)
+    notes_1: str | None = None
+    notes_2: str | None = None
+    notes_3: str | None = None
+    notes_4: str | None = None
+    notes_5: str | None = None
+
+
+class RfidTagUpdateRequest(RfidTagCreateRequest):
+    """What's sent to update an existing tag — same shape as registering one."""
+
+
+class RfidTagImportRowResult(BaseModel):
+    """What happened to one row of an uploaded CSV import."""
+
+    row_number: int
+    epc_uid: str | None
+    outcome: Literal["created", "updated", "error"]
+    detail: str | None
+
+
+class RfidTagImportResponse(BaseModel):
+    """The full outcome of a CSV import — one result per row, in order."""
+
+    results: list[RfidTagImportRowResult]
+
+
+class TagStatusBreakdownItem(BaseModel):
+    """How many tags are in one status — one entry per fixed status value,
+    for the dashboard's "Tags by Status" donut.
+    """
+
+    status: RfidTagStatus
+    count: int
+
+
+class TagWeeklyRegistrationItem(BaseModel):
+    """How many tags were registered in one ISO week (Monday start), for
+    the dashboard's "Tags Registered Over Time" chart.
+    """
+
+    week_start: date
+    count: int
+
+
+class TagTopProductItem(BaseModel):
+    """One product and how many tags are currently assigned to it, for
+    the dashboard's "Top Products by Tag Count" chart.
+    """
+
+    product_name: str
+    tag_count: int
+
+
+class TagDashboardResponse(BaseModel):
+    """Aggregate KPI stats for TagScan's landing dashboard."""
+
+    total_tags: int
+    active_tags: int
+    assigned_tags: int
+    unassigned_tags: int
+    lost_or_damaged_tags: int
+    registered_this_month: int
+    status_breakdown: list[TagStatusBreakdownItem]
+    registrations_by_week: list[TagWeeklyRegistrationItem]
+    top_products: list[TagTopProductItem]

@@ -16,6 +16,7 @@ from app.db.models.product_category import ProductCategory  # noqa: F401
 from app.db.models.product_limit import ProductLimit  # noqa: F401
 from app.db.models.product_type import ProductType  # noqa: F401
 from app.db.models.refresh_token import RefreshToken  # noqa: F401
+from app.db.models.rfid_tag import RfidTag  # noqa: F401
 from app.db.models.season import Season  # noqa: F401
 from app.db.models.tagscan_role import TagscanRole  # noqa: F401
 from app.db.models.tagscan_role_permission import TagscanRolePermission  # noqa: F401

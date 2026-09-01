@@ -113,7 +113,7 @@ def test_sync_screens_updates_the_label_of_an_existing_screen(db_session: Sessio
     sync_screens(db_session)
 
     db_session.refresh(screen)
-    assert screen.label == "Dashboard"
+    assert screen.label == "CSV Source Files"
 
 
 # --- basic access + permission enforcement --------------------------------
