@@ -3,6 +3,8 @@
 # custom-roles-with-per-screen-permissions system, so its endpoints are
 # written out in full here.
 
+from urllib.parse import quote
+
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
@@ -13,6 +15,8 @@ from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.tag_header_data import TagHeaderData
+from app.db.models.tag_line_data import TagLineData
 from app.db.models.tagscan_role import TagscanRole
 from app.db.models.tagscan_role_permission import TagscanRolePermission
 from app.db.models.tagscan_screen import TagscanScreen
@@ -34,7 +38,10 @@ from app.modules.module_1.file_browser import (
     resolve_safe_path,
 )
 from app.modules.module_1.tag_dashboard import build_dashboard_stats
+from app.modules.module_1.tag_header_data import delete_header_data, list_header_data, scan_unreaded_tags
+from app.modules.module_1.tag_header_pdf import build_header_summary_pdf
 from app.modules.module_1.tag_import import build_template_xlsx, import_tags_from_xlsx
+from app.modules.module_1.tag_line_data import list_line_data, sync_line_data
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
@@ -53,10 +60,25 @@ from app.schemas.tagscan import (
     SetRolePermissionsRequest,
     SetUserRoleRequest,
     TagDashboardResponse,
+    TagHeaderDataResponse,
+    TagHeaderDataScanResponse,
+    TagLineDataResponse,
+    TagLineDataSyncResponse,
     TagscanUserSummaryResponse,
 )
 
 router = APIRouter(prefix="/api/modules/module-1", tags=["Tagscan"])
+
+
+def _content_disposition(filename: str) -> str:
+    """A safe "Content-Disposition: attachment" header value for a
+    filesystem-derived filename that's never been validated against HTTP
+    header syntax — escapes `"`/`\\` so the name can't break out of the
+    quoted-string form, and adds the RFC 5987 filename* fallback so a
+    non-ASCII name still round-trips correctly in browsers that support it.
+    """
+    ascii_fallback = filename.encode("ascii", "replace").decode("ascii").replace("\\", "_").replace('"', "_")
+    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"
 
 
 @router.get("/dashboard", response_model=TagDashboardResponse)
@@ -139,6 +161,140 @@ def get_file_content(
 
     content, truncated = read_file_preview(file)
     return FileContentResponse(path=path, content=content, truncated=truncated)
+
+
+@router.get("/header-data", response_model=list[TagHeaderDataResponse])
+def list_tag_header_data(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-headerdata", "view")),
+) -> list[TagHeaderData]:
+    """List every CSV file logged so far, for the Tag Headerdata screen's table."""
+    return list_header_data(db)
+
+
+@router.get("/header-data/{header_id}/pdf")
+def download_tag_header_pdf(
+    header_id: int,
+    locale: str = "nl",
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-headerdata", "view")),
+) -> Response:
+    """A "beautiful layout" PDF summary of one scanned file's lines,
+    grouped by matched product with a subtotal per group — see
+    tag_header_pdf.build_header_summary_pdf.
+    """
+    header = db.get(TagHeaderData, header_id)
+    if header is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File record not found")
+
+    pdf_bytes = build_header_summary_pdf(db, header, locale=locale)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": _content_disposition(f"{header.filename}.pdf")},
+    )
+
+
+@router.post("/header-data/scan", response_model=TagHeaderDataScanResponse)
+def scan_tag_header_data(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-headerdata", "create")),
+) -> TagHeaderDataScanResponse:
+    """Scan Unreaded Tags for CSV files not yet logged: count each file's
+    lines, log it, and move it into Read Tags so it's never picked up
+    again. One bad file is reported, not fatal to the rest of the scan —
+    see app/modules/module_1/tag_header_data.py.
+    """
+    results, entries = scan_unreaded_tags(db)
+    return TagHeaderDataScanResponse(
+        results=results,
+        entries=[TagHeaderDataResponse.model_validate(entry, from_attributes=True) for entry in entries],
+    )
+
+
+@router.delete("/header-data/{header_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tag_header_data(
+    header_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-headerdata", "delete")),
+) -> None:
+    """Permanently delete one Tag Headerdata row and every Tag Linedata
+    row linked to it, so its filename can be logged again later. Does
+    NOT touch the physical CSV file — move it back into Unreaded Tags
+    yourself if you want it re-scanned.
+    """
+    if not delete_header_data(db, header_id):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File record not found")
+
+
+def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLineDataResponse:
+    return TagLineDataResponse(
+        id=line.id,
+        header_data_id=line.header_data_id,
+        header_filename=header_filename,
+        line_number=line.line_number,
+        scanner=line.scanner,
+        epc=line.epc,
+        rssi=line.rssi,
+        antenna=line.antenna,
+        count=line.count,
+        last_seen=line.last_seen,
+        rfid_tag_id=line.rfid_tag_id,
+        assigned_product_name=line.assigned_product_name,
+        assigned_serial_number=line.assigned_serial_number,
+        manufacturer=line.manufacturer,
+        batch_number=line.batch_number,
+        status=line.status,
+        created_at=line.created_at,
+    )
+
+
+@router.get("/line-data", response_model=list[TagLineDataResponse])
+def list_tag_line_data(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "view")),
+) -> list[TagLineDataResponse]:
+    """List every CSV data line logged so far, for the Tag Linedata screen's table."""
+    return [_build_line_data_response(line, filename) for line, filename in list_line_data(db)]
+
+
+@router.post("/line-data/sync", response_model=TagLineDataSyncResponse)
+def sync_tag_line_data(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> TagLineDataSyncResponse:
+    """Re-check every non-cancelled line's EPC against the CURRENT
+    TagManagement registry and refresh its status/product/serial/
+    manufacturer/batch snapshot — see tag_line_data.sync_line_data for
+    why cancelled lines are skipped.
+    """
+    updated_count = sync_line_data(db)
+    return TagLineDataSyncResponse(
+        updated_count=updated_count,
+        entries=[_build_line_data_response(line, filename) for line, filename in list_line_data(db)],
+    )
+
+
+@router.post("/line-data/{line_id}/cancel", response_model=TagLineDataResponse)
+def cancel_tag_line_data(
+    line_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> TagLineDataResponse:
+    """Manually mark one line as cancelled — the only way a line's status
+    ever becomes "cancelled" (scanning itself only ever produces
+    "converted" or "no_match").
+    """
+    line = db.get(TagLineData, line_id)
+    if line is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line not found")
+
+    line.status = "cancelled"
+    db.commit()
+    db.refresh(line)
+
+    header = db.get(TagHeaderData, line.header_data_id)
+    return _build_line_data_response(line, header.filename)
 
 
 def _validate_tag_lookup_ids(db: Session, payload: RfidTagCreateRequest | RfidTagUpdateRequest) -> None:

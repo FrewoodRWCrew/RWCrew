@@ -24,6 +24,10 @@ import type {
   RfidTagInput,
   Season,
   TagDashboardStats,
+  TagHeaderDataEntry,
+  TagHeaderDataScanResult,
+  TagLineDataEntry,
+  TagLineDataSyncResult,
   TagscanFileContent,
   TagscanFileEntry,
   TagscanFolderNode,
@@ -378,6 +382,34 @@ export function listTagscanFiles(path: string): Promise<TagscanFileEntry[]> {
 
 export function getTagscanFileContent(path: string): Promise<TagscanFileContent> {
   return apiFetch<TagscanFileContent>(`/api/modules/module-1/files/content?path=${encodeURIComponent(path)}`);
+}
+
+// --- Tag Headerdata (module-1's "tagscan.tag-headerdata" screen) --------
+
+export function listTagHeaderData(): Promise<TagHeaderDataEntry[]> {
+  return apiFetch<TagHeaderDataEntry[]>("/api/modules/module-1/header-data");
+}
+
+export function scanTagHeaderData(): Promise<TagHeaderDataScanResult> {
+  return apiFetch<TagHeaderDataScanResult>("/api/modules/module-1/header-data/scan", { method: "POST" });
+}
+
+export function deleteTagHeaderData(headerId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-1/header-data/${headerId}`, { method: "DELETE" });
+}
+
+// --- Tag Linedata (module-1's "tagscan.tag-linedata" screen) ------------
+
+export function listTagLineData(): Promise<TagLineDataEntry[]> {
+  return apiFetch<TagLineDataEntry[]>("/api/modules/module-1/line-data");
+}
+
+export function cancelTagLineData(lineId: number): Promise<TagLineDataEntry> {
+  return apiFetch<TagLineDataEntry>(`/api/modules/module-1/line-data/${lineId}/cancel`, { method: "POST" });
+}
+
+export function syncTagLineData(): Promise<TagLineDataSyncResult> {
+  return apiFetch<TagLineDataSyncResult>("/api/modules/module-1/line-data/sync", { method: "POST" });
 }
 
 // --- RFID tags (module-1's "tagscan.tag-management" screen) -------------

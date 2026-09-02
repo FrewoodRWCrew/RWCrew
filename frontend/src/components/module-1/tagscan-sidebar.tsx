@@ -25,6 +25,8 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   // separate key, so the sidebar and the page heading can never drift apart.
   const tLanding = useTranslations("tagscan.landing");
   const tDashboard = useTranslations("tagscan.dashboard");
+  const tTagHeaderdata = useTranslations("tagscan.tagHeaderdata");
+  const tTagLinedata = useTranslations("tagscan.tagLinedata");
   const tTagManagement = useTranslations("tagscan.tagManagement");
   const tRoles = useTranslations("tagscan.roles");
   const tUsers = useTranslations("tagscan.users");
@@ -33,6 +35,8 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   // page (see module-theme.ts), so the two can never drift apart.
   const { tileClassName } = getModuleTheme("module-1");
 
+  const canViewTagHeaderdata = viewableScreenKeys.includes("tagscan.tag-headerdata");
+  const canViewTagLinedata = viewableScreenKeys.includes("tagscan.tag-linedata");
   const canViewTagManagement = viewableScreenKeys.includes("tagscan.tag-management");
   const canViewRoles = viewableScreenKeys.includes("tagscan.roles");
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
@@ -71,6 +75,16 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
       <Link href="/modules/module-1/files" className={subLinkClassName("/modules/module-1/files")}>
         {tDashboard("title")}
       </Link>
+      {canViewTagHeaderdata && (
+        <Link href="/modules/module-1/tag-headerdata" className={subLinkClassName("/modules/module-1/tag-headerdata")}>
+          {tTagHeaderdata("title")}
+        </Link>
+      )}
+      {canViewTagLinedata && (
+        <Link href="/modules/module-1/tag-linedata" className={subLinkClassName("/modules/module-1/tag-linedata")}>
+          {tTagLinedata("title")}
+        </Link>
+      )}
 
       {canViewTagManagement && (
         <>

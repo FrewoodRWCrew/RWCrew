@@ -29,14 +29,18 @@ class ScreenDefinition:
 
 # Every screen Tagscan currently has. "Dashboard" (label kept in sync
 # with its current sidebar name, "CSV Source Files") is the read-only CSV
-# file browser; "TagManagement" is the RFID tag registry; "Roles" and
-# "Users" are the two access-rights screens. All are gated independently
-# of one another.
+# file browser; "Tag Headerdata" scans that same intake folder and logs
+# one row per CSV file it finds; "Tag Linedata" is the per-line detail
+# that same scan produces, enriched from TagManagement; "TagManagement"
+# is the RFID tag registry; "Roles" and "Users" are the two access-rights
+# screens. All are gated independently of one another.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="tagscan.dashboard", label="CSV Source Files", sort_order=1),
-    ScreenDefinition(key="tagscan.tag-management", label="TagManagement", sort_order=2),
-    ScreenDefinition(key="tagscan.roles", label="Roles", sort_order=3),
-    ScreenDefinition(key="tagscan.users", label="Users", sort_order=4),
+    ScreenDefinition(key="tagscan.tag-headerdata", label="Tag Headerdata", sort_order=2),
+    ScreenDefinition(key="tagscan.tag-linedata", label="Tag Linedata", sort_order=3),
+    ScreenDefinition(key="tagscan.tag-management", label="TagManagement", sort_order=4),
+    ScreenDefinition(key="tagscan.roles", label="Roles", sort_order=5),
+    ScreenDefinition(key="tagscan.users", label="Users", sort_order=6),
 ]
 
 

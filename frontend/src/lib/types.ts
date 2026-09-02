@@ -261,6 +261,59 @@ export interface TagDashboardStats {
   top_products: TagTopProductItem[];
 }
 
+/** One CSV file logged by the "Tag Headerdata" screen's scan. */
+export interface TagHeaderDataEntry {
+  id: number;
+  filename: string;
+  created_at: string;
+  line_count: number;
+}
+
+/** What happened to one file found in "Unreaded Tags" during a scan. */
+export interface TagHeaderDataScanFileResult {
+  filename: string;
+  outcome: "logged" | "skipped_duplicate" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of one "Scan" action. */
+export interface TagHeaderDataScanResult {
+  results: TagHeaderDataScanFileResult[];
+  entries: TagHeaderDataEntry[];
+}
+
+/** The fixed set of states a scanned CSV line can be in. */
+export type TagLineStatus = "converted" | "no_match" | "cancelled";
+
+/** One CSV data line processed by a Tag Headerdata scan, enriched with a
+ * snapshot of its matched TagManagement tag (if any).
+ */
+export interface TagLineDataEntry {
+  id: number;
+  header_data_id: number;
+  header_filename: string;
+  line_number: number;
+  scanner: string | null;
+  epc: string;
+  rssi: number | null;
+  antenna: number | null;
+  count: number | null;
+  last_seen: string | null;
+  rfid_tag_id: number | null;
+  assigned_product_name: string | null;
+  assigned_serial_number: string | null;
+  manufacturer: string | null;
+  batch_number: string | null;
+  status: TagLineStatus;
+  created_at: string;
+}
+
+/** The outcome of one "Synchro" action. */
+export interface TagLineDataSyncResult {
+  updated_count: number;
+  entries: TagLineDataEntry[];
+}
+
 // --- MasterData (module-9): custom roles with per-screen permissions ------
 
 /** One screen registered inside the MasterData module. */

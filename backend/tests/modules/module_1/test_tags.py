@@ -205,6 +205,22 @@ def test_create_tag_with_full_field_set(client: TestClient, db_session: Session)
     assert body["notes_5"] == "note 5"
 
 
+def test_creating_a_tag_strips_whitespace_from_the_epc_uid(client: TestClient, db_session: Session) -> None:
+    # A stray leading/trailing space or tab (easy to pick up pasting from
+    # a spreadsheet) would otherwise make an identical EPC silently never
+    # match a scanned CSV line's own, already-stripped EPC.
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-1/tags", json={"epc_uid": "  E200001122334455\t"})
+
+    assert response.status_code == 201
+    assert response.json()["epc_uid"] == "E200001122334455"
+
+
 def test_creating_a_tag_with_an_unknown_assigned_product_id_returns_404(
     client: TestClient, db_session: Session
 ) -> None:

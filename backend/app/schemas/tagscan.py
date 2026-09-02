@@ -5,7 +5,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 RfidTagStatus = Literal["active", "inactive", "lost", "damaged", "retired"]
 
@@ -188,6 +188,16 @@ class RfidTagCreateRequest(BaseModel):
     notes_4: str | None = None
     notes_5: str | None = None
 
+    @field_validator("epc_uid")
+    @classmethod
+    def _strip_epc_uid(cls, value: str) -> str:
+        """A stray leading/trailing whitespace character (easy to pick up
+        pasting from a spreadsheet) makes an otherwise-identical EPC
+        silently fail to match against a scanned CSV line's own,
+        already-stripped EPC — trim it here rather than ever storing it.
+        """
+        return value.strip()
+
 
 class RfidTagUpdateRequest(RfidTagCreateRequest):
     """What's sent to update an existing tag — same shape as registering one."""
@@ -247,3 +257,69 @@ class TagDashboardResponse(BaseModel):
     status_breakdown: list[TagStatusBreakdownItem]
     registrations_by_week: list[TagWeeklyRegistrationItem]
     top_products: list[TagTopProductItem]
+
+
+class TagHeaderDataResponse(BaseModel):
+    """One CSV file logged by the "Tag Headerdata" screen's scan."""
+
+    id: int
+    filename: str
+    created_at: datetime
+    line_count: int
+
+
+class TagHeaderDataScanFileResult(BaseModel):
+    """What happened to one file found in "Unreaded Tags" during a scan."""
+
+    filename: str
+    outcome: Literal["logged", "skipped_duplicate", "error"]
+    detail: str | None = None
+
+
+class TagHeaderDataScanResponse(BaseModel):
+    """The full outcome of one "Scan" action — one result per file found,
+    plus the resulting up-to-date list of every logged file so the
+    frontend can refresh its table from a single response.
+    """
+
+    results: list[TagHeaderDataScanFileResult]
+    entries: list[TagHeaderDataResponse]
+
+
+TagLineStatus = Literal["converted", "no_match", "cancelled"]
+
+
+class TagLineDataResponse(BaseModel):
+    """One CSV data line processed by a Tag Headerdata scan, enriched with
+    a snapshot of its matched tag (if any), for the Tag Linedata screen.
+    """
+
+    id: int
+    header_data_id: int
+    # Denormalized from the header row via a join, so the screen doesn't
+    # need a second fetch just to show which file a line came from.
+    header_filename: str
+    line_number: int
+    scanner: str | None
+    epc: str
+    rssi: int | None
+    antenna: int | None
+    count: int | None
+    last_seen: str | None
+    rfid_tag_id: int | None
+    assigned_product_name: str | None
+    assigned_serial_number: str | None
+    manufacturer: str | None
+    batch_number: str | None
+    status: TagLineStatus
+    created_at: datetime
+
+
+class TagLineDataSyncResponse(BaseModel):
+    """The outcome of one "Synchro" action: how many lines' match against
+    TagManagement actually changed, plus the resulting up-to-date list of
+    every line so the frontend can refresh its table from one response.
+    """
+
+    updated_count: int
+    entries: list[TagLineDataResponse]

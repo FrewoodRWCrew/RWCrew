@@ -2,9 +2,10 @@
 
 // TagScan's "TagManagement" screen: a table of registered RFID tags with
 // add/change/delete, following the same dialog/table pattern as
-// MasterData's products-management.tsx — the create/edit dialog covers
-// every column of the tag registry; the table itself shows a practical
-// subset (there are too many fields to usefully show them all at once).
+// MasterData's products-management.tsx. The table shows every column of
+// the tag registry with a per-column text/select filter in the row right
+// under the header; the surrounding Table component already scrolls
+// horizontally (see ui/table.tsx) so the wide row stays usable.
 
 import { useMemo, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -88,6 +89,13 @@ function formatDateTime(isoDateTime: string): string {
   return isoDateTime.slice(0, 16).replace("T", " ");
 }
 
+/** Case-insensitive substring match, used by every free-text filter cell.
+ * `null`/empty field values never match a non-empty filter. */
+function textMatches(fieldValue: string | null, filterValue: string): boolean {
+  if (!filterValue) return true;
+  return (fieldValue ?? "").toLowerCase().includes(filterValue.toLowerCase());
+}
+
 /** ISO datetimes from the backend are longer than the "YYYY-MM-DDTHH:mm"
  * shape an <input type="datetime-local"> needs — trim to that.
  */
@@ -134,6 +142,19 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
   const [epcFilter, setEpcFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
+  const [serialNumberFilter, setSerialNumberFilter] = useState("");
+  const [dateRegisteredFilter, setDateRegisteredFilter] = useState("");
+  const [dateAssignedFilter, setDateAssignedFilter] = useState("");
+  const [lastReadAtFilter, setLastReadAtFilter] = useState("");
+  const [lastReaderIdFilter, setLastReaderIdFilter] = useState("");
+  const [lastLocationFilter, setLastLocationFilter] = useState("");
+  const [manufacturerFilter, setManufacturerFilter] = useState("");
+  const [batchNumberFilter, setBatchNumberFilter] = useState("");
+  const [notes1Filter, setNotes1Filter] = useState("");
+  const [notes2Filter, setNotes2Filter] = useState("");
+  const [notes3Filter, setNotes3Filter] = useState("");
+  const [notes4Filter, setNotes4Filter] = useState("");
+  const [notes5Filter, setNotes5Filter] = useState("");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
 
   function productLabelFor(productId: number | null) {
@@ -145,9 +166,40 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
       if (epcFilter && !tag.epc_uid.toLowerCase().includes(epcFilter.toLowerCase())) return false;
       if (statusFilter !== ALL_VALUE && tag.status !== statusFilter) return false;
       if (productFilter !== ALL_VALUE && String(tag.assigned_product_id ?? "") !== productFilter) return false;
+      if (!textMatches(tag.assigned_serial_number, serialNumberFilter)) return false;
+      if (!textMatches(formatDate(tag.date_registered), dateRegisteredFilter)) return false;
+      if (!textMatches(tag.date_assigned, dateAssignedFilter)) return false;
+      if (!textMatches(tag.last_read_at ? formatDateTime(tag.last_read_at) : null, lastReadAtFilter)) return false;
+      if (!textMatches(tag.last_reader_id, lastReaderIdFilter)) return false;
+      if (!textMatches(tag.last_location, lastLocationFilter)) return false;
+      if (!textMatches(tag.manufacturer, manufacturerFilter)) return false;
+      if (!textMatches(tag.batch_number, batchNumberFilter)) return false;
+      if (!textMatches(tag.notes_1, notes1Filter)) return false;
+      if (!textMatches(tag.notes_2, notes2Filter)) return false;
+      if (!textMatches(tag.notes_3, notes3Filter)) return false;
+      if (!textMatches(tag.notes_4, notes4Filter)) return false;
+      if (!textMatches(tag.notes_5, notes5Filter)) return false;
       return true;
     });
-  }, [tags, epcFilter, statusFilter, productFilter]);
+  }, [
+    tags,
+    epcFilter,
+    statusFilter,
+    productFilter,
+    serialNumberFilter,
+    dateRegisteredFilter,
+    dateAssignedFilter,
+    lastReadAtFilter,
+    lastReaderIdFilter,
+    lastLocationFilter,
+    manufacturerFilter,
+    batchNumberFilter,
+    notes1Filter,
+    notes2Filter,
+    notes3Filter,
+    notes4Filter,
+    notes5Filter,
+  ]);
 
   const filteredIds = useMemo(() => filteredTags.map((tag) => tag.id), [filteredTags]);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
@@ -217,14 +269,31 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
               <TableHead className="font-bold underline">{t("columnEpcUid")}</TableHead>
               <TableHead className="font-bold underline">{t("columnStatus")}</TableHead>
               <TableHead className="font-bold underline">{t("columnAssignedProduct")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
               <TableHead className="font-bold underline">{t("columnDateRegistered")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnDateAssigned")}</TableHead>
               <TableHead className="font-bold underline">{t("columnLastReadAt")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnLastReaderId")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnLastLocation")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnManufacturer")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnBatchNumber")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnNotes1")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnNotes2")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnNotes3")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnNotes4")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnNotes5")}</TableHead>
+              {/* Actions stays pinned to the right edge while the rest of
+                  the row scrolls horizontally — with 16 data columns now
+                  shown, an unpinned Actions cell would scroll out of
+                  view, leaving Edit/Delete unreachable without first
+                  scrolling all the way right. */}
+              <TableHead className="sticky right-0 z-10 bg-background text-right font-bold underline">
+                {t("tableActions")}
+              </TableHead>
             </TableRow>
             {/* The filter row: each control sits directly under the
-                column it filters, instead of in a separate toolbar —
-                columns with no filter (Date Registered, Last Read At,
-                Actions) get an empty cell so alignment stays exact. */}
+                column it filters. Actions has no filter, so it gets an
+                empty cell to keep alignment exact. */}
             <TableRow>
               <TableHead />
               <TableHead>
@@ -276,14 +345,129 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   </SelectContent>
                 </Select>
               </TableHead>
-              <TableHead />
-              <TableHead />
-              <TableHead />
+              <TableHead>
+                <Input
+                  aria-label={t("filterAssignedSerialNumber")}
+                  placeholder={t("filterAssignedSerialNumber")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={serialNumberFilter}
+                  onChange={(event) => setSerialNumberFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterDateRegistered")}
+                  placeholder={t("filterDateRegistered")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={dateRegisteredFilter}
+                  onChange={(event) => setDateRegisteredFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterDateAssigned")}
+                  placeholder={t("filterDateAssigned")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={dateAssignedFilter}
+                  onChange={(event) => setDateAssignedFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterLastReadAt")}
+                  placeholder={t("filterLastReadAt")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={lastReadAtFilter}
+                  onChange={(event) => setLastReadAtFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterLastReaderId")}
+                  placeholder={t("filterLastReaderId")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={lastReaderIdFilter}
+                  onChange={(event) => setLastReaderIdFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterLastLocation")}
+                  placeholder={t("filterLastLocation")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={lastLocationFilter}
+                  onChange={(event) => setLastLocationFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterManufacturer")}
+                  placeholder={t("filterManufacturer")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={manufacturerFilter}
+                  onChange={(event) => setManufacturerFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterBatchNumber")}
+                  placeholder={t("filterBatchNumber")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={batchNumberFilter}
+                  onChange={(event) => setBatchNumberFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterNotes1")}
+                  placeholder={t("filterNotes1")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={notes1Filter}
+                  onChange={(event) => setNotes1Filter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterNotes2")}
+                  placeholder={t("filterNotes2")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={notes2Filter}
+                  onChange={(event) => setNotes2Filter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterNotes3")}
+                  placeholder={t("filterNotes3")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={notes3Filter}
+                  onChange={(event) => setNotes3Filter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterNotes4")}
+                  placeholder={t("filterNotes4")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={notes4Filter}
+                  onChange={(event) => setNotes4Filter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterNotes5")}
+                  placeholder={t("filterNotes5")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={notes5Filter}
+                  onChange={(event) => setNotes5Filter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky right-0 z-10 bg-background" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredTags.map((tag) => (
-              <TableRow key={tag.id}>
+              <TableRow key={tag.id} className="group">
                 <TableCell>
                   <Checkbox
                     checked={selectedIds.has(tag.id)}
@@ -294,13 +478,24 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                 <TableCell className="font-medium">{tag.epc_uid}</TableCell>
                 <TableCell className="text-muted-foreground">{t(`status.${tag.status}`)}</TableCell>
                 <TableCell className="text-muted-foreground">{productLabelFor(tag.assigned_product_id)}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.assigned_serial_number}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(tag.date_registered)}
                 </TableCell>
+                <TableCell className="text-muted-foreground">{tag.date_assigned}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {tag.last_read_at ? formatDateTime(tag.last_read_at) : ""}
                 </TableCell>
-                <TableCell>
+                <TableCell className="text-muted-foreground">{tag.last_reader_id}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.last_location}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.manufacturer}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.batch_number}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.notes_1}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.notes_2}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.notes_3}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.notes_4}</TableCell>
+                <TableCell className="text-muted-foreground">{tag.notes_5}</TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <TagFormDialog
                       tag={tag}
