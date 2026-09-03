@@ -16,7 +16,9 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 from app.db.models.tagscan_role import TagscanRole
@@ -107,6 +109,21 @@ def scan_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return tmp_path
 
 
+def _create_scanner_device(db_session: Session, **kwargs) -> Scanner:
+    if "type_id" not in kwargs:
+        product_type = ProductType(name=f"Type for {kwargs.get('scanner', 'scanner')}")
+        db_session.add(product_type)
+        db_session.commit()
+        db_session.refresh(product_type)
+        kwargs["type_id"] = product_type.id
+    kwargs.setdefault("technology", "Raspberry Pi 4")
+    scanner = Scanner(**kwargs)
+    db_session.add(scanner)
+    db_session.commit()
+    db_session.refresh(scanner)
+    return scanner
+
+
 def test_user_without_permission_gets_403_on_list_and_scan(
     client: TestClient, db_session: Session, scan_dirs: Path
 ) -> None:
@@ -183,6 +200,79 @@ def test_line_count_excludes_the_header_row_and_a_trailing_blank_line(
 
     assert response.status_code == 200
     assert response.json()["entries"][0]["line_count"] == 2
+
+
+def test_scan_resolves_header_scanner_snapshot_from_the_first_csv_row(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    scanner = _create_scanner_device(
+        db_session, scanner="Scan_01", technology="Raspberry Pi 5", location="Warehouse A"
+    )
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        b"Scanner,EPC,RSSI (raw),Antenna,Count,Last Seen\n"
+        b"Scan_01,E2AAA,78,1,92,10:36:07\n"
+        b"Scan_01,E2BBB,79,1,93,10:36:08\n"
+    )
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+
+    response = client.post("/api/modules/module-1/header-data/scan")
+
+    assert response.status_code == 200
+    entry = response.json()["entries"][0]
+    assert entry["scanner"] == "Scan_01"
+    assert entry["scanner_id"] == scanner.id
+    assert entry["scanner_name"] == "Scan_01"
+    assert entry["scanner_location"] == "Warehouse A"
+    assert entry["scanner_technology"] == "Raspberry Pi 5"
+
+
+def test_scan_leaves_header_scanner_snapshot_null_when_unmatched(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        b"Scanner,EPC,RSSI (raw),Antenna,Count,Last Seen\nUnknown_Scanner,E2AAA,78,1,92,10:36:07\n"
+    )
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+
+    response = client.post("/api/modules/module-1/header-data/scan")
+
+    assert response.status_code == 200
+    entry = response.json()["entries"][0]
+    assert entry["scanner"] == "Unknown_Scanner"
+    assert entry["scanner_id"] is None
+    assert entry["scanner_name"] is None
+
+
+def test_synchro_re_resolves_a_renamed_scanners_header_snapshot(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # The "Synchro" action lives on the Tag Linedata screen, gated by
+    # "tagscan.tag-linedata" — a super admin is used here rather than
+    # _viewer_client (which only grants "tagscan.tag-headerdata") so the
+    # test can exercise both the scan and the sync in one flow.
+    scanner = _create_scanner_device(db_session, scanner="Old Scanner Name")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        b"Scanner,EPC,RSSI (raw),Antenna,Count,Last Seen\nOld Scanner Name,E2AAA,78,1,92,10:36:07\n"
+    )
+    sync_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+    client.post("/api/modules/module-1/header-data/scan")
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.scanner_name == "Old Scanner Name"
+
+    scanner.scanner = "New Scanner Name"
+    db_session.commit()
+
+    sync_response = client.post("/api/modules/module-1/line-data/sync")
+
+    assert sync_response.status_code == 200
+    db_session.refresh(header)
+    assert header.scanner_name == "New Scanner Name"
 
 
 def test_scan_creates_read_tags_folder_if_missing(

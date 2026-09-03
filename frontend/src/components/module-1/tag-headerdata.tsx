@@ -63,15 +63,29 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [filenameFilter, setFilenameFilter] = useState("");
   const [createdAtFilter, setCreatedAtFilter] = useState("");
   const [lineCountFilter, setLineCountFilter] = useState("");
+  const [scannerNameFilter, setScannerNameFilter] = useState("");
+  const [scannerLocationFilter, setScannerLocationFilter] = useState("");
+  const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
       if (!textMatches(entry.filename, filenameFilter)) return false;
       if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(String(entry.line_count), lineCountFilter)) return false;
+      if (!textMatches(entry.scanner_name ?? "", scannerNameFilter)) return false;
+      if (!textMatches(entry.scanner_location ?? "", scannerLocationFilter)) return false;
+      if (!textMatches(entry.scanner_technology ?? "", scannerTechnologyFilter)) return false;
       return true;
     });
-  }, [entries, filenameFilter, createdAtFilter, lineCountFilter]);
+  }, [
+    entries,
+    filenameFilter,
+    createdAtFilter,
+    lineCountFilter,
+    scannerNameFilter,
+    scannerLocationFilter,
+    scannerTechnologyFilter,
+  ]);
 
   function handleDeleted(deletedId: number) {
     setEntries((current) => current.filter((entry) => entry.id !== deletedId));
@@ -143,6 +157,9 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="font-bold underline">{t("columnFilename")}</TableHead>
               <TableHead className="font-bold underline">{t("columnCreatedAt")}</TableHead>
               <TableHead className="text-right font-bold underline">{t("columnLineCount")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnScannerName")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnScannerLocation")}</TableHead>
+              <TableHead className="font-bold underline">{t("columnScannerTechnology")}</TableHead>
               <TableHead className="text-right font-bold underline">{t("columnActions")}</TableHead>
             </TableRow>
             {/* The filter row: each input sits directly under the column it filters. */}
@@ -174,6 +191,33 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setLineCountFilter(event.target.value)}
                 />
               </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterScannerName")}
+                  placeholder={t("filterScannerName")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerNameFilter}
+                  onChange={(event) => setScannerNameFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterScannerLocation")}
+                  placeholder={t("filterScannerLocation")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerLocationFilter}
+                  onChange={(event) => setScannerLocationFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead>
+                <Input
+                  aria-label={t("filterScannerTechnology")}
+                  placeholder={t("filterScannerTechnology")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerTechnologyFilter}
+                  onChange={(event) => setScannerTechnologyFilter(event.target.value)}
+                />
+              </TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -190,6 +234,9 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 </TableCell>
                 <TableCell className="text-muted-foreground">{formatDateTime(entry.created_at)}</TableCell>
                 <TableCell className="text-right text-muted-foreground">{entry.line_count}</TableCell>
+                <TableCell className="text-muted-foreground">{entry.scanner_name}</TableCell>
+                <TableCell className="text-muted-foreground">{entry.scanner_location}</TableCell>
+                <TableCell className="text-muted-foreground">{entry.scanner_technology}</TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-1">
                     <a

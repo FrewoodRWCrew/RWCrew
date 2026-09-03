@@ -28,6 +28,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const tTagHeaderdata = useTranslations("tagscan.tagHeaderdata");
   const tTagLinedata = useTranslations("tagscan.tagLinedata");
   const tTagManagement = useTranslations("tagscan.tagManagement");
+  const tScanners = useTranslations("tagscan.scanners");
   const tRoles = useTranslations("tagscan.roles");
   const tUsers = useTranslations("tagscan.users");
   const pathname = usePathname();
@@ -38,6 +39,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const canViewTagHeaderdata = viewableScreenKeys.includes("tagscan.tag-headerdata");
   const canViewTagLinedata = viewableScreenKeys.includes("tagscan.tag-linedata");
   const canViewTagManagement = viewableScreenKeys.includes("tagscan.tag-management");
+  const canViewScanners = viewableScreenKeys.includes("tagscan.scanners");
   const canViewRoles = viewableScreenKeys.includes("tagscan.roles");
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
 
@@ -86,18 +88,25 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
         </Link>
       )}
 
-      {canViewTagManagement && (
+      {(canViewTagManagement || canViewScanners) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Database className="size-4" />
             {t("masterDataGroup")}
           </div>
-          <Link
-            href="/modules/module-1/tag-management"
-            className={subLinkClassName("/modules/module-1/tag-management")}
-          >
-            {tTagManagement("title")}
-          </Link>
+          {canViewTagManagement && (
+            <Link
+              href="/modules/module-1/tag-management"
+              className={subLinkClassName("/modules/module-1/tag-management")}
+            >
+              {tTagManagement("title")}
+            </Link>
+          )}
+          {canViewScanners && (
+            <Link href="/modules/module-1/scanners" className={subLinkClassName("/modules/module-1/scanners")}>
+              {tScanners("title")}
+            </Link>
+          )}
         </>
       )}
 

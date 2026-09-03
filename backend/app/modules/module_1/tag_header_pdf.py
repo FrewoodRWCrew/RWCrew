@@ -21,15 +21,19 @@ from app.modules.module_1.tag_line_data import list_lines_for_header
 
 # Tailwind's blue-600, matching TagScan's own module accent colour
 # (see frontend/src/lib/module-theme.ts) so the report reads as "part of"
-# the same module rather than a generic export.
+# the same module rather than a generic export. Used sparingly (a thin
+# rule, headings, the subtotal line) rather than as a fill colour, for a
+# leaner corporate look than the earlier solid-colour title band/table.
 ACCENT_COLOR = (37, 99, 235)
-MUTED_TEXT = (110, 110, 110)
-SUBTOTAL_FILL = (219, 234, 254)
-ROW_FILL = (245, 247, 250)
+TEXT_DARK = (31, 41, 55)
+MUTED_TEXT = (107, 114, 128)
+BORDER_COLOR = (223, 226, 230)
+HEADER_FILL = (246, 247, 249)
 
-# Line #, EPC, Serial Number, Manufacturer, Batch Number — sums to 190mm,
-# the usable width of an A4 page with fpdf2's default 10mm margins.
-COLUMN_WIDTHS = (15, 65, 35, 40, 35)
+# Line #, EPC, Serial Number, Scanner, Technology, Location — sums to
+# 250mm, comfortably under the ~277mm usable width of a landscape A4 page
+# with fpdf2's default 10mm margins.
+COLUMN_WIDTHS = (15, 60, 35, 45, 35, 60)
 
 LABELS = {
     "nl": {
@@ -42,8 +46,9 @@ LABELS = {
         "col_line": "Regel #",
         "col_epc": "EPC",
         "col_serial": "Serienummer",
-        "col_manufacturer": "Fabrikant",
-        "col_batch": "Batchnummer",
+        "col_scanner": "Scanner",
+        "col_technology": "Technologie",
+        "col_location": "Locatie",
         "no_match_heading": "Geen match ({count})",
         "cancelled_heading": "Geannuleerd ({count})",
         "generated_at": "Gegenereerd op {timestamp}",
@@ -59,8 +64,9 @@ LABELS = {
         "col_line": "Line #",
         "col_epc": "EPC",
         "col_serial": "Serial Number",
-        "col_manufacturer": "Manufacturer",
-        "col_batch": "Batch Number",
+        "col_scanner": "Scanner",
+        "col_technology": "Technology",
+        "col_location": "Location",
         "no_match_heading": "No match ({count})",
         "cancelled_heading": "Cancelled ({count})",
         "generated_at": "Generated on {timestamp}",
@@ -73,56 +79,73 @@ class _SummaryPDF(FPDF):
     """Adds the page-number footer every page of the report shares."""
 
     def __init__(self, labels: dict[str, str]):
-        super().__init__(orientation="P", unit="mm", format="A4")
+        super().__init__(orientation="L", unit="mm", format="A4")
         self._labels = labels
         self.set_auto_page_break(auto=True, margin=20)
 
     def footer(self) -> None:
         self.set_y(-15)
-        self.set_font("Helvetica", "I", 8)
+        self.set_draw_color(*BORDER_COLOR)
+        self.set_line_width(0.2)
+        self.line(self.l_margin, self.get_y(), self.w - self.r_margin, self.get_y())
+        self.set_y(-12)
+        self.set_font("Helvetica", "", 8)
         self.set_text_color(*MUTED_TEXT)
-        self.cell(0, 10, self._labels["page"].format(page=self.page_no()), align="C")
+        self.cell(0, 8, self._labels["page"].format(page=self.page_no()), align="C")
 
 
 def _render_product_group(pdf: FPDF, labels: dict[str, str], product: str, lines: list[TagLineData]) -> None:
-    pdf.set_font("Helvetica", "B", 12)
-    pdf.set_text_color(*ACCENT_COLOR)
-    pdf.cell(0, 9, labels["product_heading"].format(product=product), new_x="LMARGIN", new_y="NEXT")
+    table_width = sum(COLUMN_WIDTHS)
 
+    pdf.set_font("Helvetica", "B", 11)
+    pdf.set_text_color(*ACCENT_COLOR)
+    pdf.cell(0, 8, labels["product_heading"].format(product=product), new_x="LMARGIN", new_y="NEXT")
+
+    # Header row: a flat light-grey fill (no reversed-out white-on-colour
+    # text) with a single accent-coloured rule underneath to separate it
+    # from the data rows — reads as a section divider, not a filled block.
     pdf.set_font("Helvetica", "B", 9)
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_fill_color(*ACCENT_COLOR)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_fill_color(*HEADER_FILL)
     headers = (
         labels["col_line"],
         labels["col_epc"],
         labels["col_serial"],
-        labels["col_manufacturer"],
-        labels["col_batch"],
+        labels["col_scanner"],
+        labels["col_technology"],
+        labels["col_location"],
     )
     for width, label in zip(COLUMN_WIDTHS, headers):
         pdf.cell(width, 7, label, fill=True)
     pdf.ln(7)
+    pdf.set_draw_color(*ACCENT_COLOR)
+    pdf.set_line_width(0.4)
+    pdf.line(pdf.l_margin, pdf.get_y(), pdf.l_margin + table_width, pdf.get_y())
 
+    # Data rows: plain white background, just a hairline under each row —
+    # no zebra fill — for a leaner, less busy table.
     pdf.set_font("Helvetica", "", 9)
-    for index, line in enumerate(lines):
-        pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.2)
+    for line in lines:
         values = (
             str(line.line_number),
             line.epc,
             line.assigned_serial_number or "",
-            line.manufacturer or "",
-            line.batch_number or "",
+            line.scanner_name or "",
+            line.scanner_technology or "",
+            line.scanner_location or "",
         )
         for width, value in zip(COLUMN_WIDTHS, values):
-            pdf.cell(width, 6, value, fill=index % 2 == 1)
+            pdf.cell(width, 6, value)
         pdf.ln(6)
-        pdf.set_fill_color(*ROW_FILL)
+        pdf.line(pdf.l_margin, pdf.get_y(), pdf.l_margin + table_width, pdf.get_y())
 
     pdf.set_font("Helvetica", "B", 9)
-    pdf.set_fill_color(*SUBTOTAL_FILL)
     pdf.set_text_color(*ACCENT_COLOR)
-    pdf.cell(sum(COLUMN_WIDTHS), 7, labels["subtotal"].format(count=len(lines)), fill=True)
-    pdf.ln(11)
+    pdf.cell(table_width, 8, labels["subtotal"].format(count=len(lines)), align="R")
+    pdf.ln(12)
 
 
 def _render_simple_section(pdf: FPDF, labels: dict[str, str], heading_key: str, lines: list[TagLineData]) -> None:
@@ -133,12 +156,18 @@ def _render_simple_section(pdf: FPDF, labels: dict[str, str], heading_key: str, 
     pdf.cell(0, 8, labels[heading_key].format(count=len(lines)), new_x="LMARGIN", new_y="NEXT")
 
     pdf.set_font("Helvetica", "", 9)
-    pdf.set_text_color(0, 0, 0)
+    pdf.set_text_color(*TEXT_DARK)
     for line in lines:
         # A plain hyphen, not an em dash: fpdf2's built-in core fonts only
         # support latin-1, which doesn't include "—" and would otherwise
         # raise FPDFUnicodeEncodingException for every line in this section.
-        pdf.cell(0, 6, f"{labels['col_line']} {line.line_number} - {labels['col_epc']}: {line.epc}", new_x="LMARGIN", new_y="NEXT")
+        text = (
+            f"{labels['col_line']} {line.line_number} - {labels['col_epc']}: {line.epc} - "
+            f"{labels['col_scanner']}: {line.scanner_name or ''} - "
+            f"{labels['col_technology']}: {line.scanner_technology or ''} - "
+            f"{labels['col_location']}: {line.scanner_location or ''}"
+        )
+        pdf.cell(0, 6, text, new_x="LMARGIN", new_y="NEXT")
     pdf.ln(4)
 
 
@@ -166,36 +195,44 @@ def build_header_summary_pdf(db: Session, header: TagHeaderData, locale: str = "
     pdf = _SummaryPDF(labels)
     pdf.add_page()
 
-    # --- Title band ---
+    # --- Title ---
+    # A thin accent-coloured rule across the top of the page, not a
+    # full-bleed colour band with reversed-out text — reads as a
+    # corporate letterhead rule rather than a poster header.
     pdf.set_fill_color(*ACCENT_COLOR)
-    pdf.rect(0, 0, pdf.w, 28, style="F")
-    pdf.set_xy(0, 9)
-    pdf.set_text_color(255, 255, 255)
-    pdf.set_font("Helvetica", "B", 18)
-    pdf.cell(0, 12, labels["report_title"], align="C")
-    pdf.set_xy(pdf.l_margin, 34)
+    pdf.rect(0, 0, pdf.w, 2.5, style="F")
+    pdf.set_xy(pdf.l_margin, 12)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_font("Helvetica", "B", 16)
+    pdf.cell(0, 10, labels["report_title"], new_x="LMARGIN", new_y="NEXT")
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.3)
+    pdf.line(pdf.l_margin, pdf.get_y() + 2, pdf.w - pdf.r_margin, pdf.get_y() + 2)
+    pdf.set_y(pdf.get_y() + 8)
 
     # --- Info block ---
-    pdf.set_text_color(0, 0, 0)
+    # Muted labels, dark values, tight row height — a lean key/value strip
+    # rather than a bordered box.
     for label_key, value in (
         ("filename", header.filename),
         ("logged_at", header.created_at.strftime("%Y-%m-%d %H:%M")),
         ("total_lines", str(header.line_count)),
     ):
-        pdf.set_font("Helvetica", "B", 11)
-        pdf.cell(45, 8, labels[label_key] + ":")
-        pdf.set_font("Helvetica", "", 11)
-        pdf.cell(0, 8, value, new_x="LMARGIN", new_y="NEXT")
-    pdf.ln(4)
+        pdf.set_font("Helvetica", "B", 9)
+        pdf.set_text_color(*MUTED_TEXT)
+        pdf.cell(38, 6, labels[label_key] + ":")
+        pdf.set_font("Helvetica", "", 9)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.cell(0, 6, value, new_x="LMARGIN", new_y="NEXT")
+    pdf.ln(6)
 
     for product in sorted(grouped_by_product):
-        pdf.set_fill_color(*ROW_FILL)
         _render_product_group(pdf, labels, product, grouped_by_product[product])
 
     _render_simple_section(pdf, labels, "no_match_heading", no_match_lines)
     _render_simple_section(pdf, labels, "cancelled_heading", cancelled_lines)
 
-    pdf.set_font("Helvetica", "I", 8)
+    pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(*MUTED_TEXT)
     pdf.cell(0, 6, labels["generated_at"].format(timestamp=datetime.now().strftime("%Y-%m-%d %H:%M")))
 

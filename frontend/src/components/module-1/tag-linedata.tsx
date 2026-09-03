@@ -39,6 +39,9 @@ type SortableColumn =
   | "header_filename"
   | "line_number"
   | "scanner"
+  | "scanner_name"
+  | "scanner_location"
+  | "scanner_technology"
   | "epc"
   | "rssi"
   | "antenna"
@@ -125,6 +128,9 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [headerFilenameFilter, setHeaderFilenameFilter] = useState(() => searchParams.get("filename") ?? "");
   const [lineNumberFilter, setLineNumberFilter] = useState("");
   const [scannerFilter, setScannerFilter] = useState("");
+  const [scannerNameFilter, setScannerNameFilter] = useState("");
+  const [scannerLocationFilter, setScannerLocationFilter] = useState("");
+  const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [epcFilter, setEpcFilter] = useState("");
   const [rssiFilter, setRssiFilter] = useState("");
   const [antennaFilter, setAntennaFilter] = useState("");
@@ -156,6 +162,9 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.header_filename, headerFilenameFilter)) return false;
       if (!textMatches(entry.line_number, lineNumberFilter)) return false;
       if (!textMatches(entry.scanner, scannerFilter)) return false;
+      if (!textMatches(entry.scanner_name, scannerNameFilter)) return false;
+      if (!textMatches(entry.scanner_location, scannerLocationFilter)) return false;
+      if (!textMatches(entry.scanner_technology, scannerTechnologyFilter)) return false;
       if (!textMatches(entry.epc, epcFilter)) return false;
       if (!textMatches(entry.rssi, rssiFilter)) return false;
       if (!textMatches(entry.antenna, antennaFilter)) return false;
@@ -173,6 +182,9 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     headerFilenameFilter,
     lineNumberFilter,
     scannerFilter,
+    scannerNameFilter,
+    scannerLocationFilter,
+    scannerTechnologyFilter,
     epcFilter,
     rssiFilter,
     antennaFilter,
@@ -268,21 +280,35 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   }
 
   function renderEntryRow(entry: TagLineDataEntry) {
+    // Whole-row status colour, overriding every cell's default
+    // text-muted-foreground below — green/red/yellow so the outcome of a
+    // line is readable at a glance without reading the status column
+    // itself. Dark-mode variants keep contrast against the dark theme
+    // this app defaults to (see next-themes note in CLAUDE.md Gotchas).
+    const statusRowClassName = cn(
+      "group",
+      entry.status === "converted" && "text-green-600 dark:text-green-400",
+      entry.status === "no_match" && "text-red-600 dark:text-red-400",
+      entry.status === "cancelled" && "text-yellow-600 dark:text-yellow-400",
+    );
     return (
-      <TableRow key={entry.id} className="group">
-        <TableCell className="text-muted-foreground">{t(`status.${entry.status}`)}</TableCell>
+      <TableRow key={entry.id} className={statusRowClassName}>
+        <TableCell>{t(`status.${entry.status}`)}</TableCell>
         <TableCell className="font-medium">{entry.epc}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.assigned_product_name}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.assigned_serial_number}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.scanner}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.last_seen}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.header_filename}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.line_number}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.rssi}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.antenna}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.count}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.manufacturer}</TableCell>
-        <TableCell className="text-muted-foreground">{entry.batch_number}</TableCell>
+        <TableCell>{entry.assigned_product_name}</TableCell>
+        <TableCell>{entry.assigned_serial_number}</TableCell>
+        <TableCell>{entry.scanner}</TableCell>
+        <TableCell>{entry.scanner_name}</TableCell>
+        <TableCell>{entry.scanner_location}</TableCell>
+        <TableCell>{entry.scanner_technology}</TableCell>
+        <TableCell>{entry.last_seen}</TableCell>
+        <TableCell>{entry.header_filename}</TableCell>
+        <TableCell>{entry.line_number}</TableCell>
+        <TableCell>{entry.rssi}</TableCell>
+        <TableCell>{entry.antenna}</TableCell>
+        <TableCell>{entry.count}</TableCell>
+        <TableCell>{entry.manufacturer}</TableCell>
+        <TableCell>{entry.batch_number}</TableCell>
         <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
           {entry.status !== "cancelled" && (
             <Button
@@ -373,6 +399,33 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnScanner")}
                 column="scanner"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnScannerName")}
+                column="scanner_name"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnScannerLocation")}
+                column="scanner_location"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnScannerTechnology")}
+                column="scanner_technology"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -514,6 +567,33 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterScannerName")}
+                  placeholder={t("filterScannerName")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerNameFilter}
+                  onChange={(event) => setScannerNameFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterScannerLocation")}
+                  placeholder={t("filterScannerLocation")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerLocationFilter}
+                  onChange={(event) => setScannerLocationFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterScannerTechnology")}
+                  placeholder={t("filterScannerTechnology")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerTechnologyFilter}
+                  onChange={(event) => setScannerTechnologyFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterLastSeen")}
                   placeholder={t("filterLastSeen")}
                   className="h-8 w-full min-w-24 font-normal"
@@ -596,7 +676,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={14} className="font-semibold">
+                        <TableCell colSpan={17} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

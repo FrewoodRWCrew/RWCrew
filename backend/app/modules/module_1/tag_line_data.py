@@ -1,8 +1,9 @@
 # Business logic backing the "Tag Linedata" screen: parsing the data
 # lines out of a CSV scanned by Tag Headerdata's Scan action, matching a
-# line's EPC against the current TagManagement registry (both when a
-# line is first created and whenever it's later re-synced), and listing
-# the resulting rows for that screen's table.
+# line's EPC against the current TagManagement registry and its raw
+# "Scanner" value against the current Scanners registry (both when a line
+# is first created and whenever it's later re-synced), and listing the
+# resulting rows for that screen's table.
 
 import csv
 from pathlib import Path
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 
@@ -73,6 +75,85 @@ def match_tag(epc: str, tags_by_epc: dict[str, RfidTag], product_names_by_id: di
         manufacturer=matched_tag.manufacturer,
         batch_number=matched_tag.batch_number,
     )
+
+
+class ScannerMatch(TypedDict):
+    """What one raw "Scanner" CSV value currently matches, if anything —
+    the exact set of fields a TagLineData/TagHeaderData row keeps in sync
+    with the Scanners registry, both when the row is first created by a
+    scan and every time it's re-synced.
+    """
+
+    scanner_id: int | None
+    scanner_name: str | None
+    scanner_location: str | None
+    scanner_technology: str | None
+
+
+def preload_scanner_lookup(db: Session) -> tuple[dict[str, Scanner], dict[int, Scanner]]:
+    """The current Scanners registry snapshot needed by match_scanner() —
+    loaded once per scan/sync call (not per-row), since neither dict
+    changes mid-call.
+
+    Two dicts, because a Scanner's name plays two different roles: it's
+    the matchable key used to find a FIRST match against a CSV's raw
+    "Scanner" text, but — unlike RfidTag's epc_uid — it's also a rename-
+    able display field, so an ALREADY-matched line must refresh its
+    snapshot by the stable scanner_id it recorded, not by re-matching the
+    (unchanged) raw CSV text against the (possibly renamed) name; doing
+    the latter would silently un-match the line the moment its device
+    got renamed. See match_scanner()'s own docstring for how this plays
+    out.
+
+    The by-name dict is keyed by a stripped, lowercased scanner name so
+    matching is case-insensitive (mirroring the Product.name.ilike()
+    precedent used elsewhere in this codebase for name-based lookups) —
+    a CSV's "Scanner" column is free text typed/configured on the reader
+    hardware, not a guaranteed-exact-case identifier.
+    """
+    scanners = db.scalars(select(Scanner)).all()
+    scanners_by_name = {scanner.scanner.strip().lower(): scanner for scanner in scanners}
+    scanners_by_id = {scanner.id: scanner for scanner in scanners}
+    return scanners_by_name, scanners_by_id
+
+
+def match_scanner(
+    raw_scanner: str | None,
+    current_scanner_id: int | None,
+    scanners_by_name: dict[str, Scanner],
+    scanners_by_id: dict[int, Scanner],
+) -> ScannerMatch:
+    """Resolve one row's scanner snapshot.
+
+    If it's already matched to a scanner (current_scanner_id is set —
+    i.e. this is a re-sync of a previously-matched row), refresh the
+    snapshot from that SAME device by id, so a rename/relocate is picked
+    up without ever re-deciding which device the raw text refers to.
+
+    Otherwise (not yet matched — either a brand-new scan, or a previous
+    sync that found nothing), look up the raw "Scanner" CSV text against
+    the current registry by name, so a device registered after the fact
+    can still be picked up on the next sync.
+
+    A blank value or one with no matching Scanners record is a soft "no
+    match" — it never blocks a scan, and the raw text is kept as-is by
+    the caller regardless of whether this returns a match.
+    """
+    matched_scanner = (
+        scanners_by_id.get(current_scanner_id)
+        if current_scanner_id is not None
+        else (scanners_by_name.get(raw_scanner.strip().lower()) if raw_scanner else None)
+    )
+    if matched_scanner is None:
+        return ScannerMatch(scanner_id=None, scanner_name=None, scanner_location=None, scanner_technology=None)
+
+    return ScannerMatch(
+        scanner_id=matched_scanner.id,
+        scanner_name=matched_scanner.scanner,
+        scanner_location=matched_scanner.location,
+        scanner_technology=matched_scanner.technology,
+    )
+
 
 # The exact column names the real scanner hardware writes — matched by
 # name (not position) so a reordered column wouldn't silently misparse.
@@ -172,28 +253,43 @@ def list_lines_for_header(db: Session, header_id: int) -> list[TagLineData]:
 
 def sync_line_data(db: Session) -> int:
     """The "Synchro" action: re-check every non-cancelled line's EPC
-    against the CURRENT TagManagement registry, and refresh its status
-    and product/serial/manufacturer/batch snapshot to match — catching a
-    tag that was registered, reassigned, or renamed after the line was
-    first scanned. Returns how many lines actually changed.
+    against the CURRENT TagManagement registry and its raw "scanner" text
+    against the CURRENT Scanners registry, refreshing each line's
+    status/product/serial/manufacturer/batch and scanner snapshot to
+    match — catching a tag or scanner that was registered, reassigned, or
+    renamed after the line was first scanned. Also re-resolves every
+    TagHeaderData row's own scanner snapshot the same way (a scanner
+    rename only takes effect there once Synchro is re-run too), though
+    that isn't counted in the returned total. Returns how many lines
+    actually changed.
 
     Cancelled lines are deliberately left untouched: cancelling a line is
     a manual override (see router.py's cancel endpoint), and a routine
     sync must never silently flip it back to converted/no_match.
     """
     tags_by_epc, product_names_by_id = preload_tag_lookup(db)
+    scanners_by_name, scanners_by_id = preload_scanner_lookup(db)
 
     lines = db.scalars(select(TagLineData).where(TagLineData.status != "cancelled")).all()
 
     updated_count = 0
     for line in lines:
-        match = match_tag(line.epc, tags_by_epc, product_names_by_id)
+        match: dict = {
+            **match_tag(line.epc, tags_by_epc, product_names_by_id),
+            **match_scanner(line.scanner, line.scanner_id, scanners_by_name, scanners_by_id),
+        }
         changed = any(getattr(line, field) != value for field, value in match.items())
         if not changed:
             continue
         for field, value in match.items():
             setattr(line, field, value)
         updated_count += 1
+
+    for header in db.scalars(select(TagHeaderData)).all():
+        header_match = match_scanner(header.scanner, header.scanner_id, scanners_by_name, scanners_by_id)
+        if any(getattr(header, field) != value for field, value in header_match.items()):
+            for field, value in header_match.items():
+                setattr(header, field, value)
 
     db.commit()
     return updated_count

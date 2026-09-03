@@ -16,7 +16,9 @@ from app.core.config import settings
 from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 from app.db.models.tagscan_role import TagscanRole
@@ -118,6 +120,21 @@ def _create_tag(db_session: Session, **kwargs) -> RfidTag:
     return tag
 
 
+def _create_scanner_device(db_session: Session, **kwargs) -> Scanner:
+    if "type_id" not in kwargs:
+        product_type = ProductType(name=f"Type for {kwargs.get('scanner', 'scanner')}")
+        db_session.add(product_type)
+        db_session.commit()
+        db_session.refresh(product_type)
+        kwargs["type_id"] = product_type.id
+    kwargs.setdefault("technology", "Raspberry Pi 4")
+    scanner = Scanner(**kwargs)
+    db_session.add(scanner)
+    db_session.commit()
+    db_session.refresh(scanner)
+    return scanner
+
+
 def test_scan_handles_a_leading_utf8_bom_without_breaking_column_matching(
     client: TestClient, db_session: Session, scan_dirs: Path
 ) -> None:
@@ -215,6 +232,71 @@ def test_unmatched_epc_is_no_match_with_null_snapshot_fields(
     assert line.assigned_serial_number is None
     assert line.manufacturer is None
     assert line.batch_number is None
+
+
+def test_matched_scanner_is_enriched_from_scanners_registry(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    scanner = _create_scanner_device(
+        db_session, scanner="Scan_01", technology="Raspberry Pi 5", location="Warehouse A"
+    )
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "Scan_01,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    line = db_session.scalar(select(TagLineData))
+    assert line.scanner_id == scanner.id
+    assert line.scanner_name == "Scan_01"
+    assert line.scanner_location == "Warehouse A"
+    assert line.scanner_technology == "Raspberry Pi 5"
+
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.scanner == "Scan_01"
+    assert header.scanner_id == scanner.id
+    assert header.scanner_name == "Scan_01"
+    assert header.scanner_location == "Warehouse A"
+    assert header.scanner_technology == "Raspberry Pi 5"
+
+
+def test_unmatched_scanner_leaves_snapshot_fields_null_but_keeps_raw_text(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "Unknown_Scanner,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    line = db_session.scalar(select(TagLineData))
+    assert line.scanner == "Unknown_Scanner"
+    assert line.scanner_id is None
+    assert line.scanner_name is None
+    assert line.scanner_location is None
+    assert line.scanner_technology is None
+
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.scanner == "Unknown_Scanner"
+    assert header.scanner_id is None
+
+
+def test_scanner_matching_is_case_insensitive(client: TestClient, db_session: Session, scan_dirs: Path) -> None:
+    scanner = _create_scanner_device(db_session, scanner="Scan_01")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "scan_01,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    line = db_session.scalar(select(TagLineData))
+    assert line.scanner_id == scanner.id
 
 
 def test_trailing_blank_line_produces_no_extra_row(client: TestClient, db_session: Session, scan_dirs: Path) -> None:
@@ -434,6 +516,61 @@ def test_sync_leaves_cancelled_lines_untouched(client: TestClient, db_session: S
     entry = body["entries"][0]
     assert entry["status"] == "cancelled"
     assert entry["assigned_product_name"] == "KBC Lint"
+
+
+def test_sync_reflects_a_scanner_rename_on_an_already_matched_line(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    scanner = _create_scanner_device(db_session, scanner="Old Scanner Name", location="Old Location")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "Old Scanner Name,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post("/api/modules/module-1/header-data/scan")
+    line = db_session.scalar(select(TagLineData))
+    assert line.scanner_name == "Old Scanner Name"
+
+    scanner.scanner = "New Scanner Name"
+    scanner.location = "New Location"
+    db_session.commit()
+
+    response = client.post("/api/modules/module-1/line-data/sync")
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["updated_count"] == 1
+    entry = body["entries"][0]
+    assert entry["scanner_name"] == "New Scanner Name"
+    assert entry["scanner_location"] == "New Location"
+
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.scanner_name == "New Scanner Name"
+    assert header.scanner_location == "New Location"
+
+
+def test_sync_leaves_cancelled_lines_scanner_snapshot_untouched(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    scanner = _create_scanner_device(db_session, scanner="Old Scanner Name")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "Old Scanner Name,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post("/api/modules/module-1/header-data/scan")
+    line = db_session.scalar(select(TagLineData))
+    client.post(f"/api/modules/module-1/line-data/{line.id}/cancel")
+
+    scanner.scanner = "New Scanner Name"
+    db_session.commit()
+
+    response = client.post("/api/modules/module-1/line-data/sync")
+
+    assert response.status_code == 200
+    entry = response.json()["entries"][0]
+    assert entry["status"] == "cancelled"
+    assert entry["scanner_name"] == "Old Scanner Name"
 
 
 def test_sync_reports_zero_updates_when_nothing_changed(

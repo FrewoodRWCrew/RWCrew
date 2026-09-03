@@ -8,10 +8,16 @@
 # during the scan; "cancelled" is a separate, manual action a user takes
 # afterwards on the Tag Linedata screen — see app/modules/module_1/
 # tag_line_data.py.
+#
+# The same snapshot approach is used for the raw "scanner" column: when it
+# matches a registered Scanners device by name, scanner_id/scanner_name/
+# scanner_location/scanner_technology are populated from that device at
+# scan/Synchro time — again not a live join, so a line's history survives
+# the Scanners record being renamed or edited later.
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -52,6 +58,15 @@ class TagLineData(Base):
     assigned_serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
     batch_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # Which registered Scanners device the raw "scanner" text matched, if
+    # any — null means no match was found (soft match — never blocks a
+    # scan). A snapshot of that device's key fields at scan/Synchro time,
+    # same reasoning as assigned_product_name above.
+    scanner_id: Mapped[int | None] = mapped_column(ForeignKey("Tagscan_scanners.id"), nullable=True)
+    scanner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    scanner_location: Mapped[str | None] = mapped_column(Text, nullable=True)
+    scanner_technology: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False)
 

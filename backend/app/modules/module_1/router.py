@@ -14,7 +14,9 @@ from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 from app.db.models.tagscan_role import TagscanRole
@@ -55,6 +57,9 @@ from app.schemas.tagscan import (
     RoleCreateRequest,
     RoleResponse,
     RoleUpdateRequest,
+    ScannerCreateRequest,
+    ScannerResponse,
+    ScannerUpdateRequest,
     ScreenPermissionResponse,
     ScreenResponse,
     SetRolePermissionsRequest,
@@ -244,6 +249,10 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         assigned_serial_number=line.assigned_serial_number,
         manufacturer=line.manufacturer,
         batch_number=line.batch_number,
+        scanner_id=line.scanner_id,
+        scanner_name=line.scanner_name,
+        scanner_location=line.scanner_location,
+        scanner_technology=line.scanner_technology,
         status=line.status,
         created_at=line.created_at,
     )
@@ -381,6 +390,106 @@ def delete_tag(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
 
     db.delete(tag)
+    db.commit()
+
+
+def _validate_scanner_lookup_ids(db: Session, payload: ScannerCreateRequest | ScannerUpdateRequest) -> None:
+    """Make sure type_id actually exists — same pattern as
+    _validate_tag_lookup_ids above, but type_id is always required here
+    (there's no "optional" case to skip), otherwise a bad id would only
+    surface as an opaque foreign-key IntegrityError instead of a clear 404.
+    """
+    if db.get(ProductType, payload.type_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product type not found")
+
+
+@router.get("/scanners", response_model=list[ScannerResponse])
+def list_scanners(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "view")),
+) -> list[Scanner]:
+    """List every registered scanner device, for the Scanners screen's table."""
+    return list(db.scalars(select(Scanner).order_by(Scanner.scanner)).all())
+
+
+@router.post("/scanners", response_model=ScannerResponse, status_code=status.HTTP_201_CREATED)
+def create_scanner(
+    payload: ScannerCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "create")),
+) -> Scanner:
+    """Register a brand-new scanner device."""
+    _validate_scanner_lookup_ids(db, payload)
+
+    new_scanner = Scanner(**payload.model_dump())
+    db.add(new_scanner)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A scanner with this name already exists"
+        ) from error
+
+    db.refresh(new_scanner)
+    return new_scanner
+
+
+@router.put("/scanners/{scanner_id}", response_model=ScannerResponse)
+def update_scanner(
+    scanner_id: int,
+    payload: ScannerUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "edit")),
+) -> Scanner:
+    """Update every field of an existing scanner."""
+    scanner = db.get(Scanner, scanner_id)
+    if scanner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scanner not found")
+
+    _validate_scanner_lookup_ids(db, payload)
+
+    for field, value in payload.model_dump().items():
+        setattr(scanner, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A scanner with this name already exists"
+        ) from error
+
+    db.refresh(scanner)
+    return scanner
+
+
+@router.delete("/scanners/{scanner_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_scanner(
+    scanner_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "delete")),
+) -> None:
+    """Permanently delete a scanner device — blocked while it's still
+    referenced by any logged Tag Headerdata file or Tag Linedata line, so
+    a snapshot's scanner_id can never dangle (see tag_line_data.py's
+    module docstring on why these fields are a snapshot in the first
+    place).
+    """
+    scanner = db.get(Scanner, scanner_id)
+    if scanner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scanner not found")
+
+    still_used = db.scalar(
+        select(TagHeaderData.id).where(TagHeaderData.scanner_id == scanner_id)
+    ) or db.scalar(select(TagLineData.id).where(TagLineData.scanner_id == scanner_id))
+    if still_used is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This scanner is still used by at least one logged file/line",
+        )
+
+    db.delete(scanner)
     db.commit()
 
 

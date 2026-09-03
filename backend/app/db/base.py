@@ -17,6 +17,7 @@ from app.db.models.product_limit import ProductLimit  # noqa: F401
 from app.db.models.product_type import ProductType  # noqa: F401
 from app.db.models.refresh_token import RefreshToken  # noqa: F401
 from app.db.models.rfid_tag import RfidTag  # noqa: F401
+from app.db.models.scanner import Scanner  # noqa: F401
 from app.db.models.season import Season  # noqa: F401
 from app.db.models.tag_header_data import TagHeaderData  # noqa: F401
 from app.db.models.tag_line_data import TagLineData  # noqa: F401

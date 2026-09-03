@@ -22,6 +22,8 @@ import type {
   RfidTag,
   RfidTagImportResponse,
   RfidTagInput,
+  Scanner,
+  ScannerInput,
   Season,
   TagDashboardStats,
   TagHeaderDataEntry,
@@ -434,6 +436,30 @@ export function updateRfidTag(tagId: number, payload: RfidTagInput): Promise<Rfi
 
 export function deleteRfidTag(tagId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-1/tags/${tagId}`, { method: "DELETE" });
+}
+
+// --- Scanners (module-1's "tagscan.scanners" screen) ---------------------
+
+export function listScanners(): Promise<Scanner[]> {
+  return apiFetch<Scanner[]>("/api/modules/module-1/scanners");
+}
+
+export function createScanner(payload: ScannerInput): Promise<Scanner> {
+  return apiFetch<Scanner>("/api/modules/module-1/scanners", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateScanner(scannerId: number, payload: ScannerInput): Promise<Scanner> {
+  return apiFetch<Scanner>(`/api/modules/module-1/scanners/${scannerId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteScanner(scannerId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-1/scanners/${scannerId}`, { method: "DELETE" });
 }
 
 /**

@@ -217,6 +217,37 @@ export interface RfidTagInput {
   notes_5?: string | null;
 }
 
+/** The fixed, closed set of reader hardware a scanner device can be. */
+export type ScannerTechnology = "Raspberry Pi 3" | "Raspberry Pi 4" | "Raspberry Pi 5" | "Other";
+
+/** One registered scanner device, as managed on TagScan's Scanners screen. */
+export interface Scanner {
+  id: number;
+  scanner: string;
+  type_id: number;
+  technology: ScannerTechnology;
+  location: string | null;
+  description: string | null;
+  info1: string | null;
+  info2: string | null;
+  info3: string | null;
+}
+
+/** The fields sent to create or fully update a scanner device. Unlike
+ * Product's type_id, a scanner's type is always required (see
+ * backend/app/db/models/scanner.py) — nullability only exists transiently
+ * in the "Scanners" screen's own form state, not on this wire type. */
+export interface ScannerInput {
+  scanner: string;
+  type_id: number;
+  technology: ScannerTechnology;
+  location?: string | null;
+  description?: string | null;
+  info1?: string | null;
+  info2?: string | null;
+  info3?: string | null;
+}
+
 /** What happened to one row of an uploaded CSV import. */
 export interface RfidTagImportRowResult {
   row_number: number;
@@ -267,6 +298,13 @@ export interface TagHeaderDataEntry {
   filename: string;
   created_at: string;
   line_count: number;
+  // The raw "Scanner" CSV value, and — when it matches a registered
+  // Scanners device by name — a snapshot of that device's key fields.
+  scanner: string | null;
+  scanner_id: number | null;
+  scanner_name: string | null;
+  scanner_location: string | null;
+  scanner_technology: string | null;
 }
 
 /** What happened to one file found in "Unreaded Tags" during a scan. */
@@ -304,6 +342,12 @@ export interface TagLineDataEntry {
   assigned_serial_number: string | null;
   manufacturer: string | null;
   batch_number: string | null;
+  // Which registered Scanners device the raw "scanner" text matched, if
+  // any — null means no match was found (soft match).
+  scanner_id: number | null;
+  scanner_name: string | null;
+  scanner_location: string | null;
+  scanner_technology: string | null;
   status: TagLineStatus;
   created_at: string;
 }

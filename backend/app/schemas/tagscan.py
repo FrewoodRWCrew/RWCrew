@@ -9,6 +9,8 @@ from pydantic import BaseModel, EmailStr, Field, field_validator
 
 RfidTagStatus = Literal["active", "inactive", "lost", "damaged", "retired"]
 
+ScannerTechnology = Literal["Raspberry Pi 3", "Raspberry Pi 4", "Raspberry Pi 5", "Other"]
+
 
 class ScreenResponse(BaseModel):
     """One screen registered in the Tagscan module."""
@@ -203,6 +205,51 @@ class RfidTagUpdateRequest(RfidTagCreateRequest):
     """What's sent to update an existing tag — same shape as registering one."""
 
 
+class ScannerResponse(BaseModel):
+    """One registered scanner device, as shown on the Scanners screen."""
+
+    id: int
+    scanner: str
+    type_id: int
+    technology: ScannerTechnology
+    location: str | None
+    description: str | None
+    info1: str | None
+    info2: str | None
+    info3: str | None
+
+
+class ScannerCreateRequest(BaseModel):
+    """What's sent to register a brand-new scanner device. scanner and
+    type_id are required — a scanner must be named and classified before
+    it can be registered.
+    """
+
+    scanner: str = Field(min_length=1, max_length=255)
+    type_id: int
+    technology: ScannerTechnology
+    location: str | None = None
+    description: str | None = None
+    info1: str | None = None
+    info2: str | None = None
+    info3: str | None = None
+
+    @field_validator("scanner")
+    @classmethod
+    def _strip_scanner(cls, value: str) -> str:
+        """A stray leading/trailing whitespace character (easy to pick up
+        pasting from a spreadsheet) makes an otherwise-identical scanner
+        name silently fail to match against a scanned CSV line's own,
+        already-stripped Scanner value — trim it here rather than ever
+        storing it.
+        """
+        return value.strip()
+
+
+class ScannerUpdateRequest(ScannerCreateRequest):
+    """What's sent to update an existing scanner — same shape as registering one."""
+
+
 class RfidTagImportRowResult(BaseModel):
     """What happened to one row of an uploaded CSV import."""
 
@@ -266,6 +313,14 @@ class TagHeaderDataResponse(BaseModel):
     filename: str
     created_at: datetime
     line_count: int
+    # The raw "Scanner" CSV value for this file, and — when it matches a
+    # registered Scanners device by name — a snapshot of that device's key
+    # fields (null scanner_id means no match was found).
+    scanner: str | None
+    scanner_id: int | None
+    scanner_name: str | None
+    scanner_location: str | None
+    scanner_technology: str | None
 
 
 class TagHeaderDataScanFileResult(BaseModel):
@@ -311,6 +366,12 @@ class TagLineDataResponse(BaseModel):
     assigned_serial_number: str | None
     manufacturer: str | None
     batch_number: str | None
+    # Which registered Scanners device the raw "scanner" text matched, if
+    # any — null means no match was found (soft match).
+    scanner_id: int | None
+    scanner_name: str | None
+    scanner_location: str | None
+    scanner_technology: str | None
     status: TagLineStatus
     created_at: datetime
 
