@@ -27,11 +27,16 @@ class ScreenDefinition:
     sort_order: int
 
 
-# Every screen MasterData currently has. "Season" and "Products" are its
-# actual pieces of master data; "Type"/"Warehouses"/"Product categories"/
-# "Product limits" are the four lookup lists ("selection criteria") nested
-# under Products; "Roles" and "Users" are the two access-rights screens.
-# All are gated independently of one another.
+# Every screen MasterData currently has. "Season", "Products", "Festivals",
+# and "Teams" are its actual pieces of master data ("Teams" itself is
+# still a placeholder page — its own real screen hasn't been built yet —
+# but "Team Location"/"Delivery Method"/"Team Tasks" ARE real, working
+# screens nested one level under it, the same way the four Products
+# lookups are nested under "Products"); "Type"/"Warehouses"/"Product
+# categories"/"Product limits" are the four lookup lists ("selection
+# criteria") nested under Products; "Roles" and "Users" are the two
+# access-rights screens. All are gated independently of one another — a
+# Festivals permission does not imply a Season permission.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.season", label="Seasons", sort_order=1),
     ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
@@ -41,6 +46,12 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.product-limits", label="Limieten", sort_order=6),
     ScreenDefinition(key="masterdata.roles", label="Roles", sort_order=7),
     ScreenDefinition(key="masterdata.users", label="Users", sort_order=8),
+    ScreenDefinition(key="masterdata.festival", label="Festivals", sort_order=9),
+    ScreenDefinition(key="masterdata.teams", label="Teams", sort_order=10),
+    ScreenDefinition(key="masterdata.team-location", label="Team Location", sort_order=11),
+    ScreenDefinition(key="masterdata.delivery-method", label="Delivery Method", sort_order=12),
+    ScreenDefinition(key="masterdata.team-tasks", label="Team Tasks", sort_order=13),
+    ScreenDefinition(key="masterdata.altsien-kernleden", label="Altsien Kernleden", sort_order=14),
 ]
 
 

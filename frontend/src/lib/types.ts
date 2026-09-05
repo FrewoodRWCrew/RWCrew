@@ -56,6 +56,58 @@ export interface Season {
   name: string;
 }
 
+/** One team location, as managed on MasterData's Team Location screen (nested under Teams). */
+export interface TeamLocation {
+  id: number;
+  location: string;
+}
+
+/** One delivery method, as managed on MasterData's Delivery Method screen (nested under Teams). */
+export interface DeliveryMethod {
+  id: number;
+  delivery_method: string;
+}
+
+/** One team task, as managed on MasterData's Team Tasks screen (nested under Teams). */
+export interface TeamTask {
+  id: number;
+  team_tasks: string;
+}
+
+/** One festival, as managed on MasterData's Festivals screen. */
+export interface Festival {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  season_id: number;
+}
+
+/** The fields sent to create or fully update a festival. */
+export interface FestivalInput {
+  name: string;
+  start_date: string;
+  end_date: string;
+  season_id: number;
+}
+
+/** One Altsien Kernleden contact, as managed on MasterData's own screen. */
+export interface AltsienKernlid {
+  id: number;
+  first_name: string;
+  name: string;
+  telephone_number: string;
+  email: string;
+}
+
+/** The fields sent to create or fully update an Altsien Kernleden contact. */
+export interface AltsienKernlidInput {
+  first_name: string;
+  name: string;
+  telephone_number: string;
+  email: string;
+}
+
 /** One product, as managed on MasterData's Products screen. */
 export interface Product {
   id: number;
@@ -282,7 +334,7 @@ export interface TagTopProductItem {
 /** Aggregate KPI stats for TagScan's landing dashboard. */
 export interface TagDashboardStats {
   total_tags: number;
-  active_tags: number;
+  unreaded_tags_count: number;
   assigned_tags: number;
   unassigned_tags: number;
   lost_or_damaged_tags: number;
@@ -398,4 +450,36 @@ export interface MasterDataUserSummary {
 /** Which MasterData screens the current user is allowed to view. */
 export interface MasterDataMyPermissions {
   viewable_screen_keys: string[];
+}
+
+/** How many products have one product type — plus a trailing entry with
+ * type_name null for products with no type set ("Unassigned"). */
+export interface MasterDataTypeBreakdownItem {
+  type_name: string | null;
+  count: number;
+}
+
+/** Same as MasterDataTypeBreakdownItem, but for product categories. */
+export interface MasterDataCategoryBreakdownItem {
+  category_name: string | null;
+  count: number;
+}
+
+/** Same as MasterDataTypeBreakdownItem, but for warehouses. */
+export interface MasterDataWarehouseBreakdownItem {
+  warehouse_name: string | null;
+  count: number;
+}
+
+/** Aggregate KPI stats for MasterData's landing dashboard ("Masterdata Overview"). */
+export interface MasterDataDashboardStats {
+  total_products: number;
+  total_seasons: number;
+  blocked_products: number;
+  consumable_products: number;
+  logistics_products: number;
+  products_missing_classification: number;
+  products_by_type: MasterDataTypeBreakdownItem[];
+  products_by_category: MasterDataCategoryBreakdownItem[];
+  products_by_warehouse: MasterDataWarehouseBreakdownItem[];
 }

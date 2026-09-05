@@ -2,18 +2,24 @@
 
 // MasterData's own left-hand menu, shown while inside the module —
 // direct mirror of TagScan's tagscan-sidebar.tsx (see
-// docs/module-custom-roles-pattern.md), with one deliberate difference:
-// the top-level "Season" link is gated by its own permission
-// ("masterdata.season"), unlike TagScan's unconditional "Dashboard" link
-// — Season is real gated content here, not an always-visible landing
-// placeholder, so it should behave like every other screen link.
+// docs/module-custom-roles-pattern.md). "Overview" (the KPI dashboard,
+// now the module's own landing page) is unconditional and stays
+// top-level, exactly like TagScan's own "Dashboard" link — always-visible
+// landing content, not a gated screen.
 //
-// Type/Magazijn/Categorie/Limiet are the four "selection criteria" lookup
-// lists used by the Products form — shown indented directly under the
-// "Products" link, the same indentation treatment used for Roles/Users
-// under "Access Rights" below.
+// "Season", "Festival", "Teams", "Altsien Kernleden", and "Products" ARE
+// gated by their own permissions and are grouped under their own
+// "MasterData" heading (icon matches this module's own Database icon
+// from module-theme.ts), the same visual treatment "Access Rights" gets
+// for Roles/Users below. Type/Magazijn/Categorie/Limiet are the four
+// "selection criteria" lookup lists used by the Products form — shown
+// one level deeper, indented under "Products" within that same group.
+// "Teams" itself is currently a placeholder page (see its page.tsx)
+// while its own real screen is designed, but Team Location/Delivery
+// Method/Team Tasks ARE real, working screens nested one level under it,
+// the same way Type/Magazijn/Categorie/Limiet nest under Products.
 
-import { ShieldCheck } from "lucide-react";
+import { Database, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -27,7 +33,14 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const t = useTranslations("masterdata");
   // Each link's label reuses that screen's own title, rather than a
   // separate key, so the sidebar and the page heading can never drift apart.
+  const tLanding = useTranslations("masterdata.landing");
   const tSeason = useTranslations("masterdata.season");
+  const tFestival = useTranslations("masterdata.festival");
+  const tTeams = useTranslations("masterdata.teams");
+  const tTeamLocation = useTranslations("masterdata.teamLocation");
+  const tDeliveryMethod = useTranslations("masterdata.deliveryMethod");
+  const tTeamTasks = useTranslations("masterdata.teamTasks");
+  const tAltsienKernleden = useTranslations("masterdata.altsienKernleden");
   const tProducts = useTranslations("masterdata.products");
   const tProductTypes = useTranslations("masterdata.productTypes");
   const tWarehouses = useTranslations("masterdata.warehouses");
@@ -41,6 +54,12 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const { tileClassName } = getModuleTheme("module-9");
 
   const canViewSeason = viewableScreenKeys.includes("masterdata.season");
+  const canViewFestival = viewableScreenKeys.includes("masterdata.festival");
+  const canViewTeams = viewableScreenKeys.includes("masterdata.teams");
+  const canViewTeamLocation = viewableScreenKeys.includes("masterdata.team-location");
+  const canViewDeliveryMethod = viewableScreenKeys.includes("masterdata.delivery-method");
+  const canViewTeamTasks = viewableScreenKeys.includes("masterdata.team-tasks");
+  const canViewAltsienKernleden = viewableScreenKeys.includes("masterdata.altsien-kernleden");
   const canViewProducts = viewableScreenKeys.includes("masterdata.products");
   const canViewProductTypes = viewableScreenKeys.includes("masterdata.product-types");
   const canViewWarehouses = viewableScreenKeys.includes("masterdata.warehouses");
@@ -49,10 +68,11 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewRoles = viewableScreenKeys.includes("masterdata.roles");
   const canViewUsers = viewableScreenKeys.includes("masterdata.users");
 
-  function linkClassName(href: string, indented = false) {
+  function linkClassName(href: string, level: 0 | 1 | 2 = 0) {
     return cn(
       "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-      indented && "ml-3",
+      level === 1 && "ml-3",
+      level === 2 && "ml-6",
       pathname === href
         ? "bg-sidebar-primary text-sidebar-primary-foreground"
         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -65,52 +85,113 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
         {t("moduleTitle")}
       </div>
 
-      {canViewSeason && (
-        <Link href="/modules/module-9" className={linkClassName("/modules/module-9")}>
-          {tSeason("title")}
-        </Link>
-      )}
+      <Link href="/modules/module-9" className={linkClassName("/modules/module-9")}>
+        {tLanding("title")}
+      </Link>
 
-      {canViewProducts && (
-        <Link href="/modules/module-9/products" className={linkClassName("/modules/module-9/products")}>
-          {tProducts("title")}
-        </Link>
-      )}
+      {(canViewSeason || canViewFestival || canViewTeams || canViewAltsienKernleden || canViewProducts) && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <Database className="size-4" />
+            {t("moduleTitle")}
+          </div>
 
-      {canViewProductTypes && (
-        <Link
-          href="/modules/module-9/products/types"
-          className={linkClassName("/modules/module-9/products/types", true)}
-        >
-          {tProductTypes("title")}
-        </Link>
-      )}
+          {canViewSeason && (
+            <Link href="/modules/module-9/season" className={linkClassName("/modules/module-9/season", 1)}>
+              {tSeason("title")}
+            </Link>
+          )}
 
-      {canViewWarehouses && (
-        <Link
-          href="/modules/module-9/products/warehouses"
-          className={linkClassName("/modules/module-9/products/warehouses", true)}
-        >
-          {tWarehouses("title")}
-        </Link>
-      )}
+          {canViewFestival && (
+            <Link href="/modules/module-9/festival" className={linkClassName("/modules/module-9/festival", 1)}>
+              {tFestival("title")}
+            </Link>
+          )}
 
-      {canViewProductCategories && (
-        <Link
-          href="/modules/module-9/products/categories"
-          className={linkClassName("/modules/module-9/products/categories", true)}
-        >
-          {tProductCategories("title")}
-        </Link>
-      )}
+          {canViewTeams && (
+            <Link href="/modules/module-9/teams" className={linkClassName("/modules/module-9/teams", 1)}>
+              {tTeams("title")}
+            </Link>
+          )}
 
-      {canViewProductLimits && (
-        <Link
-          href="/modules/module-9/products/limits"
-          className={linkClassName("/modules/module-9/products/limits", true)}
-        >
-          {tProductLimits("title")}
-        </Link>
+          {canViewTeamLocation && (
+            <Link
+              href="/modules/module-9/teams/location"
+              className={linkClassName("/modules/module-9/teams/location", 2)}
+            >
+              {tTeamLocation("title")}
+            </Link>
+          )}
+
+          {canViewDeliveryMethod && (
+            <Link
+              href="/modules/module-9/teams/delivery-method"
+              className={linkClassName("/modules/module-9/teams/delivery-method", 2)}
+            >
+              {tDeliveryMethod("title")}
+            </Link>
+          )}
+
+          {canViewTeamTasks && (
+            <Link
+              href="/modules/module-9/teams/tasks"
+              className={linkClassName("/modules/module-9/teams/tasks", 2)}
+            >
+              {tTeamTasks("title")}
+            </Link>
+          )}
+
+          {canViewAltsienKernleden && (
+            <Link
+              href="/modules/module-9/altsien-kernleden"
+              className={linkClassName("/modules/module-9/altsien-kernleden", 1)}
+            >
+              {tAltsienKernleden("title")}
+            </Link>
+          )}
+
+          {canViewProducts && (
+            <Link href="/modules/module-9/products" className={linkClassName("/modules/module-9/products", 1)}>
+              {tProducts("title")}
+            </Link>
+          )}
+
+          {canViewProductTypes && (
+            <Link
+              href="/modules/module-9/products/types"
+              className={linkClassName("/modules/module-9/products/types", 2)}
+            >
+              {tProductTypes("title")}
+            </Link>
+          )}
+
+          {canViewWarehouses && (
+            <Link
+              href="/modules/module-9/products/warehouses"
+              className={linkClassName("/modules/module-9/products/warehouses", 2)}
+            >
+              {tWarehouses("title")}
+            </Link>
+          )}
+
+          {canViewProductCategories && (
+            <Link
+              href="/modules/module-9/products/categories"
+              className={linkClassName("/modules/module-9/products/categories", 2)}
+            >
+              {tProductCategories("title")}
+            </Link>
+          )}
+
+          {canViewProductLimits && (
+            <Link
+              href="/modules/module-9/products/limits"
+              className={linkClassName("/modules/module-9/products/limits", 2)}
+            >
+              {tProductLimits("title")}
+            </Link>
+          )}
+        </>
       )}
 
       {(canViewRoles || canViewUsers) && (
@@ -120,12 +201,12 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
             {t("accessRights")}
           </div>
           {canViewRoles && (
-            <Link href="/modules/module-9/access-rights/roles" className={linkClassName("/modules/module-9/access-rights/roles", true)}>
+            <Link href="/modules/module-9/access-rights/roles" className={linkClassName("/modules/module-9/access-rights/roles", 1)}>
               {tRoles("title")}
             </Link>
           )}
           {canViewUsers && (
-            <Link href="/modules/module-9/access-rights/users" className={linkClassName("/modules/module-9/access-rights/users", true)}>
+            <Link href="/modules/module-9/access-rights/users" className={linkClassName("/modules/module-9/access-rights/users", 1)}>
               {tUsers("title")}
             </Link>
           )}

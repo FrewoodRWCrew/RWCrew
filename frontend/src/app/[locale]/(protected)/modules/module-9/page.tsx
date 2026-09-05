@@ -1,27 +1,19 @@
-// MasterData's "Season" screen: reachable directly at the module's own
-// root URL, the same way TagScan's Dashboard is its module's root page —
-// see SeasonManagement for the actual UI. Moved here from
-// admin/master-data/season/page.tsx, now permission-checked the normal
-// module way (via this route's layout.tsx) instead of a raw
-// is_super_admin check.
+// MasterData's landing page: the first screen shown when the module is
+// opened — a KPI dashboard ("Masterdata Overview", stat tiles + charts)
+// built from /api/modules/module-9/dashboard, the same treatment
+// TagScan's own module-1/page.tsx gives its dashboard. Season (the
+// module's other actual piece of master data) has its own sidebar link,
+// see modules/module-9/season/page.tsx. No 403 handling needed here
+// beyond what the module's own layout.tsx already does (it checks module
+// access and 403s before this ever renders) — the dashboard endpoint is
+// gated the same unconditional way.
 
-import { getTranslations } from "next-intl/server";
-import { ServerApiError, serverApiFetch } from "@/lib/server-api";
-import type { Season } from "@/lib/types";
-import { SeasonManagement } from "@/components/module-9/season-management";
+import { serverApiFetch } from "@/lib/server-api";
+import type { MasterDataDashboardStats } from "@/lib/types";
+import { MasterDataDashboard } from "@/components/module-9/masterdata-dashboard";
 
-export default async function MasterDataSeasonPage() {
-  const tErrors = await getTranslations("errors");
+export default async function MasterDataLandingPage() {
+  const stats = await serverApiFetch<MasterDataDashboardStats>("/api/modules/module-9/dashboard");
 
-  let seasons: Season[] | null = null;
-  try {
-    seasons = await serverApiFetch<Season[]>("/api/modules/module-9/seasons");
-  } catch (error) {
-    if (error instanceof ServerApiError && error.status === 403) {
-      return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
-    }
-    throw error;
-  }
-
-  return <SeasonManagement initialSeasons={seasons} />;
+  return <MasterDataDashboard stats={stats} />;
 }

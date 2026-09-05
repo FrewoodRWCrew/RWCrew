@@ -11,6 +11,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.altsien_kernlid import AltsienKernlid
+from app.db.models.delivery_method import DeliveryMethod
+from app.db.models.festival import Festival
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -21,6 +24,8 @@ from app.db.models.product_category import ProductCategory
 from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
 from app.db.models.season import Season
+from app.db.models.team_location import TeamLocation
+from app.db.models.team_task import TeamTask
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
@@ -31,8 +36,19 @@ from app.modules.module_9.deps import (
     require_screen_permission,
     user_can,
 )
+from app.modules.module_9.masterdata_dashboard import build_dashboard_stats
 from app.schemas.masterdata import (
+    AltsienKernlidCreateRequest,
+    AltsienKernlidResponse,
+    AltsienKernlidUpdateRequest,
     CreateOrGrantUserRequest,
+    DeliveryMethodCreateRequest,
+    DeliveryMethodResponse,
+    DeliveryMethodUpdateRequest,
+    FestivalCreateRequest,
+    FestivalResponse,
+    FestivalUpdateRequest,
+    MasterDataDashboardResponse,
     MasterDataUserSummaryResponse,
     MyPermissionsResponse,
     ProductCategoryCreateRequest,
@@ -57,6 +73,12 @@ from app.schemas.masterdata import (
     SeasonUpdateRequest,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    TeamLocationCreateRequest,
+    TeamLocationResponse,
+    TeamLocationUpdateRequest,
+    TeamTaskCreateRequest,
+    TeamTaskResponse,
+    TeamTaskUpdateRequest,
     WarehouseCreateRequest,
     WarehouseResponse,
     WarehouseUpdateRequest,
@@ -351,6 +373,19 @@ def create_or_grant_user(
     return _build_user_summary(db, target_user)
 
 
+@router.get("/dashboard", response_model=MasterDataDashboardResponse)
+def get_dashboard(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> MasterDataDashboardResponse:
+    """Aggregate KPI stats for MasterData's "Masterdata Overview" landing
+    page — gated only by plain module access, not a specific screen
+    permission, matching TagScan's own dashboard (it's always-visible
+    landing content, not a gated screen).
+    """
+    return build_dashboard_stats(db)
+
+
 @router.get("/me/permissions", response_model=MyPermissionsResponse)
 def get_my_permissions(
     db: Session = Depends(get_db),
@@ -428,6 +463,341 @@ def delete_season(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
 
     db.delete(season)
+    db.commit()
+
+
+def _validate_festival_lookup_ids(db: Session, payload: FestivalCreateRequest | FestivalUpdateRequest) -> None:
+    """Make sure season_id actually exists, the same way
+    _validate_product_lookup_ids() below checks type_id/warehouse_id/etc.
+    — a bad id should surface as a clear 404, not an opaque FK IntegrityError.
+    """
+    if db.get(Season, payload.season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+
+
+@router.get("/festivals", response_model=list[FestivalResponse])
+def list_festivals(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.festival", "view")),
+) -> list[Festival]:
+    """List every festival, for the Festivals screen's table."""
+    return list(db.scalars(select(Festival).order_by(Festival.name)).all())
+
+
+@router.post("/festivals", response_model=FestivalResponse, status_code=status.HTTP_201_CREATED)
+def create_festival(
+    payload: FestivalCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.festival", "create")),
+) -> Festival:
+    """Create a brand-new festival."""
+    _validate_festival_lookup_ids(db, payload)
+    new_festival = Festival(**payload.model_dump())
+    db.add(new_festival)
+    db.commit()
+    db.refresh(new_festival)
+    return new_festival
+
+
+@router.put("/festivals/{festival_id}", response_model=FestivalResponse)
+def update_festival(
+    festival_id: int,
+    payload: FestivalUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.festival", "edit")),
+) -> Festival:
+    """Update every field of an existing festival."""
+    festival = db.get(Festival, festival_id)
+    if festival is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Festival not found")
+
+    _validate_festival_lookup_ids(db, payload)
+    for field, value in payload.model_dump().items():
+        setattr(festival, field, value)
+    db.commit()
+    db.refresh(festival)
+    return festival
+
+
+@router.delete("/festivals/{festival_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_festival(
+    festival_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.festival", "delete")),
+) -> None:
+    """Permanently delete a festival."""
+    festival = db.get(Festival, festival_id)
+    if festival is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Festival not found")
+
+    db.delete(festival)
+    db.commit()
+
+
+@router.get("/team-locations", response_model=list[TeamLocationResponse])
+def list_team_locations(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-location", "view")),
+) -> list[TeamLocation]:
+    """List every team location, for the Team Location screen's table."""
+    return list(db.scalars(select(TeamLocation).order_by(TeamLocation.location)).all())
+
+
+@router.post("/team-locations", response_model=TeamLocationResponse, status_code=status.HTTP_201_CREATED)
+def create_team_location(
+    payload: TeamLocationCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-location", "create")),
+) -> TeamLocation:
+    """Create a brand-new team location."""
+    new_team_location = TeamLocation(location=payload.location)
+    db.add(new_team_location)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A team location with this name already exists"
+        ) from error
+
+    db.refresh(new_team_location)
+    return new_team_location
+
+
+@router.put("/team-locations/{team_location_id}", response_model=TeamLocationResponse)
+def update_team_location(
+    team_location_id: int,
+    payload: TeamLocationUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-location", "edit")),
+) -> TeamLocation:
+    """Rename an existing team location."""
+    team_location = db.get(TeamLocation, team_location_id)
+    if team_location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team location not found")
+
+    team_location.location = payload.location
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A team location with this name already exists"
+        ) from error
+
+    db.refresh(team_location)
+    return team_location
+
+
+@router.delete("/team-locations/{team_location_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team_location(
+    team_location_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-location", "delete")),
+) -> None:
+    """Permanently delete a team location."""
+    team_location = db.get(TeamLocation, team_location_id)
+    if team_location is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team location not found")
+
+    db.delete(team_location)
+    db.commit()
+
+
+@router.get("/delivery-methods", response_model=list[DeliveryMethodResponse])
+def list_delivery_methods(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.delivery-method", "view")),
+) -> list[DeliveryMethod]:
+    """List every delivery method, for the Delivery Method screen's table."""
+    return list(db.scalars(select(DeliveryMethod).order_by(DeliveryMethod.delivery_method)).all())
+
+
+@router.post("/delivery-methods", response_model=DeliveryMethodResponse, status_code=status.HTTP_201_CREATED)
+def create_delivery_method(
+    payload: DeliveryMethodCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.delivery-method", "create")),
+) -> DeliveryMethod:
+    """Create a brand-new delivery method."""
+    new_delivery_method = DeliveryMethod(delivery_method=payload.delivery_method)
+    db.add(new_delivery_method)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A delivery method with this name already exists"
+        ) from error
+
+    db.refresh(new_delivery_method)
+    return new_delivery_method
+
+
+@router.put("/delivery-methods/{delivery_method_id}", response_model=DeliveryMethodResponse)
+def update_delivery_method(
+    delivery_method_id: int,
+    payload: DeliveryMethodUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.delivery-method", "edit")),
+) -> DeliveryMethod:
+    """Rename an existing delivery method."""
+    delivery_method = db.get(DeliveryMethod, delivery_method_id)
+    if delivery_method is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery method not found")
+
+    delivery_method.delivery_method = payload.delivery_method
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A delivery method with this name already exists"
+        ) from error
+
+    db.refresh(delivery_method)
+    return delivery_method
+
+
+@router.delete("/delivery-methods/{delivery_method_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_delivery_method(
+    delivery_method_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.delivery-method", "delete")),
+) -> None:
+    """Permanently delete a delivery method."""
+    delivery_method = db.get(DeliveryMethod, delivery_method_id)
+    if delivery_method is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery method not found")
+
+    db.delete(delivery_method)
+    db.commit()
+
+
+@router.get("/team-tasks", response_model=list[TeamTaskResponse])
+def list_team_tasks(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-tasks", "view")),
+) -> list[TeamTask]:
+    """List every team task, for the Team Tasks screen's table."""
+    return list(db.scalars(select(TeamTask).order_by(TeamTask.team_tasks)).all())
+
+
+@router.post("/team-tasks", response_model=TeamTaskResponse, status_code=status.HTTP_201_CREATED)
+def create_team_task(
+    payload: TeamTaskCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-tasks", "create")),
+) -> TeamTask:
+    """Create a brand-new team task."""
+    new_team_task = TeamTask(team_tasks=payload.team_tasks)
+    db.add(new_team_task)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A team task with this name already exists"
+        ) from error
+
+    db.refresh(new_team_task)
+    return new_team_task
+
+
+@router.put("/team-tasks/{team_task_id}", response_model=TeamTaskResponse)
+def update_team_task(
+    team_task_id: int,
+    payload: TeamTaskUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-tasks", "edit")),
+) -> TeamTask:
+    """Rename an existing team task."""
+    team_task = db.get(TeamTask, team_task_id)
+    if team_task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team task not found")
+
+    team_task.team_tasks = payload.team_tasks
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A team task with this name already exists"
+        ) from error
+
+    db.refresh(team_task)
+    return team_task
+
+
+@router.delete("/team-tasks/{team_task_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team_task(
+    team_task_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-tasks", "delete")),
+) -> None:
+    """Permanently delete a team task."""
+    team_task = db.get(TeamTask, team_task_id)
+    if team_task is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team task not found")
+
+    db.delete(team_task)
+    db.commit()
+
+
+@router.get("/altsien-kernleden", response_model=list[AltsienKernlidResponse])
+def list_altsien_kernleden(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "view")),
+) -> list[AltsienKernlid]:
+    """List every Altsien Kernleden contact, for its screen's table."""
+    return list(db.scalars(select(AltsienKernlid).order_by(AltsienKernlid.name, AltsienKernlid.first_name)).all())
+
+
+@router.post("/altsien-kernleden", response_model=AltsienKernlidResponse, status_code=status.HTTP_201_CREATED)
+def create_altsien_kernlid(
+    payload: AltsienKernlidCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "create")),
+) -> AltsienKernlid:
+    """Create a brand-new Altsien Kernleden contact."""
+    new_contact = AltsienKernlid(**payload.model_dump())
+    db.add(new_contact)
+    db.commit()
+    db.refresh(new_contact)
+    return new_contact
+
+
+@router.put("/altsien-kernleden/{altsien_kernlid_id}", response_model=AltsienKernlidResponse)
+def update_altsien_kernlid(
+    altsien_kernlid_id: int,
+    payload: AltsienKernlidUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "edit")),
+) -> AltsienKernlid:
+    """Update every field of an existing Altsien Kernleden contact."""
+    contact = db.get(AltsienKernlid, altsien_kernlid_id)
+    if contact is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
+
+    for field, value in payload.model_dump().items():
+        setattr(contact, field, value)
+    db.commit()
+    db.refresh(contact)
+    return contact
+
+
+@router.delete("/altsien-kernleden/{altsien_kernlid_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_altsien_kernlid(
+    altsien_kernlid_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "delete")),
+) -> None:
+    """Delete an Altsien Kernleden contact."""
+    contact = db.get(AltsienKernlid, altsien_kernlid_id)
+    if contact is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
+
+    db.delete(contact)
     db.commit()
 
 

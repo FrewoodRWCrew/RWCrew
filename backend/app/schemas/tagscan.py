@@ -296,7 +296,7 @@ class TagDashboardResponse(BaseModel):
     """Aggregate KPI stats for TagScan's landing dashboard."""
 
     total_tags: int
-    active_tags: int
+    unreaded_tags_count: int
     assigned_tags: int
     unassigned_tags: int
     lost_or_damaged_tags: int

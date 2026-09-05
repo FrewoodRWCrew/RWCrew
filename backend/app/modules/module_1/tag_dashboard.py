@@ -19,6 +19,8 @@ from sqlalchemy.orm import Session
 
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
+from app.modules.module_1.file_browser import get_source_root
+from app.modules.module_1.tag_header_data import UNREADED_SUBFOLDER
 from app.schemas.tagscan import (
     TagDashboardResponse,
     TagStatusBreakdownItem,
@@ -35,11 +37,22 @@ def _week_start(day: date) -> date:
     return day - timedelta(days=day.weekday())
 
 
+def _count_unreaded_files() -> int:
+    """How many CSV files are currently sitting in "Unreaded Tags",
+    waiting for the "Tag Headerdata" screen's scan to pick them up — the
+    same non-recursive, .csv-only filter that scan actually uses.
+    """
+    unreaded_dir = get_source_root() / UNREADED_SUBFOLDER
+    if not unreaded_dir.is_dir():
+        return 0
+    return sum(1 for entry in unreaded_dir.iterdir() if entry.is_file() and entry.suffix.lower() == ".csv")
+
+
 def build_dashboard_stats(db: Session) -> TagDashboardResponse:
     rows = db.execute(select(RfidTag.status, RfidTag.assigned_product_id, RfidTag.date_registered)).all()
 
     total_tags = len(rows)
-    active_tags = sum(1 for row in rows if row.status == "active")
+    unreaded_tags_count = _count_unreaded_files()
     assigned_tags = sum(1 for row in rows if row.assigned_product_id is not None)
     unassigned_tags = total_tags - assigned_tags
     lost_or_damaged_tags = sum(1 for row in rows if row.status in ("lost", "damaged"))
@@ -87,7 +100,7 @@ def build_dashboard_stats(db: Session) -> TagDashboardResponse:
 
     return TagDashboardResponse(
         total_tags=total_tags,
-        active_tags=active_tags,
+        unreaded_tags_count=unreaded_tags_count,
         assigned_tags=assigned_tags,
         unassigned_tags=unassigned_tags,
         lost_or_damaged_tags=lost_or_damaged_tags,

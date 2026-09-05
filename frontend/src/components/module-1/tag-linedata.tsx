@@ -31,6 +31,16 @@ interface TagLineDataProps {
 const STATUS_VALUES: TagLineStatus[] = ["converted", "no_match", "cancelled"];
 const ALL_VALUE = "all";
 
+/** Plain string slicing instead of toLocaleString(): that depends on the
+ * runtime's default locale/timezone, which differs between the server
+ * (during SSR) and the browser (during hydration) — causing a hydration
+ * mismatch. Slicing the already-ISO string is deterministic everywhere
+ * (see tag-headerdata.tsx's identical helper).
+ */
+function formatDateTime(isoDateTime: string): string {
+  return isoDateTime.slice(0, 16).replace("T", " ");
+}
+
 /** Every column a user can click to sort by — matches the corresponding
  * TagLineDataEntry field name directly, so the comparator can index into
  * an entry with it without a separate lookup table.
@@ -41,6 +51,7 @@ type SortableColumn =
   | "scanner"
   | "scanner_name"
   | "scanner_location"
+  | "created_at"
   | "scanner_technology"
   | "epc"
   | "rssi"
@@ -130,6 +141,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [scannerFilter, setScannerFilter] = useState("");
   const [scannerNameFilter, setScannerNameFilter] = useState("");
   const [scannerLocationFilter, setScannerLocationFilter] = useState("");
+  const [createdAtFilter, setCreatedAtFilter] = useState("");
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [epcFilter, setEpcFilter] = useState("");
   const [rssiFilter, setRssiFilter] = useState("");
@@ -164,6 +176,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.scanner, scannerFilter)) return false;
       if (!textMatches(entry.scanner_name, scannerNameFilter)) return false;
       if (!textMatches(entry.scanner_location, scannerLocationFilter)) return false;
+      if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(entry.scanner_technology, scannerTechnologyFilter)) return false;
       if (!textMatches(entry.epc, epcFilter)) return false;
       if (!textMatches(entry.rssi, rssiFilter)) return false;
@@ -184,6 +197,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     scannerFilter,
     scannerNameFilter,
     scannerLocationFilter,
+    createdAtFilter,
     scannerTechnologyFilter,
     epcFilter,
     rssiFilter,
@@ -300,6 +314,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <TableCell>{entry.scanner}</TableCell>
         <TableCell>{entry.scanner_name}</TableCell>
         <TableCell>{entry.scanner_location}</TableCell>
+        <TableCell>{formatDateTime(entry.created_at)}</TableCell>
         <TableCell>{entry.scanner_technology}</TableCell>
         <TableCell>{entry.last_seen}</TableCell>
         <TableCell>{entry.header_filename}</TableCell>
@@ -417,6 +432,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnScannerLocation")}
                 column="scanner_location"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnCreatedAt")}
+                column="created_at"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -585,6 +609,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterCreatedAt")}
+                  placeholder={t("filterCreatedAt")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={createdAtFilter}
+                  onChange={(event) => setCreatedAtFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterScannerTechnology")}
                   placeholder={t("filterScannerTechnology")}
                   className="h-8 w-full min-w-32 font-normal"
@@ -676,7 +709,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={17} className="font-semibold">
+                        <TableCell colSpan={18} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

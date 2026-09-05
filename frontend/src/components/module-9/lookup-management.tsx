@@ -1,13 +1,16 @@
 "use client";
 
-// The shared table + create/change/delete-dialog UI for MasterData's five
-// simple "id + unique name" lookup screens (Seasons, and the four
-// Products "selection criteria" lists: Type, Magazijnen, Categorieën,
-// Limieten). Each screen's own *-management.tsx file is now a thin
-// wrapper that supplies its translated labels and its api.ts
-// create/update/delete functions as props — this file has no
-// translation-key or endpoint knowledge of its own, so it never needs to
-// change when a 6th lookup screen is added; only a new thin wrapper does.
+// The shared table + create/change/delete-dialog UI for MasterData's
+// simple "id + unique field" lookup screens: Seasons, the four Products
+// "selection criteria" lists (Type, Magazijnen, Categorieën, Limieten),
+// and the three screens nested under Teams (Team Location, Delivery
+// Method, Team Tasks). Each screen's own *-management.tsx file is a thin
+// wrapper that supplies its translated labels, its api.ts
+// create/update/delete functions, and (for any screen whose field isn't
+// literally called "name") a `field` prop naming which key on its item
+// type holds the display value — this file has no translation-key or
+// endpoint knowledge of its own, so it never needs to change when another
+// lookup screen is added; only a new thin wrapper does.
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -39,10 +42,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-/** The shape every lookup entity has: a bare id + unique name. */
+/** The shape every lookup entity has: a bare id, plus one unique field
+ * whose key is named by the `field` prop (defaulting to "name"). */
 export interface LookupItem {
   id: number;
-  name: string;
 }
 
 /** Every piece of already-translated text the shared UI needs, supplied
@@ -76,6 +79,10 @@ export interface LookupManagementLabels {
 interface LookupManagementProps<T extends LookupItem> {
   initialItems: T[];
   labels: LookupManagementLabels;
+  /** Which field on T holds the display value shown in the table and
+   * dialogs. Defaults to "name" for the original five lookup screens;
+   * pass e.g. "location" for a screen whose field is named differently. */
+  field?: keyof T;
   create: (name: string) => Promise<T>;
   update: (id: number, name: string) => Promise<T>;
   remove: (id: number) => Promise<void>;
@@ -84,6 +91,7 @@ interface LookupManagementProps<T extends LookupItem> {
 export function LookupManagement<T extends LookupItem>({
   initialItems,
   labels,
+  field = "name" as keyof T,
   create,
   update,
   remove,
@@ -93,6 +101,10 @@ export function LookupManagement<T extends LookupItem>({
   // Kept in local state so create/change/delete update the table
   // instantly, without waiting for a full page reload.
   const [items, setItems] = useState(initialItems);
+
+  function valueOf(item: T): string {
+    return String(item[field]);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -105,7 +117,7 @@ export function LookupManagement<T extends LookupItem>({
           labels={labels}
           create={create}
           onCreated={(newItem) => {
-            setItems((current) => [...current, newItem].sort((a, b) => a.name.localeCompare(b.name)));
+            setItems((current) => [...current, newItem].sort((a, b) => valueOf(a).localeCompare(valueOf(b))));
             router.refresh();
           }}
         />
@@ -122,24 +134,26 @@ export function LookupManagement<T extends LookupItem>({
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.id}>
-                <TableCell className="font-medium">{item.name}</TableCell>
+                <TableCell className="font-medium">{valueOf(item)}</TableCell>
                 <TableCell>
                   <div className="flex justify-end gap-1">
                     <ChangeItemDialog
                       item={item}
+                      field={field}
                       labels={labels}
                       update={update}
                       onChanged={(updatedItem) => {
                         setItems((current) =>
                           current
                             .map((current_item) => (current_item.id === updatedItem.id ? updatedItem : current_item))
-                            .sort((a, b) => a.name.localeCompare(b.name)),
+                            .sort((a, b) => valueOf(a).localeCompare(valueOf(b))),
                         );
                         router.refresh();
                       }}
                     />
                     <DeleteItemAlertDialog
                       item={item}
+                      field={field}
                       labels={labels}
                       remove={remove}
                       onDeleted={(deletedItemId) => {
@@ -211,22 +225,23 @@ function CreateItemDialog<T extends LookupItem>({ labels, create, onCreated }: C
 
 interface ChangeItemDialogProps<T extends LookupItem> {
   item: T;
+  field: keyof T;
   labels: LookupManagementLabels;
   update: (id: number, name: string) => Promise<T>;
   onChanged: (item: T) => void;
 }
 
-function ChangeItemDialog<T extends LookupItem>({ item, labels, update, onChanged }: ChangeItemDialogProps<T>) {
+function ChangeItemDialog<T extends LookupItem>({ item, field, labels, update, onChanged }: ChangeItemDialogProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [name, setName] = useState(item.name);
+  const [name, setName] = useState(String(item[field]));
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
     if (open) {
-      // Start from the item's latest known name each time the dialog is
+      // Start from the item's latest known value each time the dialog is
       // opened, in case it changed since last time.
-      setName(item.name);
+      setName(String(item[field]));
     }
   }
 
@@ -281,12 +296,19 @@ function ChangeItemDialog<T extends LookupItem>({ item, labels, update, onChange
 
 interface DeleteItemAlertDialogProps<T extends LookupItem> {
   item: T;
+  field: keyof T;
   labels: LookupManagementLabels;
   remove: (id: number) => Promise<void>;
   onDeleted: (itemId: number) => void;
 }
 
-function DeleteItemAlertDialog<T extends LookupItem>({ item, labels, remove, onDeleted }: DeleteItemAlertDialogProps<T>) {
+function DeleteItemAlertDialog<T extends LookupItem>({
+  item,
+  field,
+  labels,
+  remove,
+  onDeleted,
+}: DeleteItemAlertDialogProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -317,7 +339,7 @@ function DeleteItemAlertDialog<T extends LookupItem>({ item, labels, remove, onD
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>{labels.deleteConfirmTitle}</AlertDialogTitle>
-          <AlertDialogDescription>{labels.deleteConfirmDescription(item.name)}</AlertDialogDescription>
+          <AlertDialogDescription>{labels.deleteConfirmDescription(String(item[field]))}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{labels.cancel}</AlertDialogCancel>

@@ -10,6 +10,12 @@ import type {
   ModuleRoleAssignment,
   ModuleRoleName,
   ModuleStatus,
+  AltsienKernlid,
+  AltsienKernlidInput,
+  DeliveryMethod,
+  Festival,
+  FestivalInput,
+  MasterDataDashboardStats,
   MasterDataMyPermissions,
   MasterDataRole,
   MasterDataScreen,
@@ -37,6 +43,8 @@ import type {
   TagscanRole,
   TagscanScreen,
   TagscanUserSummary,
+  TeamLocation,
+  TeamTask,
   UserSummary,
   Warehouse,
 } from "./types";
@@ -179,6 +187,126 @@ export function updateSeason(seasonId: number, name: string): Promise<Season> {
 
 export function deleteSeason(seasonId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/seasons/${seasonId}`, { method: "DELETE" });
+}
+
+// --- Team Location (module-9's "masterdata.team-location" screen, nested under Teams) ---
+
+export function listTeamLocations(): Promise<TeamLocation[]> {
+  return apiFetch<TeamLocation[]>("/api/modules/module-9/team-locations");
+}
+
+export function createTeamLocation(location: string): Promise<TeamLocation> {
+  return apiFetch<TeamLocation>("/api/modules/module-9/team-locations", {
+    method: "POST",
+    body: JSON.stringify({ location }),
+  });
+}
+
+export function updateTeamLocation(teamLocationId: number, location: string): Promise<TeamLocation> {
+  return apiFetch<TeamLocation>(`/api/modules/module-9/team-locations/${teamLocationId}`, {
+    method: "PUT",
+    body: JSON.stringify({ location }),
+  });
+}
+
+export function deleteTeamLocation(teamLocationId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/team-locations/${teamLocationId}`, { method: "DELETE" });
+}
+
+// --- Delivery Method (module-9's "masterdata.delivery-method" screen, nested under Teams) ---
+
+export function listDeliveryMethods(): Promise<DeliveryMethod[]> {
+  return apiFetch<DeliveryMethod[]>("/api/modules/module-9/delivery-methods");
+}
+
+export function createDeliveryMethod(deliveryMethod: string): Promise<DeliveryMethod> {
+  return apiFetch<DeliveryMethod>("/api/modules/module-9/delivery-methods", {
+    method: "POST",
+    body: JSON.stringify({ delivery_method: deliveryMethod }),
+  });
+}
+
+export function updateDeliveryMethod(deliveryMethodId: number, deliveryMethod: string): Promise<DeliveryMethod> {
+  return apiFetch<DeliveryMethod>(`/api/modules/module-9/delivery-methods/${deliveryMethodId}`, {
+    method: "PUT",
+    body: JSON.stringify({ delivery_method: deliveryMethod }),
+  });
+}
+
+export function deleteDeliveryMethod(deliveryMethodId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/delivery-methods/${deliveryMethodId}`, { method: "DELETE" });
+}
+
+// --- Team Tasks (module-9's "masterdata.team-tasks" screen, nested under Teams) ---
+
+export function listTeamTasks(): Promise<TeamTask[]> {
+  return apiFetch<TeamTask[]>("/api/modules/module-9/team-tasks");
+}
+
+export function createTeamTask(teamTasks: string): Promise<TeamTask> {
+  return apiFetch<TeamTask>("/api/modules/module-9/team-tasks", {
+    method: "POST",
+    body: JSON.stringify({ team_tasks: teamTasks }),
+  });
+}
+
+export function updateTeamTask(teamTaskId: number, teamTasks: string): Promise<TeamTask> {
+  return apiFetch<TeamTask>(`/api/modules/module-9/team-tasks/${teamTaskId}`, {
+    method: "PUT",
+    body: JSON.stringify({ team_tasks: teamTasks }),
+  });
+}
+
+export function deleteTeamTask(teamTaskId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/team-tasks/${teamTaskId}`, { method: "DELETE" });
+}
+
+// --- Festivals (module-9's "masterdata.festival" screen) -----------------
+
+export function listFestivals(): Promise<Festival[]> {
+  return apiFetch<Festival[]>("/api/modules/module-9/festivals");
+}
+
+export function createFestival(payload: FestivalInput): Promise<Festival> {
+  return apiFetch<Festival>("/api/modules/module-9/festivals", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateFestival(festivalId: number, payload: FestivalInput): Promise<Festival> {
+  return apiFetch<Festival>(`/api/modules/module-9/festivals/${festivalId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteFestival(festivalId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/festivals/${festivalId}`, { method: "DELETE" });
+}
+
+// --- Altsien Kernleden (module-9's "masterdata.altsien-kernleden" screen) ---
+
+export function listAltsienKernleden(): Promise<AltsienKernlid[]> {
+  return apiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden");
+}
+
+export function createAltsienKernlid(payload: AltsienKernlidInput): Promise<AltsienKernlid> {
+  return apiFetch<AltsienKernlid>("/api/modules/module-9/altsien-kernleden", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAltsienKernlid(id: number, payload: AltsienKernlidInput): Promise<AltsienKernlid> {
+  return apiFetch<AltsienKernlid>(`/api/modules/module-9/altsien-kernleden/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAltsienKernlid(id: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/altsien-kernleden/${id}`, { method: "DELETE" });
 }
 
 // --- Products (module-9's "masterdata.products" screen) -----------------
@@ -492,6 +620,10 @@ export function getTagDashboardStats(): Promise<TagDashboardStats> {
 }
 
 // --- MasterData (module-9) -------------------------------------------------
+
+export function getMasterDataDashboardStats(): Promise<MasterDataDashboardStats> {
+  return apiFetch<MasterDataDashboardStats>("/api/modules/module-9/dashboard");
+}
 
 export function getMasterDataMyPermissions(): Promise<MasterDataMyPermissions> {
   return apiFetch<MasterDataMyPermissions>("/api/modules/module-9/me/permissions");

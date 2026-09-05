@@ -1,6 +1,8 @@
 # Schemas describing MasterData's screens, custom roles, permissions, and
 # the Season screen (the first actual piece of master data it manages).
 
+from datetime import date
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -126,6 +128,87 @@ class SeasonUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
 
 
+class TeamLocationResponse(BaseModel):
+    """One team location, as shown on the Team Location screen."""
+
+    id: int
+    location: str
+
+
+class TeamLocationCreateRequest(BaseModel):
+    """What's sent to create a brand-new team location."""
+
+    location: str = Field(min_length=1, max_length=255)
+
+
+class TeamLocationUpdateRequest(BaseModel):
+    """What's sent to rename an existing team location."""
+
+    location: str = Field(min_length=1, max_length=255)
+
+
+class DeliveryMethodResponse(BaseModel):
+    """One delivery method, as shown on the Delivery Method screen."""
+
+    id: int
+    delivery_method: str
+
+
+class DeliveryMethodCreateRequest(BaseModel):
+    """What's sent to create a brand-new delivery method."""
+
+    delivery_method: str = Field(min_length=1, max_length=255)
+
+
+class DeliveryMethodUpdateRequest(BaseModel):
+    """What's sent to rename an existing delivery method."""
+
+    delivery_method: str = Field(min_length=1, max_length=255)
+
+
+class TeamTaskResponse(BaseModel):
+    """One team task, as shown on the Team Tasks screen."""
+
+    id: int
+    team_tasks: str
+
+
+class TeamTaskCreateRequest(BaseModel):
+    """What's sent to create a brand-new team task."""
+
+    team_tasks: str = Field(min_length=1, max_length=255)
+
+
+class TeamTaskUpdateRequest(BaseModel):
+    """What's sent to rename an existing team task."""
+
+    team_tasks: str = Field(min_length=1, max_length=255)
+
+
+class FestivalResponse(BaseModel):
+    """One festival, as shown on the Festivals screen."""
+
+    id: int
+    name: str
+    start_date: date
+    end_date: date
+    season_id: int
+
+
+class FestivalCreateRequest(BaseModel):
+    """What's sent to create a brand-new festival. season_id must reference
+    an existing season (checked by the endpoint, not here)."""
+
+    name: str = Field(min_length=1, max_length=255)
+    start_date: date
+    end_date: date
+    season_id: int
+
+
+class FestivalUpdateRequest(FestivalCreateRequest):
+    """What's sent to update an existing festival — same shape as creating one."""
+
+
 class ProductResponse(BaseModel):
     """One product, as shown on the Products screen."""
 
@@ -239,3 +322,64 @@ class ProductLimitUpdateRequest(BaseModel):
     """What's sent to rename an existing limit option."""
 
     name: str = Field(min_length=1, max_length=255)
+
+
+class MasterDataTypeBreakdownItem(BaseModel):
+    """How many products have one product type — one entry per existing
+    type (zero-filled), plus one "Unassigned" entry (type_name=None) for
+    products with no type set, for the dashboard's "Products by Type" chart.
+    """
+
+    type_name: str | None
+    count: int
+
+
+class MasterDataCategoryBreakdownItem(BaseModel):
+    """Same as MasterDataTypeBreakdownItem, but for product categories."""
+
+    category_name: str | None
+    count: int
+
+
+class MasterDataWarehouseBreakdownItem(BaseModel):
+    """Same as MasterDataTypeBreakdownItem, but for warehouses."""
+
+    warehouse_name: str | None
+    count: int
+
+
+class MasterDataDashboardResponse(BaseModel):
+    """Aggregate KPI stats for MasterData's landing dashboard ("Masterdata Overview")."""
+
+    total_products: int
+    total_seasons: int
+    blocked_products: int
+    consumable_products: int
+    logistics_products: int
+    products_missing_classification: int
+    products_by_type: list[MasterDataTypeBreakdownItem]
+    products_by_category: list[MasterDataCategoryBreakdownItem]
+    products_by_warehouse: list[MasterDataWarehouseBreakdownItem]
+
+
+class AltsienKernlidResponse(BaseModel):
+    """One Altsien Kernleden contact, as shown on its screen."""
+
+    id: int
+    first_name: str
+    name: str
+    telephone_number: str
+    email: EmailStr
+
+
+class AltsienKernlidCreateRequest(BaseModel):
+    """What's sent to create a brand-new Altsien Kernleden contact."""
+
+    first_name: str = Field(min_length=1, max_length=255)
+    name: str = Field(min_length=1, max_length=255)
+    telephone_number: str = Field(min_length=1, max_length=255)
+    email: EmailStr
+
+
+class AltsienKernlidUpdateRequest(AltsienKernlidCreateRequest):
+    """What's sent to update an existing Altsien Kernleden contact — same shape as creating one."""

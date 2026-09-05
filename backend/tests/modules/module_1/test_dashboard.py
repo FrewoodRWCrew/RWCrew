@@ -3,11 +3,14 @@
 # the unconditional placeholder page it replaces).
 
 from datetime import date, datetime, timedelta, timezone
+from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product import Product
@@ -16,6 +19,17 @@ from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
 from app.modules.module_1.tag_dashboard import WEEKS_OF_HISTORY, _week_start
+
+
+@pytest.fixture()
+def scan_dirs(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A throwaway folder standing in for the real TagScans directory,
+    with an "Unreaded Tags" subfolder already present (mirroring the
+    real setup — see test_header_data.py's identical fixture).
+    """
+    (tmp_path / "Unreaded Tags").mkdir()
+    monkeypatch.setattr(settings, "tagscan_source_dir", str(tmp_path))
+    return tmp_path
 
 
 def _create_user(db_session: Session, *, email: str, is_super_admin: bool = False) -> User:
@@ -87,7 +101,9 @@ def test_dashboard_requires_module_access(client: TestClient, db_session: Sessio
     assert response.status_code == 403
 
 
-def test_dashboard_with_no_tags_returns_all_zero_stats(client: TestClient, db_session: Session) -> None:
+def test_dashboard_with_no_tags_returns_all_zero_stats(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
     sync_tagscan_screens(db_session)
     module = _create_tagscan_module(db_session)
     user = _create_user(db_session, email="viewer@example.com")
@@ -99,7 +115,7 @@ def test_dashboard_with_no_tags_returns_all_zero_stats(client: TestClient, db_se
     assert response.status_code == 200
     body = response.json()
     assert body["total_tags"] == 0
-    assert body["active_tags"] == 0
+    assert body["unreaded_tags_count"] == 0
     assert body["assigned_tags"] == 0
     assert body["unassigned_tags"] == 0
     assert body["lost_or_damaged_tags"] == 0
@@ -108,6 +124,28 @@ def test_dashboard_with_no_tags_returns_all_zero_stats(client: TestClient, db_se
     assert len(body["registrations_by_week"]) == WEEKS_OF_HISTORY
     assert all(item["count"] == 0 for item in body["registrations_by_week"])
     assert body["top_products"] == []
+
+
+def test_dashboard_unreaded_tags_count_reflects_csv_files_in_unreaded_tags(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    user = _create_user(db_session, email="viewer@example.com")
+    _grant_module_access(db_session, user, module)
+
+    (scan_dirs / "Unreaded Tags" / "scan_a.csv").write_bytes(b"EPC,RSSI\nA1,70\n")
+    (scan_dirs / "Unreaded Tags" / "scan_b.csv").write_bytes(b"EPC,RSSI\nB1,80\n")
+    # A non-CSV file sitting in the folder must not be counted — it would
+    # never be picked up by the "Tag Headerdata" screen's scan either.
+    (scan_dirs / "Unreaded Tags" / "notes.txt").write_bytes(b"not a csv file")
+
+    _login(client, "viewer@example.com")
+
+    response = client.get("/api/modules/module-1/dashboard")
+
+    assert response.status_code == 200
+    assert response.json()["unreaded_tags_count"] == 2
 
 
 def test_dashboard_computes_counts_and_status_breakdown(client: TestClient, db_session: Session) -> None:
@@ -131,7 +169,6 @@ def test_dashboard_computes_counts_and_status_breakdown(client: TestClient, db_s
     assert response.status_code == 200
     body = response.json()
     assert body["total_tags"] == 6
-    assert body["active_tags"] == 2
     assert body["assigned_tags"] == 1
     assert body["unassigned_tags"] == 5
     assert body["lost_or_damaged_tags"] == 2

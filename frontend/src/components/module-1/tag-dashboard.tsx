@@ -23,7 +23,7 @@
 import {
   Boxes,
   CalendarPlus,
-  CircleCheck,
+  Inbox,
   Link2,
   TriangleAlert,
   Unlink2,
@@ -85,7 +85,7 @@ export function TagDashboard({ stats }: TagDashboardProps) {
 
   const statTiles: { icon: LucideIcon; label: string; value: number }[] = [
     { icon: Boxes, label: t("statTotalTags"), value: stats.total_tags },
-    { icon: CircleCheck, label: t("statActiveTags"), value: stats.active_tags },
+    { icon: Inbox, label: t("statUnreadedTags"), value: stats.unreaded_tags_count },
     { icon: Link2, label: t("statAssignedTags"), value: stats.assigned_tags },
     { icon: Unlink2, label: t("statUnassignedTags"), value: stats.unassigned_tags },
     { icon: TriangleAlert, label: t("statLostDamagedTags"), value: stats.lost_or_damaged_tags },
