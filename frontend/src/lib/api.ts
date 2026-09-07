@@ -15,6 +15,16 @@ import type {
   DeliveryMethod,
   Festival,
   FestivalInput,
+  InterventionRequest,
+  InterventionRequestInput,
+  InterventionRequestsDashboardStats,
+  InterventionRequestsMyPermissions,
+  InterventionRequestsRole,
+  InterventionRequestsScreen,
+  InterventionRequestsTeam,
+  InterventionRequestsUserSummary,
+  InterventionStatus,
+  InterventionStatusInput,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
   MasterDataRole,
@@ -25,6 +35,7 @@ import type {
   ProductInput,
   ProductLimit,
   ProductType,
+  PublicInterventionRequestInput,
   RfidTag,
   RfidTagImportResponse,
   RfidTagInput,
@@ -43,6 +54,10 @@ import type {
   TagscanRole,
   TagscanScreen,
   TagscanUserSummary,
+  Team,
+  TeamInput,
+  TeamKarMemberOption,
+  TeamKarUser,
   TeamLocation,
   TeamTask,
   UserSummary,
@@ -259,6 +274,30 @@ export function updateTeamTask(teamTaskId: number, teamTasks: string): Promise<T
 
 export function deleteTeamTask(teamTaskId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/team-tasks/${teamTaskId}`, { method: "DELETE" });
+}
+
+// --- Teams (module-9's "masterdata.teams" screen) -------------------------
+
+export function listTeams(): Promise<Team[]> {
+  return apiFetch<Team[]>("/api/modules/module-9/teams");
+}
+
+export function createTeam(payload: TeamInput): Promise<Team> {
+  return apiFetch<Team>("/api/modules/module-9/teams", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateTeam(teamId: number, payload: TeamInput): Promise<Team> {
+  return apiFetch<Team>(`/api/modules/module-9/teams/${teamId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteTeam(teamId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/teams/${teamId}`, { method: "DELETE" });
 }
 
 // --- Festivals (module-9's "masterdata.festival" screen) -----------------
@@ -694,4 +733,186 @@ export function createOrGrantMasterDataUser(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// --- Intervention Requests (module-3): KPI landing dashboard ---------------
+
+export function getInterventionRequestsDashboard(): Promise<InterventionRequestsDashboardStats> {
+  return apiFetch<InterventionRequestsDashboardStats>("/api/modules/module-3/dashboard");
+}
+
+// --- Intervention Requests (module-3): custom roles with per-screen permissions ---
+
+export function getInterventionRequestsMyPermissions(): Promise<InterventionRequestsMyPermissions> {
+  return apiFetch<InterventionRequestsMyPermissions>("/api/modules/module-3/me/permissions");
+}
+
+export function listInterventionRequestsScreens(): Promise<InterventionRequestsScreen[]> {
+  return apiFetch<InterventionRequestsScreen[]>("/api/modules/module-3/screens");
+}
+
+export function listInterventionRequestsRoles(): Promise<InterventionRequestsRole[]> {
+  return apiFetch<InterventionRequestsRole[]>("/api/modules/module-3/roles");
+}
+
+export function createInterventionRequestsRole(name: string): Promise<InterventionRequestsRole> {
+  return apiFetch<InterventionRequestsRole>("/api/modules/module-3/roles", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameInterventionRequestsRole(roleId: number, name: string): Promise<InterventionRequestsRole> {
+  return apiFetch<InterventionRequestsRole>(`/api/modules/module-3/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteInterventionRequestsRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-3/roles/${roleId}`, { method: "DELETE" });
+}
+
+export interface InterventionRequestsPermissionUpdate {
+  screen_id: number;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+export function setInterventionRequestsRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<InterventionRequestsRole> {
+  return apiFetch<InterventionRequestsRole>(`/api/modules/module-3/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function listInterventionRequestsUsers(): Promise<InterventionRequestsUserSummary[]> {
+  return apiFetch<InterventionRequestsUserSummary[]>("/api/modules/module-3/users");
+}
+
+export function setInterventionRequestsUserRole(
+  userId: number,
+  roleId: number | null,
+): Promise<InterventionRequestsUserSummary> {
+  return apiFetch<InterventionRequestsUserSummary>(`/api/modules/module-3/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantInterventionRequestsUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<InterventionRequestsUserSummary> {
+  return apiFetch<InterventionRequestsUserSummary>("/api/modules/module-3/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
+
+export function listInterventionStatuses(): Promise<InterventionStatus[]> {
+  return apiFetch<InterventionStatus[]>("/api/modules/module-3/intervention-statuses");
+}
+
+export function createInterventionStatus(payload: InterventionStatusInput): Promise<InterventionStatus> {
+  return apiFetch<InterventionStatus>("/api/modules/module-3/intervention-statuses", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateInterventionStatus(
+  statusId: number,
+  payload: InterventionStatusInput,
+): Promise<InterventionStatus> {
+  return apiFetch<InterventionStatus>(`/api/modules/module-3/intervention-statuses/${statusId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteInterventionStatus(statusId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-3/intervention-statuses/${statusId}`, { method: "DELETE" });
+}
+
+// --- Intervention Requests (module-3's "Actions" screen) -----------------
+
+/** The MasterData teams for the "Ploeg" dropdown, read via module-3's own
+ * lightweight endpoint (not MasterData's) so it works regardless of the
+ * user's MasterData role. */
+export function listInterventionRequestsTeams(): Promise<InterventionRequestsTeam[]> {
+  return apiFetch<InterventionRequestsTeam[]>("/api/modules/module-3/teams");
+}
+
+/** Current TeamKar members for the "Team Kar" dropdown, read via module-3's
+ * own lightweight endpoint (not TeamKar's admin endpoint) so it works
+ * regardless of the user's TeamKar permission. */
+export function listTeamKarOptions(): Promise<TeamKarMemberOption[]> {
+  return apiFetch<TeamKarMemberOption[]>("/api/modules/module-3/teamkar/options");
+}
+
+// --- Intervention Requests (public, no-login form) ------------------------
+
+/** The MasterData teams for the public form's "Ploeg" dropdown — same
+ * projection as listInterventionRequestsTeams above, but reachable without
+ * being logged in (see app/modules/module_3/public_router.py). */
+export function listPublicInterventionRequestTeams(): Promise<InterventionRequestsTeam[]> {
+  return apiFetch<InterventionRequestsTeam[]>("/api/public/intervention-requests/teams");
+}
+
+/** Submit a customer's intervention request from the public, no-login form. */
+export function submitPublicInterventionRequest(
+  payload: PublicInterventionRequestInput,
+): Promise<InterventionRequest> {
+  return apiFetch<InterventionRequest>("/api/public/intervention-requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- TeamKar (module-3's fixed-group masterdata screen) -------------------
+
+export function listTeamKarUsers(): Promise<TeamKarUser[]> {
+  return apiFetch<TeamKarUser[]>("/api/modules/module-3/teamkar/users");
+}
+
+export function setTeamKarMembers(userIds: number[]): Promise<TeamKarUser[]> {
+  return apiFetch<TeamKarUser[]>("/api/modules/module-3/teamkar/users", {
+    method: "PUT",
+    body: JSON.stringify({ user_ids: userIds }),
+  });
+}
+
+export function listInterventionRequests(): Promise<InterventionRequest[]> {
+  return apiFetch<InterventionRequest[]>("/api/modules/module-3/intervention-requests");
+}
+
+export function createInterventionRequest(payload: InterventionRequestInput): Promise<InterventionRequest> {
+  return apiFetch<InterventionRequest>("/api/modules/module-3/intervention-requests", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateInterventionRequest(
+  requestId: number,
+  payload: InterventionRequestInput,
+): Promise<InterventionRequest> {
+  return apiFetch<InterventionRequest>(`/api/modules/module-3/intervention-requests/${requestId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteInterventionRequest(requestId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-3/intervention-requests/${requestId}`, { method: "DELETE" });
 }

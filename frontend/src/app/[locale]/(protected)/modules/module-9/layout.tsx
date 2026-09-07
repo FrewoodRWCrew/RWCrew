@@ -5,6 +5,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
+import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { MasterDataMyPermissions } from "@/lib/types";
 import { MasterDataSidebar } from "@/components/module-9/masterdata-sidebar";
 
@@ -32,7 +33,10 @@ export default async function MasterDataLayout({ children }: MasterDataLayoutPro
   }
 
   return (
-    <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]">
+    // The inline style retints "primary"-coloured UI (active sidebar
+    // item, default-variant buttons) from the site-wide brand green to
+    // this module's own accent colour — see getModuleAccentStyle().
+    <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-9")}>
       <MasterDataSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
       <div className="min-w-0 flex-1 p-6">{children}</div>
     </div>

@@ -45,7 +45,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
 
   function subLinkClassName(href: string) {
     return cn(
-      "ml-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
+      "ml-3 rounded-md px-3 py-2 text-sm font-medium underline transition-colors",
       pathname === href
         ? "bg-sidebar-primary text-sidebar-primary-foreground"
         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",

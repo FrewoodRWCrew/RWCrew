@@ -383,3 +383,37 @@ class AltsienKernlidCreateRequest(BaseModel):
 
 class AltsienKernlidUpdateRequest(AltsienKernlidCreateRequest):
     """What's sent to update an existing Altsien Kernleden contact — same shape as creating one."""
+
+
+class TeamResponse(BaseModel):
+    """One team, as shown on the Teams screen. task_ids/kernlid_ids are
+    derived from the MasterData_team_team_task / MasterData_team_kernlid
+    join tables by the endpoint — they aren't columns on Team itself.
+    """
+
+    id: int
+    name: str
+    location_id: int | None
+    delivery_method_id: int | None
+    task_ids: list[int]
+    kernlid_ids: list[int]
+    description: str | None
+
+
+class TeamCreateRequest(BaseModel):
+    """What's sent to create a brand-new team. location_id/delivery_method_id,
+    if given, must reference an existing row in their lookup table; every id
+    in task_ids/kernlid_ids must reference an existing TeamTask/AltsienKernlid
+    row — all checked by the endpoint, not here.
+    """
+
+    name: str = Field(min_length=1, max_length=255)
+    location_id: int | None = None
+    delivery_method_id: int | None = None
+    task_ids: list[int] = Field(default_factory=list)
+    kernlid_ids: list[int] = Field(default_factory=list)
+    description: str | None = None
+
+
+class TeamUpdateRequest(TeamCreateRequest):
+    """What's sent to update an existing team — same shape as creating one."""

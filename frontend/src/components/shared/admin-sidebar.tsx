@@ -11,11 +11,11 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
 
 // Modules that have their own complete left-hand navigation (see
-// tagscan-sidebar.tsx / masterdata-sidebar.tsx) — showing this site-wide
-// menu alongside one of them would just be a redundant second sidebar.
-// The Topbar's logo link already covers "back to the landing page" while
-// this is hidden.
-const MODULES_WITH_OWN_SIDEBAR = ["/modules/module-1", "/modules/module-9"];
+// tagscan-sidebar.tsx / masterdata-sidebar.tsx / intervention-requests-
+// sidebar.tsx) — showing this site-wide menu alongside one of them would
+// just be a redundant second sidebar. The Topbar's logo link already
+// covers "back to the landing page" while this is hidden.
+const MODULES_WITH_OWN_SIDEBAR = ["/modules/module-1", "/modules/module-3", "/modules/module-9"];
 
 export function AdminSidebar() {
   const t = useTranslations("sidebar");

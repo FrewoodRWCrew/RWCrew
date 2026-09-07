@@ -6,7 +6,8 @@
 // Once real module names/branding are decided, these colours (and their
 // order) can simply be reassigned here without touching any component.
 
-import { Database, Nfc, type LucideIcon } from "lucide-react";
+import { Box, Database, Nfc, type LucideIcon } from "lucide-react";
+import type { CSSProperties } from "react";
 
 export interface ModuleTheme {
   /** Classes for the module's tile on the landing page: a solid background
@@ -15,6 +16,12 @@ export interface ModuleTheme {
   /** Classes for the softer, pill-shaped badge shown on the module's own
    *  page (see ModulePlaceholderPage) — a light tint rather than solid fill. */
   badgeClassName: string;
+  /** The same colour as tileClassName's background, as a bare Tailwind
+   *  colour token (e.g. "blue-600") rather than a class — used to retint
+   *  the active-sidebar-item/primary-button colour (normally the
+   *  site-wide brand green) to this module's own accent once inside it,
+   *  via getModuleAccentStyle() below. */
+  accentColorToken: string;
   /** A real icon for this module's tile, shown instead of its number.
    *  Left unset for modules that don't have one designed yet — those
    *  fall back to showing their plain number (see ModuleTile). */
@@ -25,6 +32,7 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
   "module-1": {
     tileClassName: "bg-blue-600 text-white",
     badgeClassName: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
+    accentColorToken: "blue-600",
     // Tagscan reads RFID/contactless tags — lucide's "Nfc" icon is the
     // same "tag + radiating waves" contactless symbol, already drawn in
     // the same stroke style as every other icon used across the app.
@@ -33,34 +41,47 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
   "module-2": {
     tileClassName: "bg-purple-600 text-white",
     badgeClassName: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300",
+    accentColorToken: "purple-600",
   },
   "module-3": {
     tileClassName: "bg-orange-600 text-white",
     badgeClassName: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
+    accentColorToken: "orange-600",
+    // Intervention Requests' reference picture (Attachment/Box.png) is an
+    // outline drawing of a cardboard box — lucide's "Box" icon is the same
+    // shape, already drawn in the same stroke style as every other icon
+    // used across the app.
+    icon: Box,
   },
   "module-4": {
     tileClassName: "bg-teal-600 text-white",
     badgeClassName: "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300",
+    accentColorToken: "teal-600",
   },
   "module-5": {
     tileClassName: "bg-red-600 text-white",
     badgeClassName: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
+    accentColorToken: "red-600",
   },
   "module-6": {
     tileClassName: "bg-indigo-600 text-white",
     badgeClassName: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
+    accentColorToken: "indigo-600",
   },
   "module-7": {
     tileClassName: "bg-pink-600 text-white",
     badgeClassName: "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
+    accentColorToken: "pink-600",
   },
   "module-8": {
     tileClassName: "bg-amber-600 text-white",
     badgeClassName: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
+    accentColorToken: "amber-600",
   },
   "module-9": {
     tileClassName: "bg-cyan-600 text-white",
     badgeClassName: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300",
+    accentColorToken: "cyan-600",
     // MasterData's picture (Attachment/MasterData.jpg) shows a person
     // linked to two databases — lucide's "Database" icon captures the
     // same idea, and is already this app's own established icon for
@@ -75,13 +96,59 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
 const FALLBACK_THEME: ModuleTheme = {
   tileClassName: "bg-neutral-600 text-white",
   badgeClassName: "bg-neutral-100 text-neutral-700 dark:bg-neutral-500/15 dark:text-neutral-300",
+  accentColorToken: "neutral-600",
 };
 
 export function getModuleTheme(moduleKey: string): ModuleTheme {
   return MODULE_THEMES_BY_KEY[moduleKey] ?? FALLBACK_THEME;
 }
 
+/**
+ * CSS custom-property overrides that retint "primary"-coloured UI (the
+ * active sidebar item, and every default-variant Button — "New role",
+ * "New team", etc.) from the site-wide brand green to this module's own
+ * accent colour instead, once applied to a wrapping element (see each
+ * module's own layout.tsx). Every default-variant Button and the
+ * sidebar's active-item highlight read colour from --primary/
+ * --sidebar-primary (see globals.css) via Tailwind's bg-primary/
+ * bg-sidebar-primary classes, so overriding those two custom properties
+ * (plus their focus-ring counterparts, for the same reason globals.css
+ * ties --ring/--sidebar-ring to the same green) is enough to retint every
+ * such element inside — no need to touch each button/page individually.
+ */
+export function getModuleAccentStyle(moduleKey: string): CSSProperties {
+  const accent = `var(--color-${getModuleTheme(moduleKey).accentColorToken})`;
+  const cssCustomProperties: Record<string, string> = {
+    "--primary": accent,
+    "--primary-foreground": "var(--color-white)",
+    "--sidebar-primary": accent,
+    "--sidebar-primary-foreground": "var(--color-white)",
+    "--ring": accent,
+    "--sidebar-ring": accent,
+  };
+  return cssCustomProperties as unknown as CSSProperties;
+}
+
 /** Pull the trailing number out of a module key, e.g. "module-3" -> "3". */
 export function getModuleNumber(moduleKey: string): string {
   return moduleKey.split("-").at(-1) ?? "?";
+}
+
+// The landing page tile's label comes from the backend (see
+// app/modules/registry.py), which only ever stores one, English name per
+// module — so it can't be localized by itself. Modules that already have a
+// real name also carry a translated "moduleTitle" in messages/*.json (used
+// in their own sidebar); this maps a module key to that translation key so
+// the landing tile can show the localized name instead. Placeholder
+// modules ("Module 2", "Module 4".."Module 8") have no entry here and fall
+// back to the backend's name as-is, since "Module 2" reads the same in
+// every locale anyway.
+const MODULE_TRANSLATION_KEYS: Record<string, string> = {
+  "module-1": "tagscan.moduleTitle",
+  "module-3": "interventionRequests.moduleTitle",
+  "module-9": "masterdata.moduleTitle",
+};
+
+export function getModuleTranslationKey(moduleKey: string): string | undefined {
+  return MODULE_TRANSLATION_KEYS[moduleKey];
 }

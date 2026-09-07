@@ -154,3 +154,14 @@
     width: 100%;
   }
 }
+
+/* Intervention Requests: a row whose status has an assigned colour takes
+   that colour across every cell (see intervention-requests-management.tsx,
+   which sets the row's own text colour + this data attribute). Most cells
+   in that table set their own "text-muted-foreground" colour directly,
+   which would otherwise always win over whatever colour the row inherits
+   — this rule makes those cells fall back to the row's colour instead, so
+   the whole line reads in one colour. */
+tr[data-status-color] > td {
+  color: inherit !important;
+}

@@ -108,6 +108,28 @@ export interface AltsienKernlidInput {
   email: string;
 }
 
+/** One team, as managed on MasterData's Teams screen. task_ids/kernlid_ids
+ * reference Team Task / Altsien Kernleden rows (many-to-many). */
+export interface Team {
+  id: number;
+  name: string;
+  location_id: number | null;
+  delivery_method_id: number | null;
+  task_ids: number[];
+  kernlid_ids: number[];
+  description: string | null;
+}
+
+/** The fields sent to create or fully update a team. */
+export interface TeamInput {
+  name: string;
+  location_id?: number | null;
+  delivery_method_id?: number | null;
+  task_ids?: number[];
+  kernlid_ids?: number[];
+  description?: string | null;
+}
+
 /** One product, as managed on MasterData's Products screen. */
 export interface Product {
   id: number;
@@ -482,4 +504,166 @@ export interface MasterDataDashboardStats {
   products_by_type: MasterDataTypeBreakdownItem[];
   products_by_category: MasterDataCategoryBreakdownItem[];
   products_by_warehouse: MasterDataWarehouseBreakdownItem[];
+}
+
+/** One status, as managed on module-3's Intervention Statuses screen. */
+export interface InterventionStatus {
+  id: number;
+  name: string;
+  is_open: boolean;
+  color: string;
+}
+
+/** The fields sent to create or fully update a status. */
+export interface InterventionStatusInput {
+  name: string;
+  is_open: boolean;
+  color: string;
+}
+
+/** One MasterData team, as shown in the Intervention Requests screen's
+ * "Ploeg" dropdown — read via module-3's own lightweight "/teams"
+ * endpoint (see api.ts's listInterventionRequestsTeams), not MasterData's
+ * own Team type, so it works regardless of the user's MasterData role. */
+export interface InterventionRequestsTeam {
+  id: number;
+  name: string;
+}
+
+/** One intervention request, as shown on module-3's Intervention Requests screen.
+ * Exactly one of team_id/team_name is ever set — team_name carries a Ploeg
+ * name typed on the public form that isn't a real MasterData team yet. */
+export interface InterventionRequest {
+  id: number;
+  request_number: string;
+  submitted_at: string;
+  team_id: number | null;
+  team_name: string | null;
+  cart_number: string | null;
+  question: string;
+  employee_name: string | null;
+  employee_phone: string | null;
+  preferred_delivery_at: string | null;
+  delivery_location: string | null;
+  zone: string | null;
+  status_id: number;
+  handled_by: string | null;
+  team_cart_user_id: number | null;
+}
+
+/** The fields sent to create or fully update an intervention request
+ * (the staff-only admin dialog — see PublicInterventionRequestInput for the
+ * public form's trimmed-down equivalent). */
+export interface InterventionRequestInput {
+  team_id: number | null;
+  team_name?: string | null;
+  cart_number?: string | null;
+  question: string;
+  employee_name?: string | null;
+  employee_phone?: string | null;
+  preferred_delivery_at?: string | null;
+  delivery_location?: string | null;
+  zone?: string | null;
+  status_id: number;
+  handled_by?: string | null;
+  team_cart_user_id?: number | null;
+}
+
+/** The fields the public (no-login) intervention-request form sends —
+ * status_id/handled_by/team_cart_user_id are internal-only and set by the
+ * backend itself, so they're deliberately absent here. */
+export interface PublicInterventionRequestInput {
+  team_id: number | null;
+  team_name?: string | null;
+  cart_number?: string | null;
+  question: string;
+  employee_name?: string | null;
+  employee_phone?: string | null;
+  preferred_delivery_at?: string | null;
+  delivery_location?: string | null;
+  zone?: string | null;
+}
+
+/** One status, with how many intervention requests currently carry it —
+ * one bar of the KPI dashboard's status breakdown chart. */
+export interface InterventionRequestsStatusBreakdownItem {
+  status_name: string;
+  color: string;
+  count: number;
+}
+
+/** One team/association name, with how many intervention requests were
+ * logged for it — one bar of the KPI dashboard's team breakdown chart. */
+export interface InterventionRequestsTeamBreakdownItem {
+  team_name: string;
+  count: number;
+}
+
+/** Aggregate KPI stats for Intervention Requests' landing dashboard ("KPI overview"). */
+export interface InterventionRequestsDashboardStats {
+  total_requests: number;
+  open_requests: number;
+  closed_requests: number;
+  status_breakdown: InterventionRequestsStatusBreakdownItem[];
+  team_breakdown: InterventionRequestsTeamBreakdownItem[];
+}
+
+/** One app user, with whether they're currently a member of TeamKar — one
+ * row of module-3's TeamKar screen's table. */
+export interface TeamKarUser {
+  user_id: number;
+  email: string;
+  display_name: string;
+  is_member: boolean;
+}
+
+/** One current TeamKar member, as shown in the Intervention Requests
+ * screen's "Team Kar" dropdown — read via module-3's own lightweight
+ * "/teamkar/options" endpoint, gated by the requests screen's own
+ * permission rather than TeamKar's own admin permission. */
+export interface TeamKarMemberOption {
+  id: number;
+  display_name: string;
+}
+
+// --- Intervention Requests (module-3): custom roles with per-screen permissions ---
+
+/** One screen registered inside the Intervention Requests module. */
+export interface InterventionRequestsScreen {
+  id: number;
+  key: string;
+  label: string;
+  sort_order: number;
+}
+
+/** One Intervention Requests role's permissions on one specific screen. */
+export interface InterventionRequestsScreenPermission {
+  screen_id: number;
+  screen_key: string;
+  screen_label: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+/** One Intervention Requests role, with its full permission matrix. */
+export interface InterventionRequestsRole {
+  id: number;
+  name: string;
+  permissions: InterventionRequestsScreenPermission[];
+}
+
+/** One user with access to Intervention Requests, and their current role (if any). */
+export interface InterventionRequestsUserSummary {
+  user_id: number;
+  email: string;
+  display_name: string;
+  role_id: number | null;
+  role_name: string | null;
+}
+
+/** Which Intervention Requests screens the current user is allowed to view. */
+export interface InterventionRequestsMyPermissions {
+  viewable_screen_keys: string[];
 }

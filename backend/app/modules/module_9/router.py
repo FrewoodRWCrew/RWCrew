@@ -5,7 +5,7 @@
 # the Season screen, its first actual piece of master data.
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -24,8 +24,11 @@ from app.db.models.product_category import ProductCategory
 from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
 from app.db.models.season import Season
+from app.db.models.team import Team
+from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
 from app.db.models.team_task import TeamTask
+from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
@@ -73,12 +76,15 @@ from app.schemas.masterdata import (
     SeasonUpdateRequest,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    TeamCreateRequest,
     TeamLocationCreateRequest,
     TeamLocationResponse,
     TeamLocationUpdateRequest,
+    TeamResponse,
     TeamTaskCreateRequest,
     TeamTaskResponse,
     TeamTaskUpdateRequest,
+    TeamUpdateRequest,
     WarehouseCreateRequest,
     WarehouseResponse,
     WarehouseUpdateRequest,
@@ -798,6 +804,157 @@ def delete_altsien_kernlid(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
 
     db.delete(contact)
+    db.commit()
+
+
+def _validate_team_lookup_ids(db: Session, payload: TeamCreateRequest | TeamUpdateRequest) -> None:
+    """Make sure location_id/delivery_method_id (if given) and every id in
+    task_ids/kernlid_ids actually exist, the same way
+    _validate_product_lookup_ids() below checks type_id/warehouse_id/etc. —
+    a bad id should surface as a clear 404, not an opaque FK IntegrityError.
+    """
+    if payload.location_id is not None and db.get(TeamLocation, payload.location_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team location not found")
+    if payload.delivery_method_id is not None and db.get(DeliveryMethod, payload.delivery_method_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery method not found")
+
+    for task_id in payload.task_ids:
+        if db.get(TeamTask, task_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team task not found")
+
+    for kernlid_id in payload.kernlid_ids:
+        if db.get(AltsienKernlid, kernlid_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
+
+
+def _replace_team_task_links(db: Session, team_id: int, task_ids: list[int]) -> None:
+    """Make MasterData_team_team_task's rows for this team match task_ids
+    exactly: delete every existing row for this team, then insert one row
+    per id in task_ids. Called inside the same commit as the rest of a
+    create/update so it either all lands or all rolls back together.
+    """
+    db.execute(delete(TeamTeamTask).where(TeamTeamTask.team_id == team_id))
+    for task_id in task_ids:
+        db.add(TeamTeamTask(team_id=team_id, team_task_id=task_id))
+
+
+def _replace_team_kernlid_links(db: Session, team_id: int, kernlid_ids: list[int]) -> None:
+    """Same replace-not-append logic as _replace_team_task_links, for
+    MasterData_team_kernlid.
+    """
+    db.execute(delete(TeamKernlid).where(TeamKernlid.team_id == team_id))
+    for kernlid_id in kernlid_ids:
+        db.add(TeamKernlid(team_id=team_id, altsien_kernlid_id=kernlid_id))
+
+
+def _team_to_response(db: Session, team: Team) -> TeamResponse:
+    """Build a TeamResponse for one team by pulling its current task_ids/
+    kernlid_ids from the two join tables — these aren't columns on Team
+    itself.
+    """
+    task_ids = list(db.scalars(select(TeamTeamTask.team_task_id).where(TeamTeamTask.team_id == team.id)).all())
+    kernlid_ids = list(
+        db.scalars(select(TeamKernlid.altsien_kernlid_id).where(TeamKernlid.team_id == team.id)).all()
+    )
+    return TeamResponse(
+        id=team.id,
+        name=team.name,
+        location_id=team.location_id,
+        delivery_method_id=team.delivery_method_id,
+        task_ids=sorted(task_ids),
+        kernlid_ids=sorted(kernlid_ids),
+        description=team.description,
+    )
+
+
+@router.get("/teams", response_model=list[TeamResponse])
+def list_teams(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.teams", "view")),
+) -> list[TeamResponse]:
+    """List every team, for the Teams screen's table."""
+    teams = list(db.scalars(select(Team).order_by(Team.name)).all())
+    return [_team_to_response(db, team) for team in teams]
+
+
+@router.post("/teams", response_model=TeamResponse, status_code=status.HTTP_201_CREATED)
+def create_team(
+    payload: TeamCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.teams", "create")),
+) -> TeamResponse:
+    """Create a brand-new team."""
+    _validate_team_lookup_ids(db, payload)
+
+    new_team = Team(
+        name=payload.name,
+        location_id=payload.location_id,
+        delivery_method_id=payload.delivery_method_id,
+        description=payload.description,
+    )
+    db.add(new_team)
+    try:
+        # Flush (not commit) so new_team.id is assigned and the uniqueness
+        # check surfaces now, before the join-row inserts below — everything
+        # still lands in a single transaction, committed together at the end.
+        db.flush()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A team with this name already exists") from error
+
+    _replace_team_task_links(db, new_team.id, payload.task_ids)
+    _replace_team_kernlid_links(db, new_team.id, payload.kernlid_ids)
+
+    db.commit()
+    db.refresh(new_team)
+    return _team_to_response(db, new_team)
+
+
+@router.put("/teams/{team_id}", response_model=TeamResponse)
+def update_team(
+    team_id: int,
+    payload: TeamUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.teams", "edit")),
+) -> TeamResponse:
+    """Update every field of an existing team, replacing its task/kernlid links."""
+    team = db.get(Team, team_id)
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    _validate_team_lookup_ids(db, payload)
+
+    team.name = payload.name
+    team.location_id = payload.location_id
+    team.delivery_method_id = payload.delivery_method_id
+    team.description = payload.description
+
+    try:
+        db.flush()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A team with this name already exists") from error
+
+    _replace_team_task_links(db, team.id, payload.task_ids)
+    _replace_team_kernlid_links(db, team.id, payload.kernlid_ids)
+
+    db.commit()
+    db.refresh(team)
+    return _team_to_response(db, team)
+
+
+@router.delete("/teams/{team_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team(
+    team_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.teams", "delete")),
+) -> None:
+    """Permanently delete a team (its join-table rows cascade via ondelete=CASCADE)."""
+    team = db.get(Team, team_id)
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    db.delete(team)
     db.commit()
 
 

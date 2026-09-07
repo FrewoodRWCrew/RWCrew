@@ -71,7 +71,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   function linkClassName(href: string, level: 0 | 1 | 2 = 0) {
     return cn(
       "rounded-md px-3 py-2 text-sm font-medium transition-colors",
-      level === 1 && "ml-3",
+      level === 1 && "ml-3 underline",
       level === 2 && "ml-6",
       pathname === href
         ? "bg-sidebar-primary text-sidebar-primary-foreground"

@@ -6,6 +6,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
+import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { TagscanMyPermissions } from "@/lib/types";
 import { TagscanSidebar } from "@/components/module-1/tagscan-sidebar";
 
@@ -35,8 +36,11 @@ export default async function TagscanLayout({ children }: TagscanLayoutProps) {
   return (
     // "-m-6" cancels out the (protected) layout's own page padding so
     // this sub-menu can sit flush against a real border on every side,
-    // the same way the site-wide admin sidebar does one level up.
-    <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]">
+    // the same way the site-wide admin sidebar does one level up. The
+    // inline style retints "primary"-coloured UI (active sidebar item,
+    // default-variant buttons) from the site-wide brand green to this
+    // module's own accent colour — see getModuleAccentStyle().
+    <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-1")}>
       <TagscanSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
       <div className="min-w-0 flex-1 p-6">{children}</div>
     </div>

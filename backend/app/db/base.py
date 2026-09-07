@@ -8,6 +8,12 @@ from app.core.database import Base  # noqa: F401  (re-exported for convenience)
 from app.db.models.altsien_kernlid import AltsienKernlid  # noqa: F401
 from app.db.models.delivery_method import DeliveryMethod  # noqa: F401
 from app.db.models.festival import Festival  # noqa: F401
+from app.db.models.intervention_request import InterventionRequest  # noqa: F401
+from app.db.models.intervention_requests_role import InterventionRequestsRole  # noqa: F401
+from app.db.models.intervention_requests_role_permission import InterventionRequestsRolePermission  # noqa: F401
+from app.db.models.intervention_requests_screen import InterventionRequestsScreen  # noqa: F401
+from app.db.models.intervention_requests_user_role import InterventionRequestsUserRole  # noqa: F401
+from app.db.models.intervention_status import InterventionStatus  # noqa: F401
 from app.db.models.masterdata_role import MasterDataRole  # noqa: F401
 from app.db.models.masterdata_role_permission import MasterDataRolePermission  # noqa: F401
 from app.db.models.masterdata_screen import MasterDataScreen  # noqa: F401
@@ -28,8 +34,12 @@ from app.db.models.tagscan_role import TagscanRole  # noqa: F401
 from app.db.models.tagscan_role_permission import TagscanRolePermission  # noqa: F401
 from app.db.models.tagscan_screen import TagscanScreen  # noqa: F401
 from app.db.models.tagscan_user_role import TagscanUserRole  # noqa: F401
+from app.db.models.team import Team  # noqa: F401
+from app.db.models.team_kernlid import TeamKernlid  # noqa: F401
 from app.db.models.team_location import TeamLocation  # noqa: F401
 from app.db.models.team_task import TeamTask  # noqa: F401
+from app.db.models.team_team_task import TeamTeamTask  # noqa: F401
+from app.db.models.teamkar_member import TeamKarMember  # noqa: F401
 from app.db.models.user import User  # noqa: F401
 from app.db.models.user_module_access import UserModuleAccess  # noqa: F401
 from app.db.models.warehouse import Warehouse  # noqa: F401

@@ -20,12 +20,16 @@ class ModuleDefinition:
 
 
 # The name each module should seed with. Most are still placeholders
-# ("Module 2".."Module 8") — replace them here once real names are
-# decided, nothing else needs to change. module-1 (TagScan) and module-9
-# (MasterData) already have real names and their own bespoke routers (see
-# app/modules/module_1, app/modules/module_9) instead of the shared
-# create_module_router() factory used by the placeholders.
-_MODULE_NAMES = {"module-1": "TagScan", "module-9": "MasterData"}
+# ("Module 2", "Module 4".."Module 8") — replace them here once real
+# names are decided, nothing else needs to change. module-1 (TagScan) and
+# module-9 (MasterData) already have real names and their own bespoke
+# routers (see app/modules/module_1, app/modules/module_9) instead of the
+# shared create_module_router() factory used by the placeholders.
+# module-3 (Intervention Requests) has a real name too, but still uses the
+# shared factory for now — it only has one screen (a KPI-overview
+# placeholder) so far, not enough real screens yet to justify its own
+# bespoke custom-roles system the way TagScan/MasterData needed.
+_MODULE_NAMES = {"module-1": "TagScan", "module-3": "Intervention Requests", "module-9": "MasterData"}
 
 MODULE_DEFINITIONS: list[ModuleDefinition] = [
     ModuleDefinition(
