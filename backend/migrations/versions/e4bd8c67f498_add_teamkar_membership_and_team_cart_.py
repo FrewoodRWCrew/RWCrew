@@ -33,13 +33,24 @@ def upgrade() -> None:
     # 360c7915525e for "association_name" (this only ever runs against this
     # app's own dev data).
     op.add_column('InterventionRequests_request', sa.Column('team_cart_user_id', sa.Integer(), nullable=True))
-    op.create_foreign_key(None, 'InterventionRequests_request', 'Landing_users', ['team_cart_user_id'], ['id'], ondelete='SET NULL')
+    op.create_foreign_key(
+        'fk_intervention_requests_request_team_cart_user_id',
+        'InterventionRequests_request',
+        'Landing_users',
+        ['team_cart_user_id'],
+        ['id'],
+        ondelete='SET NULL',
+    )
     op.drop_column('InterventionRequests_request', 'team_cart')
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     op.add_column('InterventionRequests_request', sa.Column('team_cart', sa.VARCHAR(length=50), autoincrement=False, nullable=True))
-    op.drop_constraint(None, 'InterventionRequests_request', type_='foreignkey')
+    op.drop_constraint(
+        'fk_intervention_requests_request_team_cart_user_id',
+        'InterventionRequests_request',
+        type_='foreignkey',
+    )
     op.drop_column('InterventionRequests_request', 'team_cart_user_id')
     op.drop_table('InterventionRequests_teamkar_member')

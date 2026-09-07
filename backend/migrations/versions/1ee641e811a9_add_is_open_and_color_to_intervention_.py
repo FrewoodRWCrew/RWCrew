@@ -20,10 +20,15 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def upgrade() -> None:
     """Upgrade schema."""
-    # Both columns are NOT NULL with a server_default, so Postgres backfills
-    # every existing status to open/grey automatically — no manual UPDATE.
     op.add_column('InterventionRequests_status', sa.Column('is_open', sa.Boolean(), server_default=sa.text('true'), nullable=False))
     op.add_column('InterventionRequests_status', sa.Column('color', sa.String(length=20), server_default=sa.text("'gray'"), nullable=False))
+    op.execute(
+        """
+        UPDATE "InterventionRequests_status"
+        SET is_open = false
+        WHERE name IN ('Geleverd', 'Gecanceled', 'Geweigerd door Altsien')
+        """
+    )
 
 
 def downgrade() -> None:

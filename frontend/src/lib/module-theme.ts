@@ -22,6 +22,8 @@ export interface ModuleTheme {
    *  site-wide brand green) to this module's own accent once inside it,
    *  via getModuleAccentStyle() below. */
   accentColorToken: string;
+  /** Bare Tailwind colour token used for readable text on the accent. */
+  accentForegroundColorToken: string;
   /** A real icon for this module's tile, shown instead of its number.
    *  Left unset for modules that don't have one designed yet — those
    *  fall back to showing their plain number (see ModuleTile). */
@@ -33,6 +35,7 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     tileClassName: "bg-blue-600 text-white",
     badgeClassName: "bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300",
     accentColorToken: "blue-600",
+    accentForegroundColorToken: "white",
     // Tagscan reads RFID/contactless tags — lucide's "Nfc" icon is the
     // same "tag + radiating waves" contactless symbol, already drawn in
     // the same stroke style as every other icon used across the app.
@@ -42,11 +45,13 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     tileClassName: "bg-purple-600 text-white",
     badgeClassName: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300",
     accentColorToken: "purple-600",
+    accentForegroundColorToken: "white",
   },
   "module-3": {
     tileClassName: "bg-orange-600 text-white",
     badgeClassName: "bg-orange-100 text-orange-700 dark:bg-orange-500/15 dark:text-orange-300",
     accentColorToken: "orange-600",
+    accentForegroundColorToken: "neutral-950",
     // Intervention Requests' reference picture (Attachment/Box.png) is an
     // outline drawing of a cardboard box — lucide's "Box" icon is the same
     // shape, already drawn in the same stroke style as every other icon
@@ -57,31 +62,37 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     tileClassName: "bg-teal-600 text-white",
     badgeClassName: "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300",
     accentColorToken: "teal-600",
+    accentForegroundColorToken: "neutral-950",
   },
   "module-5": {
     tileClassName: "bg-red-600 text-white",
     badgeClassName: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
     accentColorToken: "red-600",
+    accentForegroundColorToken: "white",
   },
   "module-6": {
     tileClassName: "bg-indigo-600 text-white",
     badgeClassName: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
     accentColorToken: "indigo-600",
+    accentForegroundColorToken: "white",
   },
   "module-7": {
     tileClassName: "bg-pink-600 text-white",
     badgeClassName: "bg-pink-100 text-pink-700 dark:bg-pink-500/15 dark:text-pink-300",
     accentColorToken: "pink-600",
+    accentForegroundColorToken: "white",
   },
   "module-8": {
     tileClassName: "bg-amber-600 text-white",
     badgeClassName: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
     accentColorToken: "amber-600",
+    accentForegroundColorToken: "neutral-950",
   },
   "module-9": {
     tileClassName: "bg-cyan-600 text-white",
     badgeClassName: "bg-cyan-100 text-cyan-700 dark:bg-cyan-500/15 dark:text-cyan-300",
     accentColorToken: "cyan-600",
+    accentForegroundColorToken: "neutral-950",
     // MasterData's picture (Attachment/MasterData.jpg) shows a person
     // linked to two databases — lucide's "Database" icon captures the
     // same idea, and is already this app's own established icon for
@@ -97,6 +108,7 @@ const FALLBACK_THEME: ModuleTheme = {
   tileClassName: "bg-neutral-600 text-white",
   badgeClassName: "bg-neutral-100 text-neutral-700 dark:bg-neutral-500/15 dark:text-neutral-300",
   accentColorToken: "neutral-600",
+  accentForegroundColorToken: "white",
 };
 
 export function getModuleTheme(moduleKey: string): ModuleTheme {
@@ -117,12 +129,14 @@ export function getModuleTheme(moduleKey: string): ModuleTheme {
  * such element inside — no need to touch each button/page individually.
  */
 export function getModuleAccentStyle(moduleKey: string): CSSProperties {
-  const accent = `var(--color-${getModuleTheme(moduleKey).accentColorToken})`;
+  const theme = getModuleTheme(moduleKey);
+  const accent = `var(--color-${theme.accentColorToken})`;
+  const accentForeground = `var(--color-${theme.accentForegroundColorToken})`;
   const cssCustomProperties: Record<string, string> = {
     "--primary": accent,
-    "--primary-foreground": "var(--color-white)",
+    "--primary-foreground": accentForeground,
     "--sidebar-primary": accent,
-    "--sidebar-primary-foreground": "var(--color-white)",
+    "--sidebar-primary-foreground": accentForeground,
     "--ring": accent,
     "--sidebar-ring": accent,
   };

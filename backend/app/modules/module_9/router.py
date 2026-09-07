@@ -834,7 +834,7 @@ def _replace_team_task_links(db: Session, team_id: int, task_ids: list[int]) -> 
     create/update so it either all lands or all rolls back together.
     """
     db.execute(delete(TeamTeamTask).where(TeamTeamTask.team_id == team_id))
-    for task_id in task_ids:
+    for task_id in dict.fromkeys(task_ids):
         db.add(TeamTeamTask(team_id=team_id, team_task_id=task_id))
 
 
@@ -843,7 +843,7 @@ def _replace_team_kernlid_links(db: Session, team_id: int, kernlid_ids: list[int
     MasterData_team_kernlid.
     """
     db.execute(delete(TeamKernlid).where(TeamKernlid.team_id == team_id))
-    for kernlid_id in kernlid_ids:
+    for kernlid_id in dict.fromkeys(kernlid_ids):
         db.add(TeamKernlid(team_id=team_id, altsien_kernlid_id=kernlid_id))
 
 

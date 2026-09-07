@@ -6,7 +6,7 @@
 from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
-from sqlalchemy import func, select
+from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
 from app.db.models.intervention_request import InterventionRequest
@@ -49,14 +49,27 @@ def get_default_new_status(db: Session) -> InterventionStatus:
 def generate_request_number(db: Session) -> str:
     """Build this request's "Aanvraagnummer": "IA" + the last 2 digits of
     the current year + "_" + a per-year sequence number, e.g. "IA26_0001".
-    The sequence is just "how many requests already exist for this year's
-    prefix, plus one" — good enough for this tool's traffic level, no
-    extra locking needed.
+    The highest existing sequence is used so deleting a request never makes
+    its number available again. PostgreSQL's transaction advisory lock
+    serializes concurrent allocations for the same year.
     """
     year_suffix = str(datetime.now(timezone.utc).year)[-2:]
     prefix = f"IA{year_suffix}_"
-    existing_count = db.scalar(
-        select(func.count()).select_from(InterventionRequest).where(InterventionRequest.request_number.like(f"{prefix}%"))
+    if db.bind is not None and db.bind.dialect.name == "postgresql":
+        db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:prefix))"), {"prefix": prefix})
+
+    request_numbers = db.scalars(
+        select(InterventionRequest.request_number)
+        .where(InterventionRequest.request_number.like(f"{prefix}%"))
+        .order_by(desc(InterventionRequest.request_number))
+        .with_for_update()
     )
-    next_sequence = (existing_count or 0) + 1
+    existing_sequences = []
+    for request_number in request_numbers:
+        try:
+            existing_sequences.append(int(request_number[len(prefix) :]))
+        except ValueError:
+            continue
+
+    next_sequence = (max(existing_sequences) if existing_sequences else 0) + 1
     return f"{prefix}{next_sequence:04d}"

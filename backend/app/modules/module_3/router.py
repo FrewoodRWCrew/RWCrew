@@ -515,6 +515,15 @@ def delete_intervention_status(
     if existing_status is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Status not found")
 
+    referenced_request = db.scalar(
+        select(InterventionRequest.id).where(InterventionRequest.status_id == status_id)
+    )
+    if referenced_request is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This status is still assigned to at least one intervention request",
+        )
+
     db.delete(existing_status)
     db.commit()
 

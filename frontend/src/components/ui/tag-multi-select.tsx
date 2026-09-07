@@ -32,6 +32,7 @@ const MAX_SUGGESTIONS = 8;
 export function TagMultiSelect({ id, options, selectedIds, onChange, placeholder, disabled }: TagMultiSelectProps) {
   const [query, setQuery] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [highlightedSuggestionIndex, setHighlightedSuggestionIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const selectedOptions = options.filter((option) => selectedIds.includes(option.id));
@@ -82,10 +83,32 @@ export function TagMultiSelect({ id, options, selectedIds, onChange, placeholder
           placeholder={selectedOptions.length === 0 ? placeholder : undefined}
           onChange={(event) => {
             setQuery(event.target.value);
+            setHighlightedSuggestionIndex(0);
             setIsOpen(true);
           }}
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setHighlightedSuggestionIndex(0);
+            setIsOpen(true);
+          }}
           onBlur={() => setIsOpen(false)}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown") {
+              event.preventDefault();
+              setHighlightedSuggestionIndex((current) =>
+                filteredSuggestions.length === 0 ? 0 : Math.min(current + 1, filteredSuggestions.length - 1),
+              );
+            } else if (event.key === "ArrowUp") {
+              event.preventDefault();
+              setHighlightedSuggestionIndex((current) => Math.max(current - 1, 0));
+            } else if (event.key === "Enter" && filteredSuggestions[highlightedSuggestionIndex]) {
+              event.preventDefault();
+              addOption(filteredSuggestions[highlightedSuggestionIndex].id);
+            } else if (event.key === "Escape") {
+              event.preventDefault();
+              setQuery("");
+              setIsOpen(false);
+            }
+          }}
           className="min-w-24 flex-1 border-0 bg-transparent p-1 text-sm outline-none placeholder:text-muted-foreground"
         />
       </div>
@@ -102,7 +125,12 @@ export function TagMultiSelect({ id, options, selectedIds, onChange, placeholder
               // then still runs with the suggestion list still open.
               onMouseDown={(event) => event.preventDefault()}
               onClick={() => addOption(option.id)}
-              className="cursor-pointer px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+              onMouseEnter={() => setHighlightedSuggestionIndex(index)}
+              aria-selected={index === highlightedSuggestionIndex}
+              className={cn(
+                "cursor-pointer px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
+                index === highlightedSuggestionIndex && "bg-accent text-accent-foreground",
+              )}
             >
               {option.label}
             </div>

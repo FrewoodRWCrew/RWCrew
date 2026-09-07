@@ -34,13 +34,15 @@ export default async function InterventionRequestPage({ searchParams }: Interven
   });
 
   const teamIdParam = firstParam(params.team_id);
+  const parsedTeamId = teamIdParam ? Number(teamIdParam) : NaN;
+  const matchingTeam = teams.find((team) => team.id === parsedTeamId);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-background p-4">
       <PublicInterventionRequestForm
         teams={teams}
         defaults={{
-          team_id: teamIdParam && !Number.isNaN(Number(teamIdParam)) ? Number(teamIdParam) : null,
+          team_id: matchingTeam?.id ?? null,
           team_name: firstParam(params.team_name) ?? null,
           cart_number: firstParam(params.cart_number) ?? null,
           delivery_location: firstParam(params.delivery_location) ?? null,

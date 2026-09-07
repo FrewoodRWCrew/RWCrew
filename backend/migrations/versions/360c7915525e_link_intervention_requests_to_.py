@@ -24,28 +24,29 @@ def upgrade() -> None:
     # before the NOT NULL constraint is added — a straight nullable=False
     # add_column would fail against a table that already has rows.
     op.add_column('InterventionRequests_request', sa.Column('team_id', sa.Integer(), nullable=True))
-    op.create_foreign_key(None, 'InterventionRequests_request', 'MasterData_team', ['team_id'], ['id'])
+    op.create_foreign_key(
+        'fk_intervention_requests_request_team_id',
+        'InterventionRequests_request',
+        'MasterData_team',
+        ['team_id'],
+        ['id'],
+    )
 
-    # Point every existing request at whatever team happens to exist
-    # (arbitrarily, the lowest id) — there's no way to infer the right
-    # team from the free-text "association_name" being dropped below, and
-    # in practice this only ever runs against this app's own dev data.
+    # Preserve the free-text association and link only exact, unique matches.
     op.execute(
         """
         UPDATE "InterventionRequests_request"
-        SET team_id = (SELECT id FROM "MasterData_team" ORDER BY id LIMIT 1)
+        SET team_id = (
+            SELECT id
+            FROM "MasterData_team"
+            WHERE "MasterData_team".name = "InterventionRequests_request".association_name
+        )
         WHERE team_id IS NULL
         """
     )
-    op.alter_column('InterventionRequests_request', 'team_id', nullable=False)
-
-    op.drop_column('InterventionRequests_request', 'association_name')
 
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.add_column('InterventionRequests_request', sa.Column('association_name', sa.VARCHAR(length=255), autoincrement=False, nullable=True))
-    op.execute("""UPDATE "InterventionRequests_request" SET association_name = ''""")
-    op.alter_column('InterventionRequests_request', 'association_name', nullable=False)
-    op.drop_constraint(None, 'InterventionRequests_request', type_='foreignkey')
+    op.drop_constraint('fk_intervention_requests_request_team_id', 'InterventionRequests_request', type_='foreignkey')
     op.drop_column('InterventionRequests_request', 'team_id')

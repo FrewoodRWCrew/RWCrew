@@ -58,11 +58,11 @@ export function PublicInterventionRequestForm({ teams, defaults }: PublicInterve
   }
 
   function resetForNewRequest() {
-    setTeamId(null);
-    setTeamName(null);
-    setCartNumber("");
-    setDeliveryLocation("");
-    setZone("");
+    setTeamId(defaults.team_id);
+    setTeamName(defaults.team_name);
+    setCartNumber(defaults.cart_number ?? "");
+    setDeliveryLocation(defaults.delivery_location ?? "");
+    setZone(defaults.zone ?? "");
     setFields(EMPTY_FIELDS);
     setSubmittedRequestNumber(null);
   }

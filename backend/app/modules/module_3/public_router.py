@@ -6,7 +6,12 @@
 # login endpoint, the codebase's existing unauthenticated-endpoint pattern —
 # unlike every endpoint in router.py, which is staff-only.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+import heapq
+from collections import defaultdict, deque
+from threading import Lock
+from time import monotonic
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -25,6 +30,55 @@ from app.schemas.intervention_requests import (
 
 router = APIRouter(prefix="/api/public/intervention-requests", tags=["Intervention Requests (Public)"])
 
+PUBLIC_REQUEST_RATE_LIMIT = 10
+PUBLIC_REQUEST_RATE_WINDOW_SECONDS = 60.0
+# Keep lock-held cleanup bounded even when many different IPs have used the
+# public form since the last request.
+PUBLIC_REQUEST_CLEANUP_MAX_REMOVALS = 32
+_public_request_attempts: dict[str, deque[float]] = defaultdict(deque)
+_public_request_expiries: list[tuple[float, str]] = []
+_public_request_attempts_lock = Lock()
+
+
+def _prune_expired_rate_limit_entries(now: float) -> None:
+    """Evict at most a fixed number of expired queue entries.
+    Must be called with _public_request_attempts_lock already held.
+    """
+    # Entries in the heap store an absolute expiry time (insertion time +
+    # window), so they must be compared against the current time, not a
+    # window-shifted cutoff - otherwise eviction lags a full window behind.
+    cutoff = now - PUBLIC_REQUEST_RATE_WINDOW_SECONDS
+    removals = 0
+    while _public_request_expiries and _public_request_expiries[0][0] <= now:
+        _, client_ip = heapq.heappop(_public_request_expiries)
+        attempts = _public_request_attempts.get(client_ip)
+        if attempts is None:
+            continue
+        while attempts and attempts[0] <= cutoff:
+            attempts.popleft()
+        if not attempts:
+            del _public_request_attempts[client_ip]
+        removals += 1
+        if removals >= PUBLIC_REQUEST_CLEANUP_MAX_REMOVALS:
+            break
+
+
+def _enforce_public_request_rate_limit(request: Request) -> None:
+    """Allow a small number of public submissions per client IP per minute."""
+    client_ip = request.client.host if request.client is not None else "unknown"
+    now = monotonic()
+    cutoff = now - PUBLIC_REQUEST_RATE_WINDOW_SECONDS
+    with _public_request_attempts_lock:
+        _prune_expired_rate_limit_entries(now)
+
+        attempts = _public_request_attempts[client_ip]
+        while attempts and attempts[0] <= cutoff:
+            attempts.popleft()
+        if len(attempts) >= PUBLIC_REQUEST_RATE_LIMIT:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail="Too many requests")
+        attempts.append(now)
+        heapq.heappush(_public_request_expiries, (now + PUBLIC_REQUEST_RATE_WINDOW_SECONDS, client_ip))
+
 
 @router.get("/teams", response_model=list[InterventionRequestsTeamResponse])
 def list_public_teams(db: Session = Depends(get_db)) -> list[Team]:
@@ -35,6 +89,7 @@ def list_public_teams(db: Session = Depends(get_db)) -> list[Team]:
 @router.post("", response_model=InterventionRequestResponse, status_code=status.HTTP_201_CREATED)
 def create_public_intervention_request(
     payload: PublicInterventionRequestCreateRequest,
+    request: Request,
     db: Session = Depends(get_db),
 ) -> InterventionRequest:
     """Create a brand-new intervention request from the public form.
@@ -44,6 +99,8 @@ def create_public_intervention_request(
     are internal-only fields, set here rather than trusted from an
     anonymous submitter.
     """
+    _enforce_public_request_rate_limit(request)
+
     if payload.team_id is not None and db.get(Team, payload.team_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 

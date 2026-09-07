@@ -23,9 +23,9 @@ export function TeamKarManagement({ initialUsers }: TeamKarManagementProps) {
   const t = useTranslations("interventionRequests.teamkar");
 
   const [users, setUsers] = useState(initialUsers);
-  // Tracks which single checkbox is mid-request, so we can disable just
-  // that one instead of freezing the whole table.
+  // Tracks whether a membership replacement request is in flight.
   const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+  const isUpdating = pendingUserId !== null;
 
   async function handleToggleMember(user: TeamKarUser, isChecked: boolean) {
     setPendingUserId(user.user_id);
@@ -74,7 +74,7 @@ export function TeamKarManagement({ initialUsers }: TeamKarManagementProps) {
                 <TableCell className="text-center">
                   <Checkbox
                     checked={user.is_member}
-                    disabled={pendingUserId === user.user_id}
+                    disabled={isUpdating}
                     onCheckedChange={(checked) => handleToggleMember(user, checked === true)}
                     aria-label={`${t("columnMember")} – ${user.display_name}`}
                   />

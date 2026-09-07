@@ -25,10 +25,9 @@ class ModuleDefinition:
 # module-9 (MasterData) already have real names and their own bespoke
 # routers (see app/modules/module_1, app/modules/module_9) instead of the
 # shared create_module_router() factory used by the placeholders.
-# module-3 (Intervention Requests) has a real name too, but still uses the
-# shared factory for now — it only has one screen (a KPI-overview
-# placeholder) so far, not enough real screens yet to justify its own
-# bespoke custom-roles system the way TagScan/MasterData needed.
+# module-3 (Intervention Requests) also has a bespoke router with multiple
+# screens and per-screen permissions, so it belongs with TagScan/MasterData
+# rather than with the placeholder modules using the shared factory.
 _MODULE_NAMES = {"module-1": "TagScan", "module-3": "Intervention Requests", "module-9": "MasterData"}
 
 MODULE_DEFINITIONS: list[ModuleDefinition] = [

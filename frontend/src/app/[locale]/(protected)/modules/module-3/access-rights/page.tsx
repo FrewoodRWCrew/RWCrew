@@ -4,8 +4,16 @@
 
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
+import { serverApiFetch } from "@/lib/server-api";
+import type { InterventionRequestsMyPermissions } from "@/lib/types";
 
 export default async function AccessRightsPage() {
   const locale = await getLocale();
-  redirect({ href: "/modules/module-3/access-rights/roles", locale });
+  const permissions = await serverApiFetch<InterventionRequestsMyPermissions>("/api/modules/module-3/me/permissions");
+  const href = permissions.viewable_screen_keys.includes("interventionrequests.roles")
+    ? "/modules/module-3/access-rights/roles"
+    : permissions.viewable_screen_keys.includes("interventionrequests.users")
+      ? "/modules/module-3/access-rights/users"
+      : "/modules/module-3";
+  redirect({ href, locale });
 }
