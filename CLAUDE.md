@@ -161,3 +161,23 @@ tests for core logic only).
   (not literally every line, not just top-level docstrings) — see any file under `app/` or `src/`
   for the expected density. This applies to backend and frontend code we write; generated files
   (Alembic migrations, shadcn's `src/components/ui/*`) are left as generated.
+- **Every list/CRUD table must pin its header row and its Actions column while scrolling, and
+  scroll both directions inside a capped-height box instead of growing the whole page.** Canonical
+  example: `frontend/src/components/module-3/intervention-requests-management.tsx`. The pattern,
+  always used together:
+  - Wrapper div around `<Table>`: `rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto`
+    (no `overflow-x-auto` on this div itself — that Tailwind arbitrary-child-variant reaches into
+    `<Table>`'s own internal container, which already has `overflow-x-auto`, and adds vertical
+    scrolling on top of it).
+  - Every header-row `TableHead` (first row): `sticky top-0 z-20 bg-background` added to its
+    existing classes. A second header row (e.g. per-column filters) uses `top-10` instead (offset
+    below the first row's height) at the same `z-20`.
+  - The Actions column's `TableHead`: `sticky top-0 right-0 z-30 bg-background` (or `top-10` on a
+    filter-row placeholder cell) — z-30 so the corner cell stays above the other sticky headers.
+  - Each `TableRow`: `className="group"`. Each Actions `TableCell`:
+    `sticky right-0 z-10 bg-background group-hover:bg-muted/50` (keeps the pinned cell's hover
+    background in sync with the row's own `hover:bg-muted/50`).
+  - `bg-background` is required on every sticky cell (opaque, prevents ghosting from rows/columns
+    scrolling underneath). A table with no Actions column still gets the scroll wrapper + sticky
+    header treatment, just without the `right-0`/z-30 pieces.
+  Apply this to every new list-screen table from the start — don't ship one without it.

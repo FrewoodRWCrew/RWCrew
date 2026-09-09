@@ -25,6 +25,13 @@ import type {
   InterventionRequestsUserSummary,
   InterventionStatus,
   InterventionStatusInput,
+  KarTrackerKar,
+  KarTrackerKarInput,
+  KarTrackerKarStatus,
+  KarTrackerMyPermissions,
+  KarTrackerRole,
+  KarTrackerScreen,
+  KarTrackerUserSummary,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
   MasterDataRole,
@@ -815,6 +822,132 @@ export function createOrGrantInterventionRequestsUser(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// --- KarTracker (module-2): custom roles with per-screen permissions ---
+//
+// This is the module's first development phase — only the Access Rights
+// scaffold exists so far (Roles + Users). Business-specific endpoints
+// (cart registry/"Karlijst", delivery planning, ...) get added here once
+// those screens are designed in a later phase.
+
+export function getKarTrackerMyPermissions(): Promise<KarTrackerMyPermissions> {
+  return apiFetch<KarTrackerMyPermissions>("/api/modules/module-2/me/permissions");
+}
+
+export function listKarTrackerScreens(): Promise<KarTrackerScreen[]> {
+  return apiFetch<KarTrackerScreen[]>("/api/modules/module-2/screens");
+}
+
+export function listKarTrackerRoles(): Promise<KarTrackerRole[]> {
+  return apiFetch<KarTrackerRole[]>("/api/modules/module-2/roles");
+}
+
+export function createKarTrackerRole(name: string): Promise<KarTrackerRole> {
+  return apiFetch<KarTrackerRole>("/api/modules/module-2/roles", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameKarTrackerRole(roleId: number, name: string): Promise<KarTrackerRole> {
+  return apiFetch<KarTrackerRole>(`/api/modules/module-2/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteKarTrackerRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/roles/${roleId}`, { method: "DELETE" });
+}
+
+export interface KarTrackerPermissionUpdate {
+  screen_id: number;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+export function setKarTrackerRolePermissions(
+  roleId: number,
+  permissions: KarTrackerPermissionUpdate[],
+): Promise<KarTrackerRole> {
+  return apiFetch<KarTrackerRole>(`/api/modules/module-2/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function listKarTrackerUsers(): Promise<KarTrackerUserSummary[]> {
+  return apiFetch<KarTrackerUserSummary[]>("/api/modules/module-2/users");
+}
+
+export function setKarTrackerUserRole(userId: number, roleId: number | null): Promise<KarTrackerUserSummary> {
+  return apiFetch<KarTrackerUserSummary>(`/api/modules/module-2/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantKarTrackerUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<KarTrackerUserSummary> {
+  return apiFetch<KarTrackerUserSummary>("/api/modules/module-2/users", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- KarStatussen (module-2's "kartracker.karstatuses" lookup screen) ---
+
+export function listKarStatuses(): Promise<KarTrackerKarStatus[]> {
+  return apiFetch<KarTrackerKarStatus[]>("/api/modules/module-2/kar-statuses");
+}
+
+export function createKarStatus(name: string): Promise<KarTrackerKarStatus> {
+  return apiFetch<KarTrackerKarStatus>("/api/modules/module-2/kar-statuses", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateKarStatus(karStatusId: number, name: string): Promise<KarTrackerKarStatus> {
+  return apiFetch<KarTrackerKarStatus>(`/api/modules/module-2/kar-statuses/${karStatusId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteKarStatus(karStatusId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/kar-statuses/${karStatusId}`, { method: "DELETE" });
+}
+
+// --- KarManagement (module-2's "kartracker.karmanagement" fleet registry) ---
+
+export function listKarren(): Promise<KarTrackerKar[]> {
+  return apiFetch<KarTrackerKar[]>("/api/modules/module-2/karren");
+}
+
+export function createKar(payload: KarTrackerKarInput): Promise<KarTrackerKar> {
+  return apiFetch<KarTrackerKar>("/api/modules/module-2/karren", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateKar(karId: number, payload: KarTrackerKarInput): Promise<KarTrackerKar> {
+  return apiFetch<KarTrackerKar>(`/api/modules/module-2/karren/${karId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteKar(karId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/karren/${karId}`, { method: "DELETE" });
 }
 
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------

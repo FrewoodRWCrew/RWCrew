@@ -667,3 +667,78 @@ export interface InterventionRequestsUserSummary {
 export interface InterventionRequestsMyPermissions {
   viewable_screen_keys: string[];
 }
+
+// --- KarTracker (module-2): custom roles with per-screen permissions ---
+//
+// The Access Rights scaffold (Roles + Users), plus the Karlijst phase's
+// KarStatussen lookup and KarManagement fleet registry. Delivery planning
+// types get added here once that phase is designed.
+
+/** One screen registered inside the KarTracker module. */
+export interface KarTrackerScreen {
+  id: number;
+  key: string;
+  label: string;
+  sort_order: number;
+}
+
+/** One KarTracker role's permissions on one specific screen. */
+export interface KarTrackerScreenPermission {
+  screen_id: number;
+  screen_key: string;
+  screen_label: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+/** One KarTracker role, with its full permission matrix. */
+export interface KarTrackerRole {
+  id: number;
+  name: string;
+  permissions: KarTrackerScreenPermission[];
+}
+
+/** One user with access to KarTracker, and their current role (if any). */
+export interface KarTrackerUserSummary {
+  user_id: number;
+  email: string;
+  display_name: string;
+  role_id: number | null;
+  role_name: string | null;
+}
+
+/** Which KarTracker screens the current user is allowed to view. */
+export interface KarTrackerMyPermissions {
+  viewable_screen_keys: string[];
+}
+
+/** One status a kar can be in, as managed on the KarStatussen screen. */
+export interface KarTrackerKarStatus {
+  id: number;
+  name: string;
+}
+
+/** One kar, as shown on the KarManagement screen. */
+export interface KarTrackerKar {
+  id: number;
+  kar_nummer: string;
+  status_id: number;
+  team_id: number | null;
+  transport_type_id: number;
+  last_latitude: number | null;
+  last_longitude: number | null;
+  last_recorded_at: string | null;
+}
+
+/** What's sent to create or update a kar. */
+export interface KarTrackerKarInput {
+  kar_nummer: string;
+  status_id: number;
+  team_id: number | null;
+  transport_type_id: number;
+  last_latitude: number | null;
+  last_longitude: number | null;
+  last_recorded_at: string | null;
+}

@@ -157,19 +157,19 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
         />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnScanner")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnType")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnTechnology")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnLocation")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnDescription")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnInfo1")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnInfo2")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnInfo3")}</TableHead>
-              <TableHead className="sticky right-0 z-10 bg-background text-right font-bold underline">
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScanner")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnType")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTechnology")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLocation")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDescription")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnInfo1")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnInfo2")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnInfo3")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
               </TableHead>
             </TableRow>
@@ -177,7 +177,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                 column it filters. Actions has no filter, so it gets an
                 empty cell to keep alignment exact. */}
             <TableRow>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterScanner")}
                   placeholder={t("filterScanner")}
@@ -186,7 +186,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setScannerFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? ALL_VALUE)}>
                   <SelectTrigger aria-label={t("filterType")} className="h-8 w-full font-normal">
                     <SelectValue>
@@ -208,7 +208,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   </SelectContent>
                 </Select>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Select
                   value={technologyFilter}
                   onValueChange={(value) => setTechnologyFilter(value ?? ALL_VALUE)}
@@ -228,7 +228,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   </SelectContent>
                 </Select>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterLocation")}
                   placeholder={t("filterLocation")}
@@ -237,7 +237,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setLocationFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterDescription")}
                   placeholder={t("filterDescription")}
@@ -246,7 +246,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setDescriptionFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterInfo1")}
                   placeholder={t("filterInfo1")}
@@ -255,7 +255,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setInfo1Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterInfo2")}
                   placeholder={t("filterInfo2")}
@@ -264,7 +264,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setInfo2Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterInfo3")}
                   placeholder={t("filterInfo3")}
@@ -273,7 +273,7 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                   onChange={(event) => setInfo3Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead className="sticky right-0 z-10 bg-background" />
+              <TableHead className="sticky top-10 right-0 z-30 bg-background" />
             </TableRow>
           </TableHeader>
           <TableBody>

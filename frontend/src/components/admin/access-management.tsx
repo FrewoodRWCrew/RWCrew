@@ -95,15 +95,18 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
         />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableName")}</TableHead>
-              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableEmail")}</TableHead>
-              <TableHead className="align-bottom pb-3 font-bold underline">{t("userTableSuperAdmin")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableEmail")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableSuperAdmin")}</TableHead>
               {sortedModules.map((module) => (
-                <TableHead key={module.key} className="h-32 text-center align-bottom pb-3 font-bold underline">
+                <TableHead
+                  key={module.key}
+                  className="sticky top-0 z-20 h-32 bg-background text-center align-bottom pb-3 font-bold underline"
+                >
                   {/* writing-mode lays the text out in a column exactly as
                       wide as the vertical text itself, so it's centered
                       directly above this same column's checkboxes below —
@@ -118,14 +121,14 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
                   </div>
                 </TableHead>
               ))}
-              <TableHead className="align-bottom pb-3 text-right font-bold underline">
+              <TableHead className="sticky top-0 right-0 z-30 bg-background align-bottom pb-3 text-right font-bold underline">
                 {t("userTableActions")}
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {users.map((user) => (
-              <TableRow key={user.id}>
+              <TableRow key={user.id} className="group">
                 <TableCell className="font-medium">{user.display_name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>{user.is_super_admin && <Badge variant="secondary">{t("superAdminLabel")}</Badge>}</TableCell>
@@ -142,7 +145,7 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
                     </TableCell>
                   );
                 })}
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <ChangeAccessDialog
                       user={user}

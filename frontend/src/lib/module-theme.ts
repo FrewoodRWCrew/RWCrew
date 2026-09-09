@@ -9,6 +9,8 @@
 import { Box, Database, Nfc, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
+import RollContainerIcon from "@/components/icons/roll-container-icon";
+
 export interface ModuleTheme {
   /** Classes for the module's tile on the landing page: a solid background
    *  covering the whole tile, plus a text colour readable on top of it. */
@@ -46,6 +48,12 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     badgeClassName: "bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-300",
     accentColorToken: "purple-600",
     accentForegroundColorToken: "white",
+    // KarTracker manages the ~250 physical roll containers ("karren") used
+    // for festival delivery planning — Attachment/rolcontainer.jpg is the
+    // reference picture; no built-in lucide icon matches a wire-mesh roll
+    // cage on casters, so this is a small custom one drawn in the same
+    // stroke style (see src/components/icons/roll-container-icon.tsx).
+    icon: RollContainerIcon,
   },
   "module-3": {
     tileClassName: "bg-orange-600 text-white",
@@ -159,6 +167,7 @@ export function getModuleNumber(moduleKey: string): string {
 // every locale anyway.
 const MODULE_TRANSLATION_KEYS: Record<string, string> = {
   "module-1": "tagscan.moduleTitle",
+  "module-2": "karTracker.moduleTitle",
   "module-3": "interventionRequests.moduleTitle",
   "module-9": "masterdata.moduleTitle",
 };

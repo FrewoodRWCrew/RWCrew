@@ -14,6 +14,12 @@ from app.db.models.intervention_requests_role_permission import InterventionRequ
 from app.db.models.intervention_requests_screen import InterventionRequestsScreen  # noqa: F401
 from app.db.models.intervention_requests_user_role import InterventionRequestsUserRole  # noqa: F401
 from app.db.models.intervention_status import InterventionStatus  # noqa: F401
+from app.db.models.kartracker_kar import KarTrackerKar  # noqa: F401
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus  # noqa: F401
+from app.db.models.kartracker_role import KarTrackerRole  # noqa: F401
+from app.db.models.kartracker_role_permission import KarTrackerRolePermission  # noqa: F401
+from app.db.models.kartracker_screen import KarTrackerScreen  # noqa: F401
+from app.db.models.kartracker_user_role import KarTrackerUserRole  # noqa: F401
 from app.db.models.masterdata_role import MasterDataRole  # noqa: F401
 from app.db.models.masterdata_role_permission import MasterDataRolePermission  # noqa: F401
 from app.db.models.masterdata_screen import MasterDataScreen  # noqa: F401

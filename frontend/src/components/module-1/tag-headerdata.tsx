@@ -150,21 +150,23 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
         </div>
       )}
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnFilename")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnCreatedAt")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("columnLineCount")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnScannerName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnScannerLocation")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnScannerTechnology")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("columnActions")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnFilename")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCreatedAt")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("columnLineCount")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerLocation")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerTechnology")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {t("columnActions")}
+              </TableHead>
             </TableRow>
             {/* The filter row: each input sits directly under the column it filters. */}
             <TableRow>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterFilename")}
                   placeholder={t("filterFilename")}
@@ -173,7 +175,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setFilenameFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterCreatedAt")}
                   placeholder={t("filterCreatedAt")}
@@ -182,7 +184,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setCreatedAtFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterLineCount")}
                   placeholder={t("filterLineCount")}
@@ -191,7 +193,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setLineCountFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterScannerName")}
                   placeholder={t("filterScannerName")}
@@ -200,7 +202,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setScannerNameFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterScannerLocation")}
                   placeholder={t("filterScannerLocation")}
@@ -209,7 +211,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setScannerLocationFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterScannerTechnology")}
                   placeholder={t("filterScannerTechnology")}
@@ -218,12 +220,12 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setScannerTechnologyFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead />
+              <TableHead className="sticky top-10 right-0 z-30 bg-background" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredEntries.map((entry) => (
-              <TableRow key={entry.id}>
+              <TableRow key={entry.id} className="group">
                 <TableCell className="font-medium">
                   <Link
                     href={`/modules/module-1/tag-linedata?filename=${encodeURIComponent(entry.filename)}`}
@@ -237,7 +239,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 <TableCell className="text-muted-foreground">{entry.scanner_name}</TableCell>
                 <TableCell className="text-muted-foreground">{entry.scanner_location}</TableCell>
                 <TableCell className="text-muted-foreground">{entry.scanner_technology}</TableCell>
-                <TableCell className="text-right">
+                <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <a
                       href={`${API_BASE_URL}/api/modules/module-1/header-data/${entry.id}/pdf?locale=${locale}`}

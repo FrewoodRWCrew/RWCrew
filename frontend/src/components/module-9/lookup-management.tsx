@@ -123,19 +123,21 @@ export function LookupManagement<T extends LookupItem>({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{labels.tableName}</TableHead>
-              <TableHead className="text-right font-bold underline">{labels.tableActions}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{labels.tableName}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {labels.tableActions}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow key={item.id} className="group">
                 <TableCell className="font-medium">{valueOf(item)}</TableCell>
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <ChangeItemDialog
                       item={item}

@@ -119,25 +119,27 @@ export function TeamManagement({
         />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnLocation")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnDeliveryMethod")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLocation")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDeliveryMethod")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {t("tableActions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {teams.map((team) => (
-              <TableRow key={team.id}>
+              <TableRow key={team.id} className="group">
                 <TableCell className="font-medium">{team.name}</TableCell>
                 <TableCell className="text-muted-foreground">{locationLabelFor(team.location_id)}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {deliveryMethodLabelFor(team.delivery_method_id)}
                 </TableCell>
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <TeamFormDialog
                       team={team}

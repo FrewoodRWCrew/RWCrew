@@ -97,44 +97,44 @@ def test_super_admin_can_revoke_previously_granted_access(client: TestClient, db
 def test_super_admin_does_not_automatically_have_module_access(client: TestClient, db_session: Session) -> None:
     # Being super admin only grants the power to manage access for
     # everyone — it does not, by itself, open every module's tile.
-    # Uses module-2 (not module-1) since module-1 is now Tagscan, which
-    # has its own bespoke router/permission system tested separately.
+    # Uses module-4 (not module-1/2/3) since those three now have their own
+    # bespoke routers/permission systems, tested separately.
     _create_user(db_session, email="admin@example.com", is_super_admin=True)
-    _create_module(db_session, key="module-2")
+    _create_module(db_session, key="module-4")
     _login(client, "admin@example.com")
 
-    response = client.get("/api/modules/module-2/status")
+    response = client.get("/api/modules/module-4/status")
 
     assert response.status_code == 403
 
 
 def test_user_without_access_cannot_open_a_module(client: TestClient, db_session: Session) -> None:
     _create_user(db_session, email="member@example.com")
-    _create_module(db_session, key="module-2")
+    _create_module(db_session, key="module-4")
     _login(client, "member@example.com")
 
-    response = client.get("/api/modules/module-2/status")
+    response = client.get("/api/modules/module-4/status")
 
     assert response.status_code == 403
 
 
 def test_user_with_granted_access_can_open_the_module(client: TestClient, db_session: Session) -> None:
     user = _create_user(db_session, email="member@example.com")
-    module = _create_module(db_session, key="module-2")
+    module = _create_module(db_session, key="module-4")
     db_session.add(UserModuleAccess(user_id=user.id, module_id=module.id))
     db_session.commit()
     _login(client, "member@example.com")
 
-    response = client.get("/api/modules/module-2/status")
+    response = client.get("/api/modules/module-4/status")
 
     assert response.status_code == 200
-    assert response.json()["module_key"] == "module-2"
+    assert response.json()["module_key"] == "module-4"
 
 
 def test_module_admin_can_assign_roles_in_their_own_module(client: TestClient, db_session: Session) -> None:
     module_admin = _create_user(db_session, email="module-admin@example.com")
     team_member = _create_user(db_session, email="member@example.com")
-    module = _create_module(db_session, key="module-2")
+    module = _create_module(db_session, key="module-4")
 
     # Both need access to the module first; the admin role is separate
     # from (and requires) that access grant.
@@ -145,7 +145,7 @@ def test_module_admin_can_assign_roles_in_their_own_module(client: TestClient, d
 
     _login(client, "module-admin@example.com")
 
-    response = client.put(f"/api/modules/module-2/roles/{team_member.id}", json={"role": "editor"})
+    response = client.put(f"/api/modules/module-4/roles/{team_member.id}", json={"role": "editor"})
 
     assert response.status_code == 200
     assert response.json()["role"] == "editor"
@@ -154,7 +154,7 @@ def test_module_admin_can_assign_roles_in_their_own_module(client: TestClient, d
 def test_module_reader_cannot_assign_roles(client: TestClient, db_session: Session) -> None:
     reader = _create_user(db_session, email="reader@example.com")
     team_member = _create_user(db_session, email="member@example.com")
-    module = _create_module(db_session, key="module-2")
+    module = _create_module(db_session, key="module-4")
 
     db_session.add(UserModuleAccess(user_id=reader.id, module_id=module.id))
     db_session.add(UserModuleAccess(user_id=team_member.id, module_id=module.id))
@@ -163,7 +163,7 @@ def test_module_reader_cannot_assign_roles(client: TestClient, db_session: Sessi
 
     _login(client, "reader@example.com")
 
-    response = client.put(f"/api/modules/module-2/roles/{team_member.id}", json={"role": "editor"})
+    response = client.put(f"/api/modules/module-4/roles/{team_member.id}", json={"role": "editor"})
 
     assert response.status_code == 403
 
@@ -172,7 +172,7 @@ def test_being_admin_of_one_module_does_not_grant_admin_of_another(client: TestC
     module_admin = _create_user(db_session, email="module-admin@example.com")
     team_member = _create_user(db_session, email="member@example.com")
     module_admin_is_admin_of = _create_module(db_session, key="module-3", sort_order=3)
-    module_two = _create_module(db_session, key="module-2", sort_order=2)
+    module_two = _create_module(db_session, key="module-4", sort_order=4)
 
     db_session.add(UserModuleAccess(user_id=module_admin.id, module_id=module_admin_is_admin_of.id))
     db_session.add(ModuleRole(user_id=module_admin.id, module_id=module_admin_is_admin_of.id, role=ModuleRoleName.ADMIN))
@@ -181,7 +181,7 @@ def test_being_admin_of_one_module_does_not_grant_admin_of_another(client: TestC
 
     _login(client, "module-admin@example.com")
 
-    response = client.put(f"/api/modules/module-2/roles/{team_member.id}", json={"role": "editor"})
+    response = client.put(f"/api/modules/module-4/roles/{team_member.id}", json={"role": "editor"})
 
     assert response.status_code == 403
 
@@ -189,14 +189,14 @@ def test_being_admin_of_one_module_does_not_grant_admin_of_another(client: TestC
 def test_super_admin_can_manage_roles_in_any_module(client: TestClient, db_session: Session) -> None:
     super_admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     team_member = _create_user(db_session, email="member@example.com")
-    module = _create_module(db_session, key="module-2")
+    module = _create_module(db_session, key="module-4")
 
     db_session.add(UserModuleAccess(user_id=team_member.id, module_id=module.id))
     db_session.commit()
 
     _login(client, "admin@example.com")
 
-    response = client.put(f"/api/modules/module-2/roles/{team_member.id}", json={"role": "admin"})
+    response = client.put(f"/api/modules/module-4/roles/{team_member.id}", json={"role": "admin"})
 
     assert response.status_code == 200
     assert response.json()["role"] == "admin"

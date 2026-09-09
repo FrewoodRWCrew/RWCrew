@@ -78,13 +78,13 @@ export function UsersManagement({ roles, initialUsers }: UsersManagementProps) {
         <CreateOrGrantUserDialog roles={roles} onSaved={upsertUser} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("userTableName")}</TableHead>
-              <TableHead className="font-bold underline">{t("userTableEmail")}</TableHead>
-              <TableHead className="font-bold underline">{t("userTableRole")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("userTableName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("userTableEmail")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("userTableRole")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

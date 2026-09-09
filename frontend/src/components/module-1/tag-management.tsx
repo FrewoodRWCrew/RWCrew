@@ -254,11 +254,11 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background">
                 <Checkbox
                   checked={allFilteredSelected}
                   indeterminate={someFilteredSelected && !allFilteredSelected}
@@ -266,28 +266,28 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   aria-label={t("selectAll")}
                 />
               </TableHead>
-              <TableHead className="font-bold underline">{t("columnEpcUid")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnStatus")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnAssignedProduct")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnDateRegistered")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnDateAssigned")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnLastReadAt")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnLastReaderId")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnLastLocation")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnManufacturer")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnBatchNumber")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnNotes1")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnNotes2")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnNotes3")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnNotes4")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnNotes5")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEpcUid")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedProduct")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateRegistered")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateAssigned")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLastReadAt")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLastReaderId")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLastLocation")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnManufacturer")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnBatchNumber")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnNotes1")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnNotes2")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnNotes3")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnNotes4")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnNotes5")}</TableHead>
               {/* Actions stays pinned to the right edge while the rest of
                   the row scrolls horizontally — with 16 data columns now
                   shown, an unpinned Actions cell would scroll out of
                   view, leaving Edit/Delete unreachable without first
                   scrolling all the way right. */}
-              <TableHead className="sticky right-0 z-10 bg-background text-right font-bold underline">
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
               </TableHead>
             </TableRow>
@@ -295,8 +295,8 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                 column it filters. Actions has no filter, so it gets an
                 empty cell to keep alignment exact. */}
             <TableRow>
-              <TableHead />
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background" />
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterEpcUid")}
                   placeholder={t("filterEpcUid")}
@@ -305,7 +305,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setEpcFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}>
                   <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full font-normal">
                     <SelectValue>
@@ -324,7 +324,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   </SelectContent>
                 </Select>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Select value={productFilter} onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}>
                   <SelectTrigger aria-label={t("filterProduct")} className="h-8 w-full font-normal">
                     <SelectValue>
@@ -345,7 +345,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   </SelectContent>
                 </Select>
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterAssignedSerialNumber")}
                   placeholder={t("filterAssignedSerialNumber")}
@@ -354,7 +354,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setSerialNumberFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterDateRegistered")}
                   placeholder={t("filterDateRegistered")}
@@ -363,7 +363,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setDateRegisteredFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterDateAssigned")}
                   placeholder={t("filterDateAssigned")}
@@ -372,7 +372,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setDateAssignedFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterLastReadAt")}
                   placeholder={t("filterLastReadAt")}
@@ -381,7 +381,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setLastReadAtFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterLastReaderId")}
                   placeholder={t("filterLastReaderId")}
@@ -390,7 +390,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setLastReaderIdFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterLastLocation")}
                   placeholder={t("filterLastLocation")}
@@ -399,7 +399,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setLastLocationFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterManufacturer")}
                   placeholder={t("filterManufacturer")}
@@ -408,7 +408,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setManufacturerFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterBatchNumber")}
                   placeholder={t("filterBatchNumber")}
@@ -417,7 +417,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setBatchNumberFilter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterNotes1")}
                   placeholder={t("filterNotes1")}
@@ -426,7 +426,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setNotes1Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterNotes2")}
                   placeholder={t("filterNotes2")}
@@ -435,7 +435,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setNotes2Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterNotes3")}
                   placeholder={t("filterNotes3")}
@@ -444,7 +444,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setNotes3Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterNotes4")}
                   placeholder={t("filterNotes4")}
@@ -453,7 +453,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setNotes4Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterNotes5")}
                   placeholder={t("filterNotes5")}
@@ -462,7 +462,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                   onChange={(event) => setNotes5Filter(event.target.value)}
                 />
               </TableHead>
-              <TableHead className="sticky right-0 z-10 bg-background" />
+              <TableHead className="sticky top-10 right-0 z-30 bg-background" />
             </TableRow>
           </TableHeader>
           <TableBody>

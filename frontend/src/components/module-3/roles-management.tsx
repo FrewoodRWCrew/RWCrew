@@ -74,19 +74,21 @@ export function RolesManagement({ initialScreens, initialRoles }: RolesManagemen
         <CreateRoleDialog onCreated={upsertRole} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("tableName")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("tableName")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {t("tableActions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {roles.map((role) => (
-              <TableRow key={role.id}>
+              <TableRow key={role.id} className="group">
                 <TableCell className="font-medium">{role.name}</TableCell>
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <EditPermissionsDialog role={role} screens={screens} onSaved={upsertRole} />
                     <RenameRoleDialog role={role} onRenamed={upsertRole} />
@@ -350,15 +352,15 @@ function EditPermissionsDialog({ role, screens, onSaved }: EditPermissionsDialog
           <DialogDescription>{t("permissionsDescription")}</DialogDescription>
         </DialogHeader>
 
-        <div className="overflow-x-auto rounded-md border">
+        <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="font-bold underline">{t("screenColumn")}</TableHead>
-                <TableHead className="text-center font-bold underline">{t("viewColumn")}</TableHead>
-                <TableHead className="text-center font-bold underline">{t("createColumn")}</TableHead>
-                <TableHead className="text-center font-bold underline">{t("editColumn")}</TableHead>
-                <TableHead className="text-center font-bold underline">{t("deleteColumn")}</TableHead>
+                <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("screenColumn")}</TableHead>
+                <TableHead className="sticky top-0 z-20 bg-background text-center font-bold underline">{t("viewColumn")}</TableHead>
+                <TableHead className="sticky top-0 z-20 bg-background text-center font-bold underline">{t("createColumn")}</TableHead>
+                <TableHead className="sticky top-0 z-20 bg-background text-center font-bold underline">{t("editColumn")}</TableHead>
+                <TableHead className="sticky top-0 z-20 bg-background text-center font-bold underline">{t("deleteColumn")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>

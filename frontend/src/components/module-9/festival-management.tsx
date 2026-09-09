@@ -101,25 +101,27 @@ export function FestivalManagement({ initialFestivals, seasons }: FestivalManage
         <FestivalFormDialog trigger={<Button>{t("newFestival")}</Button>} onSaved={upsert} seasons={seasons} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnStartDate")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnEndDate")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnSeason")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStartDate")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEndDate")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnSeason")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {t("tableActions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {festivals.map((festival) => (
-              <TableRow key={festival.id}>
+              <TableRow key={festival.id} className="group">
                 <TableCell className="font-medium">{festival.name}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(festival.start_date)}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(festival.end_date)}</TableCell>
                 <TableCell className="text-muted-foreground">{seasonLabelFor(festival.season_id)}</TableCell>
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <FestivalFormDialog
                       festival={festival}

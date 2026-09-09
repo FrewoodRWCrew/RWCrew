@@ -57,13 +57,13 @@ export function TeamKarManagement({ initialUsers }: TeamKarManagementProps) {
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnEmail")}</TableHead>
-              <TableHead className="text-center font-bold underline">{t("columnMember")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEmail")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-center font-bold underline">{t("columnMember")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

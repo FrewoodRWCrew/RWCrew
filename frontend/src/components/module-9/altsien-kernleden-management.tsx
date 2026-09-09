@@ -84,25 +84,27 @@ export function AltsienKernledenManagement({ initialAltsienKernleden }: AltsienK
         <AltsienKernlidFormDialog trigger={<Button>{t("newContact")}</Button>} onSaved={upsert} />
       </div>
 
-      <div className="overflow-x-auto rounded-md border">
+      <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="font-bold underline">{t("columnFirstName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnName")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnTelephoneNumber")}</TableHead>
-              <TableHead className="font-bold underline">{t("columnEmail")}</TableHead>
-              <TableHead className="text-right font-bold underline">{t("tableActions")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnFirstName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTelephoneNumber")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEmail")}</TableHead>
+              <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                {t("tableActions")}
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {contacts.map((contact) => (
-              <TableRow key={contact.id}>
+              <TableRow key={contact.id} className="group">
                 <TableCell className="font-medium">{contact.first_name}</TableCell>
                 <TableCell className="font-medium">{contact.name}</TableCell>
                 <TableCell className="text-muted-foreground">{contact.telephone_number}</TableCell>
                 <TableCell className="text-muted-foreground">{contact.email}</TableCell>
-                <TableCell>
+                <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <AltsienKernlidFormDialog
                       contact={contact}
