@@ -115,11 +115,10 @@ export function TagMultiSelect({ id, options, selectedIds, onChange, placeholder
 
       {isOpen && filteredSuggestions.length > 0 && (
         <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-48 overflow-auto rounded-md border bg-popover shadow-md">
-          {filteredSuggestions.map((option) => (
+          {filteredSuggestions.map((option, index) => (
             <div
               key={option.id}
               role="option"
-              aria-selected={false}
               // mousedown fires before blur, so preventing its default here
               // stops the input from ever losing focus — the click below
               // then still runs with the suggestion list still open.
