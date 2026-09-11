@@ -11,6 +11,10 @@ frontend/.next/
 frontend/out/
 frontend/.env.local
 
+# --- Deployment (Hostinger VPS) ---
+.env.production
+.env.test
+
 # --- General ---
 .DS_Store
 Thumbs.db

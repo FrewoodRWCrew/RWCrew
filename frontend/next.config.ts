@@ -7,7 +7,12 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Produces a self-contained ".next/standalone" build (app code + only the
+  // node_modules it actually needs) instead of requiring a full npm install
+  // on the server — this is what the production Docker image (see
+  // frontend/Dockerfile and docs/deploying-to-hostinger.pdf) copies into its
+  // final, minimal runtime stage.
+  output: "standalone",
 };
 
 export default withNextIntl(nextConfig);

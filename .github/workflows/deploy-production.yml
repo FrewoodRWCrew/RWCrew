@@ -1,0 +1,21 @@
+name: Deploy production
+
+# Runs on every push to main. SSHes into the Hostinger VPS and re-runs
+# deploy/scripts/deploy.sh inside /opt/rwcrew/production — see
+# docs/deploying-to-hostinger.pdf, Step 8, for how SSH_HOST / SSH_USER /
+# SSH_PRIVATE_KEY are set up as repo secrets.
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: SSH and redeploy
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: bash /opt/rwcrew/production/deploy/scripts/deploy.sh /opt/rwcrew/production

@@ -1,0 +1,58 @@
+# Production/test compose file. The SAME file is used for both the test and
+# production environments on the Hostinger VPS — what makes each deployment
+# distinct is which folder it's run from (each is its own "docker compose
+# project", so containers/volumes/networks never collide) and its own .env
+# file (see .env.production.example / .env.test.example). See
+# docs/deploying-to-hostinger.pdf for the full setup.
+#
+# Frontend and backend ports are published to 127.0.0.1 only — they are
+# reached from the outside world exclusively through the Nginx reverse
+# proxy configured in deploy/nginx/rwcrew.conf, which also terminates TLS.
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    # Not published to the host: only the backend container needs to reach
+    # it, over the private docker-compose network.
+
+  backend:
+    build:
+      context: ./backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DATABASE_URL: ${DATABASE_URL}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      TAGSCAN_SOURCE_DIR: /app/TagScans
+    volumes:
+      # TagScan's CSV intake folder (see backend/app/core/config.py's
+      # tagscan_source_dir) — kept outside the container so uploaded/scanned
+      # files survive an image rebuild.
+      - tagscan_data:/app/TagScans
+    ports:
+      - "127.0.0.1:${BACKEND_PORT}:8020"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # Baked in at build time — see frontend/Dockerfile's comment on why
+        # this can't be a plain runtime environment variable.
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT}:3000"
+
+volumes:
+  db_data:
+  tagscan_data:
