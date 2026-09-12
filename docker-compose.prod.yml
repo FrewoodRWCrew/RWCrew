@@ -27,6 +27,14 @@ services:
     restart: unless-stopped
     depends_on:
       - db
+    # The VPS's own DNS resolver has been seen returning stale records for
+    # our subdomains (e.g. an old IP for test.rwcrew.eu, left over from
+    # before the domain moved to Cloudflare nameservers), which broke this
+    # container's own outbound HTTPS calls to its public hostname. Public
+    # resolvers don't have that stale cache.
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     environment:
       DATABASE_URL: ${DATABASE_URL}
       JWT_SECRET: ${JWT_SECRET}
@@ -50,6 +58,12 @@ services:
     restart: unless-stopped
     depends_on:
       - backend
+    # See the "backend" service's "dns" comment above — this container is
+    # the one that actually does the affected outbound call, since server
+    # components fetch the backend over its public hostname (server-api.ts).
+    dns:
+      - 1.1.1.1
+      - 8.8.8.8
     ports:
       - "127.0.0.1:${FRONTEND_PORT}:3000"
 
