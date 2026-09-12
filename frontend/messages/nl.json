@@ -963,7 +963,11 @@
     "actionsGroup": "Acties",
     "landing": {
       "title": "KarTracker",
-      "description": "testfrederrrrriik"
+      "description": "De planning van onze rolcontainers volgt in een volgende fase. Voorlopig kan je hier de toegangsrechten (rollen en gebruikers) en het wagenpark (KarManagement/KarStatussen) van deze module beheren."
+    },
+    "actions": {
+      "title": "Acties",
+      "comingSoon": "Deze functionaliteit volgt in een volgende fase."
     },
     "roles": {
       "title": "Rollen",
@@ -1070,10 +1074,6 @@
       "deleteConfirmDescription": "Dit verwijdert kar \"{name}\" definitief uit het wagenpark. Dit kan niet ongedaan worden gemaakt.",
       "karDeleted": "Kar verwijderd.",
       "deleteFailed": "Verwijderen van kar is mislukt."
-    },
-    "actions": {
-      "title": "Acties",
-      "description": "Binnenkort beschikbaar."
     }
   },
   "interventionRequestPublicForm": {

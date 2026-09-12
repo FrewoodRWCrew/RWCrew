@@ -965,6 +965,10 @@
       "title": "KarTracker",
       "description": "Cart delivery planning is coming in a later phase. For now, you can manage this module's access rights (roles and users) and its fleet registry (KarManagement/KarStatussen) here."
     },
+    "actions": {
+      "title": "Actions",
+      "comingSoon": "This functionality is coming in a later phase."
+    },
     "roles": {
       "title": "Roles",
       "description": "Create KarTracker roles and decide what each one can do on every screen.",
@@ -1070,10 +1074,6 @@
       "deleteConfirmDescription": "This will permanently remove kar \"{name}\" from the fleet registry. This cannot be undone.",
       "karDeleted": "Kar deleted.",
       "deleteFailed": "Failed to delete the kar."
-    },
-    "actions": {
-      "title": "Actions",
-      "description": "Coming soon."
     }
   },
   "interventionRequestPublicForm": {
