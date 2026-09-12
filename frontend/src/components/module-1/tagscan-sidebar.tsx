@@ -9,7 +9,7 @@
 // independently gated — passed in from the server, which already knows
 // how to resolve that — see app/modules/module_1/deps.py).
 
-import { Database, ShieldCheck, Zap } from "lucide-react";
+import { Database, Settings, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -31,6 +31,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const tScanners = useTranslations("tagscan.scanners");
   const tRoles = useTranslations("tagscan.roles");
   const tUsers = useTranslations("tagscan.users");
+  const tSettings = useTranslations("tagscan.settings");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -42,6 +43,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const canViewScanners = viewableScreenKeys.includes("tagscan.scanners");
   const canViewRoles = viewableScreenKeys.includes("tagscan.roles");
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
+  const canViewSettings = viewableScreenKeys.includes("tagscan.settings");
 
   function subLinkClassName(href: string) {
     return cn(
@@ -126,6 +128,18 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
               {tUsers("title")}
             </Link>
           )}
+        </>
+      )}
+
+      {canViewSettings && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <Settings className="size-4" />
+            {t("settingsGroup")}
+          </div>
+          <Link href="/modules/module-1/settings" className={subLinkClassName("/modules/module-1/settings")}>
+            {tSettings("title")}
+          </Link>
         </>
       )}
     </nav>

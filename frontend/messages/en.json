@@ -34,6 +34,7 @@
   },
   "sidebar": {
     "manageAccess": "Manage Access",
+    "loginHistory": "Login History",
     "landing": "Main page"
   },
   "modulePage": {
@@ -74,6 +75,24 @@
       "deleteConfirmDescription": "This will permanently remove {name} and all their module access. This cannot be undone.",
       "userDeleted": "User deleted.",
       "deleteUserFailed": "Failed to delete the user."
+    },
+    "loginHistory": {
+      "title": "Login History",
+      "description": "See who is using the tool and when, including failed attempts.",
+      "columnTimestamp": "Timestamp",
+      "columnUser": "User",
+      "columnStatus": "Status",
+      "columnIpAddress": "IP address",
+      "statusSuccess": "Success",
+      "statusFailed": "Failed",
+      "dateFromLabel": "From",
+      "dateToLabel": "To",
+      "clearFilters": "Clear filters",
+      "previous": "Previous",
+      "next": "Next",
+      "pageOf": "Page {page} of {totalPages}",
+      "loadFailed": "Failed to load the login history.",
+      "empty": "No login attempts found yet."
     }
   },
   "tagscan": {
@@ -81,6 +100,7 @@
     "accessRights": "Access Rights",
     "masterDataGroup": "MasterData",
     "actionsGroup": "Actions",
+    "settingsGroup": "Settings",
     "landing": {
       "title": "TagScan Overview",
       "statTotalTags": "Total tags",
@@ -342,7 +362,43 @@
       "deleteConfirmTitle": "Delete scanner?",
       "deleteConfirmDescription": "This will permanently remove the scanner \"{scanner}\". This cannot be undone, and only works if it's no longer used by any logged file or line.",
       "scannerDeleted": "Scanner deleted.",
-      "deleteFailed": "Failed to delete the scanner."
+      "deleteFailed": "Failed to delete the scanner.",
+      "apiKey": "API key",
+      "apiKeyTitle": "Device API key for \"{scanner}\"",
+      "apiKeyDescription": "Used by this device's watcher script to push CSV files to TagScan over HTTPS instead of them needing to already sit on the server.",
+      "apiKeyActive": "Active",
+      "apiKeyNone": "No key generated yet",
+      "apiKeyNeverUsed": "Never used",
+      "apiKeyLastUsed": "Last used {date}",
+      "apiKeyGenerate": "Generate API key",
+      "apiKeyRegenerate": "Generate new key",
+      "apiKeyRevoke": "Revoke key",
+      "apiKeyNewValue": "New API key",
+      "apiKeyShownOnceWarning": "This key is shown once and can't be retrieved again — copy it now and paste it into the device's watcher configuration. Generating a new key immediately invalidates this one.",
+      "apiKeyUploadUrl": "Upload URL",
+      "copy": "Copy",
+      "copied": "Copied to clipboard.",
+      "copyFailed": "Failed to copy.",
+      "apiKeyGenerateFailed": "Failed to generate an API key.",
+      "apiKeyRevoked": "API key revoked.",
+      "apiKeyRevokeFailed": "Failed to revoke the API key."
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Configure where TagScan receives CSV files pushed by devices over HTTPS.",
+      "receiveFolderLabel": "Receive folder",
+      "receiveFolderDescription": "The folder on the server where incoming CSV files land, in its \"Unreaded Tags\" subfolder — the same folder browsed on the CSV Source Files screen and scanned by Tag Headerdata.",
+      "defaultValue": "Using default",
+      "customValue": "Custom",
+      "save": "Save",
+      "saved": "Settings saved.",
+      "saveFailed": "Failed to save settings.",
+      "uploadUrlLabel": "Device upload URL",
+      "uploadUrlDescription": "The address a device's watcher script POSTs its CSV files to, with its own API key (see the Scanners screen) in an \"X-API-Key\" header.",
+      "uploadUrlHint": "Paste this into the device's watcher configuration alongside its API key.",
+      "copy": "Copy",
+      "copied": "Copied to clipboard.",
+      "copyFailed": "Failed to copy."
     },
     "roles": {
       "title": "Roles",

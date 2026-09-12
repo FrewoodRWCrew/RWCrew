@@ -305,6 +305,23 @@ export interface Scanner {
   info1: string | null;
   info2: string | null;
   info3: string | null;
+  /** Whether an API key currently exists for this scanner's CSV device-intake uploads. */
+  has_api_key: boolean;
+  api_key_last_used_at: string | null;
+}
+
+/** The brand-new plaintext API key for a scanner, returned exactly once
+ * at generation time — see POST /api/modules/module-1/scanners/{id}/api-key. */
+export interface ScannerApiKey {
+  api_key: string;
+}
+
+/** TagScan's module-wide settings, as shown on the Settings screen. */
+export interface TagscanSettings {
+  receive_folder_path: string;
+  /** Whether receive_folder_path is a DB-saved override, or just the
+   * backend's .env-configured default shown because nothing's been saved yet. */
+  is_override: boolean;
 }
 
 /** The fields sent to create or fully update a scanner device. Unlike
@@ -918,4 +935,26 @@ export interface AltsienKernlidImportRowResult {
 
 export interface AltsienKernlidImportResponse {
   results: AltsienKernlidImportRowResult[];
+}
+
+// --- Login History (Toegangsbeheer) ----------------------------------
+
+/** One login attempt (successful or not), as shown on the admin "Login
+ * History" screen. */
+export interface LoginHistoryEntry {
+  id: number;
+  user_id: number | null;
+  email_attempted: string;
+  /** Null when user_id is null (unknown email, or the matched user has
+   * since been deleted). */
+  display_name: string | null;
+  success: boolean;
+  ip_address: string | null;
+  created_at: string;
+}
+
+/** One page of login history, plus the total row count for pagination. */
+export interface LoginHistoryPage {
+  items: LoginHistoryEntry[];
+  total: number;
 }

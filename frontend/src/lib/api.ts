@@ -37,6 +37,7 @@ import type {
   KarTrackerRole,
   KarTrackerScreen,
   KarTrackerUserSummary,
+  LoginHistoryPage,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
   MasterDataRole,
@@ -56,6 +57,7 @@ import type {
   RfidTagImportResponse,
   RfidTagInput,
   Scanner,
+  ScannerApiKey,
   ScannerInput,
   Season,
   SeasonImportResponse,
@@ -70,6 +72,7 @@ import type {
   TagscanMyPermissions,
   TagscanRole,
   TagscanScreen,
+  TagscanSettings,
   TagscanUserSummary,
   Team,
   TeamImportResponse,
@@ -199,6 +202,18 @@ export function setUserModuleAccess(userId: number, moduleKeys: string[]): Promi
 
 export function deleteUser(userId: number): Promise<void> {
   return apiFetch<void>(`/api/admin/users/${userId}`, { method: "DELETE" });
+}
+
+export function listLoginHistory(params: {
+  page: number;
+  pageSize: number;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<LoginHistoryPage> {
+  const query = new URLSearchParams({ page: String(params.page), page_size: String(params.pageSize) });
+  if (params.dateFrom) query.set("date_from", params.dateFrom);
+  if (params.dateTo) query.set("date_to", params.dateTo);
+  return apiFetch<LoginHistoryPage>(`/api/admin/login-history?${query}`);
 }
 
 // --- Season (module-9's "masterdata.season" screen) ---------------------
@@ -648,6 +663,30 @@ export function updateScanner(scannerId: number, payload: ScannerInput): Promise
 
 export function deleteScanner(scannerId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-1/scanners/${scannerId}`, { method: "DELETE" });
+}
+
+/** Generates a brand-new device CSV-intake API key for a scanner,
+ * invalidating any previous one. The plaintext key is only ever returned
+ * here, once — see components/module-1/scanner-management.tsx's reveal dialog. */
+export function generateScannerApiKey(scannerId: number): Promise<ScannerApiKey> {
+  return apiFetch<ScannerApiKey>(`/api/modules/module-1/scanners/${scannerId}/api-key`, { method: "POST" });
+}
+
+export function revokeScannerApiKey(scannerId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-1/scanners/${scannerId}/api-key`, { method: "DELETE" });
+}
+
+// --- Settings (module-1's "tagscan.settings" screen) ----------------------
+
+export function getTagscanSettings(): Promise<TagscanSettings> {
+  return apiFetch<TagscanSettings>("/api/modules/module-1/settings");
+}
+
+export function updateTagscanSettings(payload: TagscanSettings): Promise<TagscanSettings> {
+  return apiFetch<TagscanSettings>("/api/modules/module-1/settings", {
+    method: "PUT",
+    body: JSON.stringify({ receive_folder_path: payload.receive_folder_path }),
+  });
 }
 
 /**

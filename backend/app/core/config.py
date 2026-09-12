@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # repo root).
     tagscan_source_dir: str = str(Path(__file__).resolve().parents[3] / "TagScans")
 
+    # The largest CSV file TagScan's device-intake endpoint
+    # (POST /api/public/tagscan-intake) will accept from a Raspberry Pi's
+    # watcher script, in megabytes. Deliberately generous for a CSV of RFID
+    # scan lines, while still rejecting an obviously-wrong/corrupt upload.
+    tagscan_intake_max_file_mb: int = 20
+
 
 # Create one shared Settings object that the rest of the app can import
 # and reuse, instead of re-reading the environment every time.

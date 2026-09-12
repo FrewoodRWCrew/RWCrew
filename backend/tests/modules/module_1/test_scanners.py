@@ -4,11 +4,15 @@
 # and a delete guard while a scanner is still referenced by logged CSV
 # data — mirrors test_tags.py's shape.
 
+from pathlib import Path
+
+import pytest
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from fastapi.testclient import TestClient
 
+from app.core.config import settings
 from app.core.security import hash_password
 from app.db.models.module import Module
 from app.db.models.product_type import ProductType
@@ -460,6 +464,98 @@ def test_deleting_a_missing_scanner_returns_404(client: TestClient, db_session: 
     response = client.delete("/api/modules/module-1/scanners/999")
 
     assert response.status_code == 404
+
+
+def test_generating_an_api_key_requires_edit_permission(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    user = _create_user(db_session, email="viewer@example.com")
+    _grant_module_access(db_session, user, module)
+    _grant_scanner_permission(db_session, user, can_view=True)
+    product_type = _create_product_type(db_session)
+    scanner = _create_scanner(db_session, type_id=product_type.id)
+    _login(client, "viewer@example.com")
+
+    response = client.post(f"/api/modules/module-1/scanners/{scanner.id}/api-key")
+
+    assert response.status_code == 403
+
+
+def test_generating_an_api_key_returns_a_usable_plaintext_key_once(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    product_type = _create_product_type(db_session)
+    scanner = _create_scanner(db_session, type_id=product_type.id)
+    _login(client, "admin@example.com")
+
+    response = client.post(f"/api/modules/module-1/scanners/{scanner.id}/api-key")
+
+    assert response.status_code == 200
+    api_key = response.json()["api_key"]
+    assert api_key.startswith(f"module1_{scanner.id}_")
+
+    listed = client.get("/api/modules/module-1/scanners").json()[0]
+    assert listed["has_api_key"] is True
+    assert listed["api_key_last_used_at"] is None
+
+
+def test_generating_a_new_api_key_invalidates_the_previous_one(
+    client: TestClient, db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "tagscan_source_dir", str(tmp_path))
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    product_type = _create_product_type(db_session)
+    scanner = _create_scanner(db_session, type_id=product_type.id)
+    _login(client, "admin@example.com")
+
+    first_key = client.post(f"/api/modules/module-1/scanners/{scanner.id}/api-key").json()["api_key"]
+    second_key = client.post(f"/api/modules/module-1/scanners/{scanner.id}/api-key").json()["api_key"]
+
+    first_attempt = client.post(
+        "/api/public/tagscan-intake",
+        headers={"X-API-Key": first_key},
+        files={"file": ("scan.csv", b"EPC,RSSI\n", "text/csv")},
+    )
+    second_attempt = client.post(
+        "/api/public/tagscan-intake",
+        headers={"X-API-Key": second_key},
+        files={"file": ("scan.csv", b"EPC,RSSI\n", "text/csv")},
+    )
+
+    assert first_attempt.status_code == 401
+    assert second_attempt.status_code == 201
+
+
+def test_revoking_an_api_key_blocks_further_uploads(
+    client: TestClient, db_session: Session, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(settings, "tagscan_source_dir", str(tmp_path))
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    product_type = _create_product_type(db_session)
+    scanner = _create_scanner(db_session, type_id=product_type.id)
+    _login(client, "admin@example.com")
+
+    api_key = client.post(f"/api/modules/module-1/scanners/{scanner.id}/api-key").json()["api_key"]
+    revoke_response = client.delete(f"/api/modules/module-1/scanners/{scanner.id}/api-key")
+    upload_response = client.post(
+        "/api/public/tagscan-intake",
+        headers={"X-API-Key": api_key},
+        files={"file": ("scan.csv", b"EPC,RSSI\n", "text/csv")},
+    )
+
+    assert revoke_response.status_code == 204
+    assert upload_response.status_code == 401
+    assert client.get("/api/modules/module-1/scanners").json()[0]["has_api_key"] is False
 
 
 def test_deleting_a_scanner_still_referenced_by_a_header_row_returns_400(

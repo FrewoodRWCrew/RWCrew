@@ -1,0 +1,19 @@
+[Unit]
+Description=TagScan CSV device-intake watcher (%i)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# %i is the instance name given at enable time, e.g. "dev" or "prod" —
+# see README.md. Each instance reads its own env file, so the same
+# watcher.py can run twice on one Pi, feeding two separate TagScan
+# deployments (test and production) at once.
+EnvironmentFile=/etc/tagscan-watcher/%i.env
+ExecStart=/usr/bin/python3 /opt/tagscan-watcher/watcher.py
+Restart=always
+RestartSec=10
+User=tagscan-watcher
+
+[Install]
+WantedBy=multi-user.target

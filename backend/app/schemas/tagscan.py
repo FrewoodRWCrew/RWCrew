@@ -217,6 +217,10 @@ class ScannerResponse(BaseModel):
     info1: str | None
     info2: str | None
     info3: str | None
+    # Device CSV-intake API key state — never the hash/plaintext itself,
+    # just enough for the UI to show whether a key exists and was recently used.
+    has_api_key: bool
+    api_key_last_used_at: datetime | None
 
 
 class ScannerCreateRequest(BaseModel):
@@ -248,6 +252,45 @@ class ScannerCreateRequest(BaseModel):
 
 class ScannerUpdateRequest(ScannerCreateRequest):
     """What's sent to update an existing scanner — same shape as registering one."""
+
+
+class ScannerApiKeyResponse(BaseModel):
+    """The brand-new plaintext API key for a scanner, returned exactly
+    once at generation time — it can never be retrieved again afterward,
+    only the hash is stored (see Scanner.api_key_hash).
+    """
+
+    api_key: str
+
+
+class TagscanSettingsResponse(BaseModel):
+    """TagScan's module-wide settings, as shown on the Settings screen."""
+
+    receive_folder_path: str
+    # Whether receive_folder_path is a DB-saved override, or just the
+    # .env-configured default shown because nothing's been saved yet.
+    is_override: bool
+
+
+class TagscanSettingsUpdateRequest(BaseModel):
+    """What's sent to save a new receive-folder-path override."""
+
+    receive_folder_path: str = Field(min_length=1)
+
+    @field_validator("receive_folder_path")
+    @classmethod
+    def _strip_path(cls, value: str) -> str:
+        return value.strip()
+
+
+class IntakeUploadResponse(BaseModel):
+    """The result of one device CSV upload — "duplicate" is a success
+    outcome (the file was already received earlier), not an error, so a
+    retried upload after a dropped response is always safe.
+    """
+
+    status: Literal["received", "duplicate"]
+    filename: str
 
 
 class RfidTagImportRowResult(BaseModel):

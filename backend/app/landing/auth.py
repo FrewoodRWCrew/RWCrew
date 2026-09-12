@@ -18,6 +18,7 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
+from app.db.models.login_history import LoginHistory
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.landing.deps import ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, get_current_user
@@ -66,6 +67,21 @@ def _issue_and_store_refresh_token(db: Session, user_id: int) -> str:
     return refresh_token
 
 
+def _record_login_attempt(db: Session, request: Request, email: str, user: User | None, success: bool) -> None:
+    """Remember one login attempt (successful or not) for the admin
+    "Login History" screen, so there's a record of who is using the tool
+    and when — including attempts that failed.
+    """
+    db.add(
+        LoginHistory(
+            user_id=user.id if user is not None else None,
+            email_attempted=email,
+            success=success,
+            ip_address=request.client.host if request.client is not None else None,
+        )
+    )
+
+
 def _as_aware_utc(value: datetime) -> datetime:
     """Make sure a datetime read back from the database can be compared
     against datetime.now(timezone.utc).
@@ -94,7 +110,7 @@ def _build_current_user_response(db: Session, user: User) -> CurrentUserResponse
 
 
 @router.post("/login", response_model=CurrentUserResponse)
-def login(payload: LoginRequest, response: Response, db: Session = Depends(get_db)) -> CurrentUserResponse:
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> CurrentUserResponse:
     """Check an email/password combination and, if valid, log the user in."""
     # Look up the user by email. We deliberately give the exact same error
     # message below whether the email doesn't exist or the password is
@@ -102,12 +118,15 @@ def login(payload: LoginRequest, response: Response, db: Session = Depends(get_d
     user = db.scalar(select(User).where(User.email == payload.email))
 
     if user is None or not user.is_active or not verify_password(payload.password, user.hashed_password):
+        _record_login_attempt(db, request, payload.email, user, success=False)
+        db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     # Credentials are correct: issue a fresh pair of tokens and remember
     # the refresh token (hashed) so it can be revoked/rotated later.
     access_token = create_access_token(user.id)
     refresh_token = _issue_and_store_refresh_token(db, user.id)
+    _record_login_attempt(db, request, payload.email, user, success=True)
     db.commit()
 
     _set_auth_cookies(response, access_token, refresh_token)

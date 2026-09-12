@@ -8,11 +8,12 @@
 // scrolls horizontally (see ui/table.tsx) so the wide row stays usable.
 
 import { useMemo, useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
-import { ApiError, createScanner, deleteScanner, updateScanner } from "@/lib/api";
+import { API_BASE_URL } from "@/lib/config";
+import { ApiError, createScanner, deleteScanner, generateScannerApiKey, revokeScannerApiKey, updateScanner } from "@/lib/api";
 import type { ProductType, Scanner, ScannerInput, ScannerTechnology } from "@/lib/types";
 import {
   AlertDialog,
@@ -25,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -40,6 +42,17 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+
+const INTAKE_UPLOAD_URL = `${API_BASE_URL}/api/public/tagscan-intake`;
+
+async function copyToClipboard(value: string, onSuccess: () => void, onError: () => void) {
+  try {
+    await navigator.clipboard.writeText(value);
+    onSuccess();
+  } catch {
+    onError();
+  }
+}
 
 interface ScannerManagementProps {
   initialScanners: Scanner[];
@@ -289,6 +302,15 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                 <TableCell className="text-muted-foreground">{scanner.info3}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
+                    <ScannerApiKeyDialog
+                      scanner={scanner}
+                      trigger={
+                        <Button variant="ghost" size="icon" aria-label={t("apiKey")} title={t("apiKey")}>
+                          <KeyRound className="size-4" />
+                        </Button>
+                      }
+                      onChanged={upsert}
+                    />
                     <ScannerFormDialog
                       scanner={scanner}
                       trigger={
@@ -467,6 +489,136 @@ function ScannerFormDialog({ scanner, trigger, onSaved, productTypes }: ScannerF
         <DialogFooter>
           <Button onClick={handleSubmit} disabled={isSubmitting || !form.scanner || form.type_id === null}>
             {isEditing ? t("change") : t("newScanner")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+interface ScannerApiKeyDialogProps {
+  scanner: Scanner;
+  trigger: React.ReactElement;
+  onChanged: (scanner: Scanner) => void;
+}
+
+/** Generate/revoke a scanner's device CSV-intake API key — see
+ * app/modules/module_1/device_router.py on the backend. A freshly
+ * generated key is only ever shown here, once; after the dialog closes
+ * it can never be retrieved again, only replaced with a new one. */
+function ScannerApiKeyDialog({ scanner, trigger, onChanged }: ScannerApiKeyDialogProps) {
+  const t = useTranslations("tagscan.scanners");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+
+  function handleOpenChange(open: boolean) {
+    setIsOpen(open);
+    if (open) setRevealedKey(null);
+  }
+
+  async function handleGenerate() {
+    setIsBusy(true);
+    try {
+      const { api_key } = await generateScannerApiKey(scanner.id);
+      setRevealedKey(api_key);
+      onChanged({ ...scanner, has_api_key: true, api_key_last_used_at: null });
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("apiKeyGenerateFailed"));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  async function handleRevoke() {
+    setIsBusy(true);
+    try {
+      await revokeScannerApiKey(scanner.id);
+      setRevealedKey(null);
+      onChanged({ ...scanner, has_api_key: false, api_key_last_used_at: null });
+      toast.success(t("apiKeyRevoked"));
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("apiKeyRevokeFailed"));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  return (
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
+      <DialogTrigger render={trigger} />
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>{t("apiKeyTitle", { scanner: scanner.scanner })}</DialogTitle>
+          <DialogDescription>{t("apiKeyDescription")}</DialogDescription>
+        </DialogHeader>
+
+        <div className="flex flex-col gap-4">
+          {revealedKey ? (
+            <div className="flex flex-col gap-2">
+              <Label>{t("apiKeyNewValue")}</Label>
+              <div className="flex gap-2">
+                <Input readOnly value={revealedKey} className="font-mono text-sm" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    copyToClipboard(
+                      revealedKey,
+                      () => toast.success(t("copied")),
+                      () => toast.error(t("copyFailed")),
+                    )
+                  }
+                >
+                  {t("copy")}
+                </Button>
+              </div>
+              <p className="text-sm text-destructive">{t("apiKeyShownOnceWarning")}</p>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Badge variant={scanner.has_api_key ? "default" : "secondary"}>
+                {scanner.has_api_key ? t("apiKeyActive") : t("apiKeyNone")}
+              </Badge>
+              {scanner.has_api_key && (
+                <span className="text-sm text-muted-foreground">
+                  {scanner.api_key_last_used_at
+                    ? t("apiKeyLastUsed", { date: new Date(scanner.api_key_last_used_at).toLocaleString() })
+                    : t("apiKeyNeverUsed")}
+                </span>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-col gap-2">
+            <Label>{t("apiKeyUploadUrl")}</Label>
+            <div className="flex gap-2">
+              <Input readOnly value={INTAKE_UPLOAD_URL} className="font-mono text-sm" />
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() =>
+                  copyToClipboard(
+                    INTAKE_UPLOAD_URL,
+                    () => toast.success(t("copied")),
+                    () => toast.error(t("copyFailed")),
+                  )
+                }
+              >
+                {t("copy")}
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter className="gap-2 sm:justify-between">
+          {scanner.has_api_key && (
+            <Button type="button" variant="destructive" disabled={isBusy} onClick={handleRevoke}>
+              {t("apiKeyRevoke")}
+            </Button>
+          )}
+          <Button type="button" disabled={isBusy} onClick={handleGenerate}>
+            {scanner.has_api_key ? t("apiKeyRegenerate") : t("apiKeyGenerate")}
           </Button>
         </DialogFooter>
       </DialogContent>
