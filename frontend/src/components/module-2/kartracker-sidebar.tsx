@@ -8,10 +8,10 @@
 // KarTracker role — see module_2/deps.py.
 //
 // Groups so far, in display order: "Actions" (placeholder for now),
-// "Masterdata" (KarManagement/KarStatussen, the Karlijst phase), and
-// "Access Rights" (Roles/Users) — same group order as Intervention
-// Requests' own sidebar. Future phases (delivery planning, ...) add their
-// own groups here the same way.
+// "Masterdata" (KarManagement/KarStatussen/Data Upload/Download, the
+// Karlijst phase), and "Access Rights" (Roles/Users) — same group order as
+// Intervention Requests' own sidebar. Future phases (delivery planning,
+// ...) add their own groups here the same way.
 
 import { Database, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -30,6 +30,7 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const tUsers = useTranslations("karTracker.users");
   const tKarManagement = useTranslations("karTracker.karManagement");
   const tKarStatuses = useTranslations("karTracker.karStatuses");
+  const tDataUploadDownload = useTranslations("karTracker.dataUploadDownload");
   const tActions = useTranslations("karTracker.actions");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
@@ -40,6 +41,7 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const canViewUsers = viewableScreenKeys.includes("kartracker.users");
   const canViewKarManagement = viewableScreenKeys.includes("kartracker.karmanagement");
   const canViewKarStatuses = viewableScreenKeys.includes("kartracker.karstatuses");
+  const canViewDataUploadDownload = viewableScreenKeys.includes("kartracker.dataupload");
   const canViewActions = viewableScreenKeys.includes("kartracker.actions");
 
   function linkClassName(href: string, level: 0 | 1 = 0) {
@@ -74,7 +76,7 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         </>
       )}
 
-      {(canViewKarManagement || canViewKarStatuses) && (
+      {(canViewKarManagement || canViewKarStatuses || canViewDataUploadDownload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Database className="size-4" />
@@ -94,6 +96,14 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
               className={linkClassName("/modules/module-2/kar-statuses", 1)}
             >
               {tKarStatuses("title")}
+            </Link>
+          )}
+          {canViewDataUploadDownload && (
+            <Link
+              href="/modules/module-2/data-upload-download"
+              className={linkClassName("/modules/module-2/data-upload-download", 1)}
+            >
+              {tDataUploadDownload("title")}
             </Link>
           )}
         </>

@@ -4,6 +4,7 @@
 # planning schemas get added here once that phase is designed.
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -160,3 +161,21 @@ class KarCreateRequest(BaseModel):
 
 class KarUpdateRequest(KarCreateRequest):
     """What's sent to update an existing kar — same shape as creating one."""
+
+
+class KarImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk-import workbook. Unlike
+    TagScan's tag import, there is no "updated" outcome — a kar_nummer that
+    already exists is rejected as an error instead of being upserted.
+    """
+
+    row_number: int
+    kar_nummer: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class KarImportResponse(BaseModel):
+    """The full outcome of a bulk kar import — one result per row, in order."""
+
+    results: list[KarImportRowResult]

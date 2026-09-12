@@ -1074,6 +1074,28 @@
       "deleteConfirmDescription": "Dit verwijdert kar \"{name}\" definitief uit het wagenpark. Dit kan niet ongedaan worden gemaakt.",
       "karDeleted": "Kar verwijderd.",
       "deleteFailed": "Verwijderen van kar is mislukt."
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Hulpmiddelen om KarTracker's stamgegevens in bulk te importeren en exporteren, één tegel per onderwerp.",
+      "karrenTileTitle": "Karren",
+      "dialogDescription": "Download een sjabloon om nieuwe karren voor te bereiden, upload het om ze in bulk te registreren, of exporteer het volledige wagenpark.",
+      "downloadTemplateLabel": "Sjabloon",
+      "downloadTemplateButton": "Sjabloon downloaden",
+      "chooseFileLabel": "Excel-bestand",
+      "uploadButton": "Uploaden",
+      "importFailed": "Importeren van het Excel-bestand is mislukt.",
+      "importSummary": "{created} aangemaakt, {errors} overgeslagen.",
+      "importColumnRow": "Rij",
+      "importColumnKarNummer": "Karnummer",
+      "importColumnOutcome": "Resultaat",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Aangemaakt",
+        "error": "Fout"
+      },
+      "exportLabel": "Export",
+      "exportButton": "Volledige databank downloaden"
     }
   },
   "interventionRequestPublicForm": {
