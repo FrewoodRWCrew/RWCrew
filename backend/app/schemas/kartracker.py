@@ -104,12 +104,15 @@ class CreateOrGrantUserRequest(BaseModel):
 
 
 class MyPermissionsResponse(BaseModel):
-    """Which KarTracker screens the calling user is allowed to view — used
-    by the frontend to decide what to show in the sidebar, without it
-    having to know the full permission-checking rules itself.
+    """Which KarTracker screens the calling user is allowed to view, and on
+    which of those they're also allowed to create — used by the frontend
+    to decide what to show (sidebar links, and finer-grained controls like
+    the Data Upload/Download screen's upload button) without it having to
+    know the full permission-checking rules itself.
     """
 
     viewable_screen_keys: list[str]
+    creatable_screen_keys: list[str]
 
 
 class KarStatusResponse(BaseModel):
@@ -179,3 +182,21 @@ class KarImportResponse(BaseModel):
     """The full outcome of a bulk kar import — one result per row, in order."""
 
     results: list[KarImportRowResult]
+
+
+class KarStatusImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk kar-status import. A
+    name that already exists is rejected as an error instead of being
+    upserted — same rule as the Karren import.
+    """
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class KarStatusImportResponse(BaseModel):
+    """The full outcome of a bulk kar-status import — one result per row, in order."""
+
+    results: list[KarStatusImportRowResult]

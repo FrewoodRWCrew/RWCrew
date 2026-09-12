@@ -20,5 +20,10 @@ export default async function DataUploadDownloadPage() {
     return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
   }
 
-  return <KarDataUploadDownload />;
+  // "View" is enough to reach this screen and use its template-download/
+  // export links, but the upload control itself needs "create" — a
+  // view-only user shouldn't be shown a button that will just 403.
+  const canUpload = permissions.creatable_screen_keys.includes("kartracker.dataupload");
+
+  return <KarDataUploadDownload canUpload={canUpload} />;
 }

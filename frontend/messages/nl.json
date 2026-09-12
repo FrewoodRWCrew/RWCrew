@@ -1076,12 +1076,13 @@
       "deleteFailed": "Verwijderen van kar is mislukt."
     },
     "dataUploadDownload": {
-      "title": "Data Upload/Download",
+      "title": "Gegevens uploaden/downloaden",
       "description": "Hulpmiddelen om KarTracker's stamgegevens in bulk te importeren en exporteren, één tegel per onderwerp.",
       "karrenTileTitle": "Karren",
       "dialogDescription": "Download een sjabloon om nieuwe karren voor te bereiden, upload het om ze in bulk te registreren, of exporteer het volledige wagenpark.",
       "downloadTemplateLabel": "Sjabloon",
       "downloadTemplateButton": "Sjabloon downloaden",
+      "uploadNotAllowed": "Je hebt geen rechten om hier te uploaden — vraag een KarTracker-beheerder om dit toe te kennen.",
       "chooseFileLabel": "Excel-bestand",
       "uploadButton": "Uploaden",
       "importFailed": "Importeren van het Excel-bestand is mislukt.",
@@ -1095,7 +1096,17 @@
         "error": "Fout"
       },
       "exportLabel": "Export",
-      "exportButton": "Volledige databank downloaden"
+      "exportButton": "Volledige databank downloaden",
+      "karStatuses": {
+        "tileTitle": "KarStatussen",
+        "dialogDescription": "Download een sjabloon om nieuwe karstatussen voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Karstatussen downloaden"
+      }
     }
   },
   "interventionRequestPublicForm": {

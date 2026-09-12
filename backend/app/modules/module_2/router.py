@@ -34,12 +34,18 @@ from app.modules.module_2.deps import (
     user_can,
 )
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
+from app.modules.module_2.kar_status_import import (
+    build_kar_status_template_xlsx,
+    export_kar_statuses_to_xlsx,
+    import_kar_statuses_from_xlsx,
+)
 from app.schemas.kartracker import (
     CreateOrGrantUserRequest,
     KarCreateRequest,
     KarImportResponse,
     KarResponse,
     KarStatusCreateRequest,
+    KarStatusImportResponse,
     KarStatusResponse,
     KarStatusUpdateRequest,
     KarTrackerUserSummaryResponse,
@@ -364,13 +370,15 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
-    """Tell the frontend which KarTracker screens the current user can view,
-    so it knows what to show in the sidebar without duplicating the
-    permission-checking rules itself.
+    """Tell the frontend which KarTracker screens the current user can view
+    and create on, so it knows what to show — sidebar links, and
+    finer-grained controls like the Data Upload/Download screen's upload
+    button — without duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(KarTrackerScreen)).all()
     viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+    creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
+    return MyPermissionsResponse(viewable_screen_keys=viewable_keys, creatable_screen_keys=creatable_keys)
 
 
 @router.get("/kar-statuses", response_model=list[KarStatusResponse])
@@ -575,4 +583,42 @@ def export_karren(
         content=export_karren_to_xlsx(db),
         media_type=XLSX_MEDIA_TYPE,
         headers={"Content-Disposition": 'attachment; filename="kartracker-export.xlsx"'},
+    )
+
+
+@router.get("/kar-status-import/template")
+def download_kar_status_import_template(
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-registering new kar statuses."""
+    return Response(
+        content=build_kar_status_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="kar-status-import-template.xlsx"'},
+    )
+
+
+@router.post("/kar-status-import", response_model=KarStatusImportResponse)
+def import_kar_statuses(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "create")),
+) -> KarStatusImportResponse:
+    """Bulk-register new kar statuses from an uploaded XLSX workbook. A row
+    naming a status that already exists is reported as an error, not upserted.
+    """
+    results = import_kar_statuses_from_xlsx(db, file.file.read())
+    return KarStatusImportResponse(results=results)
+
+
+@router.get("/kar-statuses/export")
+def export_kar_statuses(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """Every kar status as an XLSX workbook."""
+    return Response(
+        content=export_kar_statuses_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="kartracker-statuses-export.xlsx"'},
     )

@@ -43,20 +43,12 @@ TEMPLATE_COLUMNS = [
     "last_recorded_at",
 ]
 
-# One realistic example row, so the template shows the expected format.
-_EXAMPLE_ROW = {
-    "kar_nummer": "B001",
-    "status_name": "Actief",
-    "team_name": "",
-    "transport_type_name": "KBC Lint",
-    "last_latitude": "",
-    "last_longitude": "",
-    "last_recorded_at": "",
-}
-
-
 def build_kar_template_xlsx() -> bytes:
-    """The downloadable XLSX template: a bold header row plus one example row."""
+    """The downloadable XLSX template: just a bold header row. Deliberately
+    no example data row — since a re-uploaded, unedited row would silently
+    create a real kar (import rejects duplicates rather than upserting, so
+    it wouldn't even get caught as "already exists" the first time).
+    """
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Karren"
@@ -64,7 +56,6 @@ def build_kar_template_xlsx() -> bytes:
     sheet.append(TEMPLATE_COLUMNS)
     for cell in sheet[1]:
         cell.font = Font(bold=True)
-    sheet.append([_EXAMPLE_ROW[column] for column in TEMPLATE_COLUMNS])
 
     for index, column in enumerate(TEMPLATE_COLUMNS, start=1):
         sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 18)

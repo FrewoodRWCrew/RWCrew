@@ -382,7 +382,9 @@ def test_me_permissions_reflects_only_what_the_role_allows(client: TestClient, d
     module = create_kartracker_module(db_session)
     user = create_user(db_session, email="member@example.com")
     grant_module_access(db_session, user, module)
-    role = create_role_with_permissions(db_session, name="Users Viewer", screen_key="kartracker.users", can_view=True)
+    role = create_role_with_permissions(
+        db_session, name="Users Viewer", screen_key="kartracker.users", can_view=True, can_create=False
+    )
     db_session.add(KarTrackerUserRole(user_id=user.id, role_id=role.id))
     db_session.commit()
 
@@ -392,3 +394,25 @@ def test_me_permissions_reflects_only_what_the_role_allows(client: TestClient, d
 
     assert response.status_code == 200
     assert response.json()["viewable_screen_keys"] == ["kartracker.users"]
+    # This role was only ever given "view", not "create", on that screen.
+    assert response.json()["creatable_screen_keys"] == []
+
+
+def test_me_permissions_creatable_keys_reflects_create_permission(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = create_kartracker_module(db_session)
+    user = create_user(db_session, email="uploader@example.com")
+    grant_module_access(db_session, user, module)
+    role = create_role_with_permissions(
+        db_session, name="Data Uploader", screen_key="kartracker.dataupload", can_view=True, can_create=True
+    )
+    db_session.add(KarTrackerUserRole(user_id=user.id, role_id=role.id))
+    db_session.commit()
+
+    login(client, "uploader@example.com")
+
+    response = client.get("/api/modules/module-2/me/permissions")
+
+    assert response.status_code == 200
+    assert response.json()["viewable_screen_keys"] == ["kartracker.dataupload"]
+    assert response.json()["creatable_screen_keys"] == ["kartracker.dataupload"]

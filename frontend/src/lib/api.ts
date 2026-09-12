@@ -26,6 +26,7 @@ import type {
   InterventionStatus,
   InterventionStatusInput,
   KarImportResponse,
+  KarStatusImportResponse,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarStatus,
@@ -974,6 +975,29 @@ export async function importKarren(file: File): Promise<KarImportResponse> {
   }
 
   return (await response.json()) as KarImportResponse;
+}
+
+/**
+ * Uploads an XLSX file to bulk-register new kar statuses. Mirrors
+ * importKarren above.
+ */
+export async function importKarStatuses(file: File): Promise<KarStatusImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-status-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as KarStatusImportResponse;
 }
 
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
