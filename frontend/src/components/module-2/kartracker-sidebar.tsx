@@ -7,11 +7,9 @@
 // landing link, then grouped sections gated by the current user's
 // KarTracker role — see module_2/deps.py.
 //
-// Groups so far, in display order: "Actions" (placeholder for now),
-// "Masterdata" (KarManagement/KarStatussen, the Karlijst phase), and
-// "Access Rights" (Roles/Users) — same group order as Intervention
-// Requests' own sidebar. Future phases (delivery planning, ...) add their
-// own groups here the same way.
+// Groups so far, in display order: "Masterdata" (KarManagement/KarStatussen,
+// the Karlijst phase) and "Access Rights" (Roles/Users). Future phases
+// (delivery planning, ...) add their own groups here the same way.
 
 import { Database, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -59,18 +57,6 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
       <Link href="/modules/module-2" className={linkClassName("/modules/module-2")}>
         {tLanding("title")}
       </Link>
-
-      {canViewActions && (
-        <>
-          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
-            <Zap className="size-4" />
-            {t("actionsGroup")}
-          </div>
-          <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
-            {tActions("title")}
-          </Link>
-        </>
-      )}
 
       {(canViewKarManagement || canViewKarStatuses) && (
         <>
