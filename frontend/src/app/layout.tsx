@@ -10,6 +10,7 @@ import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/shared/splash-screen";
 import { ThemeProvider } from "@/components/shared/theme-provider";
+import { ENVIRONMENT_LABEL } from "@/lib/config";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -35,6 +36,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             React would otherwise expect it — this is next-themes' own
             documented, safe way of avoiding a mismatch warning. */}
         <ThemeProvider>
+          {/* Only rendered on the test deployment (NEXT_PUBLIC_ENVIRONMENT_LABEL),
+              so nobody mistakes it for the real production site. */}
+          {ENVIRONMENT_LABEL && (
+            <div className="w-full bg-amber-500 py-1 text-center text-xs font-bold tracking-wide text-black">
+              {t("environmentBanner", { label: ENVIRONMENT_LABEL })}
+            </div>
+          )}
           <SplashScreen loadingText={t("loading")} />
           {children}
           <Toaster />

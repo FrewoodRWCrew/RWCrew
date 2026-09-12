@@ -6,7 +6,8 @@
     "cancel": "Annuleren",
     "save": "Opslaan",
     "create": "Aanmaken",
-    "back": "Terug"
+    "back": "Terug",
+    "environmentBanner": "⚠ {label} — geen echte data, niet gebruiken voor productiewerk"
   },
   "theme": {
     "light": "Licht",

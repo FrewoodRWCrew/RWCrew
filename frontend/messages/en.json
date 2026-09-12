@@ -6,7 +6,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "create": "Create",
-    "back": "Back"
+    "back": "Back",
+    "environmentBanner": "⚠ {label} — not real data, do not use for production work"
   },
   "theme": {
     "light": "Light",

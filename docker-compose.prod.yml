@@ -55,6 +55,8 @@ services:
         # Baked in at build time — see frontend/Dockerfile's comment on why
         # this can't be a plain runtime environment variable.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # Only set in test's .env — shows a "this isn't production" banner.
+        NEXT_PUBLIC_ENVIRONMENT_LABEL: ${NEXT_PUBLIC_ENVIRONMENT_LABEL:-}
     restart: unless-stopped
     depends_on:
       - backend
