@@ -1074,6 +1074,28 @@
       "deleteConfirmDescription": "This will permanently remove kar \"{name}\" from the fleet registry. This cannot be undone.",
       "karDeleted": "Kar deleted.",
       "deleteFailed": "Failed to delete the kar."
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Bulk import and export tools for KarTracker's master data, one tile per topic.",
+      "karrenTileTitle": "Karren",
+      "dialogDescription": "Download a template to prepare new karren, upload it to register them in bulk, or export the full fleet registry.",
+      "downloadTemplateLabel": "Template",
+      "downloadTemplateButton": "Download template",
+      "chooseFileLabel": "Excel file",
+      "uploadButton": "Upload",
+      "importFailed": "Failed to import the Excel file.",
+      "importSummary": "{created} created, {errors} skipped.",
+      "importColumnRow": "Row",
+      "importColumnKarNummer": "Kar number",
+      "importColumnOutcome": "Outcome",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Created",
+        "error": "Error"
+      },
+      "exportLabel": "Export",
+      "exportButton": "Download full database"
     }
   },
   "interventionRequestPublicForm": {

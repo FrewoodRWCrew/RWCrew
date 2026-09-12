@@ -8,7 +8,7 @@
 # registry ("Karlijst") and delivery planning endpoints get added here
 # alongside their own screen keys once that phase is designed.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -33,9 +33,11 @@ from app.modules.module_2.deps import (
     require_screen_permission,
     user_can,
 )
+from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.schemas.kartracker import (
     CreateOrGrantUserRequest,
     KarCreateRequest,
+    KarImportResponse,
     KarResponse,
     KarStatusCreateRequest,
     KarStatusResponse,
@@ -51,6 +53,8 @@ from app.schemas.kartracker import (
     SetRolePermissionsRequest,
     SetUserRoleRequest,
 )
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 router = APIRouter(prefix="/api/modules/module-2", tags=["KarTracker"])
 
@@ -534,3 +538,41 @@ def delete_kar(
 
     db.delete(kar)
     db.commit()
+
+
+@router.get("/kar-import/template")
+def download_kar_import_template(
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-registering new karren."""
+    return Response(
+        content=build_kar_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="kar-import-template.xlsx"'},
+    )
+
+
+@router.post("/kar-import", response_model=KarImportResponse)
+def import_karren(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "create")),
+) -> KarImportResponse:
+    """Bulk-register new karren from an uploaded XLSX workbook. A row whose
+    kar_nummer already exists is reported as an error, not upserted.
+    """
+    results = import_karren_from_xlsx(db, file.file.read())
+    return KarImportResponse(results=results)
+
+
+@router.get("/karren/export")
+def export_karren(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The full KarTracker dataset (karren + kar statuses) as an XLSX workbook."""
+    return Response(
+        content=export_karren_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="kartracker-export.xlsx"'},
+    )

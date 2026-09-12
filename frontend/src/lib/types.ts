@@ -742,3 +742,20 @@ export interface KarTrackerKarInput {
   last_longitude: number | null;
   last_recorded_at: string | null;
 }
+
+/**
+ * What happened to one row of an uploaded bulk kar-import workbook. Unlike
+ * TagScan's tag import, there is no "updated" outcome — a kar_nummer that
+ * already exists is rejected as an error instead of being upserted.
+ */
+export interface KarImportRowResult {
+  row_number: number;
+  kar_nummer: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk kar import — one result per row, in order. */
+export interface KarImportResponse {
+  results: KarImportRowResult[];
+}

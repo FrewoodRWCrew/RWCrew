@@ -25,6 +25,7 @@ import type {
   InterventionRequestsUserSummary,
   InterventionStatus,
   InterventionStatusInput,
+  KarImportResponse,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarStatus,
@@ -948,6 +949,31 @@ export function updateKar(karId: number, payload: KarTrackerKarInput): Promise<K
 
 export function deleteKar(karId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-2/karren/${karId}`, { method: "DELETE" });
+}
+
+/**
+ * Uploads an XLSX file to bulk-register new karren. Uses a plain fetch
+ * instead of apiFetch: the body is FormData, not JSON, and the browser
+ * must set its own multipart Content-Type (with boundary) — setting it
+ * manually would break the upload. Mirrors importRfidTags above.
+ */
+export async function importKarren(file: File): Promise<KarImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as KarImportResponse;
 }
 
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
