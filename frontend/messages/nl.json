@@ -960,9 +960,14 @@
     "moduleTitle": "KarTracker",
     "accessRights": "Toegangsrechten",
     "masterdataGroup": "Masterdata",
+    "actionsGroup": "Acties",
     "landing": {
       "title": "KarTracker",
       "description": "testfrederrrrriik"
+    },
+    "actions": {
+      "title": "Acties",
+      "comingSoon": "Deze functionaliteit volgt in een volgende fase."
     },
     "roles": {
       "title": "Rollen",

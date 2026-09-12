@@ -36,6 +36,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="kartracker.users", label="Users", sort_order=2),
     ScreenDefinition(key="kartracker.karmanagement", label="KarManagement", sort_order=3),
     ScreenDefinition(key="kartracker.karstatuses", label="KarStatussen", sort_order=4),
+    ScreenDefinition(key="kartracker.actions", label="Actions", sort_order=5),
 ]
 
 
