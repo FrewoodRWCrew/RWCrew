@@ -960,6 +960,7 @@
     "moduleTitle": "KarTracker",
     "accessRights": "Access Rights",
     "masterdataGroup": "Masterdata",
+    "actionsGroup": "Actions",
     "landing": {
       "title": "KarTracker",
       "description": "Cart delivery planning is coming in a later phase. For now, you can manage this module's access rights (roles and users) and its fleet registry (KarManagement/KarStatussen) here."
@@ -1069,6 +1070,10 @@
       "deleteConfirmDescription": "This will permanently remove kar \"{name}\" from the fleet registry. This cannot be undone.",
       "karDeleted": "Kar deleted.",
       "deleteFailed": "Failed to delete the kar."
+    },
+    "actions": {
+      "title": "Actions",
+      "description": "Coming soon."
     }
   },
   "interventionRequestPublicForm": {
