@@ -1082,6 +1082,7 @@
       "dialogDescription": "Download a template to prepare new karren, upload it to register them in bulk, or export the full fleet registry.",
       "downloadTemplateLabel": "Template",
       "downloadTemplateButton": "Download template",
+      "uploadNotAllowed": "You don't have permission to upload here — ask a KarTracker admin to grant it.",
       "chooseFileLabel": "Excel file",
       "uploadButton": "Upload",
       "importFailed": "Failed to import the Excel file.",
@@ -1095,7 +1096,17 @@
         "error": "Error"
       },
       "exportLabel": "Export",
-      "exportButton": "Download full database"
+      "exportButton": "Download full database",
+      "karStatuses": {
+        "tileTitle": "KarStatussen",
+        "dialogDescription": "Download a template to prepare new kar statuses, upload it to register them in bulk, or export the full list.",
+        "importColumnName": "Name",
+        "importOutcome": {
+          "created": "Created",
+          "error": "Error"
+        },
+        "exportButton": "Download kar statuses"
+      }
     }
   },
   "interventionRequestPublicForm": {

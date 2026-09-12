@@ -709,9 +709,11 @@ export interface KarTrackerUserSummary {
   role_name: string | null;
 }
 
-/** Which KarTracker screens the current user is allowed to view. */
+/** Which KarTracker screens the current user is allowed to view, and on
+ * which of those they're also allowed to create. */
 export interface KarTrackerMyPermissions {
   viewable_screen_keys: string[];
+  creatable_screen_keys: string[];
 }
 
 /** One status a kar can be in, as managed on the KarStatussen screen. */
@@ -758,4 +760,21 @@ export interface KarImportRowResult {
 /** The full outcome of a bulk kar import — one result per row, in order. */
 export interface KarImportResponse {
   results: KarImportRowResult[];
+}
+
+/**
+ * What happened to one row of an uploaded bulk kar-status import. A name
+ * that already exists is rejected as an error instead of being upserted —
+ * same rule as the Karren import.
+ */
+export interface KarStatusImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk kar-status import — one result per row, in order. */
+export interface KarStatusImportResponse {
+  results: KarStatusImportRowResult[];
 }

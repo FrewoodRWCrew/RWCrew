@@ -4,26 +4,25 @@
 // master-data topic's bulk import/export tools — same visual idiom as the
 // app's own main landing page (see components/landing/module-tile.tsx),
 // but each tile opens a dialog instead of navigating, since there's
-// nowhere further to go. Phase 1 ships a single "Karren" tile; phase 2
-// adds more tiles to this same grid for other master-data topics, without
-// touching this one.
+// nowhere further to go. Phase 1 shipped a single "Karren" tile; phase 2
+// added a second, "KarStatussen" — both now built on the same
+// DataTopicTile presentational component below, so a third future tile
+// doesn't have to re-copy this dialog's ~150 lines again.
 //
-// The "Karren" tile's dialog combines template download / bulk upload /
-// full-database export for the fleet registry, mirroring TagScan's own
-// import dialog (components/module-1/tag-import-dialog.tsx) — except a
-// kar_nummer that already exists is reported as an error, never upserted
-// (see kar_import.py on the backend for why), so there's no "updated"
-// outcome here.
+// Each tile's dialog combines template download / bulk upload / export,
+// mirroring TagScan's own import dialog
+// (components/module-1/tag-import-dialog.tsx) — except a duplicate key
+// (kar_nummer / status name) is reported as an error, never upserted (see
+// kar_import.py / kar_status_import.py on the backend for why), so there's
+// no "updated" outcome here.
 
 import { useState } from "react";
-import { FileSpreadsheet } from "lucide-react";
+import { FileSpreadsheet, ListChecks, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
-import { ApiError, importKarren } from "@/lib/api";
-import type { KarImportRowResult } from "@/lib/types";
+import { ApiError, importKarStatuses, importKarren } from "@/lib/api";
 import { getModuleTheme } from "@/lib/module-theme";
-import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,12 +38,33 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-const OUTCOME_BADGE_VARIANT: Record<KarImportRowResult["outcome"], "default" | "destructive"> = {
+/** One row's outcome, normalized to a common shape regardless of which
+ * topic's own wire type (KarImportRowResult/KarStatusImportRowResult) it
+ * came from — each wrapper below maps its own "key" field (kar_nummer/
+ * name) into this before handing it to the shared dialog.
+ */
+interface ImportRowResult {
+  row_number: number;
+  key: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+const OUTCOME_BADGE_VARIANT: Record<ImportRowResult["outcome"], "default" | "destructive"> = {
   created: "default",
   error: "destructive",
 };
 
-export function KarDataUploadDownload() {
+interface KarDataUploadDownloadProps {
+  /** Whether the current user has "create" (not just "view") permission on
+   * the "kartracker.dataupload" screen — gates the upload control on both
+   * tiles below, since view-only access is enough to reach this screen and
+   * use its template/export links, but not enough to actually import.
+   */
+  canUpload: boolean;
+}
+
+export function KarDataUploadDownload({ canUpload }: KarDataUploadDownloadProps) {
   const t = useTranslations("karTracker.dataUploadDownload");
 
   return (
@@ -55,20 +75,147 @@ export function KarDataUploadDownload() {
       </div>
 
       <div className="grid max-w-2xl grid-cols-3 gap-4">
-        <KarDataTile />
+        <KarDataTile canUpload={canUpload} />
+        <KarStatusDataTile canUpload={canUpload} />
       </div>
     </div>
   );
 }
 
-function KarDataTile() {
+function KarDataTile({ canUpload }: { canUpload: boolean }) {
   const t = useTranslations("karTracker.dataUploadDownload");
-  const { tileClassName } = getModuleTheme("module-2");
+
+  return (
+    <DataTopicTile
+      icon={FileSpreadsheet}
+      tileTitle={t("karrenTileTitle")}
+      dialogTitle={t("karrenTileTitle")}
+      dialogDescription={t("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/kar-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/karren/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={t("importColumnKarNummer")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => t(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={t("exportButton")}
+      onUpload={async (file) => {
+        const response = await importKarren(file);
+        return response.results.map((row) => ({ ...row, key: row.kar_nummer }));
+      }}
+    />
+  );
+}
+
+function KarStatusDataTile({ canUpload }: { canUpload: boolean }) {
+  const t = useTranslations("karTracker.dataUploadDownload");
+  const tStatuses = useTranslations("karTracker.dataUploadDownload.karStatuses");
+
+  return (
+    <DataTopicTile
+      icon={ListChecks}
+      tileTitle={tStatuses("tileTitle")}
+      dialogTitle={tStatuses("tileTitle")}
+      dialogDescription={tStatuses("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/kar-status-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/kar-statuses/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tStatuses("importColumnName")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => tStatuses(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tStatuses("exportButton")}
+      onUpload={async (file) => {
+        const response = await importKarStatuses(file);
+        return response.results.map((row) => ({ ...row, key: row.name }));
+      }}
+    />
+  );
+}
+
+interface DataTopicTileProps {
+  icon: LucideIcon;
+  tileTitle: string;
+  dialogTitle: string;
+  dialogDescription: string;
+  templateUrl: string;
+  exportUrl: string;
+  downloadTemplateLabel: string;
+  downloadTemplateButton: string;
+  /** Whether the current user has "create" permission — hides the file
+   * input/upload button (in favour of an explanatory note) when false. */
+  canUpload: boolean;
+  uploadNotAllowed: string;
+  chooseFileLabel: string;
+  uploadButton: string;
+  importFailed: string;
+  importSummary: (created: number, errors: number) => string;
+  importColumnRow: string;
+  importColumnKey: string;
+  importColumnOutcome: string;
+  importColumnDetail: string;
+  importOutcomeLabel: (outcome: ImportRowResult["outcome"]) => string;
+  exportLabel: string;
+  exportButton: string;
+  onUpload: (file: File) => Promise<ImportRowResult[]>;
+}
+
+/**
+ * One tile on the Data Upload/Download grid: a button styled as an
+ * outlined card (this module's own accent colour as the border, not a
+ * solid fill — a deliberately lighter look than the landing page's own
+ * fully-coloured ModuleTile) that opens a dialog with that topic's
+ * template download / bulk upload / export tools.
+ */
+function DataTopicTile({
+  icon: Icon,
+  tileTitle,
+  dialogTitle,
+  dialogDescription,
+  templateUrl,
+  exportUrl,
+  downloadTemplateLabel,
+  downloadTemplateButton,
+  canUpload,
+  uploadNotAllowed,
+  chooseFileLabel,
+  uploadButton,
+  importFailed,
+  importSummary,
+  importColumnRow,
+  importColumnKey,
+  importColumnOutcome,
+  importColumnDetail,
+  importOutcomeLabel,
+  exportLabel,
+  exportButton,
+  onUpload,
+}: DataTopicTileProps) {
+  const { accentColorToken } = getModuleTheme("module-2");
+  const accentColor = `var(--color-${accentColorToken})`;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
-  const [results, setResults] = useState<KarImportRowResult[] | null>(null);
+  const [results, setResults] = useState<ImportRowResult[] | null>(null);
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
@@ -80,15 +227,26 @@ function KarDataTile() {
     }
   }
 
+  function handleFileChange(event: React.ChangeEvent<HTMLInputElement>) {
+    // Picking a different file always clears any displayed results — they
+    // describe the previous file's outcome, not this one, so leaving them
+    // up would make it look like they belong to the newly picked file.
+    setFile(event.target.files?.[0] ?? null);
+    setResults(null);
+  }
+
   async function handleUpload() {
     if (!file) return;
 
+    // Clear out the previous upload's results immediately, so a slow or
+    // failed request never leaves stale success/error rows on screen
+    // looking like they belong to the file just picked.
+    setResults(null);
     setIsUploading(true);
     try {
-      const response = await importKarren(file);
-      setResults(response.results);
+      setResults(await onUpload(file));
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : t("importFailed");
+      const message = error instanceof ApiError ? error.message : importFailed;
       toast.error(message);
     } finally {
       setIsUploading(false);
@@ -104,67 +262,67 @@ function KarDataTile() {
         render={
           <button type="button" className="block text-left">
             <div
-              className={cn(
-                "relative flex h-36 flex-col rounded-xl p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110",
-                tileClassName,
-              )}
+              className="relative flex h-36 flex-col rounded-xl border-2 bg-card p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md"
+              style={{ borderColor: accentColor }}
             >
-              <div className="flex flex-1 items-center justify-center">
-                <FileSpreadsheet className="size-16" aria-hidden="true" />
+              <div className="flex flex-1 items-center justify-center" style={{ color: accentColor }}>
+                <Icon className="size-16" aria-hidden="true" />
               </div>
-              <span className="text-center text-sm font-semibold">{t("karrenTileTitle")}</span>
+              <span className="text-center text-sm font-semibold">{tileTitle}</span>
             </div>
           </button>
         }
       />
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{t("karrenTileTitle")}</DialogTitle>
-          <DialogDescription>{t("dialogDescription")}</DialogDescription>
+          <DialogTitle>{dialogTitle}</DialogTitle>
+          <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-col gap-2">
-          <Label>{t("downloadTemplateLabel")}</Label>
-          <a href={`${API_BASE_URL}/api/modules/module-2/kar-import/template`}>
+          <Label>{downloadTemplateLabel}</Label>
+          <a href={templateUrl}>
             <Button variant="outline" type="button">
-              {t("downloadTemplateButton")}
+              {downloadTemplateButton}
             </Button>
           </a>
         </div>
 
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="kar-import-file">{t("chooseFileLabel")}</Label>
-          <Input
-            id="kar-import-file"
-            type="file"
-            accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-          <Button onClick={handleUpload} disabled={isUploading || !file} className="self-start">
-            {t("uploadButton")}
-          </Button>
-        </div>
+        {canUpload ? (
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="data-topic-import-file">{chooseFileLabel}</Label>
+            <Input
+              id="data-topic-import-file"
+              type="file"
+              accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+              onChange={handleFileChange}
+            />
+            <Button onClick={handleUpload} disabled={isUploading || !file} className="self-start">
+              {uploadButton}
+            </Button>
+          </div>
+        ) : (
+          <p className="text-sm text-muted-foreground">{uploadNotAllowed}</p>
+        )}
 
         {results && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">
-              {t("importSummary", { created: createdCount, errors: errorCount })}
-            </p>
+            <p className="text-sm text-muted-foreground">{importSummary(createdCount, errorCount)}</p>
             <div className="rounded-md border [&>div]:max-h-72 [&>div]:overflow-y-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
-                      {t("importColumnRow")}
+                      {importColumnRow}
                     </TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
-                      {t("importColumnKarNummer")}
+                      {importColumnKey}
                     </TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
-                      {t("importColumnOutcome")}
+                      {importColumnOutcome}
                     </TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
-                      {t("importColumnDetail")}
+                      {importColumnDetail}
                     </TableHead>
                   </TableRow>
                 </TableHeader>
@@ -172,9 +330,9 @@ function KarDataTile() {
                   {results.map((row) => (
                     <TableRow key={row.row_number}>
                       <TableCell>{row.row_number}</TableCell>
-                      <TableCell className="font-medium">{row.kar_nummer}</TableCell>
+                      <TableCell className="font-medium">{row.key}</TableCell>
                       <TableCell>
-                        <Badge variant={OUTCOME_BADGE_VARIANT[row.outcome]}>{t(`importOutcome.${row.outcome}`)}</Badge>
+                        <Badge variant={OUTCOME_BADGE_VARIANT[row.outcome]}>{importOutcomeLabel(row.outcome)}</Badge>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.detail}</TableCell>
                     </TableRow>
@@ -187,10 +345,10 @@ function KarDataTile() {
 
         <DialogFooter className="justify-start sm:justify-start">
           <div className="flex flex-col gap-2">
-            <Label>{t("exportLabel")}</Label>
-            <a href={`${API_BASE_URL}/api/modules/module-2/karren/export`}>
+            <Label>{exportLabel}</Label>
+            <a href={exportUrl}>
               <Button variant="outline" type="button">
-                {t("exportButton")}
+                {exportButton}
               </Button>
             </a>
           </div>
