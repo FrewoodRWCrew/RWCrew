@@ -21,6 +21,10 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Set only for the test deployment, so a banner warns people they're not on
+# the real production site — see src/lib/config.ts / src/app/layout.tsx.
+ARG NEXT_PUBLIC_ENVIRONMENT_LABEL
+ENV NEXT_PUBLIC_ENVIRONMENT_LABEL=${NEXT_PUBLIC_ENVIRONMENT_LABEL}
 RUN npm run build
 
 # Final, minimal runtime image: only the standalone server output (see

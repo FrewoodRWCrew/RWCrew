@@ -4,3 +4,8 @@
 // ones Next.js allows to be read in browser (client-side) code, since
 // they end up visible in the compiled JavaScript.
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8020";
+
+// Set only on the test deployment (see docker-compose.prod.yml's frontend
+// build args) so a banner can warn people they're not on the real site.
+// Left unset for production and local development, where no banner shows.
+export const ENVIRONMENT_LABEL = process.env.NEXT_PUBLIC_ENVIRONMENT_LABEL || null;
