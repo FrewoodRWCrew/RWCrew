@@ -35,8 +35,13 @@ class ScreenDefinition:
 # lookups are nested under "Products"); "Type"/"Warehouses"/"Product
 # categories"/"Product limits" are the four lookup lists ("selection
 # criteria") nested under Products; "Roles" and "Users" are the two
-# access-rights screens. All are gated independently of one another — a
-# Festivals permission does not imply a Season permission.
+# access-rights screens; "Data Upload/Download" gates the bulk XLSX
+# import/export tile grid (one tile per master-data table) — a single
+# screen key for all twelve tiles, the same way KarTracker's own
+# "kartracker.dataupload" gates both of its tiles. All are gated
+# independently of one another — a Festivals permission does not imply a
+# Season permission, and dataupload access does not imply access to any
+# one table's own screen (or vice versa).
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.season", label="Seasons", sort_order=1),
     ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
@@ -52,6 +57,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.delivery-method", label="Delivery Method", sort_order=12),
     ScreenDefinition(key="masterdata.team-tasks", label="Team Tasks", sort_order=13),
     ScreenDefinition(key="masterdata.altsien-kernleden", label="Altsien Kernleden", sort_order=14),
+    ScreenDefinition(key="masterdata.dataupload", label="Data Upload/Download", sort_order=15),
 ]
 
 

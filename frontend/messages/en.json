@@ -764,6 +764,97 @@
       "newUserPasswordLabel": "Temporary password (only needed for a brand-new account)",
       "userSaved": "Access granted.",
       "userSaveFailed": "Failed to grant access."
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Bulk import and export tools for MasterData's tables, one tile per table.",
+      "downloadTemplateLabel": "Template",
+      "downloadTemplateButton": "Download template",
+      "uploadNotAllowed": "You don't have permission to upload here — ask a MasterData admin to grant it.",
+      "chooseFileLabel": "Excel file",
+      "uploadButton": "Upload",
+      "importFailed": "Failed to import the Excel file.",
+      "importSummary": "{created} created, {errors} skipped.",
+      "importColumnRow": "Row",
+      "importColumnOutcome": "Outcome",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Created",
+        "error": "Error"
+      },
+      "exportLabel": "Export",
+      "season": {
+        "tileTitle": "Seasons",
+        "dialogDescription": "Download a template to prepare new seasons, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download seasons"
+      },
+      "products": {
+        "tileTitle": "Products",
+        "dialogDescription": "Download a template to prepare new products, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download products"
+      },
+      "productTypes": {
+        "tileTitle": "Type",
+        "dialogDescription": "Download a template to prepare new types, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download types"
+      },
+      "warehouses": {
+        "tileTitle": "Warehouses",
+        "dialogDescription": "Download a template to prepare new warehouses, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download warehouses"
+      },
+      "productCategories": {
+        "tileTitle": "Categories",
+        "dialogDescription": "Download a template to prepare new categories, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download categories"
+      },
+      "productLimits": {
+        "tileTitle": "Limits",
+        "dialogDescription": "Download a template to prepare new limit options, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download limits"
+      },
+      "festival": {
+        "tileTitle": "Festivals",
+        "dialogDescription": "Download a template to prepare new festivals, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download festivals"
+      },
+      "teams": {
+        "tileTitle": "Teams",
+        "dialogDescription": "Download a template to prepare new teams, upload it to create them in bulk, or export the full list. Only covers each team's name, location, delivery method, and description — tasks and core members stay managed on the Teams screen itself.",
+        "importColumnKey": "Name",
+        "exportButton": "Download teams"
+      },
+      "teamLocation": {
+        "tileTitle": "Team Location",
+        "dialogDescription": "Download a template to prepare new team locations, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Location",
+        "exportButton": "Download team locations"
+      },
+      "deliveryMethod": {
+        "tileTitle": "Delivery Method",
+        "dialogDescription": "Download a template to prepare new delivery methods, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Delivery method",
+        "exportButton": "Download delivery methods"
+      },
+      "teamTasks": {
+        "tileTitle": "Team Tasks",
+        "dialogDescription": "Download a template to prepare new team tasks, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Team task",
+        "exportButton": "Download team tasks"
+      },
+      "altsienKernleden": {
+        "tileTitle": "Altsien Kernleden",
+        "dialogDescription": "Download a template to prepare new contacts, upload it to create them in bulk, or export the full list.",
+        "importColumnKey": "Name",
+        "exportButton": "Download contacts"
+      }
     }
   },
   "interventionRequests": {
