@@ -2,6 +2,7 @@
 # the Season screen (the first actual piece of master data it manages).
 
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
 
@@ -101,12 +102,15 @@ class CreateOrGrantUserRequest(BaseModel):
 
 
 class MyPermissionsResponse(BaseModel):
-    """Which MasterData screens the calling user is allowed to view — used
-    by the frontend to decide what to show in the sidebar, without it
-    having to know the full permission-checking rules itself.
+    """Which MasterData screens the calling user is allowed to view, and on
+    which of those they're also allowed to create — used by the frontend
+    to decide what to show (sidebar links, and finer-grained controls like
+    the Data Upload/Download screen's upload button) without it having to
+    know the full permission-checking rules itself.
     """
 
     viewable_screen_keys: list[str]
+    creatable_screen_keys: list[str]
 
 
 class SeasonResponse(BaseModel):
@@ -417,3 +421,193 @@ class TeamCreateRequest(BaseModel):
 
 class TeamUpdateRequest(TeamCreateRequest):
     """What's sent to update an existing team — same shape as creating one."""
+
+
+# --- Data Upload/Download: bulk XLSX import/export, one row-result pair
+# per master-data table, mirroring KarTracker's KarImportRowResult/
+# KarStatusImportRowResult (app/schemas/kartracker.py). None of these have
+# an "updated" outcome — a row naming something that already exists is
+# rejected as an error instead of being upserted, same rule as KarTracker.
+
+
+class SeasonImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk season import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class SeasonImportResponse(BaseModel):
+    """The full outcome of a bulk season import — one result per row, in order."""
+
+    results: list[SeasonImportRowResult]
+
+
+class ProductTypeImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk product-type import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class ProductTypeImportResponse(BaseModel):
+    """The full outcome of a bulk product-type import — one result per row, in order."""
+
+    results: list[ProductTypeImportRowResult]
+
+
+class WarehouseImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk warehouse import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class WarehouseImportResponse(BaseModel):
+    """The full outcome of a bulk warehouse import — one result per row, in order."""
+
+    results: list[WarehouseImportRowResult]
+
+
+class ProductCategoryImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk product-category import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class ProductCategoryImportResponse(BaseModel):
+    """The full outcome of a bulk product-category import — one result per row, in order."""
+
+    results: list[ProductCategoryImportRowResult]
+
+
+class ProductLimitImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk product-limit import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class ProductLimitImportResponse(BaseModel):
+    """The full outcome of a bulk product-limit import — one result per row, in order."""
+
+    results: list[ProductLimitImportRowResult]
+
+
+class TeamLocationImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk team-location import."""
+
+    row_number: int
+    location: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class TeamLocationImportResponse(BaseModel):
+    """The full outcome of a bulk team-location import — one result per row, in order."""
+
+    results: list[TeamLocationImportRowResult]
+
+
+class DeliveryMethodImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk delivery-method import."""
+
+    row_number: int
+    delivery_method: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class DeliveryMethodImportResponse(BaseModel):
+    """The full outcome of a bulk delivery-method import — one result per row, in order."""
+
+    results: list[DeliveryMethodImportRowResult]
+
+
+class TeamTaskImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk team-task import."""
+
+    row_number: int
+    team_tasks: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class TeamTaskImportResponse(BaseModel):
+    """The full outcome of a bulk team-task import — one result per row, in order."""
+
+    results: list[TeamTaskImportRowResult]
+
+
+class FestivalImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk festival import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class FestivalImportResponse(BaseModel):
+    """The full outcome of a bulk festival import — one result per row, in order."""
+
+    results: list[FestivalImportRowResult]
+
+
+class ProductImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk product import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class ProductImportResponse(BaseModel):
+    """The full outcome of a bulk product import — one result per row, in order."""
+
+    results: list[ProductImportRowResult]
+
+
+class TeamImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk team import. Only
+    Team's scalar fields (name/location/delivery method/description) are
+    imported — task/kernlid links are not part of this bulk tool.
+    """
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class TeamImportResponse(BaseModel):
+    """The full outcome of a bulk team import — one result per row, in order."""
+
+    results: list[TeamImportRowResult]
+
+
+class AltsienKernlidImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk Altsien Kernleden import."""
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class AltsienKernlidImportResponse(BaseModel):
+    """The full outcome of a bulk Altsien Kernleden import — one result per row, in order."""
+
+    results: list[AltsienKernlidImportRowResult]

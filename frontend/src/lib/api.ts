@@ -11,9 +11,12 @@ import type {
   ModuleRoleName,
   ModuleStatus,
   AltsienKernlid,
+  AltsienKernlidImportResponse,
   AltsienKernlidInput,
   DeliveryMethod,
+  DeliveryMethodImportResponse,
   Festival,
+  FestivalImportResponse,
   FestivalInput,
   InterventionRequest,
   InterventionRequestInput,
@@ -41,9 +44,13 @@ import type {
   MasterDataUserSummary,
   Product,
   ProductCategory,
+  ProductCategoryImportResponse,
+  ProductImportResponse,
   ProductInput,
   ProductLimit,
+  ProductLimitImportResponse,
   ProductType,
+  ProductTypeImportResponse,
   PublicInterventionRequestInput,
   RfidTag,
   RfidTagImportResponse,
@@ -51,6 +58,7 @@ import type {
   Scanner,
   ScannerInput,
   Season,
+  SeasonImportResponse,
   TagDashboardStats,
   TagHeaderDataEntry,
   TagHeaderDataScanResult,
@@ -64,13 +72,17 @@ import type {
   TagscanScreen,
   TagscanUserSummary,
   Team,
+  TeamImportResponse,
   TeamInput,
   TeamKarMemberOption,
   TeamKarUser,
   TeamLocation,
+  TeamLocationImportResponse,
   TeamTask,
+  TeamTaskImportResponse,
   UserSummary,
   Warehouse,
+  WarehouseImportResponse,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -742,6 +754,243 @@ export function createOrGrantMasterDataUser(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// --- MasterData (module-9): Data Upload/Download ---------------------------
+//
+// Each uses a plain fetch instead of apiFetch: the body is FormData, not
+// JSON, and the browser must set its own multipart Content-Type (with
+// boundary) — setting it manually would break the upload. Mirrors
+// importKarren/importKarStatuses above.
+
+export async function importSeasons(file: File): Promise<SeasonImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/season-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as SeasonImportResponse;
+}
+
+export async function importProductTypes(file: File): Promise<ProductTypeImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ProductTypeImportResponse;
+}
+
+export async function importWarehouses(file: File): Promise<WarehouseImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as WarehouseImportResponse;
+}
+
+export async function importProductCategories(file: File): Promise<ProductCategoryImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ProductCategoryImportResponse;
+}
+
+export async function importProductLimits(file: File): Promise<ProductLimitImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ProductLimitImportResponse;
+}
+
+export async function importTeamLocations(file: File): Promise<TeamLocationImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-location-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as TeamLocationImportResponse;
+}
+
+export async function importDeliveryMethods(file: File): Promise<DeliveryMethodImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/delivery-method-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as DeliveryMethodImportResponse;
+}
+
+export async function importTeamTasks(file: File): Promise<TeamTaskImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-task-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as TeamTaskImportResponse;
+}
+
+export async function importFestivals(file: File): Promise<FestivalImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/festival-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as FestivalImportResponse;
+}
+
+export async function importProducts(file: File): Promise<ProductImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ProductImportResponse;
+}
+
+/** Only imports Team's scalar fields — task/kernlid links are not part of
+ * this bulk tool, see team_import.py on the backend. */
+export async function importTeams(file: File): Promise<TeamImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as TeamImportResponse;
+}
+
+export async function importAltsienKernleden(file: File): Promise<AltsienKernlidImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/altsien-kernlid-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as AltsienKernlidImportResponse;
 }
 
 // --- Intervention Requests (module-3): KPI landing dashboard ---------------

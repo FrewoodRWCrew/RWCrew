@@ -469,9 +469,11 @@ export interface MasterDataUserSummary {
   role_name: string | null;
 }
 
-/** Which MasterData screens the current user is allowed to view. */
+/** Which MasterData screens the current user is allowed to view, and on
+ * which of those they're also allowed to create. */
 export interface MasterDataMyPermissions {
   viewable_screen_keys: string[];
+  creatable_screen_keys: string[];
 }
 
 /** How many products have one product type — plus a trailing entry with
@@ -777,4 +779,143 @@ export interface KarStatusImportRowResult {
 /** The full outcome of a bulk kar-status import — one result per row, in order. */
 export interface KarStatusImportResponse {
   results: KarStatusImportRowResult[];
+}
+
+// --- MasterData Data Upload/Download: one row-result pair per table, all
+// without an "updated" outcome — a row naming something that already
+// exists is rejected as an error instead of being upserted (except
+// Product/Festival, which have no uniqueness rule at all). ------------------
+
+export interface SeasonImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface SeasonImportResponse {
+  results: SeasonImportRowResult[];
+}
+
+export interface ProductTypeImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface ProductTypeImportResponse {
+  results: ProductTypeImportRowResult[];
+}
+
+export interface WarehouseImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface WarehouseImportResponse {
+  results: WarehouseImportRowResult[];
+}
+
+export interface ProductCategoryImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface ProductCategoryImportResponse {
+  results: ProductCategoryImportRowResult[];
+}
+
+export interface ProductLimitImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface ProductLimitImportResponse {
+  results: ProductLimitImportRowResult[];
+}
+
+export interface TeamLocationImportRowResult {
+  row_number: number;
+  location: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface TeamLocationImportResponse {
+  results: TeamLocationImportRowResult[];
+}
+
+export interface DeliveryMethodImportRowResult {
+  row_number: number;
+  delivery_method: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface DeliveryMethodImportResponse {
+  results: DeliveryMethodImportRowResult[];
+}
+
+export interface TeamTaskImportRowResult {
+  row_number: number;
+  team_tasks: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface TeamTaskImportResponse {
+  results: TeamTaskImportRowResult[];
+}
+
+export interface FestivalImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface FestivalImportResponse {
+  results: FestivalImportRowResult[];
+}
+
+export interface ProductImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface ProductImportResponse {
+  results: ProductImportRowResult[];
+}
+
+/** Team's bulk import only covers its scalar fields — task/kernlid links
+ * are not part of this bulk tool, see team_import.py on the backend. */
+export interface TeamImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface TeamImportResponse {
+  results: TeamImportRowResult[];
+}
+
+export interface AltsienKernlidImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+export interface AltsienKernlidImportResponse {
+  results: AltsienKernlidImportRowResult[];
 }

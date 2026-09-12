@@ -48,6 +48,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const tProductLimits = useTranslations("masterdata.productLimits");
   const tRoles = useTranslations("masterdata.roles");
   const tUsers = useTranslations("masterdata.users");
+  const tDataUploadDownload = useTranslations("masterdata.dataUploadDownload");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -67,6 +68,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewProductLimits = viewableScreenKeys.includes("masterdata.product-limits");
   const canViewRoles = viewableScreenKeys.includes("masterdata.roles");
   const canViewUsers = viewableScreenKeys.includes("masterdata.users");
+  const canViewDataUpload = viewableScreenKeys.includes("masterdata.dataupload");
 
   function linkClassName(href: string, level: 0 | 1 | 2 = 0) {
     return cn(
@@ -89,7 +91,12 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
         {tLanding("title")}
       </Link>
 
-      {(canViewSeason || canViewFestival || canViewTeams || canViewAltsienKernleden || canViewProducts) && (
+      {(canViewSeason ||
+        canViewFestival ||
+        canViewTeams ||
+        canViewAltsienKernleden ||
+        canViewProducts ||
+        canViewDataUpload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Database className="size-4" />
@@ -189,6 +196,15 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
               className={linkClassName("/modules/module-9/products/limits", 2)}
             >
               {tProductLimits("title")}
+            </Link>
+          )}
+
+          {canViewDataUpload && (
+            <Link
+              href="/modules/module-9/data-upload-download"
+              className={linkClassName("/modules/module-9/data-upload-download", 1)}
+            >
+              {tDataUploadDownload("title")}
             </Link>
           )}
         </>

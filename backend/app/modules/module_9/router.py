@@ -4,7 +4,7 @@
 # same one built for TagScan (see app/modules/module_1/router.py) — plus
 # the Season screen, its first actual piece of master data.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -32,6 +32,16 @@ from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
+from app.modules.module_9.altsien_kernlid_import import (
+    build_altsien_kernlid_template_xlsx,
+    export_altsien_kernleden_to_xlsx,
+    import_altsien_kernleden_from_xlsx,
+)
+from app.modules.module_9.delivery_method_import import (
+    build_delivery_method_template_xlsx,
+    export_delivery_methods_to_xlsx,
+    import_delivery_methods_from_xlsx,
+)
 from app.modules.module_9.deps import (
     MODULE_KEY,
     get_user_role,
@@ -39,30 +49,83 @@ from app.modules.module_9.deps import (
     require_screen_permission,
     user_can,
 )
+from app.modules.module_9.festival_import import (
+    build_festival_template_xlsx,
+    export_festivals_to_xlsx,
+    import_festivals_from_xlsx,
+)
 from app.modules.module_9.masterdata_dashboard import build_dashboard_stats
+from app.modules.module_9.product_category_import import (
+    build_product_category_template_xlsx,
+    export_product_categories_to_xlsx,
+    import_product_categories_from_xlsx,
+)
+from app.modules.module_9.product_import import (
+    build_product_template_xlsx,
+    export_products_to_xlsx,
+    import_products_from_xlsx,
+)
+from app.modules.module_9.product_limit_import import (
+    build_product_limit_template_xlsx,
+    export_product_limits_to_xlsx,
+    import_product_limits_from_xlsx,
+)
+from app.modules.module_9.product_type_import import (
+    build_product_type_template_xlsx,
+    export_product_types_to_xlsx,
+    import_product_types_from_xlsx,
+)
+from app.modules.module_9.season_import import (
+    build_season_template_xlsx,
+    export_seasons_to_xlsx,
+    import_seasons_from_xlsx,
+)
+from app.modules.module_9.team_import import build_team_template_xlsx, export_teams_to_xlsx, import_teams_from_xlsx
+from app.modules.module_9.team_location_import import (
+    build_team_location_template_xlsx,
+    export_team_locations_to_xlsx,
+    import_team_locations_from_xlsx,
+)
+from app.modules.module_9.team_task_import import (
+    build_team_task_template_xlsx,
+    export_team_tasks_to_xlsx,
+    import_team_tasks_from_xlsx,
+)
+from app.modules.module_9.warehouse_import import (
+    build_warehouse_template_xlsx,
+    export_warehouses_to_xlsx,
+    import_warehouses_from_xlsx,
+)
 from app.schemas.masterdata import (
     AltsienKernlidCreateRequest,
+    AltsienKernlidImportResponse,
     AltsienKernlidResponse,
     AltsienKernlidUpdateRequest,
     CreateOrGrantUserRequest,
     DeliveryMethodCreateRequest,
+    DeliveryMethodImportResponse,
     DeliveryMethodResponse,
     DeliveryMethodUpdateRequest,
     FestivalCreateRequest,
+    FestivalImportResponse,
     FestivalResponse,
     FestivalUpdateRequest,
     MasterDataDashboardResponse,
     MasterDataUserSummaryResponse,
     MyPermissionsResponse,
     ProductCategoryCreateRequest,
+    ProductCategoryImportResponse,
     ProductCategoryResponse,
     ProductCategoryUpdateRequest,
     ProductCreateRequest,
+    ProductImportResponse,
     ProductLimitCreateRequest,
+    ProductLimitImportResponse,
     ProductLimitResponse,
     ProductLimitUpdateRequest,
     ProductResponse,
     ProductTypeCreateRequest,
+    ProductTypeImportResponse,
     ProductTypeResponse,
     ProductTypeUpdateRequest,
     ProductUpdateRequest,
@@ -72,23 +135,30 @@ from app.schemas.masterdata import (
     ScreenPermissionResponse,
     ScreenResponse,
     SeasonCreateRequest,
+    SeasonImportResponse,
     SeasonResponse,
     SeasonUpdateRequest,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
     TeamCreateRequest,
+    TeamImportResponse,
     TeamLocationCreateRequest,
+    TeamLocationImportResponse,
     TeamLocationResponse,
     TeamLocationUpdateRequest,
     TeamResponse,
     TeamTaskCreateRequest,
+    TeamTaskImportResponse,
     TeamTaskResponse,
     TeamTaskUpdateRequest,
     TeamUpdateRequest,
     WarehouseCreateRequest,
+    WarehouseImportResponse,
     WarehouseResponse,
     WarehouseUpdateRequest,
 )
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 router = APIRouter(prefix="/api/modules/module-9", tags=["MasterData"])
 
@@ -397,13 +467,15 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
-    """Tell the frontend which MasterData screens the current user can
-    view, so it knows what to show in the sidebar without duplicating the
-    permission-checking rules itself.
+    """Tell the frontend which MasterData screens the current user can view
+    and create on, so it knows what to show — sidebar links, and
+    finer-grained controls like the Data Upload/Download screen's upload
+    button — without duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(MasterDataScreen)).all()
     viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+    creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
+    return MyPermissionsResponse(viewable_screen_keys=viewable_keys, creatable_screen_keys=creatable_keys)
 
 
 @router.get("/seasons", response_model=list[SeasonResponse])
@@ -1332,3 +1404,461 @@ def delete_product_limit(
 
     db.delete(product_limit)
     db.commit()
+
+
+# --- Data Upload/Download: bulk XLSX import/export, one tile per table on
+# the frontend's tile grid, all gated by the SAME "masterdata.dataupload"
+# screen key regardless of table — never by each table's own screen key —
+# mirroring KarTracker's own kar-import/kar-status-import endpoints.
+
+
+@router.get("/season-import/template")
+def download_season_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new seasons."""
+    return Response(
+        content=build_season_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="season-import-template.xlsx"'},
+    )
+
+
+@router.post("/season-import", response_model=SeasonImportResponse)
+def import_seasons(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> SeasonImportResponse:
+    """Bulk-create new seasons from an uploaded XLSX workbook. A row naming
+    a season that already exists is reported as an error, not upserted.
+    """
+    results = import_seasons_from_xlsx(db, file.file.read())
+    return SeasonImportResponse(results=results)
+
+
+@router.get("/seasons/export")
+def export_seasons(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every season as an XLSX workbook."""
+    return Response(
+        content=export_seasons_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-seasons-export.xlsx"'},
+    )
+
+
+@router.get("/product-type-import/template")
+def download_product_type_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new product types."""
+    return Response(
+        content=build_product_type_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="product-type-import-template.xlsx"'},
+    )
+
+
+@router.post("/product-type-import", response_model=ProductTypeImportResponse)
+def import_product_types(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> ProductTypeImportResponse:
+    """Bulk-create new product types from an uploaded XLSX workbook. A row
+    naming a type that already exists is reported as an error, not upserted.
+    """
+    results = import_product_types_from_xlsx(db, file.file.read())
+    return ProductTypeImportResponse(results=results)
+
+
+@router.get("/product-types/export")
+def export_product_types_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every product type as an XLSX workbook."""
+    return Response(
+        content=export_product_types_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-product-types-export.xlsx"'},
+    )
+
+
+@router.get("/warehouse-import/template")
+def download_warehouse_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new warehouses."""
+    return Response(
+        content=build_warehouse_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="warehouse-import-template.xlsx"'},
+    )
+
+
+@router.post("/warehouse-import", response_model=WarehouseImportResponse)
+def import_warehouses(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> WarehouseImportResponse:
+    """Bulk-create new warehouses from an uploaded XLSX workbook. A row
+    naming a warehouse that already exists is reported as an error, not upserted.
+    """
+    results = import_warehouses_from_xlsx(db, file.file.read())
+    return WarehouseImportResponse(results=results)
+
+
+@router.get("/warehouses/export")
+def export_warehouses_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every warehouse as an XLSX workbook."""
+    return Response(
+        content=export_warehouses_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-warehouses-export.xlsx"'},
+    )
+
+
+@router.get("/product-category-import/template")
+def download_product_category_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new product categories."""
+    return Response(
+        content=build_product_category_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="product-category-import-template.xlsx"'},
+    )
+
+
+@router.post("/product-category-import", response_model=ProductCategoryImportResponse)
+def import_product_categories(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> ProductCategoryImportResponse:
+    """Bulk-create new product categories from an uploaded XLSX workbook. A
+    row naming a category that already exists is reported as an error, not upserted.
+    """
+    results = import_product_categories_from_xlsx(db, file.file.read())
+    return ProductCategoryImportResponse(results=results)
+
+
+@router.get("/product-categories/export")
+def export_product_categories_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every product category as an XLSX workbook."""
+    return Response(
+        content=export_product_categories_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-product-categories-export.xlsx"'},
+    )
+
+
+@router.get("/product-limit-import/template")
+def download_product_limit_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new limit options."""
+    return Response(
+        content=build_product_limit_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="product-limit-import-template.xlsx"'},
+    )
+
+
+@router.post("/product-limit-import", response_model=ProductLimitImportResponse)
+def import_product_limits(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> ProductLimitImportResponse:
+    """Bulk-create new limit options from an uploaded XLSX workbook. A row
+    naming a limit option that already exists is reported as an error, not upserted.
+    """
+    results = import_product_limits_from_xlsx(db, file.file.read())
+    return ProductLimitImportResponse(results=results)
+
+
+@router.get("/product-limits/export")
+def export_product_limits_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every limit option as an XLSX workbook."""
+    return Response(
+        content=export_product_limits_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-product-limits-export.xlsx"'},
+    )
+
+
+@router.get("/team-location-import/template")
+def download_team_location_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new team locations."""
+    return Response(
+        content=build_team_location_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="team-location-import-template.xlsx"'},
+    )
+
+
+@router.post("/team-location-import", response_model=TeamLocationImportResponse)
+def import_team_locations(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> TeamLocationImportResponse:
+    """Bulk-create new team locations from an uploaded XLSX workbook. A row
+    naming a location that already exists is reported as an error, not upserted.
+    """
+    results = import_team_locations_from_xlsx(db, file.file.read())
+    return TeamLocationImportResponse(results=results)
+
+
+@router.get("/team-locations/export")
+def export_team_locations_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every team location as an XLSX workbook."""
+    return Response(
+        content=export_team_locations_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-team-locations-export.xlsx"'},
+    )
+
+
+@router.get("/delivery-method-import/template")
+def download_delivery_method_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new delivery methods."""
+    return Response(
+        content=build_delivery_method_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="delivery-method-import-template.xlsx"'},
+    )
+
+
+@router.post("/delivery-method-import", response_model=DeliveryMethodImportResponse)
+def import_delivery_methods(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> DeliveryMethodImportResponse:
+    """Bulk-create new delivery methods from an uploaded XLSX workbook. A
+    row naming a delivery method that already exists is reported as an error, not upserted.
+    """
+    results = import_delivery_methods_from_xlsx(db, file.file.read())
+    return DeliveryMethodImportResponse(results=results)
+
+
+@router.get("/delivery-methods/export")
+def export_delivery_methods_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every delivery method as an XLSX workbook."""
+    return Response(
+        content=export_delivery_methods_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-delivery-methods-export.xlsx"'},
+    )
+
+
+@router.get("/team-task-import/template")
+def download_team_task_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new team tasks."""
+    return Response(
+        content=build_team_task_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="team-task-import-template.xlsx"'},
+    )
+
+
+@router.post("/team-task-import", response_model=TeamTaskImportResponse)
+def import_team_tasks(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> TeamTaskImportResponse:
+    """Bulk-create new team tasks from an uploaded XLSX workbook. A row
+    naming a team task that already exists is reported as an error, not upserted.
+    """
+    results = import_team_tasks_from_xlsx(db, file.file.read())
+    return TeamTaskImportResponse(results=results)
+
+
+@router.get("/team-tasks/export")
+def export_team_tasks_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every team task as an XLSX workbook."""
+    return Response(
+        content=export_team_tasks_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-team-tasks-export.xlsx"'},
+    )
+
+
+@router.get("/festival-import/template")
+def download_festival_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new festivals."""
+    return Response(
+        content=build_festival_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="festival-import-template.xlsx"'},
+    )
+
+
+@router.post("/festival-import", response_model=FestivalImportResponse)
+def import_festivals(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> FestivalImportResponse:
+    """Bulk-create new festivals from an uploaded XLSX workbook."""
+    results = import_festivals_from_xlsx(db, file.file.read())
+    return FestivalImportResponse(results=results)
+
+
+@router.get("/festivals/export")
+def export_festivals_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every festival as an XLSX workbook."""
+    return Response(
+        content=export_festivals_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-festivals-export.xlsx"'},
+    )
+
+
+@router.get("/product-import/template")
+def download_product_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new products."""
+    return Response(
+        content=build_product_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="product-import-template.xlsx"'},
+    )
+
+
+@router.post("/product-import", response_model=ProductImportResponse)
+def import_products(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> ProductImportResponse:
+    """Bulk-create new products from an uploaded XLSX workbook."""
+    results = import_products_from_xlsx(db, file.file.read())
+    return ProductImportResponse(results=results)
+
+
+@router.get("/products/export")
+def export_products_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every product as an XLSX workbook."""
+    return Response(
+        content=export_products_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-products-export.xlsx"'},
+    )
+
+
+@router.get("/team-import/template")
+def download_team_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new teams. Only
+    covers Team's scalar fields — see team_import.py's own scope note.
+    """
+    return Response(
+        content=build_team_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="team-import-template.xlsx"'},
+    )
+
+
+@router.post("/team-import", response_model=TeamImportResponse)
+def import_teams(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> TeamImportResponse:
+    """Bulk-create new teams from an uploaded XLSX workbook. A row naming a
+    team that already exists is reported as an error, not upserted.
+    """
+    results = import_teams_from_xlsx(db, file.file.read())
+    return TeamImportResponse(results=results)
+
+
+@router.get("/teams/export")
+def export_teams_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every team's scalar fields as an XLSX workbook (task/kernlid links are not exported)."""
+    return Response(
+        content=export_teams_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-teams-export.xlsx"'},
+    )
+
+
+@router.get("/altsien-kernlid-import/template")
+def download_altsien_kernlid_import_template(
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-creating new Altsien Kernleden contacts."""
+    return Response(
+        content=build_altsien_kernlid_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="altsien-kernlid-import-template.xlsx"'},
+    )
+
+
+@router.post("/altsien-kernlid-import", response_model=AltsienKernlidImportResponse)
+def import_altsien_kernleden(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
+) -> AltsienKernlidImportResponse:
+    """Bulk-create new Altsien Kernleden contacts from an uploaded XLSX workbook."""
+    results = import_altsien_kernleden_from_xlsx(db, file.file.read())
+    return AltsienKernlidImportResponse(results=results)
+
+
+@router.get("/altsien-kernleden/export")
+def export_altsien_kernleden_xlsx(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
+) -> Response:
+    """Every Altsien Kernleden contact as an XLSX workbook."""
+    return Response(
+        content=export_altsien_kernleden_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="masterdata-altsien-kernleden-export.xlsx"'},
+    )

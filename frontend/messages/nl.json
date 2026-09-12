@@ -764,6 +764,97 @@
       "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
       "userSaved": "Toegang gegeven.",
       "userSaveFailed": "Geven van toegang is mislukt."
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Hulpmiddelen om de tabellen van MasterData in bulk te importeren en exporteren, één tegel per tabel.",
+      "downloadTemplateLabel": "Sjabloon",
+      "downloadTemplateButton": "Sjabloon downloaden",
+      "uploadNotAllowed": "Je hebt geen rechten om hier te uploaden — vraag een MasterData-beheerder om deze toe te kennen.",
+      "chooseFileLabel": "Excel-bestand",
+      "uploadButton": "Uploaden",
+      "importFailed": "Importeren van het Excel-bestand is mislukt.",
+      "importSummary": "{created} aangemaakt, {errors} overgeslagen.",
+      "importColumnRow": "Rij",
+      "importColumnOutcome": "Resultaat",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Aangemaakt",
+        "error": "Fout"
+      },
+      "exportLabel": "Exporteren",
+      "season": {
+        "tileTitle": "Seizoenen",
+        "dialogDescription": "Download een sjabloon om nieuwe seizoenen voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Seizoenen downloaden"
+      },
+      "products": {
+        "tileTitle": "Producten",
+        "dialogDescription": "Download een sjabloon om nieuwe producten voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Producten downloaden"
+      },
+      "productTypes": {
+        "tileTitle": "Type",
+        "dialogDescription": "Download een sjabloon om nieuwe types voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Types downloaden"
+      },
+      "warehouses": {
+        "tileTitle": "Magazijnen",
+        "dialogDescription": "Download een sjabloon om nieuwe magazijnen voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Magazijnen downloaden"
+      },
+      "productCategories": {
+        "tileTitle": "Categorieën",
+        "dialogDescription": "Download een sjabloon om nieuwe categorieën voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Categorieën downloaden"
+      },
+      "productLimits": {
+        "tileTitle": "Limieten",
+        "dialogDescription": "Download een sjabloon om nieuwe limieten voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Limieten downloaden"
+      },
+      "festival": {
+        "tileTitle": "Festivals",
+        "dialogDescription": "Download een sjabloon om nieuwe festivals voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Festivals downloaden"
+      },
+      "teams": {
+        "tileTitle": "Ploegen",
+        "dialogDescription": "Download een sjabloon om nieuwe teams voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst. Bevat enkel naam, locatie, leverwijze en beschrijving — taken en kernleden blijven beheerd op het Teams-scherm zelf.",
+        "importColumnKey": "Naam",
+        "exportButton": "Teams downloaden"
+      },
+      "teamLocation": {
+        "tileTitle": "Team Locatie",
+        "dialogDescription": "Download een sjabloon om nieuwe teamlocaties voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Locatie",
+        "exportButton": "Teamlocaties downloaden"
+      },
+      "deliveryMethod": {
+        "tileTitle": "Leverwijze",
+        "dialogDescription": "Download een sjabloon om nieuwe leverwijzes voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Leverwijze",
+        "exportButton": "Leverwijzes downloaden"
+      },
+      "teamTasks": {
+        "tileTitle": "Team Taken",
+        "dialogDescription": "Download een sjabloon om nieuwe teamtaken voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Teamtaak",
+        "exportButton": "Teamtaken downloaden"
+      },
+      "altsienKernleden": {
+        "tileTitle": "Altsien Kernleden",
+        "dialogDescription": "Download een sjabloon om nieuwe contacten voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "importColumnKey": "Naam",
+        "exportButton": "Contacten downloaden"
+      }
     }
   },
   "interventionRequests": {
