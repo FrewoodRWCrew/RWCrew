@@ -34,6 +34,7 @@
   },
   "sidebar": {
     "manageAccess": "Toegangsbeheer",
+    "loginHistory": "Login geschiedenis",
     "landing": "Hoofdpagina"
   },
   "modulePage": {
@@ -74,6 +75,24 @@
       "deleteConfirmDescription": "Dit verwijdert {name} en al hun moduletoegang definitief. Dit kan niet ongedaan worden gemaakt.",
       "userDeleted": "Gebruiker verwijderd.",
       "deleteUserFailed": "Verwijderen van gebruiker is mislukt."
+    },
+    "loginHistory": {
+      "title": "Login geschiedenis",
+      "description": "Zie wie er gebruikmaakt van de tool en wanneer, inclusief mislukte pogingen.",
+      "columnTimestamp": "Tijdstip",
+      "columnUser": "Gebruiker",
+      "columnStatus": "Status",
+      "columnIpAddress": "IP-adres",
+      "statusSuccess": "Geslaagd",
+      "statusFailed": "Mislukt",
+      "dateFromLabel": "Van",
+      "dateToLabel": "Tot",
+      "clearFilters": "Filters wissen",
+      "previous": "Vorige",
+      "next": "Volgende",
+      "pageOf": "Pagina {page} van {totalPages}",
+      "loadFailed": "Laden van de logingeschiedenis is mislukt.",
+      "empty": "Nog geen loginpogingen gevonden."
     }
   },
   "tagscan": {
@@ -81,6 +100,7 @@
     "accessRights": "Toegangsrechten",
     "masterDataGroup": "MasterData",
     "actionsGroup": "Acties",
+    "settingsGroup": "Instellingen",
     "landing": {
       "title": "TagScan Overzicht",
       "statTotalTags": "Totaal aantal tags",
@@ -342,7 +362,43 @@
       "deleteConfirmTitle": "Scanner verwijderen?",
       "deleteConfirmDescription": "Dit verwijdert scanner \"{scanner}\" definitief. Dit kan niet ongedaan worden gemaakt, en werkt enkel als de scanner niet meer gebruikt wordt door een geregistreerd bestand of regel.",
       "scannerDeleted": "Scanner verwijderd.",
-      "deleteFailed": "Verwijderen van scanner is mislukt."
+      "deleteFailed": "Verwijderen van scanner is mislukt.",
+      "apiKey": "API-sleutel",
+      "apiKeyTitle": "API-sleutel voor apparaat \"{scanner}\"",
+      "apiKeyDescription": "Gebruikt door het watcher-script van dit apparaat om CSV-bestanden via HTTPS naar TagScan te sturen, zonder dat ze al op de server moeten staan.",
+      "apiKeyActive": "Actief",
+      "apiKeyNone": "Nog geen sleutel aangemaakt",
+      "apiKeyNeverUsed": "Nog nooit gebruikt",
+      "apiKeyLastUsed": "Laatst gebruikt op {date}",
+      "apiKeyGenerate": "API-sleutel aanmaken",
+      "apiKeyRegenerate": "Nieuwe sleutel aanmaken",
+      "apiKeyRevoke": "Sleutel intrekken",
+      "apiKeyNewValue": "Nieuwe API-sleutel",
+      "apiKeyShownOnceWarning": "Deze sleutel wordt maar één keer getoond en kan niet opnieuw worden opgevraagd — kopieer ze nu en plak ze in de configuratie van het apparaat. Een nieuwe sleutel aanmaken maakt deze onmiddellijk ongeldig.",
+      "apiKeyUploadUrl": "Upload-URL",
+      "copy": "Kopiëren",
+      "copied": "Gekopieerd naar klembord.",
+      "copyFailed": "Kopiëren is mislukt.",
+      "apiKeyGenerateFailed": "Aanmaken van API-sleutel is mislukt.",
+      "apiKeyRevoked": "API-sleutel ingetrokken.",
+      "apiKeyRevokeFailed": "Intrekken van API-sleutel is mislukt."
+    },
+    "settings": {
+      "title": "Instellingen",
+      "description": "Configureer waar TagScan CSV-bestanden ontvangt die door apparaten via HTTPS worden verstuurd.",
+      "receiveFolderLabel": "Ontvangstmap",
+      "receiveFolderDescription": "De map op de server waar binnenkomende CSV-bestanden terechtkomen, in de submap \"Unreaded Tags\" — dezelfde map die te zien is op het scherm CSV Source Files en die gescand wordt door Tag Headerdata.",
+      "defaultValue": "Standaardwaarde",
+      "customValue": "Aangepast",
+      "save": "Opslaan",
+      "saved": "Instellingen opgeslagen.",
+      "saveFailed": "Opslaan van instellingen is mislukt.",
+      "uploadUrlLabel": "Upload-URL voor apparaten",
+      "uploadUrlDescription": "Het adres waarnaar het watcher-script van een apparaat zijn CSV-bestanden stuurt, samen met zijn eigen API-sleutel (zie het scherm Scanners) in een \"X-API-Key\"-header.",
+      "uploadUrlHint": "Plak dit samen met de API-sleutel in de configuratie van het apparaat.",
+      "copy": "Kopiëren",
+      "copied": "Gekopieerd naar klembord.",
+      "copyFailed": "Kopiëren is mislukt."
     },
     "roles": {
       "title": "Rollen",
@@ -1166,6 +1222,96 @@
       "karDeleted": "Kar verwijderd.",
       "deleteFailed": "Verwijderen van kar is mislukt."
     },
+    "distributiepunten": {
+      "title": "Distributiepunten",
+      "description": "De distributiepunten die door de organisatie worden beheerd.",
+      "columnName": "Naam",
+      "columnLatitude": "Breedtegraad",
+      "columnLongitude": "Lengtegraad",
+      "columnTerreinPositie": "TerreinPositie",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Acties",
+      "newDistributiepunt": "Nieuw distributiepunt",
+      "nameLabel": "Naam",
+      "latitudeLabel": "Breedtegraad",
+      "longitudeLabel": "Lengtegraad",
+      "terreinPositieLabel": "TerreinPositie",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— Geen Altsien Kernlid —",
+      "createTitle": "Nieuw distributiepunt aanmaken",
+      "createDescription": "Voeg een nieuw distributiepunt toe.",
+      "distributiepuntCreated": "Distributiepunt aangemaakt.",
+      "createFailed": "Aanmaken van distributiepunt is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Distributiepunt wijzigen",
+      "changeDescription": "Werk de gegevens van dit distributiepunt bij.",
+      "distributiepuntUpdated": "Distributiepunt bijgewerkt.",
+      "updateFailed": "Bijwerken van distributiepunt is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Distributiepunt verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert distributiepunt \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+      "distributiepuntDeleted": "Distributiepunt verwijderd.",
+      "deleteFailed": "Verwijderen van distributiepunt is mislukt."
+    },
+    "zones": {
+      "title": "Zone",
+      "description": "Beheer de leveringszones — gebruikt op het Afleverlocatie-scherm.",
+      "tableName": "Naam",
+      "tableActions": "Acties",
+      "newZone": "Nieuwe zone",
+      "nameLabel": "Naam van de zone",
+      "createTitle": "Nieuwe zone aanmaken",
+      "createDescription": "Voeg een nieuwe zone toe.",
+      "zoneCreated": "Zone aangemaakt.",
+      "createFailed": "Aanmaken van zone is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Naam van zone wijzigen",
+      "changeDescription": "Hernoem deze zone.",
+      "zoneUpdated": "Zone bijgewerkt.",
+      "updateFailed": "Bijwerken van zone is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Zone verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert zone \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt, en werkt enkel als geen enkele afleverlocatie deze zone nog gebruikt.",
+      "zoneDeleted": "Zone verwijderd.",
+      "deleteFailed": "Verwijderen van zone is mislukt."
+    },
+    "afleverlocaties": {
+      "title": "Afleverlocatie",
+      "description": "De afleverlocaties die door de organisatie worden beheerd.",
+      "columnName": "Naam",
+      "columnDescription": "Omschrijving",
+      "columnZone": "Zone",
+      "columnDistributiepunt": "Distributiepunt",
+      "columnLatitude": "Breedtegraad",
+      "columnLongitude": "Lengtegraad",
+      "columnTerreinPositie": "TerreinPositie",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Acties",
+      "newAfleverlocatie": "Nieuwe afleverlocatie",
+      "nameLabel": "Naam",
+      "descriptionLabel": "Omschrijving",
+      "zoneLabel": "Zone",
+      "distributiepuntLabel": "Distributiepunt",
+      "latitudeLabel": "Breedtegraad",
+      "longitudeLabel": "Lengtegraad",
+      "terreinPositieLabel": "TerreinPositie",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— Geen Altsien Kernlid —",
+      "createTitle": "Nieuwe afleverlocatie aanmaken",
+      "createDescription": "Voeg een nieuwe afleverlocatie toe.",
+      "afleverlocatieCreated": "Afleverlocatie aangemaakt.",
+      "createFailed": "Aanmaken van afleverlocatie is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Afleverlocatie wijzigen",
+      "changeDescription": "Werk de gegevens van deze afleverlocatie bij.",
+      "afleverlocatieUpdated": "Afleverlocatie bijgewerkt.",
+      "updateFailed": "Bijwerken van afleverlocatie is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Afleverlocatie verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert afleverlocatie \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+      "afleverlocatieDeleted": "Afleverlocatie verwijderd.",
+      "deleteFailed": "Verwijderen van afleverlocatie is mislukt."
+    },
     "dataUploadDownload": {
       "title": "Gegevens uploaden/downloaden",
       "description": "Hulpmiddelen om KarTracker's stamgegevens in bulk te importeren en exporteren, één tegel per onderwerp.",
@@ -1197,6 +1343,36 @@
           "error": "Fout"
         },
         "exportButton": "Karstatussen downloaden"
+      },
+      "distributiepunten": {
+        "tileTitle": "Distributiepunten",
+        "dialogDescription": "Download een sjabloon om nieuwe distributiepunten voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Distributiepunten downloaden"
+      },
+      "zones": {
+        "tileTitle": "Zone",
+        "dialogDescription": "Download een sjabloon om nieuwe zones voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Zones downloaden"
+      },
+      "afleverlocaties": {
+        "tileTitle": "Afleverlocatie",
+        "dialogDescription": "Download een sjabloon om nieuwe afleverlocaties voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Afleverlocaties downloaden"
       }
     }
   },

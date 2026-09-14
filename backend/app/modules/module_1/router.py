@@ -3,6 +3,9 @@
 # custom-roles-with-per-screen-permissions system, so its endpoints are
 # written out in full here.
 
+import secrets
+from datetime import datetime, timezone
+from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
@@ -10,6 +13,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.module import Module
@@ -22,6 +26,7 @@ from app.db.models.tag_line_data import TagLineData
 from app.db.models.tagscan_role import TagscanRole
 from app.db.models.tagscan_role_permission import TagscanRolePermission
 from app.db.models.tagscan_screen import TagscanScreen
+from app.db.models.tagscan_settings import TagscanSettings
 from app.db.models.tagscan_user_role import TagscanUserRole
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -33,6 +38,7 @@ from app.modules.module_1.deps import (
     user_can,
 )
 from app.modules.module_1.file_browser import (
+    SETTINGS_ROW_ID,
     build_folder_tree,
     get_source_root,
     list_files,
@@ -57,6 +63,7 @@ from app.schemas.tagscan import (
     RoleCreateRequest,
     RoleResponse,
     RoleUpdateRequest,
+    ScannerApiKeyResponse,
     ScannerCreateRequest,
     ScannerResponse,
     ScannerUpdateRequest,
@@ -69,6 +76,8 @@ from app.schemas.tagscan import (
     TagHeaderDataScanResponse,
     TagLineDataResponse,
     TagLineDataSyncResponse,
+    TagscanSettingsResponse,
+    TagscanSettingsUpdateRequest,
     TagscanUserSummaryResponse,
 )
 
@@ -132,35 +141,38 @@ def _build_role_response(db: Session, role: TagscanRole) -> RoleResponse:
 
 @router.get("/files/tree", response_model=FolderNode)
 def get_folder_tree(
+    db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.dashboard", "view")),
 ) -> FolderNode:
     """The full folder structure of the CSV intake directory, for the
     Dashboard screen's folder-tree pane.
     """
-    return build_folder_tree(get_source_root())
+    return build_folder_tree(get_source_root(db))
 
 
 @router.get("/files", response_model=list[FileEntryResponse])
 def get_folder_files(
     path: str = "",
+    db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.dashboard", "view")),
 ) -> list[FileEntryResponse]:
     """The files directly inside one folder of the CSV intake directory
     (not its subfolders), for the Dashboard screen's file-list pane.
     """
-    folder = resolve_safe_path(path)
+    folder = resolve_safe_path(db, path)
     if not folder.is_dir():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Folder not found")
-    return list_files(folder)
+    return list_files(db, folder)
 
 
 @router.get("/files/content", response_model=FileContentResponse)
 def get_file_content(
     path: str,
+    db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.dashboard", "view")),
 ) -> FileContentResponse:
     """One file's text content, for the Dashboard screen's "notepad" preview pane."""
-    file = resolve_safe_path(path)
+    file = resolve_safe_path(db, path)
     if not file.is_file():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
 
@@ -491,6 +503,95 @@ def delete_scanner(
 
     db.delete(scanner)
     db.commit()
+
+
+@router.post("/scanners/{scanner_id}/api-key", response_model=ScannerApiKeyResponse)
+def generate_scanner_api_key(
+    scanner_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "edit")),
+) -> ScannerApiKeyResponse:
+    """Generate a brand-new API key for a scanner's device-intake uploads
+    (see app/modules/module_1/device_router.py), invalidating any previous
+    one. The plaintext key is returned here once and never again — only
+    its hash is stored.
+    """
+    scanner = db.get(Scanner, scanner_id)
+    if scanner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scanner not found")
+
+    api_key = f"module1_{scanner.id}_{secrets.token_urlsafe(32)}"
+    scanner.api_key_hash = hash_password(api_key)
+    scanner.api_key_generated_at = datetime.now(timezone.utc)
+    scanner.api_key_last_used_at = None
+    db.commit()
+
+    return ScannerApiKeyResponse(api_key=api_key)
+
+
+@router.delete("/scanners/{scanner_id}/api-key", status_code=status.HTTP_204_NO_CONTENT)
+def revoke_scanner_api_key(
+    scanner_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.scanners", "edit")),
+) -> None:
+    """Revoke a scanner's current API key, if any — its device-intake
+    uploads will start being rejected with 401 immediately.
+    """
+    scanner = db.get(Scanner, scanner_id)
+    if scanner is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scanner not found")
+
+    scanner.api_key_hash = None
+    scanner.api_key_generated_at = None
+    scanner.api_key_last_used_at = None
+    db.commit()
+
+
+def _resolve_settings_response(db: Session) -> TagscanSettingsResponse:
+    override = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    if override is not None and override.receive_folder_path:
+        return TagscanSettingsResponse(receive_folder_path=override.receive_folder_path, is_override=True)
+    return TagscanSettingsResponse(receive_folder_path=settings.tagscan_source_dir, is_override=False)
+
+
+@router.get("/settings", response_model=TagscanSettingsResponse)
+def get_settings(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.settings", "view")),
+) -> TagscanSettingsResponse:
+    """The currently effective receive-folder path — a DB-saved override
+    if one exists, otherwise the .env-configured default.
+    """
+    return _resolve_settings_response(db)
+
+
+@router.put("/settings", response_model=TagscanSettingsResponse)
+def update_settings(
+    payload: TagscanSettingsUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.settings", "edit")),
+) -> TagscanSettingsResponse:
+    """Save a new receive-folder-path override. Fails fast with a clear
+    400 if the backend process can't actually create/access that path,
+    rather than silently saving a broken configuration.
+    """
+    try:
+        Path(payload.receive_folder_path).mkdir(parents=True, exist_ok=True)
+    except OSError as error:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail=f"Cannot use this folder: {error}"
+        ) from error
+
+    override = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    if override is None:
+        override = TagscanSettings(id=SETTINGS_ROW_ID, receive_folder_path=payload.receive_folder_path)
+        db.add(override)
+    else:
+        override.receive_folder_path = payload.receive_folder_path
+    db.commit()
+
+    return _resolve_settings_response(db)
 
 
 @router.get("/tags/template")

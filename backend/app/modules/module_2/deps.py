@@ -108,3 +108,29 @@ def require_screen_permission(screen_key: str, action: PermissionAction):
         return current_user
 
     return dependency
+
+
+def require_screen_view_or_create(*screen_keys: str):
+    """Allow lookup reads when the caller can view or create on ANY of the
+    given screens — pass more than one key where a screen's own list also
+    needs to stay readable by someone who can only view/create a
+    *different* screen that depends on it (e.g. Zone/Distributiepunt must
+    stay listable both by their own admins and by anyone who can view
+    Afleverlocatie, since that screen's dropdown/table needs the data).
+    """
+
+    def dependency(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(require_module_access),
+    ) -> User:
+        if not any(
+            user_can(db, current_user, screen_key, "view") or user_can(db, current_user, screen_key, "create")
+            for screen_key in screen_keys
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Not allowed to view or create on any of: {', '.join(screen_keys)}",
+            )
+        return current_user
+
+    return dependency

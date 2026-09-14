@@ -30,6 +30,9 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const tUsers = useTranslations("karTracker.users");
   const tKarManagement = useTranslations("karTracker.karManagement");
   const tKarStatuses = useTranslations("karTracker.karStatuses");
+  const tDistributiepunten = useTranslations("karTracker.distributiepunten");
+  const tZones = useTranslations("karTracker.zones");
+  const tAfleverlocaties = useTranslations("karTracker.afleverlocaties");
   const tDataUploadDownload = useTranslations("karTracker.dataUploadDownload");
   const tActions = useTranslations("karTracker.actions");
   const pathname = usePathname();
@@ -41,6 +44,9 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const canViewUsers = viewableScreenKeys.includes("kartracker.users");
   const canViewKarManagement = viewableScreenKeys.includes("kartracker.karmanagement");
   const canViewKarStatuses = viewableScreenKeys.includes("kartracker.karstatuses");
+  const canViewDistributiepunten = viewableScreenKeys.includes("kartracker.distributiepunten");
+  const canViewZones = viewableScreenKeys.includes("kartracker.zones");
+  const canViewAfleverlocaties = viewableScreenKeys.includes("kartracker.afleverlocaties");
   const canViewDataUploadDownload = viewableScreenKeys.includes("kartracker.dataupload");
   const canViewActions = viewableScreenKeys.includes("kartracker.actions");
 
@@ -76,7 +82,12 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         </>
       )}
 
-      {(canViewKarManagement || canViewKarStatuses || canViewDataUploadDownload) && (
+      {(canViewKarManagement ||
+        canViewDistributiepunten ||
+        canViewZones ||
+        canViewAfleverlocaties ||
+        canViewKarStatuses ||
+        canViewDataUploadDownload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Database className="size-4" />
@@ -88,6 +99,27 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
               className={linkClassName("/modules/module-2/kar-management", 1)}
             >
               {tKarManagement("title")}
+            </Link>
+          )}
+          {canViewDistributiepunten && (
+            <Link
+              href="/modules/module-2/distributiepunten"
+              className={linkClassName("/modules/module-2/distributiepunten", 1)}
+            >
+              {tDistributiepunten("title")}
+            </Link>
+          )}
+          {canViewZones && (
+            <Link href="/modules/module-2/zones" className={linkClassName("/modules/module-2/zones", 1)}>
+              {tZones("title")}
+            </Link>
+          )}
+          {canViewAfleverlocaties && (
+            <Link
+              href="/modules/module-2/afleverlocaties"
+              className={linkClassName("/modules/module-2/afleverlocaties", 1)}
+            >
+              {tAfleverlocaties("title")}
             </Link>
           )}
           {canViewKarStatuses && (

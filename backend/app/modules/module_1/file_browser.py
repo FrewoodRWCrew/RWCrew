@@ -1,26 +1,38 @@
 # Plain filesystem helpers backing TagScan's "Dashboard" screen: a
 # read-only, Explorer-style browser over the folder where incoming CSV
-# scan files currently land (see app.core.config.settings.tagscan_source_dir).
-# Kept free of FastAPI/DB concerns so it's easy to unit test on its own.
+# scan files currently land (see app.core.config.settings.tagscan_source_dir,
+# overridable per app.db.models.tagscan_settings.TagscanSettings — see
+# get_source_root() below).
 
 from pathlib import Path
 
 from fastapi import HTTPException, status
+from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.db.models.tagscan_settings import TagscanSettings
 from app.schemas.tagscan import FileEntryResponse, FolderNode
 
 # Files bigger than this are still listed, but their content preview stops
 # here rather than reading an arbitrarily large file into memory/the browser.
 MAX_PREVIEW_BYTES = 2 * 1024 * 1024  # 2 MB
 
+# The id of TagscanSettings' single settings row.
+SETTINGS_ROW_ID = 1
 
-def get_source_root() -> Path:
-    """The folder currently configured as TagScan's CSV intake location."""
+
+def get_source_root(db: Session) -> Path:
+    """The folder currently configured as TagScan's CSV intake location:
+    the DB-saved override from the Settings screen if one has been saved,
+    otherwise the .env-configured default.
+    """
+    override = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    if override is not None and override.receive_folder_path:
+        return Path(override.receive_folder_path)
     return Path(settings.tagscan_source_dir)
 
 
-def resolve_safe_path(relative_path: str) -> Path:
+def resolve_safe_path(db: Session, relative_path: str) -> Path:
     """Turn a client-supplied relative path into a real filesystem path,
     guaranteed to stay inside the configured source folder.
 
@@ -29,7 +41,7 @@ def resolve_safe_path(relative_path: str) -> Path:
     vulnerability (e.g. "../../app/core/config.py") — every endpoint that
     accepts a path MUST go through this function first.
     """
-    root = get_source_root().resolve()
+    root = get_source_root(db).resolve()
     # An empty path means "the root folder itself".
     candidate = (root / relative_path).resolve() if relative_path else root
 
@@ -56,11 +68,11 @@ def build_folder_tree(root: Path) -> FolderNode:
     return describe(root)
 
 
-def list_files(folder: Path) -> list[FileEntryResponse]:
+def list_files(db: Session, folder: Path) -> list[FileEntryResponse]:
     """List the files directly inside one folder (not its subfolders),
     for the file-list pane once a folder is selected.
     """
-    root = get_source_root().resolve()
+    root = get_source_root(db).resolve()
     entries = sorted((entry for entry in folder.iterdir() if entry.is_file()), key=lambda entry: entry.name)
 
     files = []

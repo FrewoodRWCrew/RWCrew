@@ -14,12 +14,16 @@ from app.db.models.intervention_requests_role_permission import InterventionRequ
 from app.db.models.intervention_requests_screen import InterventionRequestsScreen  # noqa: F401
 from app.db.models.intervention_requests_user_role import InterventionRequestsUserRole  # noqa: F401
 from app.db.models.intervention_status import InterventionStatus  # noqa: F401
+from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie  # noqa: F401
+from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt  # noqa: F401
 from app.db.models.kartracker_kar import KarTrackerKar  # noqa: F401
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus  # noqa: F401
 from app.db.models.kartracker_role import KarTrackerRole  # noqa: F401
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission  # noqa: F401
 from app.db.models.kartracker_screen import KarTrackerScreen  # noqa: F401
 from app.db.models.kartracker_user_role import KarTrackerUserRole  # noqa: F401
+from app.db.models.kartracker_zone import KarTrackerZone  # noqa: F401
+from app.db.models.login_history import LoginHistory  # noqa: F401
 from app.db.models.masterdata_role import MasterDataRole  # noqa: F401
 from app.db.models.masterdata_role_permission import MasterDataRolePermission  # noqa: F401
 from app.db.models.masterdata_screen import MasterDataScreen  # noqa: F401
@@ -39,6 +43,7 @@ from app.db.models.tag_line_data import TagLineData  # noqa: F401
 from app.db.models.tagscan_role import TagscanRole  # noqa: F401
 from app.db.models.tagscan_role_permission import TagscanRolePermission  # noqa: F401
 from app.db.models.tagscan_screen import TagscanScreen  # noqa: F401
+from app.db.models.tagscan_settings import TagscanSettings  # noqa: F401
 from app.db.models.tagscan_user_role import TagscanUserRole  # noqa: F401
 from app.db.models.team import Team  # noqa: F401
 from app.db.models.team_kernlid import TeamKernlid  # noqa: F401

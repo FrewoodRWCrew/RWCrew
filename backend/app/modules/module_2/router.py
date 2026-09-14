@@ -15,23 +15,38 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.altsien_kernlid import AltsienKernlid
+from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
+from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
 from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.kartracker_role import KarTrackerRole
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission
 from app.db.models.kartracker_screen import KarTrackerScreen
 from app.db.models.kartracker_user_role import KarTrackerUserRole
+from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.modules.module_2.afleverlocatie_import import (
+    build_afleverlocatie_template_xlsx,
+    export_afleverlocaties_to_xlsx,
+    import_afleverlocaties_from_xlsx,
+)
 from app.modules.module_2.deps import (
     MODULE_KEY,
     get_user_role,
     require_module_access,
     require_screen_permission,
+    require_screen_view_or_create,
     user_can,
+)
+from app.modules.module_2.distributiepunt_import import (
+    build_distributiepunt_template_xlsx,
+    export_distributiepunten_to_xlsx,
+    import_distributiepunten_from_xlsx,
 )
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.modules.module_2.kar_status_import import (
@@ -39,8 +54,17 @@ from app.modules.module_2.kar_status_import import (
     export_kar_statuses_to_xlsx,
     import_kar_statuses_from_xlsx,
 )
+from app.modules.module_2.zone_import import build_zone_template_xlsx, export_zones_to_xlsx, import_zones_from_xlsx
 from app.schemas.kartracker import (
+    AfleverlocatieCreateRequest,
+    AfleverlocatieImportResponse,
+    AfleverlocatieResponse,
+    AfleverlocatieUpdateRequest,
     CreateOrGrantUserRequest,
+    DistributiepuntCreateRequest,
+    DistributiepuntImportResponse,
+    DistributiepuntResponse,
+    DistributiepuntUpdateRequest,
     KarCreateRequest,
     KarImportResponse,
     KarResponse,
@@ -58,6 +82,10 @@ from app.schemas.kartracker import (
     ScreenResponse,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    ZoneCreateRequest,
+    ZoneImportResponse,
+    ZoneResponse,
+    ZoneUpdateRequest,
 )
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -621,4 +649,378 @@ def export_kar_statuses(
         content=export_kar_statuses_to_xlsx(db),
         media_type=XLSX_MEDIA_TYPE,
         headers={"Content-Disposition": 'attachment; filename="kartracker-statuses-export.xlsx"'},
+    )
+
+
+def _validate_altsien_kernlid_id(db: Session, altsien_kernlid_id: int | None) -> None:
+    """Turn a bad altsien_kernlid_id into a friendly 404 instead of letting
+    the database reject it with a raw foreign-key error. Optional, so only
+    checked when one was actually given.
+    """
+    if altsien_kernlid_id is not None and db.get(AltsienKernlid, altsien_kernlid_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernlid not found")
+
+
+@router.get("/distributiepunten", response_model=list[DistributiepuntResponse])
+def list_distributiepunten(
+    db: Session = Depends(get_db),
+    _user: User = Depends(
+        require_screen_view_or_create("kartracker.distributiepunten", "kartracker.afleverlocaties")
+    ),
+) -> list[KarTrackerDistributiepunt]:
+    """List every distribution point."""
+    return list(db.scalars(select(KarTrackerDistributiepunt).order_by(KarTrackerDistributiepunt.name)).all())
+
+
+@router.post("/distributiepunten", response_model=DistributiepuntResponse, status_code=status.HTTP_201_CREATED)
+def create_distributiepunt(
+    payload: DistributiepuntCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.distributiepunten", "create")),
+) -> KarTrackerDistributiepunt:
+    """Register a brand-new distribution point."""
+    _validate_altsien_kernlid_id(db, payload.altsien_kernlid_id)
+
+    new_distributiepunt = KarTrackerDistributiepunt(**payload.model_dump())
+    db.add(new_distributiepunt)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A distribution point with this name already exists"
+        ) from error
+
+    db.refresh(new_distributiepunt)
+    return new_distributiepunt
+
+
+@router.put("/distributiepunten/{distributiepunt_id}", response_model=DistributiepuntResponse)
+def update_distributiepunt(
+    distributiepunt_id: int,
+    payload: DistributiepuntUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.distributiepunten", "edit")),
+) -> KarTrackerDistributiepunt:
+    """Update an existing distribution point's details."""
+    distributiepunt = db.get(KarTrackerDistributiepunt, distributiepunt_id)
+    if distributiepunt is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Distribution point not found")
+
+    _validate_altsien_kernlid_id(db, payload.altsien_kernlid_id)
+
+    for field, value in payload.model_dump().items():
+        setattr(distributiepunt, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A distribution point with this name already exists"
+        ) from error
+
+    db.refresh(distributiepunt)
+    return distributiepunt
+
+
+@router.delete("/distributiepunten/{distributiepunt_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_distributiepunt(
+    distributiepunt_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.distributiepunten", "delete")),
+) -> None:
+    """Remove a distribution point from the master data."""
+    distributiepunt = db.get(KarTrackerDistributiepunt, distributiepunt_id)
+    if distributiepunt is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Distribution point not found")
+
+    still_in_use = db.scalar(
+        select(KarTrackerAfleverlocatie).where(
+            KarTrackerAfleverlocatie.distributiepunt_id == distributiepunt_id
+        )
+    )
+    if still_in_use is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This distribution point is still used by at least one delivery location",
+        )
+
+    db.delete(distributiepunt)
+    db.commit()
+
+
+@router.get("/distributiepunt-import/template")
+def download_distributiepunt_import_template(
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-registering new distribution points."""
+    return Response(
+        content=build_distributiepunt_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="distributiepunt-import-template.xlsx"'},
+    )
+
+
+@router.post("/distributiepunt-import", response_model=DistributiepuntImportResponse)
+def import_distributiepunten(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "create")),
+) -> DistributiepuntImportResponse:
+    """Bulk-register new distribution points from an uploaded XLSX
+    workbook. A row whose name already exists is reported as an error,
+    not upserted.
+    """
+    results = import_distributiepunten_from_xlsx(db, file.file.read())
+    return DistributiepuntImportResponse(results=results)
+
+
+@router.get("/distributiepunten/export")
+def export_distributiepunten(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The full Distributiepunten dataset as an XLSX workbook."""
+    return Response(
+        content=export_distributiepunten_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="distributiepunten-export.xlsx"'},
+    )
+
+
+@router.get("/zones", response_model=list[ZoneResponse])
+def list_zones(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_view_or_create("kartracker.zones", "kartracker.afleverlocaties")),
+) -> list[KarTrackerZone]:
+    """List every zone."""
+    return list(db.scalars(select(KarTrackerZone).order_by(KarTrackerZone.name)).all())
+
+
+@router.post("/zones", response_model=ZoneResponse, status_code=status.HTTP_201_CREATED)
+def create_zone(
+    payload: ZoneCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.zones", "create")),
+) -> KarTrackerZone:
+    """Create a brand-new zone."""
+    new_zone = KarTrackerZone(name=payload.name)
+    db.add(new_zone)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A zone with this name already exists") from error
+
+    db.refresh(new_zone)
+    return new_zone
+
+
+@router.put("/zones/{zone_id}", response_model=ZoneResponse)
+def rename_zone(
+    zone_id: int,
+    payload: ZoneUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.zones", "edit")),
+) -> KarTrackerZone:
+    """Rename an existing zone."""
+    zone = db.get(KarTrackerZone, zone_id)
+    if zone is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+
+    zone.name = payload.name
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A zone with this name already exists") from error
+
+    db.refresh(zone)
+    return zone
+
+
+@router.delete("/zones/{zone_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_zone(
+    zone_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.zones", "delete")),
+) -> None:
+    """Delete a zone, as long as no delivery location is still using it."""
+    zone = db.get(KarTrackerZone, zone_id)
+    if zone is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+
+    still_in_use = db.scalar(select(KarTrackerAfleverlocatie).where(KarTrackerAfleverlocatie.zone_id == zone_id))
+    if still_in_use is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="This zone is still used by at least one delivery location"
+        )
+
+    db.delete(zone)
+    db.commit()
+
+
+@router.get("/zone-import/template")
+def download_zone_import_template(
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-registering new zones."""
+    return Response(
+        content=build_zone_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="zone-import-template.xlsx"'},
+    )
+
+
+@router.post("/zone-import", response_model=ZoneImportResponse)
+def import_zones(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "create")),
+) -> ZoneImportResponse:
+    """Bulk-register new zones from an uploaded XLSX workbook. A row naming
+    a zone that already exists is reported as an error, not upserted.
+    """
+    results = import_zones_from_xlsx(db, file.file.read())
+    return ZoneImportResponse(results=results)
+
+
+@router.get("/zones/export")
+def export_zones(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """Every zone as an XLSX workbook."""
+    return Response(
+        content=export_zones_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="zones-export.xlsx"'},
+    )
+
+
+def _validate_afleverlocatie_lookup_ids(db: Session, zone_id: int, distributiepunt_id: int, altsien_kernlid_id: int | None) -> None:
+    """Turn a bad zone_id/distributiepunt_id/altsien_kernlid_id into a
+    friendly 404 instead of letting the database reject it with a raw
+    foreign-key error. altsien_kernlid_id is optional, so it's only
+    checked when one was actually given.
+    """
+    if db.get(KarTrackerZone, zone_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Zone not found")
+    if db.get(KarTrackerDistributiepunt, distributiepunt_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Distribution point not found")
+    _validate_altsien_kernlid_id(db, altsien_kernlid_id)
+
+
+@router.get("/afleverlocaties", response_model=list[AfleverlocatieResponse])
+def list_afleverlocaties(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.afleverlocaties", "view")),
+) -> list[KarTrackerAfleverlocatie]:
+    """List every delivery location."""
+    return list(db.scalars(select(KarTrackerAfleverlocatie).order_by(KarTrackerAfleverlocatie.name)).all())
+
+
+@router.post("/afleverlocaties", response_model=AfleverlocatieResponse, status_code=status.HTTP_201_CREATED)
+def create_afleverlocatie(
+    payload: AfleverlocatieCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.afleverlocaties", "create")),
+) -> KarTrackerAfleverlocatie:
+    """Register a brand-new delivery location."""
+    _validate_afleverlocatie_lookup_ids(db, payload.zone_id, payload.distributiepunt_id, payload.altsien_kernlid_id)
+
+    new_afleverlocatie = KarTrackerAfleverlocatie(**payload.model_dump())
+    db.add(new_afleverlocatie)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A delivery location with this name already exists"
+        ) from error
+
+    db.refresh(new_afleverlocatie)
+    return new_afleverlocatie
+
+
+@router.put("/afleverlocaties/{afleverlocatie_id}", response_model=AfleverlocatieResponse)
+def update_afleverlocatie(
+    afleverlocatie_id: int,
+    payload: AfleverlocatieUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.afleverlocaties", "edit")),
+) -> KarTrackerAfleverlocatie:
+    """Update an existing delivery location's details."""
+    afleverlocatie = db.get(KarTrackerAfleverlocatie, afleverlocatie_id)
+    if afleverlocatie is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery location not found")
+
+    _validate_afleverlocatie_lookup_ids(db, payload.zone_id, payload.distributiepunt_id, payload.altsien_kernlid_id)
+
+    for field, value in payload.model_dump().items():
+        setattr(afleverlocatie, field, value)
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A delivery location with this name already exists"
+        ) from error
+
+    db.refresh(afleverlocatie)
+    return afleverlocatie
+
+
+@router.delete("/afleverlocaties/{afleverlocatie_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_afleverlocatie(
+    afleverlocatie_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.afleverlocaties", "delete")),
+) -> None:
+    """Remove a delivery location from the master data."""
+    afleverlocatie = db.get(KarTrackerAfleverlocatie, afleverlocatie_id)
+    if afleverlocatie is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery location not found")
+
+    db.delete(afleverlocatie)
+    db.commit()
+
+
+@router.get("/afleverlocatie-import/template")
+def download_afleverlocatie_import_template(
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-registering new delivery locations."""
+    return Response(
+        content=build_afleverlocatie_template_xlsx(),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="afleverlocatie-import-template.xlsx"'},
+    )
+
+
+@router.post("/afleverlocatie-import", response_model=AfleverlocatieImportResponse)
+def import_afleverlocaties(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "create")),
+) -> AfleverlocatieImportResponse:
+    """Bulk-register new delivery locations from an uploaded XLSX workbook.
+    A row whose name already exists is reported as an error, not upserted.
+    """
+    results = import_afleverlocaties_from_xlsx(db, file.file.read())
+    return AfleverlocatieImportResponse(results=results)
+
+
+@router.get("/afleverlocaties/export")
+def export_afleverlocaties(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.dataupload", "view")),
+) -> Response:
+    """The full Afleverlocatie dataset as an XLSX workbook."""
+    return Response(
+        content=export_afleverlocaties_to_xlsx(db),
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": 'attachment; filename="afleverlocaties-export.xlsx"'},
     )

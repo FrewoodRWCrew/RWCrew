@@ -305,6 +305,23 @@ export interface Scanner {
   info1: string | null;
   info2: string | null;
   info3: string | null;
+  /** Whether an API key currently exists for this scanner's CSV device-intake uploads. */
+  has_api_key: boolean;
+  api_key_last_used_at: string | null;
+}
+
+/** The brand-new plaintext API key for a scanner, returned exactly once
+ * at generation time — see POST /api/modules/module-1/scanners/{id}/api-key. */
+export interface ScannerApiKey {
+  api_key: string;
+}
+
+/** TagScan's module-wide settings, as shown on the Settings screen. */
+export interface TagscanSettings {
+  receive_folder_path: string;
+  /** Whether receive_folder_path is a DB-saved override, or just the
+   * backend's .env-configured default shown because nothing's been saved yet. */
+  is_override: boolean;
 }
 
 /** The fields sent to create or fully update a scanner device. Unlike
@@ -781,6 +798,107 @@ export interface KarStatusImportResponse {
   results: KarStatusImportRowResult[];
 }
 
+/** One distribution point, as shown on the Distributiepunten screen. */
+export interface KarTrackerDistributiepunt {
+  id: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/** What's sent to create or update a distribution point. */
+export interface KarTrackerDistributiepuntInput {
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/**
+ * What happened to one row of an uploaded bulk distributiepunt-import
+ * workbook. A name that already exists is rejected as an error instead of
+ * being upserted — same rule as the Karren import.
+ */
+export interface DistributiepuntImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk distributiepunt import — one result per row, in order. */
+export interface DistributiepuntImportResponse {
+  results: DistributiepuntImportRowResult[];
+}
+
+/** One delivery zone, as managed on the Zone screen. */
+export interface KarTrackerZone {
+  id: number;
+  name: string;
+}
+
+/**
+ * What happened to one row of an uploaded bulk zone-import workbook. A
+ * name that already exists is rejected as an error instead of being
+ * upserted.
+ */
+export interface ZoneImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk zone import — one result per row, in order. */
+export interface ZoneImportResponse {
+  results: ZoneImportRowResult[];
+}
+
+/** One delivery location, as shown on the Afleverlocatie screen. */
+export interface KarTrackerAfleverlocatie {
+  id: number;
+  name: string;
+  description: string | null;
+  zone_id: number;
+  distributiepunt_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/** What's sent to create or update a delivery location. */
+export interface KarTrackerAfleverlocatieInput {
+  name: string;
+  description: string | null;
+  zone_id: number;
+  distributiepunt_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/**
+ * What happened to one row of an uploaded bulk afleverlocatie-import
+ * workbook. A name that already exists is rejected as an error instead of
+ * being upserted — same rule as the Karren import.
+ */
+export interface AfleverlocatieImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk afleverlocatie import — one result per row, in order. */
+export interface AfleverlocatieImportResponse {
+  results: AfleverlocatieImportRowResult[];
+}
+
 // --- MasterData Data Upload/Download: one row-result pair per table, all
 // without an "updated" outcome — a row naming something that already
 // exists is rejected as an error instead of being upserted (except
@@ -918,4 +1036,26 @@ export interface AltsienKernlidImportRowResult {
 
 export interface AltsienKernlidImportResponse {
   results: AltsienKernlidImportRowResult[];
+}
+
+// --- Login History (Toegangsbeheer) ----------------------------------
+
+/** One login attempt (successful or not), as shown on the admin "Login
+ * History" screen. */
+export interface LoginHistoryEntry {
+  id: number;
+  user_id: number | null;
+  email_attempted: string;
+  /** Null when user_id is null (unknown email, or the matched user has
+   * since been deleted). */
+  display_name: string | null;
+  success: boolean;
+  ip_address: string | null;
+  created_at: string;
+}
+
+/** One page of login history, plus the total row count for pagination. */
+export interface LoginHistoryPage {
+  items: LoginHistoryEntry[];
+  total: number;
 }

@@ -6,17 +6,21 @@
 # require_super_admin in deps.py) — a normal user gets a 403 Forbidden
 # error if they try to call any of these.
 
+from datetime import datetime
+
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.login_history import LoginHistory
 from app.db.models.module import Module
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.landing.deps import require_super_admin
+from app.schemas.login_history import LoginHistoryEntry, LoginHistoryPage
 from app.schemas.module import SetUserAccessRequest
 from app.schemas.user import UserCreateRequest, UserSummaryResponse
 from app.shared.access import get_accessible_module_keys
@@ -138,3 +142,52 @@ def set_user_module_access(
 
     db.commit()
     return _build_user_summary(db, user)
+
+
+@router.get("/login-history", response_model=LoginHistoryPage)
+def list_login_history(
+    page: int = 1,
+    page_size: int = 50,
+    date_from: datetime | None = None,
+    date_to: datetime | None = None,
+    db: Session = Depends(get_db),
+    _super_admin: User = Depends(require_super_admin),
+) -> LoginHistoryPage:
+    """List login attempts (successful and failed), newest first, for the
+    "Login History" table — so a super admin can see who is using the
+    tool and when.
+    """
+    page = max(page, 1)
+    page_size = max(min(page_size, 200), 1)
+
+    query = select(LoginHistory)
+    if date_from is not None:
+        query = query.where(LoginHistory.created_at >= date_from)
+    if date_to is not None:
+        query = query.where(LoginHistory.created_at <= date_to)
+
+    total = db.scalar(select(func.count()).select_from(query.subquery())) or 0
+    rows = db.scalars(
+        query.order_by(LoginHistory.created_at.desc()).offset((page - 1) * page_size).limit(page_size)
+    ).all()
+
+    # Look up display names for every row that still points at a real
+    # user, in one batched query rather than one query per row.
+    user_ids = {row.user_id for row in rows if row.user_id is not None}
+    users_by_id = {user.id: user for user in db.scalars(select(User).where(User.id.in_(user_ids)))} if user_ids else {}
+
+    return LoginHistoryPage(
+        items=[
+            LoginHistoryEntry(
+                id=row.id,
+                user_id=row.user_id,
+                email_attempted=row.email_attempted,
+                display_name=users_by_id[row.user_id].display_name if row.user_id in users_by_id else None,
+                success=row.success,
+                ip_address=row.ip_address,
+                created_at=row.created_at,
+            )
+            for row in rows
+        ],
+        total=total,
+    )

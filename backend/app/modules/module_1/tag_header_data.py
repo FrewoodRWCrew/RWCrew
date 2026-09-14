@@ -29,12 +29,12 @@ UNREADED_SUBFOLDER = "Unreaded Tags"
 READED_SUBFOLDER = "Read Tags"
 
 
-def _unreaded_dir() -> Path:
-    return get_source_root() / UNREADED_SUBFOLDER
+def _unreaded_dir(db: Session) -> Path:
+    return get_source_root(db) / UNREADED_SUBFOLDER
 
 
-def _readed_dir() -> Path:
-    return get_source_root() / READED_SUBFOLDER
+def _readed_dir(db: Session) -> Path:
+    return get_source_root(db) / READED_SUBFOLDER
 
 
 def list_header_data(db: Session) -> list[TagHeaderData]:
@@ -99,8 +99,8 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
     never aborts the rest of the scan — every failure is caught and
     reported per-file instead.
     """
-    unreaded_dir = _unreaded_dir()
-    readed_dir = _readed_dir()
+    unreaded_dir = _unreaded_dir(db)
+    readed_dir = _readed_dir(db)
 
     results: list[TagHeaderDataScanFileResult] = []
 
