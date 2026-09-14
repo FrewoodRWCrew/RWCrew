@@ -200,3 +200,138 @@ class KarStatusImportResponse(BaseModel):
     """The full outcome of a bulk kar-status import — one result per row, in order."""
 
     results: list[KarStatusImportRowResult]
+
+
+class DistributiepuntResponse(BaseModel):
+    """One distribution point, as shown on the Distributiepunten screen."""
+
+    id: int
+    name: str
+    latitude: float | None
+    longitude: float | None
+    terrein_positie: str | None
+    altsien_kernlid_id: int | None
+
+
+class DistributiepuntCreateRequest(BaseModel):
+    """What's sent to create a brand-new distribution point.
+    altsien_kernlid_id, if given, must reference an existing row (checked
+    by the endpoint, not here).
+    """
+
+    name: str = Field(min_length=1, max_length=255)
+    latitude: float | None = None
+    longitude: float | None = None
+    terrein_positie: str | None = Field(default=None, max_length=255)
+    altsien_kernlid_id: int | None = None
+
+
+class DistributiepuntUpdateRequest(DistributiepuntCreateRequest):
+    """What's sent to update an existing distribution point — same shape as creating one."""
+
+
+class DistributiepuntImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk distributiepunt import.
+    A name that already exists is rejected as an error instead of being
+    upserted — same rule as the Karren import.
+    """
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class DistributiepuntImportResponse(BaseModel):
+    """The full outcome of a bulk distributiepunt import — one result per row, in order."""
+
+    results: list[DistributiepuntImportRowResult]
+
+
+class ZoneResponse(BaseModel):
+    """One delivery zone, as shown on the Zone screen."""
+
+    id: int
+    name: str
+
+
+class ZoneCreateRequest(BaseModel):
+    """What's sent to create a brand-new zone."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ZoneUpdateRequest(BaseModel):
+    """What's sent to rename an existing zone — same shape as creating one."""
+
+    name: str = Field(min_length=1, max_length=255)
+
+
+class ZoneImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk zone import. A name
+    that already exists is rejected as an error instead of being upserted.
+    """
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class ZoneImportResponse(BaseModel):
+    """The full outcome of a bulk zone import — one result per row, in order."""
+
+    results: list[ZoneImportRowResult]
+
+
+class AfleverlocatieResponse(BaseModel):
+    """One delivery location, as shown on the Afleverlocatie screen."""
+
+    id: int
+    name: str
+    description: str | None
+    zone_id: int
+    distributiepunt_id: int
+    latitude: float | None
+    longitude: float | None
+    terrein_positie: str | None
+    altsien_kernlid_id: int | None
+
+
+class AfleverlocatieCreateRequest(BaseModel):
+    """What's sent to create a brand-new delivery location. zone_id/
+    distributiepunt_id must reference an existing row in their respective
+    tables (checked by the endpoint, not here); altsien_kernlid_id, if
+    given, must too.
+    """
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    zone_id: int
+    distributiepunt_id: int
+    latitude: float | None = None
+    longitude: float | None = None
+    terrein_positie: str | None = Field(default=None, max_length=255)
+    altsien_kernlid_id: int | None = None
+
+
+class AfleverlocatieUpdateRequest(AfleverlocatieCreateRequest):
+    """What's sent to update an existing delivery location — same shape as creating one."""
+
+
+class AfleverlocatieImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk afleverlocatie import.
+    A name that already exists is rejected as an error instead of being
+    upserted — same rule as the Karren import.
+    """
+
+    row_number: int
+    name: str | None
+    outcome: Literal["created", "error"]
+    detail: str | None
+
+
+class AfleverlocatieImportResponse(BaseModel):
+    """The full outcome of a bulk afleverlocatie import — one result per row, in order."""
+
+    results: list[AfleverlocatieImportRowResult]

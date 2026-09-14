@@ -17,11 +17,11 @@
 // no "updated" outcome here.
 
 import { useState } from "react";
-import { FileSpreadsheet, ListChecks, type LucideIcon } from "lucide-react";
+import { FileSpreadsheet, ListChecks, MapPin, Route, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
-import { ApiError, importKarStatuses, importKarren } from "@/lib/api";
+import { ApiError, importAfleverlocaties, importDistributiepunten, importKarStatuses, importKarren, importZones } from "@/lib/api";
 import { getModuleTheme } from "@/lib/module-theme";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -74,9 +74,12 @@ export function KarDataUploadDownload({ canUpload }: KarDataUploadDownloadProps)
         <p className="text-muted-foreground">{t("description")}</p>
       </div>
 
-      <div className="grid max-w-2xl grid-cols-3 gap-4">
+      <div className="grid max-w-3xl grid-cols-3 gap-4">
         <KarDataTile canUpload={canUpload} />
         <KarStatusDataTile canUpload={canUpload} />
+        <DistributiepuntDataTile canUpload={canUpload} />
+        <ZoneDataTile canUpload={canUpload} />
+        <AfleverlocatieDataTile canUpload={canUpload} />
       </div>
     </div>
   );
@@ -145,6 +148,111 @@ function KarStatusDataTile({ canUpload }: { canUpload: boolean }) {
       exportButton={tStatuses("exportButton")}
       onUpload={async (file) => {
         const response = await importKarStatuses(file);
+        return response.results.map((row) => ({ ...row, key: row.name }));
+      }}
+    />
+  );
+}
+
+function DistributiepuntDataTile({ canUpload }: { canUpload: boolean }) {
+  const t = useTranslations("karTracker.dataUploadDownload");
+  const tDistributiepunten = useTranslations("karTracker.dataUploadDownload.distributiepunten");
+
+  return (
+    <DataTopicTile
+      icon={MapPin}
+      tileTitle={tDistributiepunten("tileTitle")}
+      dialogTitle={tDistributiepunten("tileTitle")}
+      dialogDescription={tDistributiepunten("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/distributiepunt-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/distributiepunten/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tDistributiepunten("importColumnName")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => tDistributiepunten(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tDistributiepunten("exportButton")}
+      onUpload={async (file) => {
+        const response = await importDistributiepunten(file);
+        return response.results.map((row) => ({ ...row, key: row.name }));
+      }}
+    />
+  );
+}
+
+function ZoneDataTile({ canUpload }: { canUpload: boolean }) {
+  const t = useTranslations("karTracker.dataUploadDownload");
+  const tZones = useTranslations("karTracker.dataUploadDownload.zones");
+
+  return (
+    <DataTopicTile
+      icon={Route}
+      tileTitle={tZones("tileTitle")}
+      dialogTitle={tZones("tileTitle")}
+      dialogDescription={tZones("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/zone-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/zones/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tZones("importColumnName")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => tZones(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tZones("exportButton")}
+      onUpload={async (file) => {
+        const response = await importZones(file);
+        return response.results.map((row) => ({ ...row, key: row.name }));
+      }}
+    />
+  );
+}
+
+function AfleverlocatieDataTile({ canUpload }: { canUpload: boolean }) {
+  const t = useTranslations("karTracker.dataUploadDownload");
+  const tAfleverlocaties = useTranslations("karTracker.dataUploadDownload.afleverlocaties");
+
+  return (
+    <DataTopicTile
+      icon={FileSpreadsheet}
+      tileTitle={tAfleverlocaties("tileTitle")}
+      dialogTitle={tAfleverlocaties("tileTitle")}
+      dialogDescription={tAfleverlocaties("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/afleverlocaties/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tAfleverlocaties("importColumnName")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => tAfleverlocaties(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tAfleverlocaties("exportButton")}
+      onUpload={async (file) => {
+        const response = await importAfleverlocaties(file);
         return response.results.map((row) => ({ ...row, key: row.name }));
       }}
     />

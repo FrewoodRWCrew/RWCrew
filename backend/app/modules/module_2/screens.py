@@ -28,19 +28,25 @@ class ScreenDefinition:
 
 
 # KarTracker's screens: the two access-rights screens, plus the cart
-# registry ("Karlijst") phase — KarManagement (the fleet itself) and
-# KarStatussen (the lookup of statuses a kar can have). "Data Upload/
-# Download" is its own screen (own permission row) rather than folded into
-# KarManagement's permissions, since bulk import/export access is meant to
-# be grantable independently of ordinary KarManagement CRUD access. Delivery
-# planning screens are designed and added here in a later phase.
+# registry ("Karlijst") phase — KarManagement (the fleet itself),
+# Distributiepunten, Zone, Afleverlocatie (three master-data screens
+# added alongside KarManagement — Afleverlocatie references both Zone and
+# Distributiepunt, so those two must exist first) and KarStatussen (the
+# lookup of statuses a kar can have). "Data Upload/Download" is its own
+# screen (own permission row) rather than folded into each entity's own
+# permissions, since bulk import/export access is meant to be grantable
+# independently of ordinary CRUD access. Delivery planning screens are
+# designed and added here in a later phase.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="kartracker.roles", label="Roles", sort_order=1),
     ScreenDefinition(key="kartracker.users", label="Users", sort_order=2),
     ScreenDefinition(key="kartracker.karmanagement", label="KarManagement", sort_order=3),
     ScreenDefinition(key="kartracker.karstatuses", label="KarStatussen", sort_order=4),
-    ScreenDefinition(key="kartracker.actions", label="Actions", sort_order=5),
-    ScreenDefinition(key="kartracker.dataupload", label="Data Upload/Download", sort_order=6),
+    ScreenDefinition(key="kartracker.distributiepunten", label="Distributiepunten", sort_order=5),
+    ScreenDefinition(key="kartracker.zones", label="Zone", sort_order=6),
+    ScreenDefinition(key="kartracker.afleverlocaties", label="Afleverlocatie", sort_order=7),
+    ScreenDefinition(key="kartracker.actions", label="Actions", sort_order=8),
+    ScreenDefinition(key="kartracker.dataupload", label="Data Upload/Download", sort_order=9),
 ]
 
 

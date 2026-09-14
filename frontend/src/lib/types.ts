@@ -798,6 +798,107 @@ export interface KarStatusImportResponse {
   results: KarStatusImportRowResult[];
 }
 
+/** One distribution point, as shown on the Distributiepunten screen. */
+export interface KarTrackerDistributiepunt {
+  id: number;
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/** What's sent to create or update a distribution point. */
+export interface KarTrackerDistributiepuntInput {
+  name: string;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/**
+ * What happened to one row of an uploaded bulk distributiepunt-import
+ * workbook. A name that already exists is rejected as an error instead of
+ * being upserted — same rule as the Karren import.
+ */
+export interface DistributiepuntImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk distributiepunt import — one result per row, in order. */
+export interface DistributiepuntImportResponse {
+  results: DistributiepuntImportRowResult[];
+}
+
+/** One delivery zone, as managed on the Zone screen. */
+export interface KarTrackerZone {
+  id: number;
+  name: string;
+}
+
+/**
+ * What happened to one row of an uploaded bulk zone-import workbook. A
+ * name that already exists is rejected as an error instead of being
+ * upserted.
+ */
+export interface ZoneImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk zone import — one result per row, in order. */
+export interface ZoneImportResponse {
+  results: ZoneImportRowResult[];
+}
+
+/** One delivery location, as shown on the Afleverlocatie screen. */
+export interface KarTrackerAfleverlocatie {
+  id: number;
+  name: string;
+  description: string | null;
+  zone_id: number;
+  distributiepunt_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/** What's sent to create or update a delivery location. */
+export interface KarTrackerAfleverlocatieInput {
+  name: string;
+  description: string | null;
+  zone_id: number;
+  distributiepunt_id: number;
+  latitude: number | null;
+  longitude: number | null;
+  terrein_positie: string | null;
+  altsien_kernlid_id: number | null;
+}
+
+/**
+ * What happened to one row of an uploaded bulk afleverlocatie-import
+ * workbook. A name that already exists is rejected as an error instead of
+ * being upserted — same rule as the Karren import.
+ */
+export interface AfleverlocatieImportRowResult {
+  row_number: number;
+  name: string | null;
+  outcome: "created" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a bulk afleverlocatie import — one result per row, in order. */
+export interface AfleverlocatieImportResponse {
+  results: AfleverlocatieImportRowResult[];
+}
+
 // --- MasterData Data Upload/Download: one row-result pair per table, all
 // without an "updated" outcome — a row naming something that already
 // exists is rejected as an error instead of being upserted (except

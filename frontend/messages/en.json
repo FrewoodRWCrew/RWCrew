@@ -1222,6 +1222,96 @@
       "karDeleted": "Kar deleted.",
       "deleteFailed": "Failed to delete the kar."
     },
+    "distributiepunten": {
+      "title": "Distributiepunten",
+      "description": "The distribution points managed by the organization.",
+      "columnName": "Name",
+      "columnLatitude": "Latitude",
+      "columnLongitude": "Longitude",
+      "columnTerreinPositie": "Terrain position",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Actions",
+      "newDistributiepunt": "New distribution point",
+      "nameLabel": "Name",
+      "latitudeLabel": "Latitude",
+      "longitudeLabel": "Longitude",
+      "terreinPositieLabel": "Terrain position",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— No Altsien Kernlid —",
+      "createTitle": "Register a new distribution point",
+      "createDescription": "Add a new distribution point.",
+      "distributiepuntCreated": "Distribution point created.",
+      "createFailed": "Failed to create the distribution point.",
+      "change": "Change",
+      "changeTitle": "Change distribution point",
+      "changeDescription": "Update this distribution point's details.",
+      "distributiepuntUpdated": "Distribution point updated.",
+      "updateFailed": "Failed to update the distribution point.",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete distribution point?",
+      "deleteConfirmDescription": "This will permanently remove distribution point \"{name}\". This cannot be undone.",
+      "distributiepuntDeleted": "Distribution point deleted.",
+      "deleteFailed": "Failed to delete the distribution point."
+    },
+    "zones": {
+      "title": "Zone",
+      "description": "Maintain the delivery zones — used on the Afleverlocatie screen.",
+      "tableName": "Name",
+      "tableActions": "Actions",
+      "newZone": "New zone",
+      "nameLabel": "Zone name",
+      "createTitle": "Create a new zone",
+      "createDescription": "Add a new zone.",
+      "zoneCreated": "Zone created.",
+      "createFailed": "Failed to create the zone.",
+      "change": "Change",
+      "changeTitle": "Change zone name",
+      "changeDescription": "Rename this zone.",
+      "zoneUpdated": "Zone updated.",
+      "updateFailed": "Failed to update the zone.",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete zone?",
+      "deleteConfirmDescription": "This will permanently remove zone \"{name}\". This cannot be undone, and only works if no delivery location currently uses it.",
+      "zoneDeleted": "Zone deleted.",
+      "deleteFailed": "Failed to delete the zone."
+    },
+    "afleverlocaties": {
+      "title": "Afleverlocatie",
+      "description": "The delivery locations managed by the organization.",
+      "columnName": "Name",
+      "columnDescription": "Description",
+      "columnZone": "Zone",
+      "columnDistributiepunt": "Distribution point",
+      "columnLatitude": "Latitude",
+      "columnLongitude": "Longitude",
+      "columnTerreinPositie": "Terrain position",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Actions",
+      "newAfleverlocatie": "New delivery location",
+      "nameLabel": "Name",
+      "descriptionLabel": "Description",
+      "zoneLabel": "Zone",
+      "distributiepuntLabel": "Distribution point",
+      "latitudeLabel": "Latitude",
+      "longitudeLabel": "Longitude",
+      "terreinPositieLabel": "Terrain position",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— No Altsien Kernlid —",
+      "createTitle": "Register a new delivery location",
+      "createDescription": "Add a new delivery location.",
+      "afleverlocatieCreated": "Delivery location created.",
+      "createFailed": "Failed to create the delivery location.",
+      "change": "Change",
+      "changeTitle": "Change delivery location",
+      "changeDescription": "Update this delivery location's details.",
+      "afleverlocatieUpdated": "Delivery location updated.",
+      "updateFailed": "Failed to update the delivery location.",
+      "delete": "Delete",
+      "deleteConfirmTitle": "Delete delivery location?",
+      "deleteConfirmDescription": "This will permanently remove delivery location \"{name}\". This cannot be undone.",
+      "afleverlocatieDeleted": "Delivery location deleted.",
+      "deleteFailed": "Failed to delete the delivery location."
+    },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
       "description": "Bulk import and export tools for KarTracker's master data, one tile per topic.",
@@ -1253,6 +1343,36 @@
           "error": "Error"
         },
         "exportButton": "Download kar statuses"
+      },
+      "distributiepunten": {
+        "tileTitle": "Distributiepunten",
+        "dialogDescription": "Download a template to prepare new distribution points, upload it to register them in bulk, or export the full list.",
+        "importColumnName": "Name",
+        "importOutcome": {
+          "created": "Created",
+          "error": "Error"
+        },
+        "exportButton": "Download distribution points"
+      },
+      "zones": {
+        "tileTitle": "Zone",
+        "dialogDescription": "Download a template to prepare new zones, upload it to register them in bulk, or export the full list.",
+        "importColumnName": "Name",
+        "importOutcome": {
+          "created": "Created",
+          "error": "Error"
+        },
+        "exportButton": "Download zones"
+      },
+      "afleverlocaties": {
+        "tileTitle": "Afleverlocatie",
+        "dialogDescription": "Download a template to prepare new delivery locations, upload it to register them in bulk, or export the full list.",
+        "importColumnName": "Name",
+        "importOutcome": {
+          "created": "Created",
+          "error": "Error"
+        },
+        "exportButton": "Download delivery locations"
       }
     }
   },

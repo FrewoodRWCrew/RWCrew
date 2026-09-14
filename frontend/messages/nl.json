@@ -1222,6 +1222,96 @@
       "karDeleted": "Kar verwijderd.",
       "deleteFailed": "Verwijderen van kar is mislukt."
     },
+    "distributiepunten": {
+      "title": "Distributiepunten",
+      "description": "De distributiepunten die door de organisatie worden beheerd.",
+      "columnName": "Naam",
+      "columnLatitude": "Breedtegraad",
+      "columnLongitude": "Lengtegraad",
+      "columnTerreinPositie": "TerreinPositie",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Acties",
+      "newDistributiepunt": "Nieuw distributiepunt",
+      "nameLabel": "Naam",
+      "latitudeLabel": "Breedtegraad",
+      "longitudeLabel": "Lengtegraad",
+      "terreinPositieLabel": "TerreinPositie",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— Geen Altsien Kernlid —",
+      "createTitle": "Nieuw distributiepunt aanmaken",
+      "createDescription": "Voeg een nieuw distributiepunt toe.",
+      "distributiepuntCreated": "Distributiepunt aangemaakt.",
+      "createFailed": "Aanmaken van distributiepunt is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Distributiepunt wijzigen",
+      "changeDescription": "Werk de gegevens van dit distributiepunt bij.",
+      "distributiepuntUpdated": "Distributiepunt bijgewerkt.",
+      "updateFailed": "Bijwerken van distributiepunt is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Distributiepunt verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert distributiepunt \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+      "distributiepuntDeleted": "Distributiepunt verwijderd.",
+      "deleteFailed": "Verwijderen van distributiepunt is mislukt."
+    },
+    "zones": {
+      "title": "Zone",
+      "description": "Beheer de leveringszones — gebruikt op het Afleverlocatie-scherm.",
+      "tableName": "Naam",
+      "tableActions": "Acties",
+      "newZone": "Nieuwe zone",
+      "nameLabel": "Naam van de zone",
+      "createTitle": "Nieuwe zone aanmaken",
+      "createDescription": "Voeg een nieuwe zone toe.",
+      "zoneCreated": "Zone aangemaakt.",
+      "createFailed": "Aanmaken van zone is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Naam van zone wijzigen",
+      "changeDescription": "Hernoem deze zone.",
+      "zoneUpdated": "Zone bijgewerkt.",
+      "updateFailed": "Bijwerken van zone is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Zone verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert zone \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt, en werkt enkel als geen enkele afleverlocatie deze zone nog gebruikt.",
+      "zoneDeleted": "Zone verwijderd.",
+      "deleteFailed": "Verwijderen van zone is mislukt."
+    },
+    "afleverlocaties": {
+      "title": "Afleverlocatie",
+      "description": "De afleverlocaties die door de organisatie worden beheerd.",
+      "columnName": "Naam",
+      "columnDescription": "Omschrijving",
+      "columnZone": "Zone",
+      "columnDistributiepunt": "Distributiepunt",
+      "columnLatitude": "Breedtegraad",
+      "columnLongitude": "Lengtegraad",
+      "columnTerreinPositie": "TerreinPositie",
+      "columnAltsienKernlid": "Altsien Kernlid",
+      "tableActions": "Acties",
+      "newAfleverlocatie": "Nieuwe afleverlocatie",
+      "nameLabel": "Naam",
+      "descriptionLabel": "Omschrijving",
+      "zoneLabel": "Zone",
+      "distributiepuntLabel": "Distributiepunt",
+      "latitudeLabel": "Breedtegraad",
+      "longitudeLabel": "Lengtegraad",
+      "terreinPositieLabel": "TerreinPositie",
+      "altsienKernlidLabel": "Altsien Kernlid",
+      "noKernlid": "— Geen Altsien Kernlid —",
+      "createTitle": "Nieuwe afleverlocatie aanmaken",
+      "createDescription": "Voeg een nieuwe afleverlocatie toe.",
+      "afleverlocatieCreated": "Afleverlocatie aangemaakt.",
+      "createFailed": "Aanmaken van afleverlocatie is mislukt.",
+      "change": "Wijzigen",
+      "changeTitle": "Afleverlocatie wijzigen",
+      "changeDescription": "Werk de gegevens van deze afleverlocatie bij.",
+      "afleverlocatieUpdated": "Afleverlocatie bijgewerkt.",
+      "updateFailed": "Bijwerken van afleverlocatie is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Afleverlocatie verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert afleverlocatie \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+      "afleverlocatieDeleted": "Afleverlocatie verwijderd.",
+      "deleteFailed": "Verwijderen van afleverlocatie is mislukt."
+    },
     "dataUploadDownload": {
       "title": "Gegevens uploaden/downloaden",
       "description": "Hulpmiddelen om KarTracker's stamgegevens in bulk te importeren en exporteren, één tegel per onderwerp.",
@@ -1253,6 +1343,36 @@
           "error": "Fout"
         },
         "exportButton": "Karstatussen downloaden"
+      },
+      "distributiepunten": {
+        "tileTitle": "Distributiepunten",
+        "dialogDescription": "Download een sjabloon om nieuwe distributiepunten voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Distributiepunten downloaden"
+      },
+      "zones": {
+        "tileTitle": "Zone",
+        "dialogDescription": "Download een sjabloon om nieuwe zones voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Zones downloaden"
+      },
+      "afleverlocaties": {
+        "tileTitle": "Afleverlocatie",
+        "dialogDescription": "Download een sjabloon om nieuwe afleverlocaties voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "importColumnName": "Naam",
+        "importOutcome": {
+          "created": "Aangemaakt",
+          "error": "Fout"
+        },
+        "exportButton": "Afleverlocaties downloaden"
       }
     }
   },

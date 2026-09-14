@@ -10,11 +10,13 @@ import type {
   ModuleRoleAssignment,
   ModuleRoleName,
   ModuleStatus,
+  AfleverlocatieImportResponse,
   AltsienKernlid,
   AltsienKernlidImportResponse,
   AltsienKernlidInput,
   DeliveryMethod,
   DeliveryMethodImportResponse,
+  DistributiepuntImportResponse,
   Festival,
   FestivalImportResponse,
   FestivalInput,
@@ -30,6 +32,10 @@ import type {
   InterventionStatusInput,
   KarImportResponse,
   KarStatusImportResponse,
+  KarTrackerAfleverlocatie,
+  KarTrackerAfleverlocatieInput,
+  KarTrackerDistributiepunt,
+  KarTrackerDistributiepuntInput,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarStatus,
@@ -37,6 +43,7 @@ import type {
   KarTrackerRole,
   KarTrackerScreen,
   KarTrackerUserSummary,
+  KarTrackerZone,
   LoginHistoryPage,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
@@ -86,6 +93,7 @@ import type {
   UserSummary,
   Warehouse,
   WarehouseImportResponse,
+  ZoneImportResponse,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -1286,6 +1294,144 @@ export async function importKarStatuses(file: File): Promise<KarStatusImportResp
   }
 
   return (await response.json()) as KarStatusImportResponse;
+}
+
+// --- Distributiepunten (module-2's "kartracker.distributiepunten" master data) ---
+
+export function listDistributiepunten(): Promise<KarTrackerDistributiepunt[]> {
+  return apiFetch<KarTrackerDistributiepunt[]>("/api/modules/module-2/distributiepunten");
+}
+
+export function createDistributiepunt(payload: KarTrackerDistributiepuntInput): Promise<KarTrackerDistributiepunt> {
+  return apiFetch<KarTrackerDistributiepunt>("/api/modules/module-2/distributiepunten", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateDistributiepunt(
+  distributiepuntId: number,
+  payload: KarTrackerDistributiepuntInput,
+): Promise<KarTrackerDistributiepunt> {
+  return apiFetch<KarTrackerDistributiepunt>(`/api/modules/module-2/distributiepunten/${distributiepuntId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteDistributiepunt(distributiepuntId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/distributiepunten/${distributiepuntId}`, { method: "DELETE" });
+}
+
+/** Uploads an XLSX file to bulk-register new distribution points. Mirrors importKarren above. */
+export async function importDistributiepunten(file: File): Promise<DistributiepuntImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/distributiepunt-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as DistributiepuntImportResponse;
+}
+
+// --- Zone (module-2's "kartracker.zones" lookup screen) ------------------
+
+export function listZones(): Promise<KarTrackerZone[]> {
+  return apiFetch<KarTrackerZone[]>("/api/modules/module-2/zones");
+}
+
+export function createZone(name: string): Promise<KarTrackerZone> {
+  return apiFetch<KarTrackerZone>("/api/modules/module-2/zones", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function updateZone(zoneId: number, name: string): Promise<KarTrackerZone> {
+  return apiFetch<KarTrackerZone>(`/api/modules/module-2/zones/${zoneId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteZone(zoneId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/zones/${zoneId}`, { method: "DELETE" });
+}
+
+/** Uploads an XLSX file to bulk-register new zones. Mirrors importKarren above. */
+export async function importZones(file: File): Promise<ZoneImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/zone-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ZoneImportResponse;
+}
+
+// --- Afleverlocatie (module-2's "kartracker.afleverlocaties" master data) ---
+
+export function listAfleverlocaties(): Promise<KarTrackerAfleverlocatie[]> {
+  return apiFetch<KarTrackerAfleverlocatie[]>("/api/modules/module-2/afleverlocaties");
+}
+
+export function createAfleverlocatie(payload: KarTrackerAfleverlocatieInput): Promise<KarTrackerAfleverlocatie> {
+  return apiFetch<KarTrackerAfleverlocatie>("/api/modules/module-2/afleverlocaties", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAfleverlocatie(
+  afleverlocatieId: number,
+  payload: KarTrackerAfleverlocatieInput,
+): Promise<KarTrackerAfleverlocatie> {
+  return apiFetch<KarTrackerAfleverlocatie>(`/api/modules/module-2/afleverlocaties/${afleverlocatieId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAfleverlocatie(afleverlocatieId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/afleverlocaties/${afleverlocatieId}`, { method: "DELETE" });
+}
+
+/** Uploads an XLSX file to bulk-register new delivery locations. Mirrors importKarren above. */
+export async function importAfleverlocaties(file: File): Promise<AfleverlocatieImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as AfleverlocatieImportResponse;
 }
 
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
