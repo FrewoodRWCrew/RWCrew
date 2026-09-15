@@ -118,18 +118,21 @@ class SeasonResponse(BaseModel):
 
     id: int
     name: str
+    periode_open: bool
 
 
 class SeasonCreateRequest(BaseModel):
     """What's sent to create a brand-new season."""
 
     name: str = Field(min_length=1, max_length=255)
+    periode_open: bool = False
 
 
 class SeasonUpdateRequest(BaseModel):
     """What's sent to rename an existing season."""
 
     name: str = Field(min_length=1, max_length=255)
+    periode_open: bool = False
 
 
 class TeamLocationResponse(BaseModel):

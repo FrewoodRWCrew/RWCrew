@@ -8,7 +8,10 @@
 import { getLocale } from "next-intl/server";
 import { redirect } from "@/i18n/navigation";
 import { getCurrentUserOnServer } from "@/lib/server-auth";
+import { serverApiFetch } from "@/lib/server-api";
+import type { Season } from "@/lib/types";
 import { AdminSidebar } from "@/components/shared/admin-sidebar";
+import { SeasonProvider } from "@/components/shared/season-provider";
 import { Topbar } from "@/components/shared/topbar";
 
 interface ProtectedLayoutProps {
@@ -28,15 +31,27 @@ export default async function ProtectedLayout({ children }: ProtectedLayoutProps
     return null;
   }
 
+  // The header's season selector only lists "open" seasons. Only fetched
+  // for users who actually have module-9 access — everyone else gets an
+  // empty list without a wasted request, and the selector just hides
+  // itself (see SeasonSelector). Also tolerates a user who has module-9
+  // access but not the "masterdata.season" view permission itself.
+  const seasons = user.accessible_module_keys.includes("module-9")
+    ? await serverApiFetch<Season[]>("/api/modules/module-9/seasons").catch(() => [])
+    : [];
+  const openSeasons = seasons.filter((season) => season.periode_open);
+
   return (
-    <div className="flex h-screen overflow-hidden">
-      {/* Only the super admin sees the left-hand admin menu — everyone
-          else just sees the tile grid / module pages full-width. */}
-      {user.is_super_admin && <AdminSidebar />}
-      <div className="flex min-w-0 flex-1 flex-col">
-        <Topbar user={user} />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
+    <SeasonProvider seasons={openSeasons}>
+      <div className="flex h-screen overflow-hidden">
+        {/* Only the super admin sees the left-hand admin menu — everyone
+            else just sees the tile grid / module pages full-width. */}
+        {user.is_super_admin && <AdminSidebar />}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <Topbar user={user} />
+          <main className="flex-1 overflow-y-auto p-6">{children}</main>
+        </div>
       </div>
-    </div>
+    </SeasonProvider>
   );
 }

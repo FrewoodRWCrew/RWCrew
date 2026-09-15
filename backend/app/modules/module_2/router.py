@@ -67,6 +67,11 @@ from app.schemas.kartracker import (
     DistributiepuntUpdateRequest,
     KarCreateRequest,
     KarImportResponse,
+    KarMapAfleverlocatieRow,
+    KarMapDistributiepuntRow,
+    KarMapKarRow,
+    KarMapResponse,
+    KarPlanningResponse,
     KarResponse,
     KarStatusCreateRequest,
     KarStatusImportResponse,
@@ -574,6 +579,137 @@ def delete_kar(
 
     db.delete(kar)
     db.commit()
+
+
+@router.get("/kar-planning", response_model=list[KarPlanningResponse])
+def list_kar_planning(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.karplanning", "view")),
+) -> list[KarPlanningResponse]:
+    """The read-only Kar Planning report: KarManagement joined with its
+    status/team/transport-type lookups. Team is an outer join since a kar
+    can be unassigned; status and transport type are required, so those
+    stay inner joins. More source tables get folded into this same query
+    in a later phase.
+    """
+    rows = db.execute(
+        select(
+            KarTrackerKar.id,
+            KarTrackerKar.kar_nummer,
+            KarTrackerKarStatus.name.label("status_name"),
+            Team.name.label("team_name"),
+            Product.name.label("transport_type_name"),
+            KarTrackerKar.last_latitude,
+            KarTrackerKar.last_longitude,
+        )
+        .join(KarTrackerKarStatus, KarTrackerKarStatus.id == KarTrackerKar.status_id)
+        .outerjoin(Team, Team.id == KarTrackerKar.team_id)
+        .join(Product, Product.id == KarTrackerKar.transport_type_id)
+        .order_by(KarTrackerKar.kar_nummer)
+    ).all()
+    return [
+        KarPlanningResponse(
+            id=row.id,
+            kar_nummer=row.kar_nummer,
+            status_name=row.status_name,
+            team_name=row.team_name,
+            transport_type_name=row.transport_type_name,
+            geolocation=(
+                f"{row.last_latitude}, {row.last_longitude}"
+                if row.last_latitude is not None and row.last_longitude is not None
+                else None
+            ),
+        )
+        for row in rows
+    ]
+
+
+@router.get("/kar-map", response_model=KarMapResponse)
+def list_kar_map(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.karmap", "view")),
+) -> KarMapResponse:
+    """The Kar Map screen's data: every Kar/Afleverlocatie/Distributiepunt
+    row, denormalized with the lookup names needed for each pin's popup.
+    Gated by its own permission, independent of the underlying masterdata
+    screens' own view permissions (same pattern as Kar Planning), so a role
+    can be granted "see the map" without also getting CRUD rights on
+    KarManagement/Afleverlocaties/Distributiepunten. Rows with no
+    latitude/longitude are included too — the frontend excludes them from
+    the map itself but still lists them in the side panel.
+    """
+    kar_rows = db.execute(
+        select(
+            KarTrackerKar.id,
+            KarTrackerKar.kar_nummer,
+            KarTrackerKarStatus.name.label("status_name"),
+            Team.name.label("team_name"),
+            KarTrackerKar.last_latitude,
+            KarTrackerKar.last_longitude,
+        )
+        .join(KarTrackerKarStatus, KarTrackerKarStatus.id == KarTrackerKar.status_id)
+        .outerjoin(Team, Team.id == KarTrackerKar.team_id)
+        .order_by(KarTrackerKar.kar_nummer)
+    ).all()
+
+    afleverlocatie_rows = db.execute(
+        select(
+            KarTrackerAfleverlocatie.id,
+            KarTrackerAfleverlocatie.name,
+            KarTrackerZone.name.label("zone_name"),
+            KarTrackerDistributiepunt.name.label("distributiepunt_name"),
+            KarTrackerAfleverlocatie.latitude,
+            KarTrackerAfleverlocatie.longitude,
+        )
+        .join(KarTrackerZone, KarTrackerZone.id == KarTrackerAfleverlocatie.zone_id)
+        .join(KarTrackerDistributiepunt, KarTrackerDistributiepunt.id == KarTrackerAfleverlocatie.distributiepunt_id)
+        .order_by(KarTrackerAfleverlocatie.name)
+    ).all()
+
+    distributiepunt_rows = db.execute(
+        select(
+            KarTrackerDistributiepunt.id,
+            KarTrackerDistributiepunt.name,
+            KarTrackerDistributiepunt.terrein_positie,
+            KarTrackerDistributiepunt.latitude,
+            KarTrackerDistributiepunt.longitude,
+        ).order_by(KarTrackerDistributiepunt.name)
+    ).all()
+
+    return KarMapResponse(
+        karren=[
+            KarMapKarRow(
+                id=row.id,
+                kar_nummer=row.kar_nummer,
+                status_name=row.status_name,
+                team_name=row.team_name,
+                latitude=row.last_latitude,
+                longitude=row.last_longitude,
+            )
+            for row in kar_rows
+        ],
+        afleverlocaties=[
+            KarMapAfleverlocatieRow(
+                id=row.id,
+                name=row.name,
+                zone_name=row.zone_name,
+                distributiepunt_name=row.distributiepunt_name,
+                latitude=row.latitude,
+                longitude=row.longitude,
+            )
+            for row in afleverlocatie_rows
+        ],
+        distributiepunten=[
+            KarMapDistributiepuntRow(
+                id=row.id,
+                name=row.name,
+                terrein_positie=row.terrein_positie,
+                latitude=row.latitude,
+                longitude=row.longitude,
+            )
+            for row in distributiepunt_rows
+        ],
+    )
 
 
 @router.get("/kar-import/template")

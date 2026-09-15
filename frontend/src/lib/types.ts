@@ -54,6 +54,13 @@ export interface ModuleStatus {
 export interface Season {
   id: number;
   name: string;
+  periode_open: boolean;
+}
+
+/** The fields sent to create or fully update a season. */
+export interface SeasonInput {
+  name: string;
+  periode_open: boolean;
 }
 
 /** One team location, as managed on MasterData's Team Location screen (nested under Teams). */
@@ -762,6 +769,54 @@ export interface KarTrackerKarInput {
   last_latitude: number | null;
   last_longitude: number | null;
   last_recorded_at: string | null;
+}
+
+/** One row of the read-only Kar Planning report (joined KarManagement + lookups). */
+export interface KarTrackerKarPlanningRow {
+  id: number;
+  kar_nummer: string;
+  status_name: string;
+  team_name: string | null;
+  transport_type_name: string;
+  geolocation: string | null;
+}
+
+/** One kar's pin/list entry on the Kar Map screen. */
+export interface KarTrackerKarMapKarRow {
+  id: number;
+  kar_nummer: string;
+  status_name: string;
+  team_name: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** One delivery location's pin/list entry on the Kar Map screen. */
+export interface KarTrackerKarMapAfleverlocatieRow {
+  id: number;
+  name: string;
+  zone_name: string;
+  distributiepunt_name: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** One distribution point's pin/list entry on the Kar Map screen. */
+export interface KarTrackerKarMapDistributiepuntRow {
+  id: number;
+  name: string;
+  terrein_positie: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** The full Kar Map payload: one array per layer (Karren/Afleverlocaties/
+ * Distributiepunten). Rows with null latitude/longitude are included —
+ * excluded from the map, shown in the side list instead. */
+export interface KarTrackerKarMapResponse {
+  karren: KarTrackerKarMapKarRow[];
+  afleverlocaties: KarTrackerKarMapAfleverlocatieRow[];
+  distributiepunten: KarTrackerKarMapDistributiepuntRow[];
 }
 
 /**

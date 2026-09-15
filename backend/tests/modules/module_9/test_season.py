@@ -182,6 +182,32 @@ def test_creating_a_season_with_a_duplicate_name_is_rejected(client: TestClient,
     assert response.status_code == 409
 
 
+def test_creating_a_season_with_periode_open_round_trips_it(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-9/seasons", json={"name": "2026", "periode_open": True})
+
+    assert response.status_code == 201
+    assert response.json()["periode_open"] is True
+
+
+def test_creating_a_season_without_periode_open_defaults_to_false(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-9/seasons", json={"name": "2026"})
+
+    assert response.status_code == 201
+    assert response.json()["periode_open"] is False
+
+
 def test_super_admin_can_rename_a_season(client: TestClient, db_session: Session) -> None:
     sync_screens(db_session)
     module = _create_masterdata_module(db_session)
@@ -194,6 +220,20 @@ def test_super_admin_can_rename_a_season(client: TestClient, db_session: Session
 
     assert response.status_code == 200
     assert response.json()["name"] == "2026-2027"
+
+
+def test_super_admin_can_toggle_a_seasons_periode_open(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    season = _create_season(db_session, name="2026")
+    _login(client, "admin@example.com")
+
+    response = client.put(f"/api/modules/module-9/seasons/{season.id}", json={"name": "2026", "periode_open": True})
+
+    assert response.status_code == 200
+    assert response.json()["periode_open"] is True
 
 
 def test_renaming_a_missing_season_returns_404(client: TestClient, db_session: Session) -> None:

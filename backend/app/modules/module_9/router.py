@@ -494,7 +494,7 @@ def create_season(
     _user: User = Depends(require_screen_permission("masterdata.season", "create")),
 ) -> Season:
     """Create a brand-new season."""
-    new_season = Season(name=payload.name)
+    new_season = Season(name=payload.name, periode_open=payload.periode_open)
     db.add(new_season)
     try:
         db.commit()
@@ -519,6 +519,7 @@ def update_season(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
 
     season.name = payload.name
+    season.periode_open = payload.periode_open
     try:
         db.commit()
     except IntegrityError as error:

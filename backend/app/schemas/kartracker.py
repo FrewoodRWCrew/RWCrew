@@ -166,6 +166,67 @@ class KarUpdateRequest(KarCreateRequest):
     """What's sent to update an existing kar — same shape as creating one."""
 
 
+class KarPlanningResponse(BaseModel):
+    """One kar, denormalized by joining KarManagement with its status/team/
+    transport-type lookups — the first query in what will grow into a
+    wider, multi-table Kar Planning report as more tables are added.
+    """
+
+    id: int
+    kar_nummer: str
+    status_name: str
+    team_name: str | None
+    transport_type_name: str
+    geolocation: str | None
+
+
+class KarMapKarRow(BaseModel):
+    """One kar's pin/list entry on the Kar Map screen — KarManagement
+    joined with its status/team lookups for the popup's "resume" content.
+    """
+
+    id: int
+    kar_nummer: str
+    status_name: str
+    team_name: str | None
+    latitude: float | None
+    longitude: float | None
+
+
+class KarMapAfleverlocatieRow(BaseModel):
+    """One delivery location's pin/list entry on the Kar Map screen,
+    joined with its zone and distribution point names.
+    """
+
+    id: int
+    name: str
+    zone_name: str
+    distributiepunt_name: str
+    latitude: float | None
+    longitude: float | None
+
+
+class KarMapDistributiepuntRow(BaseModel):
+    """One distribution point's pin/list entry on the Kar Map screen."""
+
+    id: int
+    name: str
+    terrein_positie: str | None
+    latitude: float | None
+    longitude: float | None
+
+
+class KarMapResponse(BaseModel):
+    """The full Kar Map payload: one array per layer. Rows with no
+    latitude/longitude are included too — the frontend excludes them from
+    the map itself but still lists them in the side panel.
+    """
+
+    karren: list[KarMapKarRow]
+    afleverlocaties: list[KarMapAfleverlocatieRow]
+    distributiepunten: list[KarMapDistributiepuntRow]
+
+
 class KarImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk-import workbook. Unlike
     TagScan's tag import, there is no "updated" outcome — a kar_nummer that

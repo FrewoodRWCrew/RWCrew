@@ -38,6 +38,8 @@ import type {
   KarTrackerDistributiepuntInput,
   KarTrackerKar,
   KarTrackerKarInput,
+  KarTrackerKarMapResponse,
+  KarTrackerKarPlanningRow,
   KarTrackerKarStatus,
   KarTrackerMyPermissions,
   KarTrackerRole,
@@ -67,6 +69,7 @@ import type {
   ScannerApiKey,
   ScannerInput,
   Season,
+  SeasonInput,
   SeasonImportResponse,
   TagDashboardStats,
   TagHeaderDataEntry,
@@ -230,17 +233,17 @@ export function listSeasons(): Promise<Season[]> {
   return apiFetch<Season[]>("/api/modules/module-9/seasons");
 }
 
-export function createSeason(name: string): Promise<Season> {
+export function createSeason(payload: SeasonInput): Promise<Season> {
   return apiFetch<Season>("/api/modules/module-9/seasons", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(payload),
   });
 }
 
-export function updateSeason(seasonId: number, name: string): Promise<Season> {
+export function updateSeason(seasonId: number, payload: SeasonInput): Promise<Season> {
   return apiFetch<Season>(`/api/modules/module-9/seasons/${seasonId}`, {
     method: "PUT",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -1246,6 +1249,18 @@ export function updateKar(karId: number, payload: KarTrackerKarInput): Promise<K
 
 export function deleteKar(karId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-2/karren/${karId}`, { method: "DELETE" });
+}
+
+// --- Kar Planning (module-2's "kartracker.karplanning" read-only report) ---
+
+export function listKarPlanning(): Promise<KarTrackerKarPlanningRow[]> {
+  return apiFetch<KarTrackerKarPlanningRow[]>("/api/modules/module-2/kar-planning");
+}
+
+// --- Kar Map (module-2's "kartracker.karmap" read-only map report) ---
+
+export function listKarMap(): Promise<KarTrackerKarMapResponse> {
+  return apiFetch<KarTrackerKarMapResponse>("/api/modules/module-2/kar-map");
 }
 
 /**

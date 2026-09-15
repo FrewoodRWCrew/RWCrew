@@ -7,11 +7,14 @@
 // landing link, then grouped sections gated by the current user's
 // KarTracker role — see module_2/deps.py.
 //
-// Groups so far, in display order: "Actions" (placeholder for now),
-// "Masterdata" (KarManagement/KarStatussen/Data Upload/Download, the
-// Karlijst phase), and "Access Rights" (Roles/Users) — same group order as
-// Intervention Requests' own sidebar. Future phases (delivery planning,
-// ...) add their own groups here the same way.
+// Groups so far, in display order: "Actions" (the placeholder landing link,
+// plus "Kar Planning" — a read-only, cross-table report, and "Kar Map" — a
+// read-only map view of Karren/Afleverlocaties/Distributiepunten, each
+// gated by its own independent permission), "Masterdata" (KarManagement/
+// KarStatussen/Data Upload/Download, the Karlijst phase), and "Access
+// Rights" (Roles/Users) — same group order as Intervention Requests' own
+// sidebar. Future phases (delivery planning, ...) add their own groups here
+// the same way.
 
 import { Database, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -35,6 +38,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const tAfleverlocaties = useTranslations("karTracker.afleverlocaties");
   const tDataUploadDownload = useTranslations("karTracker.dataUploadDownload");
   const tActions = useTranslations("karTracker.actions");
+  const tKarPlanning = useTranslations("karTracker.karPlanning");
+  const tKarMap = useTranslations("karTracker.karMap");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -49,6 +54,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const canViewAfleverlocaties = viewableScreenKeys.includes("kartracker.afleverlocaties");
   const canViewDataUploadDownload = viewableScreenKeys.includes("kartracker.dataupload");
   const canViewActions = viewableScreenKeys.includes("kartracker.actions");
+  const canViewKarPlanning = viewableScreenKeys.includes("kartracker.karplanning");
+  const canViewKarMap = viewableScreenKeys.includes("kartracker.karmap");
 
   function linkClassName(href: string, level: 0 | 1 = 0) {
     return cn(
@@ -70,15 +77,33 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         {tLanding("title")}
       </Link>
 
-      {canViewActions && (
+      {(canViewActions || canViewKarPlanning || canViewKarMap) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Zap className="size-4" />
             {t("actionsGroup")}
           </div>
-          <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
-            {tActions("title")}
-          </Link>
+          {canViewActions && (
+            <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
+              {tActions("title")}
+            </Link>
+          )}
+          {canViewKarPlanning && (
+            <Link
+              href="/modules/module-2/actions/kar-planning"
+              className={linkClassName("/modules/module-2/actions/kar-planning", 1)}
+            >
+              {tKarPlanning("title")}
+            </Link>
+          )}
+          {canViewKarMap && (
+            <Link
+              href="/modules/module-2/actions/kar-map"
+              className={linkClassName("/modules/module-2/actions/kar-map", 1)}
+            >
+              {tKarMap("title")}
+            </Link>
+          )}
         </>
       )}
 
