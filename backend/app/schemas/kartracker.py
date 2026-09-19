@@ -3,7 +3,7 @@
 # phase's KarStatus lookup and Kar (fleet registry) schemas. Delivery
 # planning schemas get added here once that phase is designed.
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, EmailStr, Field
@@ -113,6 +113,7 @@ class MyPermissionsResponse(BaseModel):
 
     viewable_screen_keys: list[str]
     creatable_screen_keys: list[str]
+    editable_screen_keys: list[str]
 
 
 class KarStatusResponse(BaseModel):
@@ -177,7 +178,41 @@ class KarPlanningResponse(BaseModel):
     status_name: str
     team_name: str | None
     transport_type_name: str
+    # Festival id -> label ("name — description", or just the name) of the
+    # afleverlocatie planned for this kar's team at that festival. Festivals
+    # with nothing planned (or a kar without a team) are absent from the dict.
+    afleverlocaties: dict[int, str]
     geolocation: str | None
+
+
+class KarPlanningFestivalResponse(BaseModel):
+    """One festival column of the Kar Planning report."""
+
+    id: int
+    name: str
+
+
+class KarPlanningReportResponse(BaseModel):
+    """The whole Kar Planning report: the active festivals of the requested
+    season (one extra table column each, in start-date order) plus one row
+    per kar. `festivals` is empty when no season was requested.
+    """
+
+    festivals: list[KarPlanningFestivalResponse]
+    rows: list[KarPlanningResponse]
+
+
+class KarPlanningPrintRequest(BaseModel):
+    """What the Kar Planning "Print" button sends: which karren to print a
+    karblad for, in which season, plus the public site address the QR code
+    of each page should point to (the browser knows it, the API doesn't).
+    """
+
+    season_id: int
+    # A page per kar; capped so a single request can't ask for an absurd PDF.
+    kar_ids: list[int] = Field(min_length=1, max_length=1000)
+    site_url: str = Field(min_length=1, max_length=500)
+    locale: Literal["nl", "en"] = "nl"
 
 
 class KarMapKarRow(BaseModel):
@@ -200,6 +235,7 @@ class KarMapAfleverlocatieRow(BaseModel):
 
     id: int
     name: str
+    description: str | None
     zone_name: str
     distributiepunt_name: str
     latitude: float | None
@@ -225,6 +261,19 @@ class KarMapResponse(BaseModel):
     karren: list[KarMapKarRow]
     afleverlocaties: list[KarMapAfleverlocatieRow]
     distributiepunten: list[KarMapDistributiepuntRow]
+
+
+class KarTrackerGroundplanResponse(BaseModel):
+    """The event site's ground-plan overlay: whether an image has ever been
+    uploaded, and its south-west/north-east corner coordinates (all None
+    until first configured on the Grondplan screen).
+    """
+
+    has_image: bool
+    sw_latitude: float | None
+    sw_longitude: float | None
+    ne_latitude: float | None
+    ne_longitude: float | None
 
 
 class KarImportRowResult(BaseModel):
@@ -345,6 +394,81 @@ class ZoneImportResponse(BaseModel):
     results: list[ZoneImportRowResult]
 
 
+class PlanKarOption(BaseModel):
+    """One entry of a "Plan a kar" dropdown (a team or a delivery location)."""
+
+    id: int
+    name: str
+
+
+class PlanKarAfleverlocatieOption(PlanKarOption):
+    """A delivery-location dropdown entry: its name plus its description, shown next to it."""
+
+    description: str | None
+
+
+class PlanKarFestivalRow(BaseModel):
+    """One matrix row: a festival plus its saved delivery location, if any."""
+
+    festival_id: int
+    festival_name: str
+    afleverlocatie_id: int | None
+
+
+class PlanKarResponse(BaseModel):
+    """The matrix for one team in one season."""
+
+    season_id: int
+    team_id: int
+    rows: list[PlanKarFestivalRow]
+
+
+class PlanKarSaveRow(BaseModel):
+    """One row to save; a null afleverlocatie_id clears that festival's assignment."""
+
+    festival_id: int
+    afleverlocatie_id: int | None = None
+
+
+class PlanKarSaveRequest(BaseModel):
+    """What the Save button sends: the whole matrix for one team in one season."""
+
+    season_id: int
+    team_id: int
+    rows: list[PlanKarSaveRow]
+
+
+class LeverdatumRow(BaseModel):
+    """One "Delivery Dates" row: a festival plus its saved dates, if any."""
+
+    festival_id: int
+    festival_name: str
+    delivery_date: date | None
+    pickup_date: date | None
+
+
+class LeverdatumResponse(BaseModel):
+    """The "Delivery Dates" table for one season."""
+
+    season_id: int
+    rows: list[LeverdatumRow]
+
+
+class LeverdatumSaveRow(BaseModel):
+    """One row to save; both dates null clears that festival's record."""
+
+    festival_id: int
+    delivery_date: date | None = None
+    pickup_date: date | None = None
+
+
+class LeverdatumSaveRequest(BaseModel):
+    """What the Save button sends: the whole table for one season."""
+
+    season_id: int
+    rows: list[LeverdatumSaveRow]
+
+
 class AfleverlocatieResponse(BaseModel):
     """One delivery location, as shown on the Afleverlocatie screen."""
 
@@ -357,6 +481,7 @@ class AfleverlocatieResponse(BaseModel):
     longitude: float | None
     terrein_positie: str | None
     altsien_kernlid_id: int | None
+    active: bool
 
 
 class AfleverlocatieCreateRequest(BaseModel):
@@ -374,10 +499,14 @@ class AfleverlocatieCreateRequest(BaseModel):
     longitude: float | None = None
     terrein_positie: str | None = Field(default=None, max_length=255)
     altsien_kernlid_id: int | None = None
+    # Inactive locations are hidden from the "Plan a kar" dropdowns.
+    active: bool = True
 
 
 class AfleverlocatieUpdateRequest(AfleverlocatieCreateRequest):
     """What's sent to update an existing delivery location — same shape as creating one."""
+
+    active: bool
 
 
 class AfleverlocatieImportRowResult(BaseModel):

@@ -10,9 +10,9 @@
 
 import "leaflet/dist/leaflet.css";
 
-import { divIcon, type Map as LeafletMap, type Marker as LeafletMarker } from "leaflet";
+import { divIcon, latLngBounds, type Map as LeafletMap, type Marker as LeafletMarker } from "leaflet";
 import { useEffect, useRef, type ReactNode } from "react";
-import { MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
+import { ImageOverlay, MapContainer, Marker, Popup, TileLayer } from "react-leaflet";
 
 export interface KarMapPin {
   key: string;
@@ -27,10 +27,18 @@ export interface KarMapLeafletHandle {
   locate: (key: string) => void;
 }
 
+interface GroundplanOverlay {
+  url: string;
+  bounds: [[number, number], [number, number]];
+}
+
 interface KarMapLeafletProps {
   pins: KarMapPin[];
   center: [number, number];
   onReady: (handle: KarMapLeafletHandle) => void;
+  showGroundplan: boolean;
+  groundplanOverlay: GroundplanOverlay | null;
+  groundplanOpacity: number;
 }
 
 /** A small colored dot built from a plain div, used instead of Leaflet's
@@ -46,7 +54,14 @@ function dotIcon(color: string) {
   });
 }
 
-export function KarMapLeaflet({ pins, center, onReady }: KarMapLeafletProps) {
+export function KarMapLeaflet({
+  pins,
+  center,
+  onReady,
+  showGroundplan,
+  groundplanOverlay,
+  groundplanOpacity,
+}: KarMapLeafletProps) {
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRefsByKey = useRef<Map<string, LeafletMarker>>(new Map());
   // Read via a ref inside the handle so it always sees the latest pins
@@ -66,6 +81,33 @@ export function KarMapLeaflet({ pins, center, onReady }: KarMapLeafletProps) {
         markerRefsByKey.current.get(key)?.openPopup();
       },
     });
+
+    // Frame the map around whatever pins exist at initial load, once — later
+    // pin-set changes (layer toggles, search) must NOT re-trigger this, so
+    // this reads pinsRef.current only here rather than depending on `pins`.
+    const map = mapRef.current;
+    const initialPins = pinsRef.current;
+    const overlayBounds = showGroundplan && groundplanOverlay ? groundplanOverlay.bounds : null;
+    const fitPoints = [
+      ...initialPins.map((pin) => [pin.latitude, pin.longitude] as [number, number]),
+      ...(overlayBounds
+        ? [
+            overlayBounds[0],
+            [overlayBounds[0][0], overlayBounds[1][1]] as [number, number],
+            [overlayBounds[1][0], overlayBounds[0][1]] as [number, number],
+            overlayBounds[1],
+          ]
+        : []),
+    ];
+    if (map && fitPoints.length > 0) {
+      // maxZoom caps how far fitBounds is allowed to zoom in, so a single
+      // pin (or a tight cluster) settles at zoom 14 — the same zoom the
+      // "Locate" button already uses — instead of snapping to street level.
+      const bounds = latLngBounds(fitPoints);
+      map.fitBounds(bounds, { maxZoom: 14, padding: [24, 24] });
+    }
+    // No pins at all: nothing to fit to, so the map just keeps the fallback
+    // center/zoom passed in via the `center` prop at mount time.
     // Only ever needs to fire once, when the map first mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -76,6 +118,11 @@ export function KarMapLeaflet({ pins, center, onReady }: KarMapLeafletProps) {
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {showGroundplan && groundplanOverlay && (
+        // Rendered above the OSM tiles but below the pins, so pin dots
+        // stay visible on top of the ground plan image.
+        <ImageOverlay url={groundplanOverlay.url} bounds={groundplanOverlay.bounds} opacity={groundplanOpacity} />
+      )}
       {pins.map((pin) => (
         <Marker
           key={pin.key}

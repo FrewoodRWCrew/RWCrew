@@ -236,9 +236,9 @@ def test_team_import_resolves_location_and_rejects_duplicate_names(client: TestC
     db_session.commit()
 
     xlsx_bytes = _build_xlsx(
-        ["name", "location_name", "delivery_method_name", "description"],
+        ["name", "location_name", "delivery_method_name", "description", "active"],
         [
-            ["Bar Team", "Main Stage", "", "Serves drinks"],
+            ["Bar Team", "Main Stage", "", "Serves drinks", "no"],
             ["Logistics", "", "", ""],
             ["Ghost Team", "Nonexistent Location", "", ""],
         ],
@@ -257,6 +257,7 @@ def test_team_import_resolves_location_and_rejects_duplicate_names(client: TestC
     new_team = db_session.scalar(select(Team).where(Team.name == "Bar Team"))
     assert new_team is not None
     assert new_team.location_id == location.id
+    assert new_team.active is False
 
 
 def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient, db_session: Session) -> None:
@@ -270,7 +271,7 @@ def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient
     assert response.status_code == 200
     workbook = load_workbook(io.BytesIO(response.content))
     header_row = [cell.value for cell in workbook.active[1]]
-    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description"]
+    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description", "active"]
 
 
 # --- Product: several optional FK-by-name lookups + booleans, no dup rule --

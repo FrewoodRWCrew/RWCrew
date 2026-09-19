@@ -10,9 +10,10 @@
 // being hidden outright.
 
 import dynamic from "next/dynamic";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import type { KarTrackerKarMapResponse } from "@/lib/types";
+import type { KarTrackerGroundplan, KarTrackerKarMapResponse } from "@/lib/types";
+import { karTrackerGroundplanImageUrl } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -35,6 +36,10 @@ interface MapRow {
   key: string;
   name: string;
   details: string;
+  // Labeled content shown in the map pin's popup — kept separate from
+  // `details` since each layer shows different fields there than in the
+  // side table's terse "Details" column.
+  popup: ReactNode;
   latitude: number | null;
   longitude: number | null;
 }
@@ -58,16 +63,41 @@ function textMatches(fieldValue: string, filterValue: string): boolean {
 
 interface KarMapProps {
   initialData: KarTrackerKarMapResponse;
+  groundplan: KarTrackerGroundplan;
 }
 
-export function KarMap({ initialData }: KarMapProps) {
+export function KarMap({ initialData, groundplan }: KarMapProps) {
   const t = useTranslations("karTracker.karMap");
   const [mapHandle, setMapHandle] = useState<KarMapLeafletHandle | null>(null);
 
   const [showKarren, setShowKarren] = useState(true);
   const [showAfleverlocaties, setShowAfleverlocaties] = useState(true);
   const [showDistributiepunten, setShowDistributiepunten] = useState(true);
+  // The ground plan isn't a pin layer (it has no rows/search matches of its
+  // own), so it's a plain boolean instead of going through
+  // LayerKey/layerVisibility like the three pin layers above.
+  const [showGroundplan, setShowGroundplan] = useState(groundplan.has_image);
+  // How opaque the ground plan overlay is drawn (0 = invisible, 1 = fully
+  // solid) — a plain client-side preference, not saved to the backend, so
+  // it can be tuned per viewing session without an extra save round-trip.
+  const [groundplanOpacity, setGroundplanOpacity] = useState(1);
   const [search, setSearch] = useState("");
+
+  // Only a fully-specified set of four corner coordinates can be turned
+  // into Leaflet ImageOverlay bounds — null means "nothing to show yet"
+  // (no image uploaded, or coordinates never configured).
+  const groundplanBounds: [[number, number], [number, number]] | null =
+    groundplan.has_image &&
+    groundplan.sw_latitude !== null &&
+    groundplan.sw_longitude !== null &&
+    groundplan.ne_latitude !== null &&
+    groundplan.ne_longitude !== null
+      ? [
+          [groundplan.sw_latitude, groundplan.sw_longitude],
+          [groundplan.ne_latitude, groundplan.ne_longitude],
+        ]
+      : null;
+  const groundplanOverlay = groundplanBounds ? { url: karTrackerGroundplanImageUrl(), bounds: groundplanBounds } : null;
 
   const rows = useMemo<MapRow[]>(() => {
     const karRows: MapRow[] = initialData.karren.map((kar) => ({
@@ -75,6 +105,20 @@ export function KarMap({ initialData }: KarMapProps) {
       key: `kar-${kar.id}`,
       name: kar.kar_nummer,
       details: `${kar.status_name} • ${kar.team_name ?? t("noTeam")}`,
+      // Kar pins show kar number / status / ploeg as clearly labeled lines.
+      popup: (
+        <div className="flex flex-col gap-0.5 text-sm">
+          <span>
+            <span className="font-semibold">{t("popupKarNummer")}:</span> {kar.kar_nummer}
+          </span>
+          <span>
+            <span className="font-semibold">{t("popupStatus")}:</span> {kar.status_name}
+          </span>
+          <span>
+            <span className="font-semibold">{t("popupPloeg")}:</span> {kar.team_name ?? t("noTeam")}
+          </span>
+        </div>
+      ),
       latitude: kar.latitude,
       longitude: kar.longitude,
     }));
@@ -83,6 +127,20 @@ export function KarMap({ initialData }: KarMapProps) {
       key: `afleverlocatie-${afleverlocatie.id}`,
       name: afleverlocatie.name,
       details: `${afleverlocatie.zone_name} • ${afleverlocatie.distributiepunt_name}`,
+      // Afleverlocatie pins show omschrijving / naam / zone as labeled lines.
+      popup: (
+        <div className="flex flex-col gap-0.5 text-sm">
+          <span>
+            <span className="font-semibold">{t("popupOmschrijving")}:</span> {afleverlocatie.description ?? t("noDescription")}
+          </span>
+          <span>
+            <span className="font-semibold">{t("popupNaam")}:</span> {afleverlocatie.name}
+          </span>
+          <span>
+            <span className="font-semibold">{t("popupZone")}:</span> {afleverlocatie.zone_name}
+          </span>
+        </div>
+      ),
       latitude: afleverlocatie.latitude,
       longitude: afleverlocatie.longitude,
     }));
@@ -91,6 +149,13 @@ export function KarMap({ initialData }: KarMapProps) {
       key: `distributiepunt-${distributiepunt.id}`,
       name: distributiepunt.name,
       details: distributiepunt.terrein_positie ?? t("noTerreinPositie"),
+      // Distributiepunt pins keep the original generic name + details popup.
+      popup: (
+        <div className="flex flex-col gap-0.5 text-sm">
+          <span className="font-semibold">{distributiepunt.name}</span>
+          <span className="text-muted-foreground">{distributiepunt.terrein_positie ?? t("noTerreinPositie")}</span>
+        </div>
+      ),
       latitude: distributiepunt.latitude,
       longitude: distributiepunt.longitude,
     }));
@@ -104,7 +169,10 @@ export function KarMap({ initialData }: KarMapProps) {
   };
 
   const visibleRows = useMemo(
-    () => rows.filter((row) => layerVisibility[row.layer] && textMatches(row.name, search)),
+    () =>
+      rows.filter(
+        (row) => layerVisibility[row.layer] && (textMatches(row.name, search) || textMatches(row.details, search)),
+      ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [rows, showKarren, showAfleverlocaties, showDistributiepunten, search],
   );
@@ -121,25 +189,10 @@ export function KarMap({ initialData }: KarMapProps) {
         latitude: row.latitude as number,
         longitude: row.longitude as number,
         color: LAYER_COLORS[row.layer],
-        popup: (
-          <div className="flex flex-col gap-0.5 text-sm">
-            <span className="font-semibold">{row.name}</span>
-            <span className="text-muted-foreground">{row.details}</span>
-          </div>
-        ),
+        popup: row.popup,
       })),
     [locatedRows],
   );
-
-  const center = useMemo<[number, number]>(() => {
-    const allLocated = rows.filter((row) => row.latitude !== null && row.longitude !== null);
-    if (allLocated.length === 0) return FALLBACK_CENTER;
-    const sum = allLocated.reduce(
-      (acc, row) => ({ lat: acc.lat + (row.latitude as number), lng: acc.lng + (row.longitude as number) }),
-      { lat: 0, lng: 0 },
-    );
-    return [sum.lat / allLocated.length, sum.lng / allLocated.length];
-  }, [rows]);
 
   function handleLocate(row: MapRow) {
     if (row.latitude === null || row.longitude === null) return;
@@ -152,7 +205,11 @@ export function KarMap({ initialData }: KarMapProps) {
     setSearch(value);
     if (!value) return;
     const matches = rows.filter(
-      (row) => layerVisibility[row.layer] && textMatches(row.name, value) && row.latitude !== null && row.longitude !== null,
+      (row) =>
+        layerVisibility[row.layer] &&
+        (textMatches(row.name, value) || textMatches(row.details, value)) &&
+        row.latitude !== null &&
+        row.longitude !== null,
     );
     if (matches.length === 1) {
       mapHandle?.locate(matches[0].key);
@@ -191,6 +248,32 @@ export function KarMap({ initialData }: KarMapProps) {
             <span className="size-2.5 rounded-full" style={{ backgroundColor: LAYER_COLORS.distributiepunt }} />
             <Label htmlFor="karmap-layer-distributiepunten">{t("layerDistributiepunten")}</Label>
           </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="karmap-layer-groundplan"
+              checked={showGroundplan}
+              onCheckedChange={(checked) => setShowGroundplan(checked === true)}
+              disabled={!groundplanBounds}
+            />
+            <Label htmlFor="karmap-layer-groundplan">{t("layerGroundplan")}</Label>
+          </div>
+          {showGroundplan && groundplanBounds && (
+            <div className="flex items-center gap-2">
+              <Label htmlFor="karmap-groundplan-opacity" className="text-muted-foreground">
+                {t("groundplanOpacity")}
+              </Label>
+              <input
+                id="karmap-groundplan-opacity"
+                type="range"
+                min={0}
+                max={1}
+                step={0.05}
+                value={groundplanOpacity}
+                onChange={(event) => setGroundplanOpacity(Number(event.target.value))}
+                className="w-24 accent-primary"
+              />
+            </div>
+          )}
         </div>
 
         <Input
@@ -202,7 +285,14 @@ export function KarMap({ initialData }: KarMapProps) {
       </div>
 
       <div className="h-[65vh] w-full overflow-hidden rounded-md border">
-        <KarMapLeaflet pins={pins} center={center} onReady={setMapHandle} />
+        <KarMapLeaflet
+          pins={pins}
+          center={FALLBACK_CENTER}
+          onReady={setMapHandle}
+          showGroundplan={showGroundplan && groundplanBounds !== null}
+          groundplanOverlay={groundplanOverlay}
+          groundplanOpacity={groundplanOpacity}
+        />
       </div>
 
       <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">

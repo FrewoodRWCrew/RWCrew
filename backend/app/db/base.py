@@ -16,8 +16,11 @@ from app.db.models.intervention_requests_user_role import InterventionRequestsUs
 from app.db.models.intervention_status import InterventionStatus  # noqa: F401
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie  # noqa: F401
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt  # noqa: F401
+from app.db.models.kartracker_groundplan import KarTrackerGroundplan  # noqa: F401
 from app.db.models.kartracker_kar import KarTrackerKar  # noqa: F401
+from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie  # noqa: F401
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus  # noqa: F401
+from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum  # noqa: F401
 from app.db.models.kartracker_role import KarTrackerRole  # noqa: F401
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission  # noqa: F401
 from app.db.models.kartracker_screen import KarTrackerScreen  # noqa: F401

@@ -33,6 +33,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -59,6 +60,7 @@ const EMPTY_FORM: TeamInput = {
   task_ids: [],
   kernlid_ids: [],
   description: "",
+  active: true,
 };
 
 function toFormValues(team: Team): TeamInput {
@@ -69,6 +71,7 @@ function toFormValues(team: Team): TeamInput {
     task_ids: team.task_ids,
     kernlid_ids: team.kernlid_ids,
     description: team.description ?? "",
+    active: team.active,
   };
 }
 
@@ -126,6 +129,7 @@ export function TeamManagement({
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLocation")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDeliveryMethod")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnActive")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
               </TableHead>
@@ -139,6 +143,7 @@ export function TeamManagement({
                 <TableCell className="text-muted-foreground">
                   {deliveryMethodLabelFor(team.delivery_method_id)}
                 </TableCell>
+                <TableCell className="text-muted-foreground">{team.active ? t("activeYes") : t("activeNo")}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <TeamFormDialog
@@ -317,6 +322,14 @@ function TeamFormDialog({
               value={form.description ?? ""}
               onChange={(event) => updateField("description", event.target.value)}
             />
+          </div>
+          <div className="col-span-2 flex items-center gap-2">
+            <Checkbox
+              id="team-active"
+              checked={form.active ?? true}
+              onCheckedChange={(checked) => updateField("active", checked === true)}
+            />
+            <Label htmlFor="team-active">{t("activeLabel")}</Label>
           </div>
         </div>
 

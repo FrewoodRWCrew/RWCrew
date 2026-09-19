@@ -36,12 +36,19 @@ import type {
   KarTrackerAfleverlocatieInput,
   KarTrackerDistributiepunt,
   KarTrackerDistributiepuntInput,
+  KarTrackerGroundplan,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarMapResponse,
-  KarTrackerKarPlanningRow,
+  KarTrackerKarPlanningReport,
   KarTrackerKarStatus,
+  KarTrackerLeverdatum,
+  KarTrackerLeverdatumSaveInput,
   KarTrackerMyPermissions,
+  KarTrackerPlanKar,
+  KarTrackerPlanKarAfleverlocatieOption,
+  KarTrackerPlanKarOption,
+  KarTrackerPlanKarSaveInput,
   KarTrackerRole,
   KarTrackerScreen,
   KarTrackerUserSummary,
@@ -1140,6 +1147,80 @@ export function listKarTrackerScreens(): Promise<KarTrackerScreen[]> {
   return apiFetch<KarTrackerScreen[]>("/api/modules/module-2/screens");
 }
 
+export function getKarTrackerGroundplan(): Promise<KarTrackerGroundplan> {
+  return apiFetch<KarTrackerGroundplan>("/api/modules/module-2/groundplan");
+}
+
+/**
+ * Saves the ground plan's corner coordinates, and its image if a new one
+ * was picked. Uses a plain fetch instead of apiFetch, same reason as
+ * importKarren below: the body is FormData (an optional file plus four
+ * numeric fields), and the browser must set its own multipart
+ * Content-Type (with boundary) — setting it manually would break the
+ * upload.
+ */
+export async function updateKarTrackerGroundplan(formData: FormData): Promise<KarTrackerGroundplan> {
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/groundplan`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as KarTrackerGroundplan;
+}
+
+/** The ground plan image's direct URL, for use as an <img>/Leaflet
+ * ImageOverlay source — the browser sends the auth cookie automatically
+ * since the frontend and backend are always same-site, so no fetch-and-
+ * blob round trip is needed here. */
+export function karTrackerGroundplanImageUrl(): string {
+  return `${API_BASE_URL}/api/modules/module-2/groundplan/image`;
+}
+
+// "Plan a kar": per team, one delivery location per active festival of a season.
+
+/** The active teams offered in the "Plan a kar" team dropdown. */
+export function listPlanKarTeams(): Promise<KarTrackerPlanKarOption[]> {
+  return apiFetch<KarTrackerPlanKarOption[]>("/api/modules/module-2/plan-kar/teams");
+}
+
+/** The active delivery locations offered in every "Plan a kar" row. */
+export function listPlanKarAfleverlocaties(): Promise<KarTrackerPlanKarAfleverlocatieOption[]> {
+  return apiFetch<KarTrackerPlanKarAfleverlocatieOption[]>("/api/modules/module-2/plan-kar/afleverlocaties");
+}
+
+/** The matrix (active festivals of the season + saved locations) for one team. */
+export function getPlanKar(seasonId: number, teamId: number): Promise<KarTrackerPlanKar> {
+  return apiFetch<KarTrackerPlanKar>(`/api/modules/module-2/plan-kar?season_id=${seasonId}&team_id=${teamId}`);
+}
+
+/** Saves the whole matrix; existing (season, festival, team) records are updated, not duplicated. */
+export function savePlanKar(payload: KarTrackerPlanKarSaveInput): Promise<KarTrackerPlanKar> {
+  return apiFetch<KarTrackerPlanKar>("/api/modules/module-2/plan-kar", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** The "Delivery Dates" table: active festivals of the season + their saved dates. */
+export function getLeverdata(seasonId: number): Promise<KarTrackerLeverdatum> {
+  return apiFetch<KarTrackerLeverdatum>(`/api/modules/module-2/leverdata?season_id=${seasonId}`);
+}
+
+/** Saves the whole table; existing per-festival records are updated, not duplicated. */
+export function saveLeverdata(payload: KarTrackerLeverdatumSaveInput): Promise<KarTrackerLeverdatum> {
+  return apiFetch<KarTrackerLeverdatum>("/api/modules/module-2/leverdata", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
 export function listKarTrackerRoles(): Promise<KarTrackerRole[]> {
   return apiFetch<KarTrackerRole[]>("/api/modules/module-2/roles");
 }
@@ -1253,8 +1334,38 @@ export function deleteKar(karId: number): Promise<void> {
 
 // --- Kar Planning (module-2's "kartracker.karplanning" read-only report) ---
 
-export function listKarPlanning(): Promise<KarTrackerKarPlanningRow[]> {
-  return apiFetch<KarTrackerKarPlanningRow[]>("/api/modules/module-2/kar-planning");
+/** With a season id the report also carries one afleverlocatie column per active festival of it. */
+export function listKarPlanning(seasonId?: number | null): Promise<KarTrackerKarPlanningReport> {
+  const query = seasonId != null ? `?season_id=${seasonId}` : "";
+  return apiFetch<KarTrackerKarPlanningReport>(`/api/modules/module-2/kar-planning${query}`);
+}
+
+/**
+ * The Kar Planning "Print" button: asks the backend for one PDF page (a
+ * "karblad") per selected kar and returns the PDF itself. `siteUrl` is the
+ * public address the pages' QR codes should point to. Plain fetch because
+ * the response is a binary PDF, not JSON (apiFetch would try to parse it).
+ */
+export async function printKarPlanning(
+  seasonId: number,
+  karIds: number[],
+  siteUrl: string,
+  locale: string,
+): Promise<Blob> {
+  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-planning/print`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ season_id: seasonId, kar_ids: karIds, site_url: siteUrl, locale }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
 }
 
 // --- Kar Map (module-2's "kartracker.karmap" read-only map report) ---

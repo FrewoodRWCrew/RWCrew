@@ -200,6 +200,7 @@ class FestivalResponse(BaseModel):
     start_date: date
     end_date: date
     season_id: int
+    active: bool
 
 
 class FestivalCreateRequest(BaseModel):
@@ -210,10 +211,13 @@ class FestivalCreateRequest(BaseModel):
     start_date: date
     end_date: date
     season_id: int
+    active: bool = True
 
 
 class FestivalUpdateRequest(FestivalCreateRequest):
     """What's sent to update an existing festival — same shape as creating one."""
+
+    active: bool
 
 
 class ProductResponse(BaseModel):
@@ -405,6 +409,7 @@ class TeamResponse(BaseModel):
     task_ids: list[int]
     kernlid_ids: list[int]
     description: str | None
+    active: bool
 
 
 class TeamCreateRequest(BaseModel):
@@ -420,10 +425,13 @@ class TeamCreateRequest(BaseModel):
     task_ids: list[int] = Field(default_factory=list)
     kernlid_ids: list[int] = Field(default_factory=list)
     description: str | None = None
+    active: bool = True
 
 
 class TeamUpdateRequest(TeamCreateRequest):
     """What's sent to update an existing team — same shape as creating one."""
+
+    active: bool
 
 
 # --- Data Upload/Download: bulk XLSX import/export, one row-result pair

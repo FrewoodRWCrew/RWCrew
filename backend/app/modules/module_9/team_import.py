@@ -29,7 +29,11 @@ from app.db.models.team import Team
 from app.db.models.team_location import TeamLocation
 from app.schemas.masterdata import TeamImportRowResult
 
-TEMPLATE_COLUMNS = ["name", "location_name", "delivery_method_name", "description"]
+TEMPLATE_COLUMNS = ["name", "location_name", "delivery_method_name", "description", "active"]
+
+# Accepted spellings for the optional "active" column, compared lowercase.
+_TRUE_VALUES = {"true", "yes", "ja", "1", "y"}
+_FALSE_VALUES = {"false", "no", "nee", "0", "n"}
 
 
 def build_team_template_xlsx() -> bytes:
@@ -60,6 +64,21 @@ def _cell_text(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _parse_active_cell(value: object) -> bool:
+    """A blank cell means active (the default); otherwise it must be a recognisable yes/no."""
+    if isinstance(value, bool):
+        return value
+    text = _cell_text(value)
+    if text is None:
+        return True
+    lowered = text.lower()
+    if lowered in _TRUE_VALUES:
+        return True
+    if lowered in _FALSE_VALUES:
+        return False
+    raise ValueError(f'active "{text}" is not a valid yes/no value')
 
 
 def _resolve_location_id(db: Session, location_name: str | None) -> int | None:
@@ -123,6 +142,7 @@ def import_teams_from_xlsx(db: Session, file_bytes: bytes) -> list[TeamImportRow
                 location_id=_resolve_location_id(db, _cell_text(cell(row, "location_name"))),
                 delivery_method_id=_resolve_delivery_method_id(db, _cell_text(cell(row, "delivery_method_name"))),
                 description=_cell_text(cell(row, "description")),
+                active=_parse_active_cell(cell(row, "active")),
             )
             db.add(new_team)
 
@@ -162,6 +182,7 @@ def export_teams_to_xlsx(db: Session) -> bytes:
                 locations.get(team.location_id, "") if team.location_id is not None else "",
                 delivery_methods.get(team.delivery_method_id, "") if team.delivery_method_id is not None else "",
                 team.description,
+                "yes" if team.active else "no",
             ]
         )
 

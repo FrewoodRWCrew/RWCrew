@@ -4,7 +4,7 @@
 
 from datetime import date
 
-from sqlalchemy import Date, ForeignKey, String
+from sqlalchemy import Boolean, Date, ForeignKey, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -21,3 +21,5 @@ class Festival(Base):
     end_date: Mapped[date] = mapped_column(Date, nullable=False)
     # Every festival belongs to exactly one season.
     season_id: Mapped[int] = mapped_column(ForeignKey("MasterData_season.id"), nullable=False)
+    # Whether the festival currently has the "active" status (new and existing festivals default to active).
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))

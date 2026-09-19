@@ -34,6 +34,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -56,6 +57,7 @@ const EMPTY_FORM: FestivalFormState = {
   start_date: "",
   end_date: "",
   season_id: null,
+  active: true,
 };
 
 function toFormValues(festival: Festival): FestivalFormState {
@@ -64,6 +66,7 @@ function toFormValues(festival: Festival): FestivalFormState {
     start_date: festival.start_date,
     end_date: festival.end_date,
     season_id: festival.season_id,
+    active: festival.active,
   };
 }
 
@@ -109,6 +112,7 @@ export function FestivalManagement({ initialFestivals, seasons }: FestivalManage
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStartDate")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEndDate")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnSeason")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnActive")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
               </TableHead>
@@ -121,6 +125,9 @@ export function FestivalManagement({ initialFestivals, seasons }: FestivalManage
                 <TableCell className="text-muted-foreground">{formatDate(festival.start_date)}</TableCell>
                 <TableCell className="text-muted-foreground">{formatDate(festival.end_date)}</TableCell>
                 <TableCell className="text-muted-foreground">{seasonLabelFor(festival.season_id)}</TableCell>
+                <TableCell className="text-muted-foreground">
+                  {festival.active ? t("activeYes") : t("activeNo")}
+                </TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <FestivalFormDialog
@@ -251,6 +258,14 @@ function FestivalFormDialog({ festival, trigger, onSaved, seasons }: FestivalFor
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          <div className="col-span-2 flex items-center gap-2">
+            <Checkbox
+              id="festival-active"
+              checked={form.active}
+              onCheckedChange={(checked) => updateField("active", checked === true)}
+            />
+            <Label htmlFor="festival-active">{t("activeLabel")}</Label>
           </div>
         </div>
 

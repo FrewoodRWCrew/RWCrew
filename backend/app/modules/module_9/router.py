@@ -937,6 +937,7 @@ def _team_to_response(db: Session, team: Team) -> TeamResponse:
         task_ids=sorted(task_ids),
         kernlid_ids=sorted(kernlid_ids),
         description=team.description,
+        active=team.active,
     )
 
 
@@ -964,6 +965,7 @@ def create_team(
         location_id=payload.location_id,
         delivery_method_id=payload.delivery_method_id,
         description=payload.description,
+        active=payload.active,
     )
     db.add(new_team)
     try:
@@ -1001,6 +1003,7 @@ def update_team(
     team.location_id = payload.location_id
     team.delivery_method_id = payload.delivery_method_id
     team.description = payload.description
+    team.active = payload.active
 
     try:
         db.flush()

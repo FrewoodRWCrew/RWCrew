@@ -3,15 +3,18 @@
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
-import type { KarTrackerKarPlanningRow } from "@/lib/types";
+import type { KarTrackerKarPlanningReport } from "@/lib/types";
 import { KarPlanning } from "@/components/module-2/kar-planning";
 
 export default async function KarPlanningPage() {
   const tErrors = await getTranslations("errors");
 
-  let rows: KarTrackerKarPlanningRow[];
+  // Fetched without a season (the header's season only lives in the browser),
+  // so this has no festival columns; KarPlanning re-fetches with the selected
+  // season once it knows it.
+  let report: KarTrackerKarPlanningReport;
   try {
-    rows = await serverApiFetch<KarTrackerKarPlanningRow[]>("/api/modules/module-2/kar-planning");
+    report = await serverApiFetch<KarTrackerKarPlanningReport>("/api/modules/module-2/kar-planning");
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
       return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
@@ -19,5 +22,5 @@ export default async function KarPlanningPage() {
     throw error;
   }
 
-  return <KarPlanning initialRows={rows} />;
+  return <KarPlanning initialReport={report} />;
 }

@@ -88,6 +88,7 @@ export interface Festival {
   start_date: string;
   end_date: string;
   season_id: number;
+  active: boolean;
 }
 
 /** The fields sent to create or fully update a festival. */
@@ -96,6 +97,7 @@ export interface FestivalInput {
   start_date: string;
   end_date: string;
   season_id: number;
+  active: boolean;
 }
 
 /** One Altsien Kernleden contact, as managed on MasterData's own screen. */
@@ -125,6 +127,7 @@ export interface Team {
   task_ids: number[];
   kernlid_ids: number[];
   description: string | null;
+  active: boolean;
 }
 
 /** The fields sent to create or fully update a team. */
@@ -135,6 +138,7 @@ export interface TeamInput {
   task_ids?: number[];
   kernlid_ids?: number[];
   description?: string | null;
+  active?: boolean;
 }
 
 /** One product, as managed on MasterData's Products screen. */
@@ -740,6 +744,7 @@ export interface KarTrackerUserSummary {
 export interface KarTrackerMyPermissions {
   viewable_screen_keys: string[];
   creatable_screen_keys: string[];
+  editable_screen_keys: string[];
 }
 
 /** One status a kar can be in, as managed on the KarStatussen screen. */
@@ -778,7 +783,21 @@ export interface KarTrackerKarPlanningRow {
   status_name: string;
   team_name: string | null;
   transport_type_name: string;
+  /** Festival id -> planned afleverlocatie name; festivals with none planned are absent. */
+  afleverlocaties: Record<number, string>;
   geolocation: string | null;
+}
+
+/** One festival column of the Kar Planning report. */
+export interface KarTrackerKarPlanningFestival {
+  id: number;
+  name: string;
+}
+
+/** The Kar Planning report: the requested season's active festivals plus one row per kar. */
+export interface KarTrackerKarPlanningReport {
+  festivals: KarTrackerKarPlanningFestival[];
+  rows: KarTrackerKarPlanningRow[];
 }
 
 /** One kar's pin/list entry on the Kar Map screen. */
@@ -795,6 +814,7 @@ export interface KarTrackerKarMapKarRow {
 export interface KarTrackerKarMapAfleverlocatieRow {
   id: number;
   name: string;
+  description: string | null;
   zone_name: string;
   distributiepunt_name: string;
   latitude: number | null;
@@ -817,6 +837,17 @@ export interface KarTrackerKarMapResponse {
   karren: KarTrackerKarMapKarRow[];
   afleverlocaties: KarTrackerKarMapAfleverlocatieRow[];
   distributiepunten: KarTrackerKarMapDistributiepuntRow[];
+}
+
+/** The event site's ground-plan overlay: whether an image has ever been
+ * uploaded, and its south-west/north-east corner coordinates (all null
+ * until first configured on the Grondplan screen). */
+export interface KarTrackerGroundplan {
+  has_image: boolean;
+  sw_latitude: number | null;
+  sw_longitude: number | null;
+  ne_latitude: number | null;
+  ne_longitude: number | null;
 }
 
 /**
@@ -923,6 +954,7 @@ export interface KarTrackerAfleverlocatie {
   longitude: number | null;
   terrein_positie: string | null;
   altsien_kernlid_id: number | null;
+  active: boolean;
 }
 
 /** What's sent to create or update a delivery location. */
@@ -935,6 +967,59 @@ export interface KarTrackerAfleverlocatieInput {
   longitude: number | null;
   terrein_positie: string | null;
   altsien_kernlid_id: number | null;
+  active: boolean;
+}
+
+/** One entry of a "Plan a kar" dropdown (a team or a delivery location). */
+export interface KarTrackerPlanKarOption {
+  id: number;
+  name: string;
+}
+
+/** A "Plan a kar" delivery-location dropdown entry: name plus description, shown next to it. */
+export interface KarTrackerPlanKarAfleverlocatieOption extends KarTrackerPlanKarOption {
+  description: string | null;
+}
+
+/** One "Plan a kar" matrix row: a festival plus its saved delivery location, if any. */
+export interface KarTrackerPlanKarRow {
+  festival_id: number;
+  festival_name: string;
+  afleverlocatie_id: number | null;
+}
+
+/** The "Plan a kar" matrix for one team in one season. */
+export interface KarTrackerPlanKar {
+  season_id: number;
+  team_id: number;
+  rows: KarTrackerPlanKarRow[];
+}
+
+/** What the "Plan a kar" Save button sends. A null afleverlocatie_id clears that festival's assignment. */
+export interface KarTrackerPlanKarSaveInput {
+  season_id: number;
+  team_id: number;
+  rows: { festival_id: number; afleverlocatie_id: number | null }[];
+}
+
+/** One "Delivery Dates" row: a festival plus its saved delivery/pick-up dates (ISO YYYY-MM-DD), if any. */
+export interface KarTrackerLeverdatumRow {
+  festival_id: number;
+  festival_name: string;
+  delivery_date: string | null;
+  pickup_date: string | null;
+}
+
+/** The "Delivery Dates" table for one season. */
+export interface KarTrackerLeverdatum {
+  season_id: number;
+  rows: KarTrackerLeverdatumRow[];
+}
+
+/** What the "Delivery Dates" Save button sends. A row with both dates null clears that festival's record. */
+export interface KarTrackerLeverdatumSaveInput {
+  season_id: number;
+  rows: { festival_id: number; delivery_date: string | null; pickup_date: string | null }[];
 }
 
 /**

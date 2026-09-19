@@ -6,7 +6,7 @@
 # MasterData_team_team_task / MasterData_team_kernlid instead of columns
 # on this table — see those two models.
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -27,3 +27,6 @@ class Team(Base):
     )
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Whether the team currently has the "active" status (new and existing teams default to active).
+    active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True, server_default=text("true"))

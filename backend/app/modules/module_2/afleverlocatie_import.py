@@ -39,7 +39,12 @@ TEMPLATE_COLUMNS = [
     "terrein_positie",
     "altsien_kernlid_first_name",
     "altsien_kernlid_name",
+    "active",
 ]
+
+# Accepted spellings for the optional "active" column, compared lowercase.
+_TRUE_VALUES = {"true", "yes", "ja", "1", "y"}
+_FALSE_VALUES = {"false", "no", "nee", "0", "n"}
 
 
 def build_afleverlocatie_template_xlsx() -> bytes:
@@ -71,6 +76,21 @@ def _cell_text(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _parse_active_cell(value: object) -> bool:
+    """A blank cell means active (the default); otherwise it must be a recognisable yes/no."""
+    if isinstance(value, bool):
+        return value
+    text = _cell_text(value)
+    if text is None:
+        return True
+    lowered = text.lower()
+    if lowered in _TRUE_VALUES:
+        return True
+    if lowered in _FALSE_VALUES:
+        return False
+    raise ValueError(f'active "{text}" is not a valid yes/no value')
 
 
 def _resolve_zone_id(db: Session, zone_name: str | None) -> int:
@@ -162,6 +182,7 @@ def import_afleverlocaties_from_xlsx(db: Session, file_bytes: bytes) -> list[Afl
                     _cell_text(cell(row, "altsien_kernlid_first_name")),
                     _cell_text(cell(row, "altsien_kernlid_name")),
                 ),
+                active=_parse_active_cell(cell(row, "active")),
             )
             db.add(new_afleverlocatie)
 
@@ -210,6 +231,7 @@ def export_afleverlocaties_to_xlsx(db: Session) -> bytes:
                 afleverlocatie.terrein_positie,
                 contact.first_name if contact else None,
                 contact.name if contact else None,
+                "yes" if afleverlocatie.active else "no",
             ]
         )
     for index, column in enumerate(TEMPLATE_COLUMNS, start=1):

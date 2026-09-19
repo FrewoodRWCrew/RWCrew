@@ -8,7 +8,9 @@
 # registry ("Karlijst") and delivery planning endpoints get added here
 # alongside their own screen keys once that phase is designed.
 
-from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
+from datetime import date
+
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -18,8 +20,12 @@ from app.core.security import hash_password
 from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
+from app.db.models.kartracker_groundplan import KarTrackerGroundplan
+from app.db.models.festival import Festival
 from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus
+from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum
 from app.db.models.kartracker_role import KarTrackerRole
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission
 from app.db.models.kartracker_screen import KarTrackerScreen
@@ -27,6 +33,7 @@ from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -47,6 +54,12 @@ from app.modules.module_2.distributiepunt_import import (
     build_distributiepunt_template_xlsx,
     export_distributiepunten_to_xlsx,
     import_distributiepunten_from_xlsx,
+)
+from app.modules.module_2.karblad_pdf import (
+    KarbladData,
+    KarbladFestival,
+    build_karbladen_pdf,
+    build_request_url,
 )
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.modules.module_2.kar_status_import import (
@@ -71,15 +84,27 @@ from app.schemas.kartracker import (
     KarMapDistributiepuntRow,
     KarMapKarRow,
     KarMapResponse,
+    KarPlanningFestivalResponse,
+    KarPlanningPrintRequest,
+    KarPlanningReportResponse,
     KarPlanningResponse,
     KarResponse,
     KarStatusCreateRequest,
     KarStatusImportResponse,
     KarStatusResponse,
     KarStatusUpdateRequest,
+    KarTrackerGroundplanResponse,
     KarTrackerUserSummaryResponse,
     KarUpdateRequest,
+    LeverdatumResponse,
+    LeverdatumRow,
+    LeverdatumSaveRequest,
     MyPermissionsResponse,
+    PlanKarAfleverlocatieOption,
+    PlanKarFestivalRow,
+    PlanKarOption,
+    PlanKarResponse,
+    PlanKarSaveRequest,
     RoleCreateRequest,
     RoleResponse,
     RoleUpdateRequest,
@@ -411,7 +436,12 @@ def get_my_permissions(
     screens = db.scalars(select(KarTrackerScreen)).all()
     viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
     creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys, creatable_screen_keys=creatable_keys)
+    editable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "edit")]
+    return MyPermissionsResponse(
+        viewable_screen_keys=viewable_keys,
+        creatable_screen_keys=creatable_keys,
+        editable_screen_keys=editable_keys,
+    )
 
 
 @router.get("/kar-statuses", response_model=list[KarStatusResponse])
@@ -581,21 +611,27 @@ def delete_kar(
     db.commit()
 
 
-@router.get("/kar-planning", response_model=list[KarPlanningResponse])
+@router.get("/kar-planning", response_model=KarPlanningReportResponse)
 def list_kar_planning(
+    season_id: int | None = None,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("kartracker.karplanning", "view")),
-) -> list[KarPlanningResponse]:
+) -> KarPlanningReportResponse:
     """The read-only Kar Planning report: KarManagement joined with its
     status/team/transport-type lookups. Team is an outer join since a kar
     can be unassigned; status and transport type are required, so those
-    stay inner joins. More source tables get folded into this same query
-    in a later phase.
+    stay inner joins.
+
+    When `season_id` is given, every active festival of that season becomes
+    an extra column carrying the afleverlocatie planned (via "Plan a kar")
+    for the kar's team at that festival. Without it there are no festival
+    columns.
     """
     rows = db.execute(
         select(
             KarTrackerKar.id,
             KarTrackerKar.kar_nummer,
+            KarTrackerKar.team_id,
             KarTrackerKarStatus.name.label("status_name"),
             Team.name.label("team_name"),
             Product.name.label("transport_type_name"),
@@ -607,21 +643,193 @@ def list_kar_planning(
         .join(Product, Product.id == KarTrackerKar.transport_type_id)
         .order_by(KarTrackerKar.kar_nummer)
     ).all()
-    return [
-        KarPlanningResponse(
-            id=row.id,
-            kar_nummer=row.kar_nummer,
-            status_name=row.status_name,
-            team_name=row.team_name,
-            transport_type_name=row.transport_type_name,
-            geolocation=(
-                f"{row.last_latitude}, {row.last_longitude}"
-                if row.last_latitude is not None and row.last_longitude is not None
-                else None
-            ),
+
+    festivals: list[KarPlanningFestivalResponse] = []
+    # (team_id, festival_id) -> name of the afleverlocatie planned there.
+    planned_locations: dict[tuple[int, int], str] = {}
+    if season_id is not None:
+        # One column per active festival of the season, earliest first (the
+        # same ordering "Plan a kar" uses).
+        festival_rows = db.execute(
+            select(Festival.id, Festival.name)
+            .where(Festival.season_id == season_id, Festival.active.is_(True))
+            .order_by(Festival.start_date, Festival.name)
+        ).all()
+        festivals = [KarPlanningFestivalResponse(id=row.id, name=row.name) for row in festival_rows]
+
+        # Everything planned for that season, restricted to the columns above.
+        # The location's name is shown even if it was deactivated since — the
+        # plan still refers to it.
+        for plan in db.execute(
+            select(
+                KarTrackerKarAfleverlocatie.team_id,
+                KarTrackerKarAfleverlocatie.festival_id,
+                KarTrackerAfleverlocatie.name,
+                KarTrackerAfleverlocatie.description,
+            )
+            .join(
+                KarTrackerAfleverlocatie,
+                KarTrackerAfleverlocatie.id == KarTrackerKarAfleverlocatie.afleverlocatie_id,
+            )
+            .where(
+                KarTrackerKarAfleverlocatie.season_id == season_id,
+                KarTrackerKarAfleverlocatie.festival_id.in_([festival.id for festival in festivals]),
+            )
+        ):
+            # Shown as "name — description" (just the name when there is no
+            # description), the same label "Plan a kar" uses in its dropdown.
+            planned_locations[(plan.team_id, plan.festival_id)] = (
+                f"{plan.name} — {plan.description}" if plan.description else plan.name
+            )
+
+    return KarPlanningReportResponse(
+        festivals=festivals,
+        rows=[
+            KarPlanningResponse(
+                id=row.id,
+                kar_nummer=row.kar_nummer,
+                status_name=row.status_name,
+                team_name=row.team_name,
+                transport_type_name=row.transport_type_name,
+                # A kar's locations come from its team; a kar without a team
+                # has nothing planned.
+                afleverlocaties={
+                    festival.id: planned_locations[(row.team_id, festival.id)]
+                    for festival in festivals
+                    if (row.team_id, festival.id) in planned_locations
+                },
+                geolocation=(
+                    f"{row.last_latitude}, {row.last_longitude}"
+                    if row.last_latitude is not None and row.last_longitude is not None
+                    else None
+                ),
+            )
+            for row in rows
+        ],
+    )
+
+
+@router.post("/kar-planning/print")
+def print_kar_planning(
+    payload: KarPlanningPrintRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.karplanning", "view")),
+) -> Response:
+    """The Kar Planning "Print" button: one PDF page (a "karblad") per
+    selected kar, in kar-number order. Each page lists, per active festival
+    of the season, the afleverlocatie planned for the kar's team plus the
+    festival's delivery/pick-up dates, and carries two QR codes (the kar
+    number, and the public Intervention Request form prefilled for the team).
+    A POST because the list of selected kar ids doesn't fit a URL.
+    """
+    season = db.get(Season, payload.season_id)
+    if season is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+
+    karren = db.execute(
+        select(
+            KarTrackerKar.kar_nummer,
+            KarTrackerKar.team_id,
+            Team.name.label("team_name"),
+            Product.name.label("transport_type_name"),
         )
-        for row in rows
-    ]
+        .outerjoin(Team, Team.id == KarTrackerKar.team_id)
+        .join(Product, Product.id == KarTrackerKar.transport_type_id)
+        .where(KarTrackerKar.id.in_(payload.kar_ids))
+        .order_by(KarTrackerKar.kar_nummer)
+    ).all()
+    if not karren:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No karren found")
+
+    # The season's active festivals, earliest first (same order as the Kar
+    # Planning columns), each with its optional delivery/pick-up dates.
+    festival_rows = db.execute(
+        select(Festival.id, Festival.name, KarTrackerLeverdatum.delivery_date, KarTrackerLeverdatum.pickup_date)
+        .outerjoin(KarTrackerLeverdatum, KarTrackerLeverdatum.festival_id == Festival.id)
+        .where(Festival.season_id == season.id, Festival.active.is_(True))
+        .order_by(Festival.start_date, Festival.name)
+    ).all()
+
+    # (team_id, festival_id) -> planned location (with its zone and
+    # distribution point), for the teams of the selected karren only.
+    team_ids = {kar.team_id for kar in karren if kar.team_id is not None}
+    plans: dict[tuple[int, int], dict[str, str | None]] = {}
+    if team_ids and festival_rows:
+        for plan in db.execute(
+            select(
+                KarTrackerKarAfleverlocatie.team_id,
+                KarTrackerKarAfleverlocatie.festival_id,
+                KarTrackerAfleverlocatie.name,
+                KarTrackerAfleverlocatie.description,
+                KarTrackerZone.name.label("zone_name"),
+                KarTrackerDistributiepunt.name.label("distributiepunt_name"),
+            )
+            .join(
+                KarTrackerAfleverlocatie,
+                KarTrackerAfleverlocatie.id == KarTrackerKarAfleverlocatie.afleverlocatie_id,
+            )
+            .join(KarTrackerZone, KarTrackerZone.id == KarTrackerAfleverlocatie.zone_id)
+            .join(
+                KarTrackerDistributiepunt,
+                KarTrackerDistributiepunt.id == KarTrackerAfleverlocatie.distributiepunt_id,
+            )
+            .where(
+                KarTrackerKarAfleverlocatie.season_id == season.id,
+                KarTrackerKarAfleverlocatie.team_id.in_(team_ids),
+            )
+        ):
+            plans[(plan.team_id, plan.festival_id)] = {
+                # "name — description", the same label the Kar Planning grid shows.
+                "location": f"{plan.name} — {plan.description}" if plan.description else plan.name,
+                "location_name": plan.name,
+                "zone": plan.zone_name,
+                "distributiepunt": plan.distributiepunt_name,
+            }
+
+    pages: list[KarbladData] = []
+    for kar in karren:
+        festivals: list[KarbladFestival] = []
+        # The first festival with a planned location decides the page-level
+        # zone, distribution point and the prefilled location of the QR link.
+        first_plan: dict[str, str | None] | None = None
+        for festival in festival_rows:
+            plan = plans.get((kar.team_id, festival.id)) if kar.team_id is not None else None
+            if plan is not None and first_plan is None:
+                first_plan = plan
+            festivals.append(
+                KarbladFestival(
+                    name=festival.name,
+                    zone_name=plan["zone"] if plan else None,
+                    location=plan["location"] if plan else None,
+                    delivery_date=festival.delivery_date,
+                    pickup_date=festival.pickup_date,
+                )
+            )
+        pages.append(
+            KarbladData(
+                kar_nummer=kar.kar_nummer,
+                team_name=kar.team_name,
+                transport_type=kar.transport_type_name,
+                festivals=festivals,
+                aflever_zone=first_plan["zone"] if first_plan else None,
+                distribution_point=first_plan["distributiepunt"] if first_plan else None,
+                request_url=build_request_url(
+                    payload.site_url,
+                    payload.locale,
+                    kar.team_id,
+                    kar.kar_nummer,
+                    first_plan["location_name"] if first_plan else None,
+                    first_plan["zone"] if first_plan else None,
+                ),
+            )
+        )
+
+    pdf_bytes = build_karbladen_pdf(pages, season.name, payload.locale)
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="Karbladen_{date.today().isoformat()}.pdf"'},
+    )
 
 
 @router.get("/kar-map", response_model=KarMapResponse)
@@ -656,6 +864,7 @@ def list_kar_map(
         select(
             KarTrackerAfleverlocatie.id,
             KarTrackerAfleverlocatie.name,
+            KarTrackerAfleverlocatie.description,
             KarTrackerZone.name.label("zone_name"),
             KarTrackerDistributiepunt.name.label("distributiepunt_name"),
             KarTrackerAfleverlocatie.latitude,
@@ -692,6 +901,7 @@ def list_kar_map(
             KarMapAfleverlocatieRow(
                 id=row.id,
                 name=row.name,
+                description=row.description,
                 zone_name=row.zone_name,
                 distributiepunt_name=row.distributiepunt_name,
                 latitude=row.latitude,
@@ -710,6 +920,371 @@ def list_kar_map(
             for row in distributiepunt_rows
         ],
     )
+
+
+# The event site's ground plan is a single settings row (id=1), same
+# "singleton" shape as Tagscan_settings — there is only ever one, upserted
+# in place rather than versioned.
+GROUNDPLAN_ROW_ID = 1
+ALLOWED_GROUNDPLAN_CONTENT_TYPES = {"image/png", "image/jpeg"}
+MAX_GROUNDPLAN_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB — plenty for a site map, keeps the row small.
+
+
+def _groundplan_response(row: KarTrackerGroundplan | None) -> KarTrackerGroundplanResponse:
+    if row is None:
+        return KarTrackerGroundplanResponse(
+            has_image=False, sw_latitude=None, sw_longitude=None, ne_latitude=None, ne_longitude=None
+        )
+    return KarTrackerGroundplanResponse(
+        has_image=row.image_data is not None,
+        sw_latitude=row.sw_latitude,
+        sw_longitude=row.sw_longitude,
+        ne_latitude=row.ne_latitude,
+        ne_longitude=row.ne_longitude,
+    )
+
+
+@router.get("/groundplan", response_model=KarTrackerGroundplanResponse)
+def get_groundplan(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_view_or_create("kartracker.karmap", "kartracker.groundplan")),
+) -> KarTrackerGroundplanResponse:
+    """The ground plan's current bounds/status — readable by anyone who can
+    view either Kar Map (which overlays it) or the Grondplan screen itself.
+    """
+    return _groundplan_response(db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID))
+
+
+@router.get("/groundplan/image")
+def get_groundplan_image(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_view_or_create("kartracker.karmap", "kartracker.groundplan")),
+) -> Response:
+    """The raw ground-plan image bytes, for direct use as an <img>/Leaflet
+    ImageOverlay source. 404s until one has ever been uploaded.
+    """
+    row = db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID)
+    if row is None or row.image_data is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ground plan image set")
+    return Response(content=row.image_data, media_type=row.image_content_type or "application/octet-stream")
+
+
+@router.put("/groundplan", response_model=KarTrackerGroundplanResponse)
+def update_groundplan(
+    sw_latitude: float = Form(...),
+    sw_longitude: float = Form(...),
+    ne_latitude: float = Form(...),
+    ne_longitude: float = Form(...),
+    image: UploadFile | None = File(None),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.groundplan", "edit")),
+) -> KarTrackerGroundplanResponse:
+    """Upsert the singleton ground-plan row. The image is optional on save
+    so the corner coordinates can be recalibrated without re-uploading —
+    only the coordinates are required on every save.
+    """
+    if sw_latitude >= ne_latitude or sw_longitude >= ne_longitude:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="South-west corner must be south and west of the north-east corner",
+        )
+
+    row = db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID)
+    if row is None:
+        row = KarTrackerGroundplan(id=GROUNDPLAN_ROW_ID)
+        db.add(row)
+
+    if image is not None:
+        if image.content_type not in ALLOWED_GROUNDPLAN_CONTENT_TYPES:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be PNG or JPEG")
+        # Read one byte past the limit so an oversized image is detected
+        # without ever buffering an unbounded upload into memory.
+        contents = image.file.read(MAX_GROUNDPLAN_IMAGE_BYTES + 1)
+        if len(contents) > MAX_GROUNDPLAN_IMAGE_BYTES:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be smaller than 8 MB")
+        row.image_data = contents
+        row.image_content_type = image.content_type
+
+    row.sw_latitude = sw_latitude
+    row.sw_longitude = sw_longitude
+    row.ne_latitude = ne_latitude
+    row.ne_longitude = ne_longitude
+    db.commit()
+
+    return _groundplan_response(row)
+
+
+# ---- Plan a kar ----------------------------------------------------------
+# Per team, pick the afleverlocatie for every active festival of a season.
+# KarTracker users don't necessarily have module-9 (master data)
+# permissions, so the lookups the screen needs (teams, afleverlocaties,
+# festivals) are served from here, gated by the screen's own permission —
+# same approach as /kar-map.
+
+
+@router.get("/plan-kar/teams", response_model=list[PlanKarOption])
+def list_plan_kar_teams(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.plankar", "view")),
+) -> list[PlanKarOption]:
+    """The active teams offered in the team dropdown."""
+    teams = db.execute(select(Team.id, Team.name).where(Team.active.is_(True)).order_by(Team.name)).all()
+    return [PlanKarOption(id=team.id, name=team.name) for team in teams]
+
+
+@router.get("/plan-kar/afleverlocaties", response_model=list[PlanKarAfleverlocatieOption])
+def list_plan_kar_afleverlocaties(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.plankar", "view")),
+) -> list[PlanKarAfleverlocatieOption]:
+    """The active delivery locations offered in every row's dropdown, with
+    their description so it can be shown next to the name.
+    """
+    locations = db.execute(
+        select(KarTrackerAfleverlocatie.id, KarTrackerAfleverlocatie.name, KarTrackerAfleverlocatie.description)
+        .where(KarTrackerAfleverlocatie.active.is_(True))
+        .order_by(KarTrackerAfleverlocatie.name)
+    ).all()
+    return [
+        PlanKarAfleverlocatieOption(id=location.id, name=location.name, description=location.description)
+        for location in locations
+    ]
+
+
+@router.get("/plan-kar", response_model=PlanKarResponse)
+def get_plan_kar(
+    season_id: int,
+    team_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.plankar", "view")),
+) -> PlanKarResponse:
+    """The matrix for one team in one season: every active festival of that
+    season, each with the afleverlocatie already saved for it (or None).
+    """
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+    if db.get(Team, team_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+
+    # Outer join so festivals without a saved assignment still get a row.
+    rows = db.execute(
+        select(Festival.id, Festival.name, KarTrackerKarAfleverlocatie.afleverlocatie_id)
+        .outerjoin(
+            KarTrackerKarAfleverlocatie,
+            (KarTrackerKarAfleverlocatie.festival_id == Festival.id)
+            & (KarTrackerKarAfleverlocatie.season_id == season_id)
+            & (KarTrackerKarAfleverlocatie.team_id == team_id),
+        )
+        .where(Festival.season_id == season_id, Festival.active.is_(True))
+        .order_by(Festival.start_date, Festival.name)
+    ).all()
+
+    return PlanKarResponse(
+        season_id=season_id,
+        team_id=team_id,
+        rows=[
+            PlanKarFestivalRow(festival_id=row.id, festival_name=row.name, afleverlocatie_id=row.afleverlocatie_id)
+            for row in rows
+        ],
+    )
+
+
+@router.put("/plan-kar", response_model=PlanKarResponse)
+def save_plan_kar(
+    payload: PlanKarSaveRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.plankar", "edit")),
+) -> PlanKarResponse:
+    """Save the whole matrix for one team in one season. Each row is an
+    upsert on (season, festival, team): an existing record is updated, a
+    missing one inserted, and a row with no location clears its record.
+    """
+    if db.get(Season, payload.season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+    team = db.get(Team, payload.team_id)
+    if team is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    if not team.active:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Team is not active")
+
+    # The same festival can't appear twice in one save.
+    festival_ids = [row.festival_id for row in payload.rows]
+    if len(set(festival_ids)) != len(festival_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A festival appears more than once")
+
+    # Every festival must be an active one of this season.
+    valid_festival_ids = set(
+        db.scalars(
+            select(Festival.id).where(
+                Festival.id.in_(festival_ids), Festival.season_id == payload.season_id, Festival.active.is_(True)
+            )
+        ).all()
+    )
+    if valid_festival_ids != set(festival_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the season"
+        )
+
+    # Every chosen location must exist and be active.
+    location_ids = {row.afleverlocatie_id for row in payload.rows if row.afleverlocatie_id is not None}
+    valid_location_ids = set(
+        db.scalars(
+            select(KarTrackerAfleverlocatie.id).where(
+                KarTrackerAfleverlocatie.id.in_(location_ids), KarTrackerAfleverlocatie.active.is_(True)
+            )
+        ).all()
+    )
+    if valid_location_ids != location_ids:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Every delivery location must exist and be active"
+        )
+
+    # Existing assignments for this team+season, keyed by festival.
+    existing_by_festival = {
+        record.festival_id: record
+        for record in db.scalars(
+            select(KarTrackerKarAfleverlocatie).where(
+                KarTrackerKarAfleverlocatie.season_id == payload.season_id,
+                KarTrackerKarAfleverlocatie.team_id == payload.team_id,
+            )
+        ).all()
+    }
+
+    for row in payload.rows:
+        existing = existing_by_festival.get(row.festival_id)
+        if row.afleverlocatie_id is None:
+            # No location chosen: remove any earlier assignment.
+            if existing is not None:
+                db.delete(existing)
+        elif existing is not None:
+            # Already registered: update in place, never add a second line.
+            existing.afleverlocatie_id = row.afleverlocatie_id
+        else:
+            db.add(
+                KarTrackerKarAfleverlocatie(
+                    season_id=payload.season_id,
+                    festival_id=row.festival_id,
+                    team_id=payload.team_id,
+                    afleverlocatie_id=row.afleverlocatie_id,
+                )
+            )
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Could not save the plan") from error
+
+    return get_plan_kar(payload.season_id, payload.team_id, db, _user)
+
+
+# ---- Delivery Dates ------------------------------------------------------
+# Per active festival of a season, one delivery date and one pick-up date,
+# stored in "Festivals_leverdatum" (at most one row per festival).
+
+
+@router.get("/leverdata", response_model=LeverdatumResponse)
+def get_leverdata(
+    season_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.leverdata", "view")),
+) -> LeverdatumResponse:
+    """Every active festival of the season, each with its saved dates (or None)."""
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+
+    # Outer join so festivals without a saved row still get a line.
+    rows = db.execute(
+        select(Festival.id, Festival.name, KarTrackerLeverdatum.delivery_date, KarTrackerLeverdatum.pickup_date)
+        .outerjoin(KarTrackerLeverdatum, KarTrackerLeverdatum.festival_id == Festival.id)
+        .where(Festival.season_id == season_id, Festival.active.is_(True))
+        .order_by(Festival.start_date, Festival.name)
+    ).all()
+
+    return LeverdatumResponse(
+        season_id=season_id,
+        rows=[
+            LeverdatumRow(
+                festival_id=row.id,
+                festival_name=row.name,
+                delivery_date=row.delivery_date,
+                pickup_date=row.pickup_date,
+            )
+            for row in rows
+        ],
+    )
+
+
+@router.put("/leverdata", response_model=LeverdatumResponse)
+def save_leverdata(
+    payload: LeverdatumSaveRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.leverdata", "edit")),
+) -> LeverdatumResponse:
+    """Save the whole table for one season. Each row is an upsert on the
+    festival: an existing record is updated, a missing one inserted, and a
+    row with no dates clears its record.
+    """
+    if db.get(Season, payload.season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+
+    # The same festival can't appear twice in one save.
+    festival_ids = [row.festival_id for row in payload.rows]
+    if len(set(festival_ids)) != len(festival_ids):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="A festival appears more than once")
+
+    # Every festival must be an active one of this season.
+    valid_festival_ids = set(
+        db.scalars(
+            select(Festival.id).where(
+                Festival.id.in_(festival_ids), Festival.season_id == payload.season_id, Festival.active.is_(True)
+            )
+        ).all()
+    )
+    if valid_festival_ids != set(festival_ids):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the season"
+        )
+
+    # The pick-up can't be before the delivery (only checkable when both are set).
+    for row in payload.rows:
+        if row.delivery_date and row.pickup_date and row.pickup_date < row.delivery_date:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="The pick-up date can't be before the delivery date"
+            )
+
+    # Existing records for these festivals, keyed by festival.
+    existing_by_festival = {
+        record.festival_id: record
+        for record in db.scalars(
+            select(KarTrackerLeverdatum).where(KarTrackerLeverdatum.festival_id.in_(festival_ids))
+        ).all()
+    }
+
+    for row in payload.rows:
+        existing = existing_by_festival.get(row.festival_id)
+        if row.delivery_date is None and row.pickup_date is None:
+            # No dates given: remove any earlier record.
+            if existing is not None:
+                db.delete(existing)
+        elif existing is not None:
+            # Already registered: update in place, never add a second line.
+            existing.delivery_date = row.delivery_date
+            existing.pickup_date = row.pickup_date
+        else:
+            db.add(
+                KarTrackerLeverdatum(
+                    festival_id=row.festival_id, delivery_date=row.delivery_date, pickup_date=row.pickup_date
+                )
+            )
+
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Could not save the delivery dates") from error
+
+    return get_leverdata(payload.season_id, db, _user)
 
 
 @router.get("/kar-import/template")
@@ -1119,6 +1694,17 @@ def delete_afleverlocatie(
     afleverlocatie = db.get(KarTrackerAfleverlocatie, afleverlocatie_id)
     if afleverlocatie is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Delivery location not found")
+
+    # A location still referenced by a "Plan a kar" assignment can't be
+    # removed — deactivating it is the way to retire it.
+    still_planned = db.scalar(
+        select(KarTrackerKarAfleverlocatie).where(KarTrackerKarAfleverlocatie.afleverlocatie_id == afleverlocatie_id)
+    )
+    if still_planned is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This delivery location is still used by a kar plan; deactivate it instead",
+        )
 
     db.delete(afleverlocatie)
     db.commit()
