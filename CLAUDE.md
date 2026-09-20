@@ -124,6 +124,16 @@ tests for core logic only).
   specifically because two tokens for the same user issued within the same second would
   otherwise be byte-for-byte identical (all other claims round to the same second), silently
   breaking refresh-token rotation/reuse-detection. Found via a genuinely flaky test — don't remove it.
+- **Silent session refresh happens in two places, both needed.** The access cookie lives 15 min, the
+  refresh cookie 30 days (`backend/app/core/config.py`). (1) `frontend/src/proxy.ts` — on a page
+  request with a refresh cookie but no access cookie, it calls `/api/auth/refresh` *before* rendering
+  (via `lib/session-refresh.ts`) and sets the new cookies on both the request (so Server Components see
+  them) and the response. Server Components can't set cookies, so this can't move into
+  `server-auth.ts`. (2) `lib/api.ts` `fetchWithRefresh` — retries once after a 401 for calls made
+  from the browser. Both share ONE in-flight refresh per token (the backend rotates the refresh token
+  on every use, so a second concurrent refresh with the same token gets a 401) — keep that
+  single-flight/short result cache if you touch either. New plain `fetch` calls to the backend in
+  `api.ts` should use `fetchWithRefresh`, not `fetch`.
 - **SQLite ignores `ON DELETE CASCADE` unless told to.** `backend/tests/conftest.py` runs
   `PRAGMA foreign_keys=ON` on connect so deleting a user in tests actually cascades to their
   `Landing_user_module_access`/`Landing_module_roles`/`Landing_refresh_tokens` rows the same way

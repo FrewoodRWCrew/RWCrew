@@ -116,6 +116,46 @@ export class ApiError extends Error {
   }
 }
 
+// The refresh call currently in flight, if any. Several requests often hit
+// an expired session at the same moment; they must share ONE refresh,
+// because the backend rotates the refresh token on every use and would
+// reject the second caller's (already rotated-away) copy.
+let refreshInFlight: Promise<boolean> | null = null;
+
+/** Ask the backend for a new access token using the refresh cookie. True on success. */
+function refreshSessionInBrowser(): Promise<boolean> {
+  if (refreshInFlight === null) {
+    refreshInFlight = fetch(`${API_BASE_URL}/api/auth/refresh`, { method: "POST", credentials: "include" })
+      .then((response) => response.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
+/**
+ * Like fetch, but when the backend answers 401 (the 15-minute access
+ * token expired) it silently renews the session once and repeats the
+ * request, so the user isn't sent back to the login screen while the
+ * 30-day refresh token is still valid. Login and public endpoints are left
+ * alone: a 401 there is a real answer (e.g. wrong password), not an expiry.
+ */
+async function fetchWithRefresh(url: string, init: RequestInit): Promise<Response> {
+  const response = await fetch(url, init);
+  const isAuthEndpoint = /\/api\/auth\/(login|logout|refresh)$/.test(url);
+  if (response.status !== 401 || isAuthEndpoint || url.includes("/api/public/")) {
+    return response;
+  }
+
+  // Still 401 after refreshing (or refreshing failed): return that answer as-is.
+  if (!(await refreshSessionInBrowser())) {
+    return response;
+  }
+  return fetch(url, init);
+}
+
 /**
  * Send one request to the backend and return its parsed JSON response.
  *
@@ -124,7 +164,7 @@ export class ApiError extends Error {
  * the backend sends back (e.g. right after logging in).
  */
 async function apiFetch<TResponse>(path: string, init?: RequestInit): Promise<TResponse> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
@@ -709,7 +749,7 @@ export async function importRfidTags(file: File): Promise<RfidTagImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -816,7 +856,7 @@ export async function importSeasons(file: File): Promise<SeasonImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/season-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/season-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -835,7 +875,7 @@ export async function importProductTypes(file: File): Promise<ProductTypeImportR
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -854,7 +894,7 @@ export async function importWarehouses(file: File): Promise<WarehouseImportRespo
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -873,7 +913,7 @@ export async function importProductCategories(file: File): Promise<ProductCatego
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -892,7 +932,7 @@ export async function importProductLimits(file: File): Promise<ProductLimitImpor
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -911,7 +951,7 @@ export async function importTeamLocations(file: File): Promise<TeamLocationImpor
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-location-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-location-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -930,7 +970,7 @@ export async function importDeliveryMethods(file: File): Promise<DeliveryMethodI
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/delivery-method-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/delivery-method-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -949,7 +989,7 @@ export async function importTeamTasks(file: File): Promise<TeamTaskImportRespons
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-task-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-task-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -968,7 +1008,7 @@ export async function importFestivals(file: File): Promise<FestivalImportRespons
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/festival-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/festival-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -987,7 +1027,7 @@ export async function importProducts(file: File): Promise<ProductImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1008,7 +1048,7 @@ export async function importTeams(file: File): Promise<TeamImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1133,7 +1173,7 @@ export function getKarTrackerGroundplan(): Promise<KarTrackerGroundplan> {
  * upload.
  */
 export async function updateKarTrackerGroundplan(formData: FormData): Promise<KarTrackerGroundplan> {
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/groundplan`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/groundplan`, {
     method: "PUT",
     credentials: "include",
     body: formData,
@@ -1325,7 +1365,7 @@ export async function printKarPlanning(
   siteUrl: string,
   locale: string,
 ): Promise<Blob> {
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-planning/print`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-planning/print`, {
     method: "POST",
     credentials: "include",
     headers: { "Content-Type": "application/json" },
@@ -1357,7 +1397,7 @@ export async function importKarren(file: File): Promise<KarImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1380,7 +1420,7 @@ export async function importKarStatuses(file: File): Promise<KarStatusImportResp
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-status-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-status-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1427,7 +1467,7 @@ export async function importDistributiepunten(file: File): Promise<Distributiepu
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/distributiepunt-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/distributiepunt-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1471,7 +1511,7 @@ export async function importZones(file: File): Promise<ZoneImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/zone-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/zone-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1518,7 +1558,7 @@ export async function importAfleverlocaties(file: File): Promise<AfleverlocatieI
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
