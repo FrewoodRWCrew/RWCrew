@@ -134,15 +134,49 @@ def test_reuploading_a_file_already_moved_to_read_tags_is_a_safe_duplicate(
     _scanner, api_key = _create_scanner_with_api_key(db_session)
     readed_dir = source_dir / "Read Tags"
     readed_dir.mkdir(parents=True)
-    (readed_dir / "scan.csv").write_bytes(b"already processed")
+    (readed_dir / "scan.csv").write_bytes(b"EPC,RSSI\nABC,70\n")
 
-    response = _upload(client, api_key)
+    response = _upload(client, api_key, content=b"EPC,RSSI\nABC,70\n")
 
     assert response.status_code == 201
     assert response.json()["status"] == "duplicate"
     # The already-processed file in Read Tags is left untouched.
-    assert (readed_dir / "scan.csv").read_bytes() == b"already processed"
+    assert (readed_dir / "scan.csv").read_bytes() == b"EPC,RSSI\nABC,70\n"
     assert not (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_same_filename_with_different_content_is_stored_not_dropped(
+    client: TestClient, db_session: Session, source_dir: Path
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+    _upload(client, api_key, content=b"EPC,RSSI\nABC,70\n")
+
+    response = _upload(client, api_key, content=b"EPC,RSSI\nXYZ,55\n")
+
+    # The second, different file must not be lost: it lands under a
+    # content-hash name next to the original, which stays untouched.
+    assert response.status_code == 201
+    body = response.json()
+    assert body["status"] == "received"
+    assert body["filename"] != "scan.csv"
+    assert body["filename"].startswith("scan__") and body["filename"].endswith(".csv")
+    assert (source_dir / "Unreaded Tags" / "scan.csv").read_bytes() == b"EPC,RSSI\nABC,70\n"
+    assert (source_dir / "Unreaded Tags" / body["filename"]).read_bytes() == b"EPC,RSSI\nXYZ,55\n"
+
+
+def test_retrying_a_content_conflicting_upload_is_a_safe_duplicate(
+    client: TestClient, db_session: Session, source_dir: Path
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+    _upload(client, api_key, content=b"EPC,RSSI\nABC,70\n")
+    first = _upload(client, api_key, content=b"EPC,RSSI\nXYZ,55\n")
+
+    retry = _upload(client, api_key, content=b"EPC,RSSI\nXYZ,55\n")
+
+    assert retry.status_code == 201
+    assert retry.json() == {"status": "duplicate", "filename": first.json()["filename"]}
+    # Exactly the original plus the one de-conflicted copy — no third file.
+    assert len(list((source_dir / "Unreaded Tags").iterdir())) == 2
 
 
 def test_reuploading_a_file_already_logged_as_header_data_is_a_safe_duplicate(

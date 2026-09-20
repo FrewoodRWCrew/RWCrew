@@ -157,6 +157,18 @@ tests for core logic only).
 - `NEXT_PUBLIC_API_URL` (`frontend/.env.local`) and the URL used to open the frontend in the
   browser must use the **same hostname** (`localhost` vs `127.0.0.1` count as different sites for
   the `SameSite=Lax` auth cookies) — mismatching them silently breaks every authenticated request.
+- **Raspberry Pi → VPS CSV push (TagScan)**: a Pi runs `scripts/pi-watcher/` and POSTs finished CSVs
+  over HTTPS to `POST /api/public/tagscan-intake` (`module_1/device_router.py`, per-scanner
+  `X-API-Key`); files land in `Unreaded Tags` and are ingested by the manual "Scan" button. Full
+  setup: `docs/tagscan-raspi-setup-guide.pdf`. Things that bite:
+  - nginx's default 1 MB body limit rejects larger CSVs before FastAPI sees them —
+    `deploy/nginx/rwcrew.conf` sets `client_max_body_size 25m` on that one location (app limit is
+    `tagscan_intake_max_file_mb`, 20). The same location is rate-limited (`limit_req`). After
+    certbot rewrites the file on the server, those directives must exist in the `443` blocks too.
+  - The Pi's producing app must write `name.csv.tmp` then `rename()` to `name.csv`, and use unique
+    filenames. The backend dedupes by filename + content: same name and bytes → `duplicate`; same
+    name, *different* bytes → stored as `name__<sha256-12>.csv` (never dropped).
+  - A scanner's API key only works on the environment (test vs production) it was generated on.
 - Documentation style for this project: comment every logical block/statement in plain language
   (not literally every line, not just top-level docstrings) — see any file under `app/` or `src/`
   for the expected density. This applies to backend and frontend code we write; generated files
