@@ -7,7 +7,7 @@
 // top-level, exactly like TagScan's own "Dashboard" link — always-visible
 // landing content, not a gated screen.
 //
-// "Season", "Festival", "Teams", "Altsien Kernleden", and "Products" ARE
+// "Season", "Festival", "Teams", and "Products" ARE
 // gated by their own permissions and are grouped under their own
 // "MasterData" heading (icon matches this module's own Database icon
 // from module-theme.ts), the same visual treatment "Access Rights" gets
@@ -40,7 +40,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const tTeamLocation = useTranslations("masterdata.teamLocation");
   const tDeliveryMethod = useTranslations("masterdata.deliveryMethod");
   const tTeamTasks = useTranslations("masterdata.teamTasks");
-  const tAltsienKernleden = useTranslations("masterdata.altsienKernleden");
   const tProducts = useTranslations("masterdata.products");
   const tProductTypes = useTranslations("masterdata.productTypes");
   const tWarehouses = useTranslations("masterdata.warehouses");
@@ -60,7 +59,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewTeamLocation = viewableScreenKeys.includes("masterdata.team-location");
   const canViewDeliveryMethod = viewableScreenKeys.includes("masterdata.delivery-method");
   const canViewTeamTasks = viewableScreenKeys.includes("masterdata.team-tasks");
-  const canViewAltsienKernleden = viewableScreenKeys.includes("masterdata.altsien-kernleden");
   const canViewProducts = viewableScreenKeys.includes("masterdata.products");
   const canViewProductTypes = viewableScreenKeys.includes("masterdata.product-types");
   const canViewWarehouses = viewableScreenKeys.includes("masterdata.warehouses");
@@ -94,7 +92,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
       {(canViewSeason ||
         canViewFestival ||
         canViewTeams ||
-        canViewAltsienKernleden ||
         canViewProducts ||
         canViewDataUpload) && (
         <>
@@ -145,15 +142,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
               className={linkClassName("/modules/module-9/teams/tasks", 2)}
             >
               {tTeamTasks("title")}
-            </Link>
-          )}
-
-          {canViewAltsienKernleden && (
-            <Link
-              href="/modules/module-9/altsien-kernleden"
-              className={linkClassName("/modules/module-9/altsien-kernleden", 1)}
-            >
-              {tAltsienKernleden("title")}
             </Link>
           )}
 

@@ -247,3 +247,82 @@ def test_non_super_admin_cannot_delete_users(client: TestClient, db_session: Ses
     response = client.delete(f"/api/admin/users/{target_user.id}")
 
     assert response.status_code == 403
+
+
+def test_creating_a_user_can_set_the_kernlid_flag_and_phone(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _login(client, "admin@example.com")
+
+    response = client.post(
+        "/api/admin/users",
+        json={
+            "email": "kernlid@example.com",
+            "password": "password123",
+            "display_name": "Kernlid",
+            "is_altsien_kernlid": True,
+            "phone": "  0475 12 34 56  ",
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert body["is_altsien_kernlid"] is True
+    assert body["phone"] == "0475 12 34 56"
+
+
+def test_super_admin_can_update_flags_and_phone(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    target_user = _create_user(db_session, email="member@example.com")
+    _login(client, "admin@example.com")
+
+    response = client.patch(
+        f"/api/admin/users/{target_user.id}",
+        json={"is_super_admin": True, "is_altsien_kernlid": True, "phone": "0123"},
+    )
+
+    assert response.status_code == 200
+    body = response.json()
+    assert (body["is_super_admin"], body["is_altsien_kernlid"], body["phone"]) == (True, True, "0123")
+
+    # Fields left out are untouched; an empty phone clears it.
+    response = client.patch(f"/api/admin/users/{target_user.id}", json={"phone": ""})
+    body = response.json()
+    assert (body["is_super_admin"], body["is_altsien_kernlid"], body["phone"]) == (True, True, None)
+
+
+def test_super_admin_cannot_remove_their_own_super_admin_flag(client: TestClient, db_session: Session) -> None:
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _login(client, "admin@example.com")
+
+    response = client.patch(f"/api/admin/users/{admin.id}", json={"is_super_admin": False})
+
+    assert response.status_code == 400
+
+
+def test_non_super_admin_cannot_update_users(client: TestClient, db_session: Session) -> None:
+    user = _create_user(db_session, email="regular@example.com")
+    _login(client, "regular@example.com")
+
+    response = client.patch(f"/api/admin/users/{user.id}", json={"is_super_admin": True})
+
+    assert response.status_code == 403
+
+
+def test_kernlid_lookup_lists_only_active_flagged_users(client: TestClient, db_session: Session) -> None:
+    regular = _create_user(db_session, email="regular@example.com")
+    flagged = _create_user(db_session, email="flagged@example.com")
+    inactive = _create_user(db_session, email="inactive@example.com")
+    flagged.is_altsien_kernlid = True
+    flagged.phone = "0123"
+    inactive.is_altsien_kernlid = True
+    inactive.is_active = False
+    db_session.commit()
+    _login(client, "regular@example.com")
+
+    response = client.get("/api/modules/altsien-kernleden")
+
+    assert response.status_code == 200
+    assert response.json() == [
+        {"id": flagged.id, "display_name": "flagged@example.com", "email": "flagged@example.com", "phone": "0123"}
+    ]
+    assert regular.id not in [row["id"] for row in response.json()]

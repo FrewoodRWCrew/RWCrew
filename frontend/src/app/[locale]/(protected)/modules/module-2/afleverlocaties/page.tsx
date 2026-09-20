@@ -21,7 +21,7 @@ export default async function AfleverlocatiesPage() {
       serverApiFetch<KarTrackerAfleverlocatie[]>("/api/modules/module-2/afleverlocaties"),
       serverApiFetch<KarTrackerZone[]>("/api/modules/module-2/zones"),
       serverApiFetch<KarTrackerDistributiepunt[]>("/api/modules/module-2/distributiepunten"),
-      serverApiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden").catch(() => []),
+      serverApiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden").catch(() => []),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {

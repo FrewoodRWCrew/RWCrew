@@ -17,7 +17,6 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
-from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan
@@ -1368,7 +1367,10 @@ def _validate_altsien_kernlid_id(db: Session, altsien_kernlid_id: int | None) ->
     the database reject it with a raw foreign-key error. Optional, so only
     checked when one was actually given.
     """
-    if altsien_kernlid_id is not None and db.get(AltsienKernlid, altsien_kernlid_id) is None:
+    if altsien_kernlid_id is None:
+        return
+    kernlid = db.get(User, altsien_kernlid_id)
+    if kernlid is None or not kernlid.is_altsien_kernlid:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernlid not found")
 
 

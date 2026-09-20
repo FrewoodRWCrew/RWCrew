@@ -373,29 +373,6 @@ class MasterDataDashboardResponse(BaseModel):
     products_by_warehouse: list[MasterDataWarehouseBreakdownItem]
 
 
-class AltsienKernlidResponse(BaseModel):
-    """One Altsien Kernleden contact, as shown on its screen."""
-
-    id: int
-    first_name: str
-    name: str
-    telephone_number: str
-    email: EmailStr
-
-
-class AltsienKernlidCreateRequest(BaseModel):
-    """What's sent to create a brand-new Altsien Kernleden contact."""
-
-    first_name: str = Field(min_length=1, max_length=255)
-    name: str = Field(min_length=1, max_length=255)
-    telephone_number: str = Field(min_length=1, max_length=255)
-    email: EmailStr
-
-
-class AltsienKernlidUpdateRequest(AltsienKernlidCreateRequest):
-    """What's sent to update an existing Altsien Kernleden contact — same shape as creating one."""
-
-
 class TeamResponse(BaseModel):
     """One team, as shown on the Teams screen. task_ids/kernlid_ids are
     derived from the MasterData_team_team_task / MasterData_team_kernlid
@@ -415,8 +392,8 @@ class TeamResponse(BaseModel):
 class TeamCreateRequest(BaseModel):
     """What's sent to create a brand-new team. location_id/delivery_method_id,
     if given, must reference an existing row in their lookup table; every id
-    in task_ids/kernlid_ids must reference an existing TeamTask/AltsienKernlid
-    row — all checked by the endpoint, not here.
+    in task_ids/kernlid_ids must reference an existing TeamTask row / an active user
+    flagged Altsien Kernlid — all checked by the endpoint, not here.
     """
 
     name: str = Field(min_length=1, max_length=255)
@@ -607,18 +584,3 @@ class TeamImportResponse(BaseModel):
     """The full outcome of a bulk team import — one result per row, in order."""
 
     results: list[TeamImportRowResult]
-
-
-class AltsienKernlidImportRowResult(BaseModel):
-    """What happened to one row of an uploaded bulk Altsien Kernleden import."""
-
-    row_number: int
-    name: str | None
-    outcome: Literal["created", "error"]
-    detail: str | None
-
-
-class AltsienKernlidImportResponse(BaseModel):
-    """The full outcome of a bulk Altsien Kernleden import — one result per row, in order."""
-
-    results: list[AltsienKernlidImportRowResult]

@@ -25,7 +25,7 @@ export default async function MasterDataTeamsPage() {
       serverApiFetch<TeamLocation[]>("/api/modules/module-9/team-locations").catch(() => []),
       serverApiFetch<DeliveryMethod[]>("/api/modules/module-9/delivery-methods").catch(() => []),
       serverApiFetch<TeamTask[]>("/api/modules/module-9/team-tasks").catch(() => []),
-      serverApiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden").catch(() => []),
+      serverApiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden").catch(() => []),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {

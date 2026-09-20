@@ -11,7 +11,6 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
-from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.festival import Festival
 from app.db.models.masterdata_role import MasterDataRole
@@ -32,11 +31,6 @@ from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
-from app.modules.module_9.altsien_kernlid_import import (
-    build_altsien_kernlid_template_xlsx,
-    export_altsien_kernleden_to_xlsx,
-    import_altsien_kernleden_from_xlsx,
-)
 from app.modules.module_9.delivery_method_import import (
     build_delivery_method_template_xlsx,
     export_delivery_methods_to_xlsx,
@@ -97,10 +91,6 @@ from app.modules.module_9.warehouse_import import (
     import_warehouses_from_xlsx,
 )
 from app.schemas.masterdata import (
-    AltsienKernlidCreateRequest,
-    AltsienKernlidImportResponse,
-    AltsienKernlidResponse,
-    AltsienKernlidUpdateRequest,
     CreateOrGrantUserRequest,
     DeliveryMethodCreateRequest,
     DeliveryMethodImportResponse,
@@ -823,63 +813,6 @@ def delete_team_task(
     db.commit()
 
 
-@router.get("/altsien-kernleden", response_model=list[AltsienKernlidResponse])
-def list_altsien_kernleden(
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "view")),
-) -> list[AltsienKernlid]:
-    """List every Altsien Kernleden contact, for its screen's table."""
-    return list(db.scalars(select(AltsienKernlid).order_by(AltsienKernlid.name, AltsienKernlid.first_name)).all())
-
-
-@router.post("/altsien-kernleden", response_model=AltsienKernlidResponse, status_code=status.HTTP_201_CREATED)
-def create_altsien_kernlid(
-    payload: AltsienKernlidCreateRequest,
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "create")),
-) -> AltsienKernlid:
-    """Create a brand-new Altsien Kernleden contact."""
-    new_contact = AltsienKernlid(**payload.model_dump())
-    db.add(new_contact)
-    db.commit()
-    db.refresh(new_contact)
-    return new_contact
-
-
-@router.put("/altsien-kernleden/{altsien_kernlid_id}", response_model=AltsienKernlidResponse)
-def update_altsien_kernlid(
-    altsien_kernlid_id: int,
-    payload: AltsienKernlidUpdateRequest,
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "edit")),
-) -> AltsienKernlid:
-    """Update every field of an existing Altsien Kernleden contact."""
-    contact = db.get(AltsienKernlid, altsien_kernlid_id)
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
-
-    for field, value in payload.model_dump().items():
-        setattr(contact, field, value)
-    db.commit()
-    db.refresh(contact)
-    return contact
-
-
-@router.delete("/altsien-kernleden/{altsien_kernlid_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_altsien_kernlid(
-    altsien_kernlid_id: int,
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.altsien-kernleden", "delete")),
-) -> None:
-    """Delete an Altsien Kernleden contact."""
-    contact = db.get(AltsienKernlid, altsien_kernlid_id)
-    if contact is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
-
-    db.delete(contact)
-    db.commit()
-
-
 def _validate_team_lookup_ids(db: Session, payload: TeamCreateRequest | TeamUpdateRequest) -> None:
     """Make sure location_id/delivery_method_id (if given) and every id in
     task_ids/kernlid_ids actually exist, the same way
@@ -896,8 +829,9 @@ def _validate_team_lookup_ids(db: Session, payload: TeamCreateRequest | TeamUpda
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team task not found")
 
     for kernlid_id in payload.kernlid_ids:
-        if db.get(AltsienKernlid, kernlid_id) is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernleden contact not found")
+        kernlid = db.get(User, kernlid_id)
+        if kernlid is None or not kernlid.is_altsien_kernlid:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernlid not found")
 
 
 def _replace_team_task_links(db: Session, team_id: int, task_ids: list[int]) -> None:
@@ -1829,40 +1763,4 @@ def export_teams_xlsx(
         content=export_teams_to_xlsx(db),
         media_type=XLSX_MEDIA_TYPE,
         headers={"Content-Disposition": 'attachment; filename="masterdata-teams-export.xlsx"'},
-    )
-
-
-@router.get("/altsien-kernlid-import/template")
-def download_altsien_kernlid_import_template(
-    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
-) -> Response:
-    """The downloadable XLSX template for bulk-creating new Altsien Kernleden contacts."""
-    return Response(
-        content=build_altsien_kernlid_template_xlsx(),
-        media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="altsien-kernlid-import-template.xlsx"'},
-    )
-
-
-@router.post("/altsien-kernlid-import", response_model=AltsienKernlidImportResponse)
-def import_altsien_kernleden(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.dataupload", "create")),
-) -> AltsienKernlidImportResponse:
-    """Bulk-create new Altsien Kernleden contacts from an uploaded XLSX workbook."""
-    results = import_altsien_kernleden_from_xlsx(db, file.file.read())
-    return AltsienKernlidImportResponse(results=results)
-
-
-@router.get("/altsien-kernleden/export")
-def export_altsien_kernleden_xlsx(
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("masterdata.dataupload", "view")),
-) -> Response:
-    """Every Altsien Kernleden contact as an XLSX workbook."""
-    return Response(
-        content=export_altsien_kernleden_to_xlsx(db),
-        media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="masterdata-altsien-kernleden-export.xlsx"'},
     )

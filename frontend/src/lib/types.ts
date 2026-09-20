@@ -31,6 +31,8 @@ export interface UserSummary {
   email: string;
   display_name: string;
   is_super_admin: boolean;
+  is_altsien_kernlid: boolean;
+  phone: string | null;
   is_active: boolean;
   accessible_module_keys: string[];
 }
@@ -100,25 +102,17 @@ export interface FestivalInput {
   active: boolean;
 }
 
-/** One Altsien Kernleden contact, as managed on MasterData's own screen. */
+/** One user flagged "Altsien Kernlid" (set on the Manage Access screen), as
+ * offered in the Teams / Distributiepunt / Afleverlocatie pickers. */
 export interface AltsienKernlid {
   id: number;
-  first_name: string;
-  name: string;
-  telephone_number: string;
+  display_name: string;
   email: string;
-}
-
-/** The fields sent to create or fully update an Altsien Kernleden contact. */
-export interface AltsienKernlidInput {
-  first_name: string;
-  name: string;
-  telephone_number: string;
-  email: string;
+  phone: string | null;
 }
 
 /** One team, as managed on MasterData's Teams screen. task_ids/kernlid_ids
- * reference Team Task / Altsien Kernleden rows (many-to-many). */
+ * reference Team Task rows / users flagged Altsien Kernlid (many-to-many). */
 export interface Team {
   id: number;
   name: string;
@@ -1171,17 +1165,6 @@ export interface TeamImportRowResult {
 
 export interface TeamImportResponse {
   results: TeamImportRowResult[];
-}
-
-export interface AltsienKernlidImportRowResult {
-  row_number: number;
-  name: string | null;
-  outcome: "created" | "error";
-  detail: string | null;
-}
-
-export interface AltsienKernlidImportResponse {
-  results: AltsienKernlidImportRowResult[];
 }
 
 // --- Login History (Toegangsbeheer) ----------------------------------

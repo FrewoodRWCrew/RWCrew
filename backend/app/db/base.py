@@ -5,7 +5,6 @@
 # list of models.
 
 from app.core.database import Base  # noqa: F401  (re-exported for convenience)
-from app.db.models.altsien_kernlid import AltsienKernlid  # noqa: F401
 from app.db.models.delivery_method import DeliveryMethod  # noqa: F401
 from app.db.models.festival import Festival  # noqa: F401
 from app.db.models.intervention_request import InterventionRequest  # noqa: F401

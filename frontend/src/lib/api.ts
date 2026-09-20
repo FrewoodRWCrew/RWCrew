@@ -12,8 +12,6 @@ import type {
   ModuleStatus,
   AfleverlocatieImportResponse,
   AltsienKernlid,
-  AltsienKernlidImportResponse,
-  AltsienKernlidInput,
   DeliveryMethod,
   DeliveryMethodImportResponse,
   DistributiepuntImportResponse,
@@ -204,9 +202,21 @@ export function createUser(payload: {
   password: string;
   display_name: string;
   is_super_admin: boolean;
+  is_altsien_kernlid: boolean;
+  phone: string | null;
 }): Promise<UserSummary> {
   return apiFetch<UserSummary>("/api/admin/users", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateUser(
+  userId: number,
+  payload: { is_super_admin?: boolean; is_altsien_kernlid?: boolean; phone?: string | null },
+): Promise<UserSummary> {
+  return apiFetch<UserSummary>(`/api/admin/users/${userId}`, {
+    method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
@@ -378,28 +388,10 @@ export function deleteFestival(festivalId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/festivals/${festivalId}`, { method: "DELETE" });
 }
 
-// --- Altsien Kernleden (module-9's "masterdata.altsien-kernleden" screen) ---
+// --- Altsien Kernleden: users flagged on the Manage Access screen ---
 
 export function listAltsienKernleden(): Promise<AltsienKernlid[]> {
-  return apiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden");
-}
-
-export function createAltsienKernlid(payload: AltsienKernlidInput): Promise<AltsienKernlid> {
-  return apiFetch<AltsienKernlid>("/api/modules/module-9/altsien-kernleden", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function updateAltsienKernlid(id: number, payload: AltsienKernlidInput): Promise<AltsienKernlid> {
-  return apiFetch<AltsienKernlid>(`/api/modules/module-9/altsien-kernleden/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function deleteAltsienKernlid(id: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/altsien-kernleden/${id}`, { method: "DELETE" });
+  return apiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden");
 }
 
 // --- Products (module-9's "masterdata.products" screen) -----------------
@@ -1029,25 +1021,6 @@ export async function importTeams(file: File): Promise<TeamImportResponse> {
   }
 
   return (await response.json()) as TeamImportResponse;
-}
-
-export async function importAltsienKernleden(file: File): Promise<AltsienKernlidImportResponse> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/altsien-kernlid-import`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
-    throw new ApiError(message, response.status);
-  }
-
-  return (await response.json()) as AltsienKernlidImportResponse;
 }
 
 // --- Intervention Requests (module-3): KPI landing dashboard ---------------

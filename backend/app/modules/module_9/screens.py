@@ -56,7 +56,6 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.team-location", label="Team Location", sort_order=11),
     ScreenDefinition(key="masterdata.delivery-method", label="Delivery Method", sort_order=12),
     ScreenDefinition(key="masterdata.team-tasks", label="Team Tasks", sort_order=13),
-    ScreenDefinition(key="masterdata.altsien-kernleden", label="Altsien Kernleden", sort_order=14),
     ScreenDefinition(key="masterdata.dataupload", label="Data Upload/Download", sort_order=15),
 ]
 

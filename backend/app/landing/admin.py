@@ -22,7 +22,7 @@ from app.db.models.user_module_access import UserModuleAccess
 from app.landing.deps import require_super_admin
 from app.schemas.login_history import LoginHistoryEntry, LoginHistoryPage
 from app.schemas.module import SetUserAccessRequest
-from app.schemas.user import UserCreateRequest, UserSummaryResponse
+from app.schemas.user import UserCreateRequest, UserSummaryResponse, UserUpdateRequest
 from app.shared.access import get_accessible_module_keys
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -35,6 +35,8 @@ def _build_user_summary(db: Session, user: User) -> UserSummaryResponse:
         email=user.email,
         display_name=user.display_name,
         is_super_admin=user.is_super_admin,
+        is_altsien_kernlid=user.is_altsien_kernlid,
+        phone=user.phone,
         is_active=user.is_active,
         accessible_module_keys=get_accessible_module_keys(db, user.id),
     )
@@ -65,6 +67,8 @@ def create_user(
         hashed_password=hash_password(payload.password),
         display_name=payload.display_name,
         is_super_admin=payload.is_super_admin,
+        is_altsien_kernlid=payload.is_altsien_kernlid,
+        phone=payload.phone,
     )
     db.add(new_user)
     try:
@@ -76,6 +80,37 @@ def create_user(
 
     db.refresh(new_user)
     return _build_user_summary(db, new_user)
+
+
+@router.patch("/users/{user_id}", response_model=UserSummaryResponse)
+def update_user(
+    user_id: int,
+    payload: UserUpdateRequest,
+    db: Session = Depends(get_db),
+    current_super_admin: User = Depends(require_super_admin),
+) -> UserSummaryResponse:
+    """Change a user's Super admin / Altsien Kernlid flags and phone number.
+    Only the fields present in the request are changed."""
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+    if payload.is_super_admin is False and user.id == current_super_admin.id:
+        # Same lockout reasoning as the self-delete guard above.
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="You cannot remove your own super admin flag"
+        )
+
+    # model_fields_set tells "phone omitted" apart from "phone: null/empty" (= clear it).
+    if payload.is_super_admin is not None:
+        user.is_super_admin = payload.is_super_admin
+    if payload.is_altsien_kernlid is not None:
+        user.is_altsien_kernlid = payload.is_altsien_kernlid
+    if "phone" in payload.model_fields_set:
+        user.phone = payload.phone
+
+    db.commit()
+    return _build_user_summary(db, user)
 
 
 @router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)

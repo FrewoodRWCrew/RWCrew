@@ -17,21 +17,20 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
+from app.db.models.user import User
 from app.schemas.kartracker import DistributiepuntImportRowResult
 
 # The workbook's columns, in order — also the header row of the
-# downloadable template. Altsien Kernlid is given by first name + name
+# downloadable template. Altsien Kernlid is given by the user's email
 # (not id), since this is filled in by a person editing a spreadsheet,
-# matched against the Altsien Kernleden contact list on import.
+# matched against the users flagged Altsien Kernlid on import.
 TEMPLATE_COLUMNS = [
     "name",
     "latitude",
     "longitude",
     "terrein_positie",
-    "altsien_kernlid_first_name",
-    "altsien_kernlid_name",
+    "altsien_kernlid_email",
 ]
 
 
@@ -66,22 +65,16 @@ def _cell_text(value: object) -> str | None:
     return text or None
 
 
-def _resolve_altsien_kernlid_id(db: Session, first_name: str | None, name: str | None) -> int | None:
-    """Both cells blank means "no kernlid assigned". Either given without a
-    matching contact is an error rather than silently ignored.
+def _resolve_altsien_kernlid_id(db: Session, email: str | None) -> int | None:
+    """A blank cell means "no kernlid assigned". An email that doesn't match
+    a user flagged Altsien Kernlid is an error rather than silently ignored.
     """
-    if first_name is None and name is None:
+    if email is None:
         return None
-    contact = db.scalar(
-        select(AltsienKernlid).where(
-            func.lower(AltsienKernlid.first_name) == (first_name or "").lower(),
-            func.lower(AltsienKernlid.name) == (name or "").lower(),
-        )
-    )
-    if contact is None:
-        full_name = f"{first_name or ''} {name or ''}".strip()
-        raise ValueError(f'Altsien Kernlid "{full_name}" not found')
-    return contact.id
+    user = db.scalar(select(User).where(func.lower(User.email) == email.lower(), User.is_altsien_kernlid.is_(True)))
+    if user is None:
+        raise ValueError(f'Altsien Kernlid "{email}" not found')
+    return user.id
 
 
 def import_distributiepunten_from_xlsx(db: Session, file_bytes: bytes) -> list[DistributiepuntImportRowResult]:
@@ -125,11 +118,7 @@ def import_distributiepunten_from_xlsx(db: Session, file_bytes: bytes) -> list[D
                 latitude=float(cell(row, "latitude")) if _cell_text(cell(row, "latitude")) else None,
                 longitude=float(cell(row, "longitude")) if _cell_text(cell(row, "longitude")) else None,
                 terrein_positie=_cell_text(cell(row, "terrein_positie")),
-                altsien_kernlid_id=_resolve_altsien_kernlid_id(
-                    db,
-                    _cell_text(cell(row, "altsien_kernlid_first_name")),
-                    _cell_text(cell(row, "altsien_kernlid_name")),
-                ),
+                altsien_kernlid_id=_resolve_altsien_kernlid_id(db, _cell_text(cell(row, "altsien_kernlid_email"))),
             )
             db.add(new_distributiepunt)
 
@@ -151,9 +140,9 @@ def import_distributiepunten_from_xlsx(db: Session, file_bytes: bytes) -> list[D
 def export_distributiepunten_to_xlsx(db: Session) -> bytes:
     """The full Distributiepunten dataset as an XLSX workbook, same
     columns as the import template, with the Altsien Kernlid resolved
-    back to first name + name.
+    back to the user's email.
     """
-    contacts = {contact.id: contact for contact in db.scalars(select(AltsienKernlid)).all()}
+    kernlid_emails = {user.id: user.email for user in db.scalars(select(User)).all()}
 
     workbook = Workbook()
     sheet = workbook.active
@@ -166,15 +155,13 @@ def export_distributiepunten_to_xlsx(db: Session) -> bytes:
         select(KarTrackerDistributiepunt).order_by(KarTrackerDistributiepunt.name)
     ).all()
     for distributiepunt in distributiepunten:
-        contact = contacts.get(distributiepunt.altsien_kernlid_id) if distributiepunt.altsien_kernlid_id else None
         sheet.append(
             [
                 distributiepunt.name,
                 distributiepunt.latitude,
                 distributiepunt.longitude,
                 distributiepunt.terrein_positie,
-                contact.first_name if contact else None,
-                contact.name if contact else None,
+                kernlid_emails.get(distributiepunt.altsien_kernlid_id),
             ]
         )
     for index, column in enumerate(TEMPLATE_COLUMNS, start=1):

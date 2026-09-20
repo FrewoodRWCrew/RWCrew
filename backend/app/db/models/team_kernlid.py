@@ -1,5 +1,5 @@
 # This file defines the "MasterData_team_kernlid" join table: which
-# Altsien Kernleden contacts (Kernleden) belong to which Team — a
+# users flagged Altsien Kernlid (Kernleden) belong to which Team — a
 # many-to-many relationship, the same shape as MasterData_team_team_task.
 
 from sqlalchemy import ForeignKey, Integer, UniqueConstraint
@@ -9,7 +9,7 @@ from app.core.database import Base
 
 
 class TeamKernlid(Base):
-    """One row means: this Altsien Kernleden contact belongs to this team."""
+    """One row means: this Altsien Kernlid user belongs to this team."""
 
     __tablename__ = "MasterData_team_kernlid"
 
@@ -20,5 +20,5 @@ class TeamKernlid(Base):
 
     team_id: Mapped[int] = mapped_column(Integer, ForeignKey("MasterData_team.id", ondelete="CASCADE"), nullable=False)
     altsien_kernlid_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("MasterData_altsien_kernlid.id", ondelete="CASCADE"), nullable=False
+        Integer, ForeignKey("Landing_users.id", ondelete="CASCADE"), nullable=False
     )

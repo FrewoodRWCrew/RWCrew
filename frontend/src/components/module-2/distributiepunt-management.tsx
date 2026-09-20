@@ -5,7 +5,7 @@
 // bespoke, multi-field CRUD screen), since it has an Altsien Kernlid
 // dropdown alongside plain fields, which the shared LookupManagement
 // component (single name field only) can't handle. Altsien Kernlid is
-// picked from module-9's existing Altsien Kernleden master data
+// picked from the users flagged Altsien Kernlid on Manage Access
 // (cross-module, same pattern as KarManagement's own Team dropdown).
 
 import { useState } from "react";
@@ -71,7 +71,7 @@ function toFormValues(distributiepunt: KarTrackerDistributiepunt): KarTrackerDis
 }
 
 function kernlidLabel(kernlid: AltsienKernlid) {
-  return `${kernlid.first_name} ${kernlid.name}`;
+  return kernlid.display_name;
 }
 
 export function DistributiepuntManagement({

@@ -231,7 +231,7 @@ function TeamFormDialog({
   }
 
   const taskOptions = teamTasks.map((task) => ({ id: task.id, label: task.team_tasks }));
-  const kernlidOptions = kernleden.map((kernlid) => ({ id: kernlid.id, label: `${kernlid.first_name} ${kernlid.name}` }));
+  const kernlidOptions = kernleden.map((kernlid) => ({ id: kernlid.id, label: kernlid.display_name }));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>

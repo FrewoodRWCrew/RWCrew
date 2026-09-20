@@ -4,8 +4,8 @@
 // a table with add/change/delete. Modeled on KarManagement (a bespoke,
 // multi-field CRUD screen): Zone and Distributiepunt are required
 // dropdowns sourced from this module's own master data, Altsien Kernlid is
-// an optional dropdown sourced from module-9's existing Altsien Kernleden
-// (cross-module, same pattern as KarManagement's own Team dropdown).
+// an optional dropdown of the users flagged Altsien Kernlid on
+// Manage Access (cross-module, same pattern as KarManagement's own Team dropdown).
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -97,7 +97,7 @@ function toFormValues(afleverlocatie: KarTrackerAfleverlocatie): AfleverlocatieF
 }
 
 function kernlidLabel(kernlid: AltsienKernlid) {
-  return `${kernlid.first_name} ${kernlid.name}`;
+  return kernlid.display_name;
 }
 
 export function AfleverlocatieManagement({
