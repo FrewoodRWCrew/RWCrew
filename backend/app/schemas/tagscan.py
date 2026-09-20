@@ -364,6 +364,9 @@ class TagHeaderDataResponse(BaseModel):
     scanner_name: str | None
     scanner_location: str | None
     scanner_technology: str | None
+    # The file's "Mode" and "Action" CSV values (first non-empty per file).
+    mode: str | None
+    action: str | None
 
 
 class TagHeaderDataScanFileResult(BaseModel):
@@ -404,6 +407,9 @@ class TagLineDataResponse(BaseModel):
     antenna: int | None
     count: int | None
     last_seen: str | None
+    # The line's own "Mode"/"Action" CSV value, or its file's header value.
+    mode: str | None
+    action: str | None
     rfid_tag_id: int | None
     assigned_product_name: str | None
     assigned_serial_number: str | None

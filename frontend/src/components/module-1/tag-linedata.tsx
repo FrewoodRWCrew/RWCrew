@@ -53,6 +53,8 @@ type SortableColumn =
   | "scanner_location"
   | "created_at"
   | "scanner_technology"
+  | "mode"
+  | "action"
   | "epc"
   | "rssi"
   | "antenna"
@@ -143,6 +145,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [scannerLocationFilter, setScannerLocationFilter] = useState("");
   const [createdAtFilter, setCreatedAtFilter] = useState("");
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
+  const [modeFilter, setModeFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
   const [epcFilter, setEpcFilter] = useState("");
   const [rssiFilter, setRssiFilter] = useState("");
   const [antennaFilter, setAntennaFilter] = useState("");
@@ -178,6 +182,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.scanner_location, scannerLocationFilter)) return false;
       if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(entry.scanner_technology, scannerTechnologyFilter)) return false;
+      if (!textMatches(entry.mode, modeFilter)) return false;
+      if (!textMatches(entry.action, actionFilter)) return false;
       if (!textMatches(entry.epc, epcFilter)) return false;
       if (!textMatches(entry.rssi, rssiFilter)) return false;
       if (!textMatches(entry.antenna, antennaFilter)) return false;
@@ -199,6 +205,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     scannerLocationFilter,
     createdAtFilter,
     scannerTechnologyFilter,
+    modeFilter,
+    actionFilter,
     epcFilter,
     rssiFilter,
     antennaFilter,
@@ -316,6 +324,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <TableCell>{entry.scanner_location}</TableCell>
         <TableCell>{formatDateTime(entry.created_at)}</TableCell>
         <TableCell>{entry.scanner_technology}</TableCell>
+        <TableCell>{entry.mode}</TableCell>
+        <TableCell>{entry.action}</TableCell>
         <TableCell>{entry.last_seen}</TableCell>
         <TableCell>{entry.header_filename}</TableCell>
         <TableCell>{entry.line_number}</TableCell>
@@ -450,6 +460,24 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnScannerTechnology")}
                 column="scanner_technology"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnMode")}
+                column="mode"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnAction")}
+                column="action"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -627,6 +655,24 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterMode")}
+                  placeholder={t("filterMode")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={modeFilter}
+                  onChange={(event) => setModeFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterAction")}
+                  placeholder={t("filterAction")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={actionFilter}
+                  onChange={(event) => setActionFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterLastSeen")}
                   placeholder={t("filterLastSeen")}
                   className="h-8 w-full min-w-24 font-normal"
@@ -709,7 +755,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={18} className="font-semibold">
+                        <TableCell colSpan={20} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

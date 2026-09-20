@@ -163,6 +163,10 @@ COLUMN_RSSI = "RSSI (raw)"
 COLUMN_ANTENNA = "Antenna"
 COLUMN_COUNT = "Count"
 COLUMN_LAST_SEEN = "Last Seen"
+# Optional columns: older CSVs don't have them, in which case the parsed
+# value is simply None.
+COLUMN_MODE = "Mode"
+COLUMN_ACTION = "Action"
 
 
 def _parse_int(value: str | None) -> int | None:
@@ -210,6 +214,8 @@ def parse_csv_rows(file: Path) -> list[dict]:
                     "antenna": _parse_int(row.get(COLUMN_ANTENNA)),
                     "count": _parse_int(row.get(COLUMN_COUNT)),
                     "last_seen": (row.get(COLUMN_LAST_SEEN) or "").strip() or None,
+                    "mode": (row.get(COLUMN_MODE) or "").strip() or None,
+                    "action": (row.get(COLUMN_ACTION) or "").strip() or None,
                 }
             )
     return rows

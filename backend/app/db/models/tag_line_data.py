@@ -49,6 +49,12 @@ class TagLineData(Base):
     count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     last_seen: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
+    # The "Mode" and "Action" CSV values: the row's own cell, or the file's
+    # header-level value (see TagHeaderData) when that cell is empty. Free
+    # text, null when neither has a value.
+    mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    action: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Which registered tag this EPC matched, if any — null means "no_match".
     rfid_tag_id: Mapped[int | None] = mapped_column(ForeignKey("Tagscan_rfid_tag.id"), nullable=True)
 

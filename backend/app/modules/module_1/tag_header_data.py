@@ -66,6 +66,8 @@ def _build_line_rows(
     product_names_by_id: dict[int, str],
     scanners_by_name: dict[str, Scanner],
     scanners_by_id: dict[int, Scanner],
+    header_mode: str | None = None,
+    header_action: str | None = None,
 ) -> list[TagLineData]:
     """Turn one file's parsed CSV rows into TagLineData rows, matching
     each one's EPC against the (pre-loaded, scan-wide) set of registered
@@ -73,6 +75,9 @@ def _build_line_rows(
     devices, snapshotting each match's key fields when found — the same
     match_tag()/match_scanner() used by the "Synchro" re-check on the Tag
     Linedata screen itself (see tag_line_data.sync_line_data).
+
+    A line's mode/action is its own CSV cell, or the file's header-level
+    value (header_mode/header_action) when that cell is empty.
     """
     return [
         TagLineData(
@@ -84,6 +89,8 @@ def _build_line_rows(
             antenna=row["antenna"],
             count=row["count"],
             last_seen=row["last_seen"],
+            mode=row["mode"] or header_mode,
+            action=row["action"] or header_action,
             **match_tag(row["epc"], tags_by_epc, product_names_by_id),
             **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id),
         )
@@ -142,6 +149,11 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
         header_scanner = next((row["scanner"] for row in parsed_rows if row["scanner"]), None)
         header_match = match_scanner(header_scanner, None, scanners_by_name, scanners_by_id)
 
+        # The file's mode and action: same rule as the scanner above —
+        # the first non-empty value among its parsed rows.
+        header_mode = next((row["mode"] for row in parsed_rows if row["mode"]), None)
+        header_action = next((row["action"] for row in parsed_rows if row["action"]), None)
+
         # The number of data lines actually logged below — NOT a raw
         # physical line count, so this always matches how many rows show
         # up for this file on the Tag Linedata screen (the CSV's own
@@ -150,6 +162,8 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
             filename=filename,
             line_count=len(parsed_rows),
             scanner=header_scanner,
+            mode=header_mode,
+            action=header_action,
             **header_match,
         )
         db.add(new_entry)
@@ -177,7 +191,14 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
         # counted twice.
         db.add_all(
             _build_line_rows(
-                new_entry.id, parsed_rows, tags_by_epc, product_names_by_id, scanners_by_name, scanners_by_id
+                new_entry.id,
+                parsed_rows,
+                tags_by_epc,
+                product_names_by_id,
+                scanners_by_name,
+                scanners_by_id,
+                header_mode=header_mode,
+                header_action=header_action,
             )
         )
         db.commit()

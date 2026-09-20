@@ -66,6 +66,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [scannerNameFilter, setScannerNameFilter] = useState("");
   const [scannerLocationFilter, setScannerLocationFilter] = useState("");
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
+  const [modeFilter, setModeFilter] = useState("");
+  const [actionFilter, setActionFilter] = useState("");
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -75,6 +77,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(entry.scanner_name ?? "", scannerNameFilter)) return false;
       if (!textMatches(entry.scanner_location ?? "", scannerLocationFilter)) return false;
       if (!textMatches(entry.scanner_technology ?? "", scannerTechnologyFilter)) return false;
+      if (!textMatches(entry.mode ?? "", modeFilter)) return false;
+      if (!textMatches(entry.action ?? "", actionFilter)) return false;
       return true;
     });
   }, [
@@ -85,6 +89,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
     scannerNameFilter,
     scannerLocationFilter,
     scannerTechnologyFilter,
+    modeFilter,
+    actionFilter,
   ]);
 
   function handleDeleted(deletedId: number) {
@@ -160,6 +166,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerName")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerLocation")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerTechnology")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnMode")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAction")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("columnActions")}
               </TableHead>
@@ -220,6 +228,24 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setScannerTechnologyFilter(event.target.value)}
                 />
               </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterMode")}
+                  placeholder={t("filterMode")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={modeFilter}
+                  onChange={(event) => setModeFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterAction")}
+                  placeholder={t("filterAction")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={actionFilter}
+                  onChange={(event) => setActionFilter(event.target.value)}
+                />
+              </TableHead>
               <TableHead className="sticky top-10 right-0 z-30 bg-background" />
             </TableRow>
           </TableHeader>
@@ -239,6 +265,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 <TableCell className="text-muted-foreground">{entry.scanner_name}</TableCell>
                 <TableCell className="text-muted-foreground">{entry.scanner_location}</TableCell>
                 <TableCell className="text-muted-foreground">{entry.scanner_technology}</TableCell>
+                <TableCell className="text-muted-foreground">{entry.mode}</TableCell>
+                <TableCell className="text-muted-foreground">{entry.action}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <a

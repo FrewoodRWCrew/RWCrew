@@ -54,3 +54,9 @@ class TagHeaderData(Base):
     scanner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     scanner_location: Mapped[str | None] = mapped_column(Text, nullable=True)
     scanner_technology: Mapped[str | None] = mapped_column(String(50), nullable=True)
+
+    # The "Mode" and "Action" CSV values for this file: the first non-empty
+    # value found among its parsed rows (same rule as "scanner" above).
+    # Free text, null when the CSV has no such column or it is empty.
+    mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    action: Mapped[str | None] = mapped_column(String(255), nullable=True)

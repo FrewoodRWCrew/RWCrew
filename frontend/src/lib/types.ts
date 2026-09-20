@@ -407,6 +407,9 @@ export interface TagHeaderDataEntry {
   scanner_name: string | null;
   scanner_location: string | null;
   scanner_technology: string | null;
+  // The file's "Mode" and "Action" CSV values (first non-empty per file).
+  mode: string | null;
+  action: string | null;
 }
 
 /** What happened to one file found in "Unreaded Tags" during a scan. */
@@ -439,6 +442,9 @@ export interface TagLineDataEntry {
   antenna: number | null;
   count: number | null;
   last_seen: string | null;
+  // The line's own "Mode"/"Action" CSV value, or its file's header value.
+  mode: string | null;
+  action: string | null;
   rfid_tag_id: number | null;
   assigned_product_name: string | null;
   assigned_serial_number: string | null;
