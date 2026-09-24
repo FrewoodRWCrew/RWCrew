@@ -1486,6 +1486,21 @@
     "newRequestButton": "Nieuwe aanvraag indienen",
     "errorMessage": "Versturen van de aanvraag is mislukt. Probeer het opnieuw."
   },
+  "mobileApp": {
+    "title": "Mobile App",
+    "intro": "Installeer de RWCrew-app op je smartphone.",
+    "iosTitle": "iPhone",
+    "iosStep1": "Installeer de gratis TestFlight-app uit de App Store.",
+    "iosStep2": "Tik hieronder op je iPhone op de knop om deel te nemen en de app te installeren.",
+    "iosButton": "Installeer op iPhone",
+    "androidTitle": "Android",
+    "androidStep1": "Open de knop hieronder op je Android-telefoon en download de app.",
+    "androidStep2": "Sta indien gevraagd het installeren van apps uit deze bron toe.",
+    "androidButton": "Download voor Android",
+    "notAvailable": "Nog niet beschikbaar.",
+    "latestVersion": "Laatste versie: {version}",
+    "changelogTitle": "Wat is nieuw"
+  },
   "errors": {
     "forbidden": "Je hebt geen toegang tot deze pagina.",
     "generic": "Er is iets misgegaan. Probeer het later opnieuw."

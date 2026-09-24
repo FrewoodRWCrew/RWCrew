@@ -6,7 +6,7 @@
 // Once real module names/branding are decided, these colours (and their
 // order) can simply be reassigned here without touching any component.
 
-import { Box, Database, Nfc, type LucideIcon } from "lucide-react";
+import { Box, Database, Nfc, Smartphone, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import RollContainerIcon from "@/components/icons/roll-container-icon";
@@ -107,6 +107,14 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     // "master data" (it was used for the admin sidebar's old Master Data
     // heading before that screen moved into this module).
     icon: Database,
+  },
+  "module-10": {
+    tileClassName: "bg-emerald-600 text-white",
+    badgeClassName: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
+    accentColorToken: "emerald-600",
+    accentForegroundColorToken: "white",
+    // The web-side download page for the smartphone app.
+    icon: Smartphone,
   },
 };
 

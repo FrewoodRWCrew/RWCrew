@@ -52,6 +52,14 @@ export interface ModuleStatus {
   your_role: ModuleRoleName | null;
 }
 
+/** Install links and release info for the "Mobile App" download page (module-10). */
+export interface MobileAppInfo {
+  ios_testflight_url: string | null;
+  android_download_url: string | null;
+  latest_version: string | null;
+  changelog: string[];
+}
+
 /** One season, as managed on the Master Data screen. */
 export interface Season {
   id: number;

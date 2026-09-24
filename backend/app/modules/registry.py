@@ -28,7 +28,15 @@ class ModuleDefinition:
 # module-3 (Intervention Requests) also has a bespoke router with multiple
 # screens and per-screen permissions, so it belongs with TagScan/MasterData
 # rather than with the placeholder modules using the shared factory.
-_MODULE_NAMES = {"module-1": "TagScan", "module-3": "Intervention Requests", "module-9": "MasterData"}
+#
+# module-10 ("Mobile App") is the web-side download page for the smartphone
+# app (install links, latest version, changelog); it contains no phone code.
+_MODULE_NAMES = {
+    "module-1": "TagScan",
+    "module-3": "Intervention Requests",
+    "module-9": "MasterData",
+    "module-10": "Mobile App",
+}
 
 MODULE_DEFINITIONS: list[ModuleDefinition] = [
     ModuleDefinition(
@@ -36,5 +44,5 @@ MODULE_DEFINITIONS: list[ModuleDefinition] = [
         name=_MODULE_NAMES.get(f"module-{number}", f"Module {number}"),
         sort_order=number,
     )
-    for number in range(1, 10)
+    for number in range(1, 11)
 ]

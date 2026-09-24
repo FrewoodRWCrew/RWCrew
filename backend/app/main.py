@@ -17,8 +17,10 @@ from app.core.database import SessionLocal
 from app.landing.admin import router as admin_router
 from app.landing.auth import router as auth_router
 from app.landing.modules import router as modules_router
+from app.mobile.router import router as mobile_router
 from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
+from app.modules.module_10.router import router as module_10_router
 from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
 from app.modules.module_2.router import router as module_2_router
 from app.modules.module_2.screens import sync_screens as sync_kartracker_screens
@@ -82,6 +84,9 @@ app.include_router(module_6_router)
 app.include_router(module_7_router)
 app.include_router(module_8_router)
 app.include_router(module_9_router)
+app.include_router(module_10_router)
+# The smartphone app's whole API (/api/mobile/v1/...), kept in app/mobile/.
+app.include_router(mobile_router)
 
 
 @app.get("/api/health")

@@ -62,6 +62,25 @@ class Settings(BaseSettings):
     # scan lines, while still rejecting an obviously-wrong/corrupt upload.
     tagscan_intake_max_file_mb: int = 20
 
+    # The oldest version of the smartphone app (see mobile/ and
+    # app/mobile/) this environment still accepts. Phone requests send their
+    # version in an "X-App-Version" header; anything older gets a "426
+    # Upgrade Required". "0.0.0" (the default) means every version is
+    # accepted. Only raise this when a breaking API change ships.
+    mobile_min_app_version: str = "0.0.0"
+
+    # What the web-side "Mobile App" download page (module-10) shows. They
+    # are settings (set per environment in the server's .env) so publishing a
+    # new phone build never needs a web redeploy of code, only a config edit.
+    # The iOS link is the TestFlight public link; the Android link is a direct
+    # APK/store URL. An empty value simply hides that platform's button.
+    mobile_ios_testflight_url: str = ""
+    mobile_android_download_url: str = ""
+    # The newest published phone app version and a short plain-text changelog
+    # (one change per line).
+    mobile_latest_version: str = ""
+    mobile_changelog: str = ""
+
 
 # Create one shared Settings object that the rest of the app can import
 # and reuse, instead of re-reading the environment every time.

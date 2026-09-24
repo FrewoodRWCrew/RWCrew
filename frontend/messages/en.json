@@ -1486,6 +1486,21 @@
     "newRequestButton": "Submit another request",
     "errorMessage": "Failed to submit the request. Please try again."
   },
+  "mobileApp": {
+    "title": "Mobile App",
+    "intro": "Install the RWCrew phone app on your smartphone.",
+    "iosTitle": "iPhone",
+    "iosStep1": "Install the free TestFlight app from the App Store.",
+    "iosStep2": "Tap the button below on your iPhone to join and install the app.",
+    "iosButton": "Install on iPhone",
+    "androidTitle": "Android",
+    "androidStep1": "Open the button below on your Android phone and download the app.",
+    "androidStep2": "If asked, allow installing apps from this source.",
+    "androidButton": "Download for Android",
+    "notAvailable": "Not available yet.",
+    "latestVersion": "Latest version: {version}",
+    "changelogTitle": "What's new"
+  },
   "errors": {
     "forbidden": "You don't have access to this page.",
     "generic": "Something went wrong. Please try again later."

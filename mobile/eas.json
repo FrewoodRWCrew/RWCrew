@@ -1,0 +1,28 @@
+{
+  "cli": {
+    "version": ">= 16.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "test": {
+      "distribution": "store",
+      "channel": "test",
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "test"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": true,
+      "env": {
+        "APP_VARIANT": "production"
+      }
+    }
+  },
+  "submit": {
+    "test": {},
+    "production": {}
+  }
+}
