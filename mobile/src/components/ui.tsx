@@ -92,6 +92,10 @@ type TextFieldProps = {
   keyboardType?: KeyboardTypeOptions;
   secureTextEntry?: boolean;
   autoCapitalize?: "none" | "sentences";
+  // Tells the phone what the field holds, so iOS/Android treat a login field
+  // as one: offers saved logins, and on iOS stops keyboard features (smart
+  // punctuation, "strong password" suggestions) from changing a password.
+  autoComplete?: "email" | "current-password";
   placeholder?: string;
   error?: string | null;
 };
@@ -111,6 +115,13 @@ export function TextField(props: TextFieldProps) {
         secureTextEntry={props.secureTextEntry}
         autoCapitalize={props.autoCapitalize}
         autoCorrect={false}
+        autoComplete={props.autoComplete}
+        textContentType={
+          props.autoComplete === "email" ? "username" : props.autoComplete === "current-password" ? "password" : undefined
+        }
+        // iOS only: don't insert/remove spaces around pasted text.
+        smartInsertDelete={false}
+        spellCheck={false}
         placeholder={props.placeholder}
         placeholderTextColor={colors.muted}
         style={[

@@ -50,6 +50,7 @@ export default function LoginScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              autoComplete="email"
             />
             <TextField
               label={t("login.passwordLabel")}
@@ -57,6 +58,7 @@ export default function LoginScreen() {
               onChangeText={setPassword}
               secureTextEntry
               autoCapitalize="none"
+              autoComplete="current-password"
             />
             {error !== null && <Text style={{ color: colors.danger }}>{error}</Text>}
             <Button
