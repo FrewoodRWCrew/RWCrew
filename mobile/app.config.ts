@@ -44,6 +44,9 @@ const config: ExpoConfig = {
     supportsTablet: false,
     // A different bundle id per variant is what lets both apps coexist.
     bundleIdentifier: isProduction ? "eu.rwcrew.app" : "eu.rwcrew.app.test",
+    // Only standard HTTPS is used, which Apple exempts from export rules;
+    // declaring it here skips the encryption question on every TestFlight upload.
+    config: { usesNonExemptEncryption: false },
     infoPlist: {
       // Texts iOS shows when the app asks for the camera / location.
       NSCameraUsageDescription: "RWCrew uses the camera to attach photos.",
