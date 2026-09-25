@@ -12,16 +12,30 @@ import type { ExpoConfig } from "expo/config";
 const variant: "test" | "production" = process.env.APP_VARIANT === "production" ? "production" : "test";
 const isProduction = variant === "production";
 
-// The API address of the matching website. API_URL (from mobile/.env) can
-// override it, e.g. to point at your PC's local backend during development.
+// The API address of the matching website. API_URL can override it to point
+// at your PC's local backend during development — it belongs in
+// mobile/.env.development.local, which Expo only loads for `npx expo start`
+// (never for `eas update`/`expo export`, which bundle in production mode).
 const defaultApiUrl = isProduction ? "https://rwcrew.eu" : "https://test.rwcrew.eu";
 const apiUrl = process.env.API_URL ?? defaultApiUrl;
+
+// Safety net: a plain-http (local/LAN) backend address must never end up in
+// an app or over-the-air update that real users install. Stop right here if
+// one would, whatever way API_URL got set.
+const isReleaseBundle =
+  isProduction || process.env.EAS_BUILD === "true" || process.env.NODE_ENV === "production";
+if (isReleaseBundle && !apiUrl.startsWith("https://")) {
+  throw new Error(
+    `API_URL "${apiUrl}" is a local development address and cannot be used for a ${variant} build or update. ` +
+      "Put local overrides in mobile/.env.development.local and unset API_URL.",
+  );
+}
 
 const config: ExpoConfig = {
   name: isProduction ? "RWCrew" : "RWCrew Test",
   slug: "rwcrew",
-  // The app version. Release builds set this from the mobile-v* git tag.
-  version: "0.1.0",
+  // The app version (bump it for every new APK; the matching git tag is mobile-v<version>).
+  version: "1.0.0",
   scheme: isProduction ? "rwcrew" : "rwcrew-test",
   orientation: "portrait",
   icon: "./assets/icon.png",

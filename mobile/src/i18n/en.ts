@@ -57,6 +57,7 @@ export const en: Dictionary = {
       filterAll: "All",
       searchPlaceholder: "Search…",
       noResults: "No requests found.",
+      noDeliveryDate: "No preferred delivery",
       newRequest: "New request",
       createTitle: "New request",
       changeTitle: "Change request",

@@ -83,7 +83,12 @@ database and the user/module/role rights stay managed here. Rules — follow the
   `backend/tests/mobile/test_openapi_contract.py` fails when `mobile/openapi/mobile-v1.json` is stale.
 - **Phone dev loop** (Expo Go on a real phone): backend must listen on the LAN
   (`uvicorn app.main:app --port 8020 --host 0.0.0.0`, restart it after backend changes — no `--reload`, see
-  Gotchas), `mobile/.env.local` sets `API_URL=http://<PC LAN IP>:8020` (git-ignored; template `.env.example`),
+  Gotchas), `mobile/.env.development.local` sets `API_URL=http://<PC LAN IP>:8020` (git-ignored; template
+  `.env.example`). **Never use `mobile/.env.local` for this**: Expo loads it in every mode, so an `eas update` run
+  from this PC would bake the LAN address into the test/production update. `app.config.ts` also refuses a
+  non-https `API_URL` for production, EAS builds and production-mode bundles. Three environments result:
+  localhost (Expo Go + `.env.development.local`), test (`eas.json` profile `test` → test.rwcrew.eu), production
+  (profile `production` → rwcrew.eu),
   then `npx expo start` in `mobile/`. Expo Go needs the same Expo account on phone and PC (`npx expo login`, or
   `EXPO_TOKEN` for Google-created accounts). Checks: `npx tsc --noEmit`, `npx expo-doctor`.
 - **Mobile gotchas**: (1) `mobile/.npmrc` sets `legacy-peer-deps=true` because expo-router pulls a web-only

@@ -56,6 +56,7 @@ export const nl = {
       filterAll: "Alle",
       searchPlaceholder: "Zoeken…",
       noResults: "Geen aanvragen gevonden.",
+      noDeliveryDate: "Geen voorkeur levering",
       newRequest: "Nieuwe aanvraag",
       createTitle: "Nieuwe aanvraag",
       changeTitle: "Aanvraag wijzigen",

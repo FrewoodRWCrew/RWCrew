@@ -12,9 +12,12 @@ import type { ModuleInfo } from "@/lib/types";
 
 interface ModuleTileProps {
   module: ModuleInfo;
+  /** Renders the tile at about half its normal size — used for the "Mobile
+   *  App" shortcut, which isn't a real module and so sits outside the grid. */
+  compact?: boolean;
 }
 
-export function ModuleTile({ module }: ModuleTileProps) {
+export function ModuleTile({ module, compact = false }: ModuleTileProps) {
   const theme = getModuleTheme(module.key);
   const number = getModuleNumber(module.key);
   const Icon = theme.icon;
@@ -23,24 +26,26 @@ export function ModuleTile({ module }: ModuleTileProps) {
     <Link href={`/modules/${module.key}`} className="block">
       <div
         className={cn(
-          "relative flex h-36 flex-col rounded-xl p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110",
+          "relative flex flex-col rounded-xl shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-lg hover:brightness-110",
+          // Every size scales down together in compact mode.
+          compact ? "h-18 p-2" : "h-36 p-4",
           theme.tileClassName,
         )}
       >
         {/* Modules with a real icon designed for them show it here instead
             of their plain number — see module-theme.ts. Sized to about 2/3
-            of the tile's height (h-36) and centered in the space above the
+            of the tile's height and centered in the space above the
             title. */}
         <div className="flex flex-1 items-center justify-center">
           {Icon ? (
-            <Icon className="size-24" aria-hidden="true" />
+            <Icon className={compact ? "size-10" : "size-24"} aria-hidden="true" />
           ) : (
-            <span className="text-3xl font-bold" aria-hidden="true">
+            <span className={cn("font-bold", compact ? "text-xl" : "text-3xl")} aria-hidden="true">
               {number}
             </span>
           )}
         </div>
-        <span className="text-center text-sm font-semibold">{module.name}</span>
+        <span className={cn("text-center font-semibold", compact ? "text-xs" : "text-sm")}>{module.name}</span>
       </div>
     </Link>
   );

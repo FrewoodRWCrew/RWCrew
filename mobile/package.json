@@ -22,6 +22,8 @@
   },
   "devDependencies": {
     "@types/react": "~19.2.2",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~57.0.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "~6.0.3"
   },
@@ -30,7 +32,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "gen:api": "openapi-typescript openapi/mobile-v1.json -o src/api/generated/schema.d.ts"
+    "gen:api": "openapi-typescript openapi/mobile-v1.json -o src/api/generated/schema.d.ts",
+    "lint": "expo lint"
   },
   "private": true
 }

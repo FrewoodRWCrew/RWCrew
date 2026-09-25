@@ -40,6 +40,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       TAGSCAN_SOURCE_DIR: /app/TagScans
+      # Phone app settings (backend/app/core/config.py): the oldest app
+      # version still accepted, and what the "Mobile App" download page
+      # (module-10) shows. All optional; empty hides that item.
+      MOBILE_MIN_APP_VERSION: ${MOBILE_MIN_APP_VERSION:-0.0.0}
+      MOBILE_ANDROID_DOWNLOAD_URL: ${MOBILE_ANDROID_DOWNLOAD_URL:-}
+      MOBILE_IOS_TESTFLIGHT_URL: ${MOBILE_IOS_TESTFLIGHT_URL:-}
+      MOBILE_LATEST_VERSION: ${MOBILE_LATEST_VERSION:-}
+      MOBILE_CHANGELOG: ${MOBILE_CHANGELOG:-}
     volumes:
       # TagScan's CSV intake folder (see backend/app/core/config.py's
       # tagscan_source_dir) — kept outside the container so uploaded/scanned

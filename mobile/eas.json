@@ -10,6 +10,9 @@
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "test"
+      },
+      "android": {
+        "buildType": "apk"
       }
     },
     "production": {
@@ -18,6 +21,9 @@
       "autoIncrement": true,
       "env": {
         "APP_VARIANT": "production"
+      },
+      "android": {
+        "buildType": "apk"
       }
     }
   },

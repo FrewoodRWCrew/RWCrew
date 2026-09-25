@@ -1,14 +1,15 @@
 // A date + time field. iOS shows the system's compact date/time control;
 // Android has no combined control, so it opens the date dialog and then the
-// time dialog one after the other. The value is an ISO timestamp (or null
-// when nothing is chosen), which is what the backend stores.
+// time dialog one after the other. The value is a timezone-less wall-clock
+// "2026-09-07T23:39:00" (or null when nothing is chosen), the same shape the
+// web sends — see the wall-clock note in module-3/format.ts.
 
 import DateTimePicker, { DateTimePickerAndroid, type DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { useI18n } from "../i18n";
 import { useColors } from "../lib/theme";
-import { formatDateTime } from "./module-3/format";
+import { formatWallClockDateTime, parseWallClock, toWallClockIso } from "./module-3/format";
 
 type Props = {
   label: string;
@@ -18,9 +19,9 @@ type Props = {
 };
 
 export function DateTimeField({ label, value, onChange, editable = true }: Props) {
-  const { t, language } = useI18n();
+  const { t } = useI18n();
   const colors = useColors();
-  const date = value ? new Date(value) : new Date();
+  const date = value ? parseWallClock(value) : new Date();
 
   // Android: pick the date first, then the time, then report the combination.
   function openAndroidPicker() {
@@ -37,7 +38,7 @@ export function DateTimeField({ label, value, onChange, editable = true }: Props
             if (timeEvent.type !== "set" || !pickedTime) return;
             const combined = new Date(pickedDate);
             combined.setHours(pickedTime.getHours(), pickedTime.getMinutes(), 0, 0);
-            onChange(combined.toISOString());
+            onChange(toWallClockIso(combined));
           },
         });
       },
@@ -59,16 +60,16 @@ export function DateTimeField({ label, value, onChange, editable = true }: Props
             value={date}
             mode="datetime"
             display="compact"
-            onChange={(_event, picked) => picked && onChange(picked.toISOString())}
+            onChange={(_event, picked) => picked && onChange(toWallClockIso(picked))}
           />
         ) : (
           <Pressable
             disabled={!editable}
             style={styles.valueArea}
-            onPress={() => (Platform.OS === "ios" ? onChange(new Date().toISOString()) : openAndroidPicker())}
+            onPress={() => (Platform.OS === "ios" ? onChange(toWallClockIso(new Date())) : openAndroidPicker())}
           >
             <Text style={{ color: value ? colors.text : colors.muted, fontSize: 16 }}>
-              {value ? formatDateTime(value, language) : t("interventionRequests.requests.choose")}
+              {value ? formatWallClockDateTime(value) : t("interventionRequests.requests.choose")}
             </Text>
           </Pressable>
         )}
