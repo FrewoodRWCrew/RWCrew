@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     # who the user is.
     access_token_minutes: int = 15
 
-    # How long a longer-lived "refresh token" stays valid, in days.
-    # This token is only used to silently obtain a new access token
-    # once the short one expires, without forcing the user to log in again.
-    refresh_token_days: int = 30
+    # The absolute lifetime of a login session, in hours. The refresh token
+    # silently renews the short access token, but only until this many hours
+    # after the moment the password was entered; rotating the refresh token
+    # never extends it. After that the user must log in again, so the login
+    # history reflects real, recent logins (no session left open overnight).
+    session_max_hours: int = 6
 
     # Which website(s) are allowed to call this API from a browser
     # (Cross-Origin Resource Sharing). During local development this is

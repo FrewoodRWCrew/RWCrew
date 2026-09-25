@@ -19,6 +19,7 @@ from app.db.models.login_history import LoginHistory
 from app.db.models.module import Module
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.landing.auth import revoke_all_refresh_tokens
 from app.landing.deps import require_super_admin
 from app.schemas.login_history import LoginHistoryEntry, LoginHistoryPage
 from app.schemas.module import SetUserAccessRequest
@@ -89,8 +90,8 @@ def update_user(
     db: Session = Depends(get_db),
     current_super_admin: User = Depends(require_super_admin),
 ) -> UserSummaryResponse:
-    """Change a user's Super admin / Altsien Kernlid flags and phone number.
-    Only the fields present in the request are changed."""
+    """Change a user's Super admin / Altsien Kernlid flags, phone number and,
+    optionally, reset their password. Only the fields present are changed."""
     user = db.get(User, user_id)
     if user is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -108,6 +109,11 @@ def update_user(
         user.is_altsien_kernlid = payload.is_altsien_kernlid
     if "phone" in payload.model_fields_set:
         user.phone = payload.phone
+    if payload.password is not None:
+        # Admin reset: set the new password and end all of the user's
+        # sessions, so they must log in again with it.
+        user.hashed_password = hash_password(payload.password)
+        revoke_all_refresh_tokens(db, user.id)
 
     db.commit()
     return _build_user_summary(db, user)

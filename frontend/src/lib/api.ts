@@ -139,7 +139,7 @@ function refreshSessionInBrowser(): Promise<boolean> {
  * Like fetch, but when the backend answers 401 (the 15-minute access
  * token expired) it silently renews the session once and repeats the
  * request, so the user isn't sent back to the login screen while the
- * 30-day refresh token is still valid. Login and public endpoints are left
+ * refresh token (max 6 h since login) is still valid. Login and public endpoints are left
  * alone: a 401 there is a real answer (e.g. wrong password), not an expiry.
  */
 async function fetchWithRefresh(url: string, init: RequestInit): Promise<Response> {
@@ -198,6 +198,14 @@ export function login(email: string, password: string): Promise<CurrentUser> {
   });
 }
 
+/** Change the logged-in user's own password (their other sessions are ended). */
+export function changePassword(currentPassword: string, newPassword: string): Promise<CurrentUser> {
+  return apiFetch<CurrentUser>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+  });
+}
+
 export function logout(): Promise<{ logged_out: boolean }> {
   return apiFetch("/api/auth/logout", { method: "POST" });
 }
@@ -253,7 +261,7 @@ export function createUser(payload: {
 
 export function updateUser(
   userId: number,
-  payload: { is_super_admin?: boolean; is_altsien_kernlid?: boolean; phone?: string | null },
+  payload: { is_super_admin?: boolean; is_altsien_kernlid?: boolean; phone?: string | null; password?: string },
 ): Promise<UserSummary> {
   return apiFetch<UserSummary>(`/api/admin/users/${userId}`, {
     method: "PATCH",

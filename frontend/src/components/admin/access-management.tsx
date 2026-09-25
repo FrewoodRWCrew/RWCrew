@@ -347,6 +347,8 @@ function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDi
   const [phone, setPhone] = useState(user.phone ?? "");
   const [isSuperAdmin, setIsSuperAdmin] = useState(user.is_super_admin);
   const [isAltsienKernlid, setIsAltsienKernlid] = useState(user.is_altsien_kernlid);
+  // Optional new password (an admin reset); empty means "keep the current one".
+  const [newPassword, setNewPassword] = useState("");
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
@@ -358,6 +360,7 @@ function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDi
       setPhone(user.phone ?? "");
       setIsSuperAdmin(user.is_super_admin);
       setIsAltsienKernlid(user.is_altsien_kernlid);
+      setNewPassword("");
     }
   }
 
@@ -375,16 +378,19 @@ function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDi
       const detailsChanged =
         newPhone !== user.phone ||
         isSuperAdmin !== user.is_super_admin ||
-        isAltsienKernlid !== user.is_altsien_kernlid;
+        isAltsienKernlid !== user.is_altsien_kernlid ||
+        newPassword !== "";
       if (detailsChanged) {
         await updateUser(user.id, {
           phone: newPhone,
           is_super_admin: isSuperAdmin,
           is_altsien_kernlid: isAltsienKernlid,
+          // Only sent when filled in, so an empty box never touches the password.
+          ...(newPassword !== "" ? { password: newPassword } : {}),
         });
       }
       const updatedUser = await setUserModuleAccess(user.id, selectedModuleKeys);
-      toast.success(t("accessUpdated"));
+      toast.success(newPassword !== "" ? t("passwordReset") : t("accessUpdated"));
       onUpdated(updatedUser);
       setIsOpen(false);
     } catch (error) {
@@ -418,6 +424,16 @@ function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDi
               type="tel"
               value={phone}
               onChange={(event) => setPhone(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`change-password-${user.id}`}>{t("newPasswordLabel")}</Label>
+            <Input
+              id={`change-password-${user.id}`}
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
             />
           </div>
           <div className="flex items-center gap-2">
@@ -456,7 +472,7 @@ function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDi
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || (newPassword !== "" && newPassword.length < 8)}>
             {t("change")}
           </Button>
         </DialogFooter>

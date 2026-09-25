@@ -186,7 +186,7 @@ tests for core logic only).
   otherwise be byte-for-byte identical (all other claims round to the same second), silently
   breaking refresh-token rotation/reuse-detection. Found via a genuinely flaky test — don't remove it.
 - **Silent session refresh happens in two places, both needed.** The access cookie lives 15 min, the
-  refresh cookie 30 days (`backend/app/core/config.py`). (1) `frontend/src/proxy.ts` — on a page
+  refresh cookie ends the login session after `session_max_hours` (6 h, absolute from the password entry; rotation never extends it — `backend/app/core/config.py`). (1) `frontend/src/proxy.ts` — on a page
   request with a refresh cookie but no access cookie, it calls `/api/auth/refresh` *before* rendering
   (via `lib/session-refresh.ts`) and sets the new cookies on both the request (so Server Components see
   them) and the response. Server Components can't set cookies, so this can't move into

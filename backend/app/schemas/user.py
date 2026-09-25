@@ -35,6 +35,8 @@ class UserUpdateRequest(BaseModel):
     is_altsien_kernlid: bool | None = None
     # Sending an empty string clears the phone number.
     phone: str | None = Field(default=None, max_length=255)
+    # A new password for this user (an admin "reset"). Omit to keep the current one.
+    password: str | None = Field(default=None, min_length=8)
 
     _trim_phone = field_validator("phone")(_blank_to_none)
 

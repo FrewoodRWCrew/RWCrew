@@ -67,7 +67,18 @@ const config: ExpoConfig = {
   // then rejects our dynamic paths like /module-3/request/12.
   experiments: { typedRoutes: false },
   // Values the app reads at runtime via expo-constants (see src/lib/config.ts).
-  extra: { variant, apiUrl },
+  extra: {
+    variant,
+    apiUrl,
+    // Links this project to its EAS project (needed by `eas build`/`eas update`).
+    eas: { projectId: "fa3ed3ad-15b4-434d-a487-6b5a2261fb55" },
+  },
+  // The Expo account that owns the EAS project.
+  owner: "rwcrewmobile",
+  // Over-the-air updates (`eas update`): where the app looks for them, and
+  // which builds may receive which update (same app version = compatible).
+  updates: { url: "https://u.expo.dev/fa3ed3ad-15b4-434d-a487-6b5a2261fb55" },
+  runtimeVersion: { policy: "appVersion" },
 };
 
 export default config;

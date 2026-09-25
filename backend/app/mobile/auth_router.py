@@ -3,7 +3,7 @@
 # token rotation — but tokens travel in the JSON body instead of cookies,
 # because a native app has no browser cookie jar.
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy import select
@@ -61,8 +61,9 @@ def mobile_login(payload: LoginRequest, request: Request, db: Session = Depends(
         db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    access_token = create_access_token(user.id)
-    refresh_token = _issue_and_store_refresh_token(db, user.id)
+    session_end = datetime.now(timezone.utc) + timedelta(hours=settings.session_max_hours)
+    access_token = create_access_token(user.id, session_end)
+    refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
     _record_login_attempt(db, request, payload.email, user, success=True)
     db.commit()
 
@@ -93,8 +94,10 @@ def mobile_refresh(payload: MobileRefreshRequest, db: Session = Depends(get_db))
 
     # Rotate: the old refresh token dies here, a new one replaces it.
     matching_record.revoked = True
-    new_access_token = create_access_token(user.id)
-    new_refresh_token = _issue_and_store_refresh_token(db, user.id)
+    # Keep the original session end: renewing never extends the login.
+    session_end = _as_aware_utc(matching_record.expires_at)
+    new_access_token = create_access_token(user.id, session_end)
+    new_refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
     db.commit()
 
     return _build_token_response(db, user, new_access_token, new_refresh_token)

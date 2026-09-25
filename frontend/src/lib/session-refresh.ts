@@ -2,7 +2,7 @@
 //
 // The backend's access-token cookie only lives 15 minutes (see
 // backend/app/core/config.py), after which the browser throws it away, while
-// the refresh-token cookie lives 30 days. When a page is requested with a
+// the refresh-token cookie lives until the 6-hour login session ends. When a page is requested with a
 // refresh cookie but no access cookie, the proxy asks the backend for a
 // fresh pair BEFORE the page renders, so the Server Components (which can't
 // set cookies themselves) already see a valid session.

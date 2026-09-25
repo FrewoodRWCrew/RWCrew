@@ -20,7 +20,7 @@ const handleIntl = createIntlMiddleware(routing);
 
 export default async function proxy(request: NextRequest) {
   // The browser drops the access cookie once its 15 minutes are up, while
-  // the refresh cookie lives on for 30 days. That combination means "the
+  // the refresh cookie lives on until the 6-hour login session ends. That combination means "the
   // user is still logged in, they just need a new access token".
   const refreshToken = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)?.value;
   const needsRefresh = refreshToken !== undefined && !request.cookies.has(ACCESS_TOKEN_COOKIE_NAME);

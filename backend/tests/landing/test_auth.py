@@ -114,3 +114,28 @@ def test_reusing_an_already_rotated_refresh_token_is_rejected(client: TestClient
     second_refresh = replay_client.post("/api/auth/refresh")
 
     assert second_refresh.status_code == 401
+
+
+def test_refresh_never_extends_the_login_session(client: TestClient, db_session: Session) -> None:
+    # The session ends a fixed number of hours after the password was
+    # entered; renewing must keep that end, and once it has passed the user
+    # has to log in again.
+    from datetime import datetime, timedelta, timezone
+
+    from sqlalchemy import select
+
+    from app.db.models.refresh_token import RefreshToken
+
+    _create_user(db_session, email="user@example.com", password="correct-password")
+    client.post("/api/auth/login", json={"email": "user@example.com", "password": "correct-password"})
+    login_end = db_session.scalars(select(RefreshToken)).one().expires_at
+
+    assert client.post("/api/auth/refresh").status_code == 200
+    ends = {record.expires_at for record in db_session.scalars(select(RefreshToken))}
+    assert ends == {login_end}
+
+    # Pretend the 6 hours have passed: the refresh must now be refused.
+    for record in db_session.scalars(select(RefreshToken)):
+        record.expires_at = datetime.now(timezone.utc) - timedelta(minutes=1)
+    db_session.commit()
+    assert client.post("/api/auth/refresh").status_code == 401
