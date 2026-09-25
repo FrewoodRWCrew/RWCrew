@@ -26,7 +26,8 @@ Android builds are signed APKs made in the cloud by EAS, hosted on our own VPS u
 1. Set `version` in `app.config.ts` (e.g. `1.0.0`). The Android `versionCode` is incremented by EAS itself.
 2. In `mobile/` (PowerShell): `$env:EXPO_NO_DOTENV="1"; eas build --platform android --profile test`
    (or `--profile production`). `EXPO_NO_DOTENV` keeps your local `.env.development.local` (LAN
-   `API_URL`) out of the build. Without it, `app.config.ts` may stop the build with an "API_URL ... is a local
+   `API_URL`) out of the build: the PowerShell variable covers your PC, and `eas.json` sets the same variable
+   for Expo's build server, which otherwise loads that file from the upload. Without it, `app.config.ts` may stop the build with an "API_URL ... is a local
    development address" error. That error is the safety check working, not a bug.
    - First build of a variant: answer **Yes** to "Generate a new Android Keystore?".
    - **Back the keystore up right away**: `eas credentials` → Android → the profile → download the

@@ -9,7 +9,8 @@
       "channel": "test",
       "autoIncrement": true,
       "env": {
-        "APP_VARIANT": "test"
+        "APP_VARIANT": "test",
+        "EXPO_NO_DOTENV": "1"
       },
       "android": {
         "buildType": "apk"
@@ -20,7 +21,8 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "APP_VARIANT": "production"
+        "APP_VARIANT": "production",
+        "EXPO_NO_DOTENV": "1"
       },
       "android": {
         "buildType": "apk"
