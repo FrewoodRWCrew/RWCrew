@@ -20,7 +20,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import type { KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
+import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
 
 // Leaflet touches `window` at import time, so the actual map component can
 // only ever run on the client — loaded with ssr:false to keep it out of
@@ -63,41 +63,41 @@ function textMatches(fieldValue: string, filterValue: string): boolean {
 
 interface KarMapProps {
   initialData: KarTrackerKarMapResponse;
-  groundplan: KarTrackerGroundplan;
+  groundplans: KarTrackerGroundplan[];
 }
 
-export function KarMap({ initialData, groundplan }: KarMapProps) {
+export function KarMap({ initialData, groundplans }: KarMapProps) {
   const t = useTranslations("karTracker.karMap");
   const [mapHandle, setMapHandle] = useState<KarMapLeafletHandle | null>(null);
 
   const [showKarren, setShowKarren] = useState(true);
   const [showAfleverlocaties, setShowAfleverlocaties] = useState(true);
   const [showDistributiepunten, setShowDistributiepunten] = useState(true);
-  // The ground plan isn't a pin layer (it has no rows/search matches of its
-  // own), so it's a plain boolean instead of going through
-  // LayerKey/layerVisibility like the three pin layers above.
-  const [showGroundplan, setShowGroundplan] = useState(groundplan.has_image);
-  // How opaque the ground plan overlay is drawn (0 = invisible, 1 = fully
+  // The ground plans aren't a pin layer (they have no rows/search matches
+  // of their own), so they share one plain boolean instead of going through
+  // LayerKey/layerVisibility like the three pin layers above — every plan
+  // is shown or hidden together.
+  const hasGroundplans = groundplans.length > 0;
+  const [showGroundplan, setShowGroundplan] = useState(hasGroundplans);
+  // How opaque the ground plan overlays are drawn (0 = invisible, 1 = fully
   // solid) — a plain client-side preference, not saved to the backend, so
   // it can be tuned per viewing session without an extra save round-trip.
   const [groundplanOpacity, setGroundplanOpacity] = useState(1);
   const [search, setSearch] = useState("");
 
-  // Only a fully-specified set of four corner coordinates can be turned
-  // into Leaflet ImageOverlay bounds — null means "nothing to show yet"
-  // (no image uploaded, or coordinates never configured).
-  const groundplanBounds: [[number, number], [number, number]] | null =
-    groundplan.has_image &&
-    groundplan.sw_latitude !== null &&
-    groundplan.sw_longitude !== null &&
-    groundplan.ne_latitude !== null &&
-    groundplan.ne_longitude !== null
-      ? [
+  // One Leaflet ImageOverlay per ground plan, placed by its own corners.
+  const groundplanOverlays = useMemo<GroundplanOverlay[]>(
+    () =>
+      groundplans.map((groundplan) => ({
+        key: groundplan.id,
+        url: karTrackerGroundplanImageUrl(groundplan.id, groundplan.updated_at),
+        bounds: [
           [groundplan.sw_latitude, groundplan.sw_longitude],
           [groundplan.ne_latitude, groundplan.ne_longitude],
-        ]
-      : null;
-  const groundplanOverlay = groundplanBounds ? { url: karTrackerGroundplanImageUrl(), bounds: groundplanBounds } : null;
+        ],
+      })),
+    [groundplans],
+  );
 
   const rows = useMemo<MapRow[]>(() => {
     const karRows: MapRow[] = initialData.karren.map((kar) => ({
@@ -253,11 +253,11 @@ export function KarMap({ initialData, groundplan }: KarMapProps) {
               id="karmap-layer-groundplan"
               checked={showGroundplan}
               onCheckedChange={(checked) => setShowGroundplan(checked === true)}
-              disabled={!groundplanBounds}
+              disabled={!hasGroundplans}
             />
             <Label htmlFor="karmap-layer-groundplan">{t("layerGroundplan")}</Label>
           </div>
-          {showGroundplan && groundplanBounds && (
+          {showGroundplan && hasGroundplans && (
             <div className="flex items-center gap-2">
               <Label htmlFor="karmap-groundplan-opacity" className="text-muted-foreground">
                 {t("groundplanOpacity")}
@@ -289,8 +289,8 @@ export function KarMap({ initialData, groundplan }: KarMapProps) {
           pins={pins}
           center={FALLBACK_CENTER}
           onReady={setMapHandle}
-          showGroundplan={showGroundplan && groundplanBounds !== null}
-          groundplanOverlay={groundplanOverlay}
+          showGroundplan={showGroundplan}
+          groundplanOverlays={groundplanOverlays}
           groundplanOpacity={groundplanOpacity}
         />
       </div>

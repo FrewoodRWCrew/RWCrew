@@ -10,11 +10,11 @@ export default async function KarMapPage() {
   const tErrors = await getTranslations("errors");
 
   let data: KarTrackerKarMapResponse;
-  let groundplan: KarTrackerGroundplan;
+  let groundplans: KarTrackerGroundplan[];
   try {
-    [data, groundplan] = await Promise.all([
+    [data, groundplans] = await Promise.all([
       serverApiFetch<KarTrackerKarMapResponse>("/api/modules/module-2/kar-map"),
-      serverApiFetch<KarTrackerGroundplan>("/api/modules/module-2/groundplan"),
+      serverApiFetch<KarTrackerGroundplan[]>("/api/modules/module-2/groundplans"),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
@@ -23,5 +23,5 @@ export default async function KarMapPage() {
     throw error;
   }
 
-  return <KarMap initialData={data} groundplan={groundplan} />;
+  return <KarMap initialData={data} groundplans={groundplans} />;
 }

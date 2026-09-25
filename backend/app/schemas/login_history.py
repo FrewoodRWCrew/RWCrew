@@ -16,6 +16,8 @@ class LoginHistoryEntry(BaseModel):
     display_name: str | None
     success: bool
     ip_address: str | None
+    # "web" or "mobile"; None for attempts recorded before this was tracked.
+    source: str | None
     created_at: datetime
 
 

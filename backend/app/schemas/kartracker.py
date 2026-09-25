@@ -264,16 +264,21 @@ class KarMapResponse(BaseModel):
 
 
 class KarTrackerGroundplanResponse(BaseModel):
-    """The event site's ground-plan overlay: whether an image has ever been
-    uploaded, and its south-west/north-east corner coordinates (all None
-    until first configured on the Grondplan screen).
+    """One ground-plan overlay: its name and south-west/north-east corner
+    coordinates. The image itself is served separately by
+    GET /groundplans/{id}/image; updated_at lets the frontend cache-bust
+    that URL after the image is replaced.
     """
 
-    has_image: bool
-    sw_latitude: float | None
-    sw_longitude: float | None
-    ne_latitude: float | None
-    ne_longitude: float | None
+    model_config = {"from_attributes": True}
+
+    id: int
+    name: str
+    sw_latitude: float
+    sw_longitude: float
+    ne_latitude: float
+    ne_longitude: float
+    updated_at: datetime
 
 
 class KarImportRowResult(BaseModel):

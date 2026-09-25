@@ -1168,21 +1168,19 @@ export function listKarTrackerScreens(): Promise<KarTrackerScreen[]> {
   return apiFetch<KarTrackerScreen[]>("/api/modules/module-2/screens");
 }
 
-export function getKarTrackerGroundplan(): Promise<KarTrackerGroundplan> {
-  return apiFetch<KarTrackerGroundplan>("/api/modules/module-2/groundplan");
+export function listKarTrackerGroundplans(): Promise<KarTrackerGroundplan[]> {
+  return apiFetch<KarTrackerGroundplan[]>("/api/modules/module-2/groundplans");
 }
 
 /**
- * Saves the ground plan's corner coordinates, and its image if a new one
- * was picked. Uses a plain fetch instead of apiFetch, same reason as
- * importKarren below: the body is FormData (an optional file plus four
- * numeric fields), and the browser must set its own multipart
- * Content-Type (with boundary) — setting it manually would break the
- * upload.
+ * Sends a ground plan's FormData (name, four corner coordinates and an
+ * image). Uses a plain fetch instead of apiFetch, same reason as
+ * importKarren below: the browser must set its own multipart Content-Type
+ * (with boundary) — setting it manually would break the upload.
  */
-export async function updateKarTrackerGroundplan(formData: FormData): Promise<KarTrackerGroundplan> {
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/groundplan`, {
-    method: "PUT",
+async function sendKarTrackerGroundplanForm(path: string, method: "POST" | "PUT", formData: FormData) {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, {
+    method,
     credentials: "include",
     body: formData,
   });
@@ -1196,12 +1194,28 @@ export async function updateKarTrackerGroundplan(formData: FormData): Promise<Ka
   return (await response.json()) as KarTrackerGroundplan;
 }
 
-/** The ground plan image's direct URL, for use as an <img>/Leaflet
+/** Adds a new ground plan — the image is required here. */
+export function createKarTrackerGroundplan(formData: FormData): Promise<KarTrackerGroundplan> {
+  return sendKarTrackerGroundplanForm("/api/modules/module-2/groundplans", "POST", formData);
+}
+
+/** Updates a ground plan — the image is optional, the old one is kept when omitted. */
+export function updateKarTrackerGroundplan(groundplanId: number, formData: FormData): Promise<KarTrackerGroundplan> {
+  return sendKarTrackerGroundplanForm(`/api/modules/module-2/groundplans/${groundplanId}`, "PUT", formData);
+}
+
+export function deleteKarTrackerGroundplan(groundplanId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/groundplans/${groundplanId}`, { method: "DELETE" });
+}
+
+/** A ground plan image's direct URL, for use as an <img>/Leaflet
  * ImageOverlay source — the browser sends the auth cookie automatically
  * since the frontend and backend are always same-site, so no fetch-and-
- * blob round trip is needed here. */
-export function karTrackerGroundplanImageUrl(): string {
-  return `${API_BASE_URL}/api/modules/module-2/groundplan/image`;
+ * blob round trip is needed here. `updatedAt` is appended so the browser
+ * re-fetches the image after it has been replaced instead of showing a
+ * stale cached copy. */
+export function karTrackerGroundplanImageUrl(groundplanId: number, updatedAt: string): string {
+  return `${API_BASE_URL}/api/modules/module-2/groundplans/${groundplanId}/image?v=${encodeURIComponent(updatedAt)}`;
 }
 
 // "Plan a kar": per team, one delivery location per active festival of a season.

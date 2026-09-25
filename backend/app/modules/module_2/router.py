@@ -921,55 +921,106 @@ def list_kar_map(
     )
 
 
-# The event site's ground plan is a single settings row (id=1), same
-# "singleton" shape as Tagscan_settings — there is only ever one, upserted
-# in place rather than versioned.
-GROUNDPLAN_ROW_ID = 1
+# The event site's ground plans: a list of named images, each with its own
+# south-west/north-east corners, all overlaid together on the Kar Map.
 ALLOWED_GROUNDPLAN_CONTENT_TYPES = {"image/png", "image/jpeg"}
 MAX_GROUNDPLAN_IMAGE_BYTES = 8 * 1024 * 1024  # 8 MB — plenty for a site map, keeps the row small.
 
 
-def _groundplan_response(row: KarTrackerGroundplan | None) -> KarTrackerGroundplanResponse:
-    if row is None:
-        return KarTrackerGroundplanResponse(
-            has_image=False, sw_latitude=None, sw_longitude=None, ne_latitude=None, ne_longitude=None
+def _get_groundplan_or_404(db: Session, groundplan_id: int) -> KarTrackerGroundplan:
+    groundplan = db.get(KarTrackerGroundplan, groundplan_id)
+    if groundplan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ground plan not found")
+    return groundplan
+
+
+def _validate_groundplan_fields(
+    name: str, sw_latitude: float, sw_longitude: float, ne_latitude: float, ne_longitude: float
+) -> str:
+    """Checks the fields every save needs and returns the trimmed name."""
+    trimmed_name = name.strip()
+    if not trimmed_name or len(trimmed_name) > 100:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Name must be 1 to 100 characters")
+    if sw_latitude >= ne_latitude or sw_longitude >= ne_longitude:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="South-west corner must be south and west of the north-east corner",
         )
-    return KarTrackerGroundplanResponse(
-        has_image=row.image_data is not None,
-        sw_latitude=row.sw_latitude,
-        sw_longitude=row.sw_longitude,
-        ne_latitude=row.ne_latitude,
-        ne_longitude=row.ne_longitude,
+    return trimmed_name
+
+
+def _read_groundplan_image(image: UploadFile) -> bytes:
+    """Validates an uploaded ground-plan image's type and size and returns its bytes."""
+    if image.content_type not in ALLOWED_GROUNDPLAN_CONTENT_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be PNG or JPEG")
+    # Read one byte past the limit so an oversized image is detected
+    # without ever buffering an unbounded upload into memory.
+    contents = image.file.read(MAX_GROUNDPLAN_IMAGE_BYTES + 1)
+    if len(contents) > MAX_GROUNDPLAN_IMAGE_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be smaller than 8 MB")
+    return contents
+
+
+@router.get("/groundplans", response_model=list[KarTrackerGroundplanResponse])
+def list_groundplans(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_view_or_create("kartracker.karmap", "kartracker.groundplan")),
+) -> list[KarTrackerGroundplan]:
+    """Every ground plan's name and bounds — readable by anyone who can view
+    either Kar Map (which overlays them) or the Grondplan screen itself.
+    """
+    return list(
+        db.scalars(select(KarTrackerGroundplan).order_by(KarTrackerGroundplan.name, KarTrackerGroundplan.id)).all()
     )
 
 
-@router.get("/groundplan", response_model=KarTrackerGroundplanResponse)
-def get_groundplan(
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_view_or_create("kartracker.karmap", "kartracker.groundplan")),
-) -> KarTrackerGroundplanResponse:
-    """The ground plan's current bounds/status — readable by anyone who can
-    view either Kar Map (which overlays it) or the Grondplan screen itself.
-    """
-    return _groundplan_response(db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID))
-
-
-@router.get("/groundplan/image")
+@router.get("/groundplans/{groundplan_id}/image")
 def get_groundplan_image(
+    groundplan_id: int,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_view_or_create("kartracker.karmap", "kartracker.groundplan")),
 ) -> Response:
-    """The raw ground-plan image bytes, for direct use as an <img>/Leaflet
-    ImageOverlay source. 404s until one has ever been uploaded.
+    """One ground plan's raw image bytes, for direct use as an <img>/Leaflet
+    ImageOverlay source.
     """
-    row = db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID)
-    if row is None or row.image_data is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No ground plan image set")
-    return Response(content=row.image_data, media_type=row.image_content_type or "application/octet-stream")
+    groundplan = _get_groundplan_or_404(db, groundplan_id)
+    return Response(content=groundplan.image_data, media_type=groundplan.image_content_type)
 
 
-@router.put("/groundplan", response_model=KarTrackerGroundplanResponse)
+@router.post("/groundplans", response_model=KarTrackerGroundplanResponse, status_code=status.HTTP_201_CREATED)
+def create_groundplan(
+    name: str = Form(...),
+    sw_latitude: float = Form(...),
+    sw_longitude: float = Form(...),
+    ne_latitude: float = Form(...),
+    ne_longitude: float = Form(...),
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.groundplan", "create")),
+) -> KarTrackerGroundplan:
+    """Add a new ground plan. The image is required here, unlike on update."""
+    trimmed_name = _validate_groundplan_fields(name, sw_latitude, sw_longitude, ne_latitude, ne_longitude)
+    contents = _read_groundplan_image(image)
+
+    groundplan = KarTrackerGroundplan(
+        name=trimmed_name,
+        image_data=contents,
+        image_content_type=image.content_type,
+        sw_latitude=sw_latitude,
+        sw_longitude=sw_longitude,
+        ne_latitude=ne_latitude,
+        ne_longitude=ne_longitude,
+    )
+    db.add(groundplan)
+    db.commit()
+    db.refresh(groundplan)
+    return groundplan
+
+
+@router.put("/groundplans/{groundplan_id}", response_model=KarTrackerGroundplanResponse)
 def update_groundplan(
+    groundplan_id: int,
+    name: str = Form(...),
     sw_latitude: float = Form(...),
     sw_longitude: float = Form(...),
     ne_latitude: float = Form(...),
@@ -977,40 +1028,37 @@ def update_groundplan(
     image: UploadFile | None = File(None),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("kartracker.groundplan", "edit")),
-) -> KarTrackerGroundplanResponse:
-    """Upsert the singleton ground-plan row. The image is optional on save
-    so the corner coordinates can be recalibrated without re-uploading —
-    only the coordinates are required on every save.
+) -> KarTrackerGroundplan:
+    """Update a ground plan. The image is optional so the name and corner
+    coordinates can be changed without re-uploading it.
     """
-    if sw_latitude >= ne_latitude or sw_longitude >= ne_longitude:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="South-west corner must be south and west of the north-east corner",
-        )
-
-    row = db.get(KarTrackerGroundplan, GROUNDPLAN_ROW_ID)
-    if row is None:
-        row = KarTrackerGroundplan(id=GROUNDPLAN_ROW_ID)
-        db.add(row)
+    groundplan = _get_groundplan_or_404(db, groundplan_id)
+    trimmed_name = _validate_groundplan_fields(name, sw_latitude, sw_longitude, ne_latitude, ne_longitude)
 
     if image is not None:
-        if image.content_type not in ALLOWED_GROUNDPLAN_CONTENT_TYPES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be PNG or JPEG")
-        # Read one byte past the limit so an oversized image is detected
-        # without ever buffering an unbounded upload into memory.
-        contents = image.file.read(MAX_GROUNDPLAN_IMAGE_BYTES + 1)
-        if len(contents) > MAX_GROUNDPLAN_IMAGE_BYTES:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be smaller than 8 MB")
-        row.image_data = contents
-        row.image_content_type = image.content_type
+        groundplan.image_data = _read_groundplan_image(image)
+        groundplan.image_content_type = image.content_type
 
-    row.sw_latitude = sw_latitude
-    row.sw_longitude = sw_longitude
-    row.ne_latitude = ne_latitude
-    row.ne_longitude = ne_longitude
+    groundplan.name = trimmed_name
+    groundplan.sw_latitude = sw_latitude
+    groundplan.sw_longitude = sw_longitude
+    groundplan.ne_latitude = ne_latitude
+    groundplan.ne_longitude = ne_longitude
     db.commit()
+    db.refresh(groundplan)
+    return groundplan
 
-    return _groundplan_response(row)
+
+@router.delete("/groundplans/{groundplan_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_groundplan(
+    groundplan_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.groundplan", "delete")),
+) -> None:
+    """Remove a ground plan (and its image) for good."""
+    groundplan = _get_groundplan_or_404(db, groundplan_id)
+    db.delete(groundplan)
+    db.commit()
 
 
 # ---- Plan a kar ----------------------------------------------------------

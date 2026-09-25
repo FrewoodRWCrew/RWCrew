@@ -117,13 +117,14 @@ export function LoginHistoryTable({ initialData, pageSize }: LoginHistoryTablePr
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTimestamp")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnUser")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnSource")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnIpAddress")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.items.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center text-muted-foreground">
+                <TableCell colSpan={5} className="text-center text-muted-foreground">
                   {t("empty")}
                 </TableCell>
               </TableRow>
@@ -143,6 +144,14 @@ export function LoginHistoryTable({ initialData, pageSize }: LoginHistoryTablePr
                   <Badge variant={entry.success ? "secondary" : "destructive"}>
                     {entry.success ? t("statusSuccess") : t("statusFailed")}
                   </Badge>
+                </TableCell>
+                {/* Web app vs. smartphone app; "—" for attempts from before this was tracked. */}
+                <TableCell>
+                  {entry.source ? (
+                    <Badge variant="outline">{entry.source === "mobile" ? t("sourceMobile") : t("sourceWeb")}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
                 </TableCell>
                 <TableCell className="text-muted-foreground">{entry.ip_address ?? "—"}</TableCell>
               </TableRow>

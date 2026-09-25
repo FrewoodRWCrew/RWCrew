@@ -226,6 +226,7 @@ def list_login_history(
                 display_name=users_by_id[row.user_id].display_name if row.user_id in users_by_id else None,
                 success=row.success,
                 ip_address=row.ip_address,
+                source=row.source,
                 created_at=row.created_at,
             )
             for row in rows

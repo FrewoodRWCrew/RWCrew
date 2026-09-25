@@ -40,6 +40,11 @@ class LoginHistory(Base):
     # The client IP address the attempt came from, if available.
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
+    # Where the attempt came from: "web" (browser login) or "mobile" (the
+    # smartphone app's login). Null for rows recorded before this column
+    # existed, since those can't be told apart any more.
+    source: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
     # When this attempt happened, for sorting/filtering on the admin screen.
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False, index=True

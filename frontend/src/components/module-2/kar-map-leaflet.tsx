@@ -27,7 +27,8 @@ export interface KarMapLeafletHandle {
   locate: (key: string) => void;
 }
 
-interface GroundplanOverlay {
+export interface GroundplanOverlay {
+  key: number;
   url: string;
   bounds: [[number, number], [number, number]];
 }
@@ -37,7 +38,7 @@ interface KarMapLeafletProps {
   center: [number, number];
   onReady: (handle: KarMapLeafletHandle) => void;
   showGroundplan: boolean;
-  groundplanOverlay: GroundplanOverlay | null;
+  groundplanOverlays: GroundplanOverlay[];
   groundplanOpacity: number;
 }
 
@@ -59,7 +60,7 @@ export function KarMapLeaflet({
   center,
   onReady,
   showGroundplan,
-  groundplanOverlay,
+  groundplanOverlays,
   groundplanOpacity,
 }: KarMapLeafletProps) {
   const mapRef = useRef<LeafletMap | null>(null);
@@ -87,17 +88,16 @@ export function KarMapLeaflet({
     // this reads pinsRef.current only here rather than depending on `pins`.
     const map = mapRef.current;
     const initialPins = pinsRef.current;
-    const overlayBounds = showGroundplan && groundplanOverlay ? groundplanOverlay.bounds : null;
+    // Every shown ground plan's four corners count too, so all plans fit.
+    const overlayBounds = showGroundplan ? groundplanOverlays.map((overlay) => overlay.bounds) : [];
     const fitPoints = [
       ...initialPins.map((pin) => [pin.latitude, pin.longitude] as [number, number]),
-      ...(overlayBounds
-        ? [
-            overlayBounds[0],
-            [overlayBounds[0][0], overlayBounds[1][1]] as [number, number],
-            [overlayBounds[1][0], overlayBounds[0][1]] as [number, number],
-            overlayBounds[1],
-          ]
-        : []),
+      ...overlayBounds.flatMap((bounds) => [
+        bounds[0],
+        [bounds[0][0], bounds[1][1]] as [number, number],
+        [bounds[1][0], bounds[0][1]] as [number, number],
+        bounds[1],
+      ]),
     ];
     if (map && fitPoints.length > 0) {
       // maxZoom caps how far fitBounds is allowed to zoom in, so a single
@@ -118,11 +118,12 @@ export function KarMapLeaflet({
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
-      {showGroundplan && groundplanOverlay && (
+      {showGroundplan &&
         // Rendered above the OSM tiles but below the pins, so pin dots
-        // stay visible on top of the ground plan image.
-        <ImageOverlay url={groundplanOverlay.url} bounds={groundplanOverlay.bounds} opacity={groundplanOpacity} />
-      )}
+        // stay visible on top of the ground plan images.
+        groundplanOverlays.map((overlay) => (
+          <ImageOverlay key={overlay.key} url={overlay.url} bounds={overlay.bounds} opacity={groundplanOpacity} />
+        ))}
       {pins.map((pin) => (
         <Marker
           key={pin.key}

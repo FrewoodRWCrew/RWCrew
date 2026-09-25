@@ -57,14 +57,14 @@ def mobile_login(payload: LoginRequest, request: Request, db: Session = Depends(
     # Same single, vague error for every failure as the web login, so an
     # attacker can't tell a wrong email from a wrong password.
     if user is None or not user.is_active or not verify_password(payload.password, user.hashed_password):
-        _record_login_attempt(db, request, payload.email, user, success=False)
+        _record_login_attempt(db, request, payload.email, user, success=False, source="mobile")
         db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
     session_end = datetime.now(timezone.utc) + timedelta(hours=settings.session_max_hours)
     access_token = create_access_token(user.id, session_end)
     refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
-    _record_login_attempt(db, request, payload.email, user, success=True)
+    _record_login_attempt(db, request, payload.email, user, success=True, source="mobile")
     db.commit()
 
     return _build_token_response(db, user, access_token, refresh_token)

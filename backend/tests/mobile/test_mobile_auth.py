@@ -6,10 +6,12 @@
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import hash_password
+from app.db.models.login_history import LoginHistory
 from app.db.models.user import User
 from app.mobile.version_gate import parse_version
 
@@ -48,6 +50,17 @@ def test_mobile_login_with_wrong_password_is_rejected(client: TestClient, db_ses
     _create_user(db_session)
 
     assert _login(client, password="wrong").status_code == 401
+
+
+def test_mobile_login_attempts_are_recorded_as_mobile(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session)
+
+    # One failed and one successful attempt through the phone endpoint.
+    _login(client, password="wrong")
+    _login(client)
+
+    rows = db_session.scalars(select(LoginHistory).order_by(LoginHistory.id)).all()
+    assert [(row.success, row.source) for row in rows] == [(False, "mobile"), (True, "mobile")]
 
 
 def test_bearer_token_grants_access_to_a_protected_endpoint(client: TestClient, db_session: Session) -> None:

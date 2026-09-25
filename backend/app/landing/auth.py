@@ -84,10 +84,13 @@ def revoke_all_refresh_tokens(db: Session, user_id: int) -> None:
     db.execute(update(RefreshToken).where(RefreshToken.user_id == user_id).values(revoked=True))
 
 
-def _record_login_attempt(db: Session, request: Request, email: str, user: User | None, success: bool) -> None:
+def _record_login_attempt(
+    db: Session, request: Request, email: str, user: User | None, success: bool, source: str = "web"
+) -> None:
     """Remember one login attempt (successful or not) for the admin
     "Login History" screen, so there's a record of who is using the tool
-    and when — including attempts that failed.
+    and when — including attempts that failed. `source` says whether it came
+    from the web app ("web") or the smartphone app ("mobile").
     """
     db.add(
         LoginHistory(
@@ -95,6 +98,7 @@ def _record_login_attempt(db: Session, request: Request, email: str, user: User 
             email_attempted=email,
             success=success,
             ip_address=request.client.host if request.client is not None else None,
+            source=source,
         )
     )
 

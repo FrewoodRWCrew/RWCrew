@@ -847,15 +847,17 @@ export interface KarTrackerKarMapResponse {
   distributiepunten: KarTrackerKarMapDistributiepuntRow[];
 }
 
-/** The event site's ground-plan overlay: whether an image has ever been
- * uploaded, and its south-west/north-east corner coordinates (all null
- * until first configured on the Grondplan screen). */
+/** One ground-plan overlay of the event site: its name and south-west/
+ * north-east corner coordinates. The image itself is served separately
+ * (see karTrackerGroundplanImageUrl); updated_at cache-busts that URL. */
 export interface KarTrackerGroundplan {
-  has_image: boolean;
-  sw_latitude: number | null;
-  sw_longitude: number | null;
-  ne_latitude: number | null;
-  ne_longitude: number | null;
+  id: number;
+  name: string;
+  sw_latitude: number;
+  sw_longitude: number;
+  ne_latitude: number;
+  ne_longitude: number;
+  updated_at: string;
 }
 
 /**
@@ -1188,6 +1190,9 @@ export interface LoginHistoryEntry {
   display_name: string | null;
   success: boolean;
   ip_address: string | null;
+  /** Where the attempt came from: the web app or the smartphone app. Null
+   * for attempts recorded before this was tracked. */
+  source: "web" | "mobile" | null;
   created_at: string;
 }
 
