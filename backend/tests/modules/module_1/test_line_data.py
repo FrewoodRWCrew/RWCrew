@@ -185,6 +185,58 @@ def test_scan_creates_one_line_row_per_data_row_with_raw_fields(
     assert line.header_data_id == header.id
 
 
+def test_scan_stores_mode_and_action_on_header_and_lines(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # The first row has empty Mode/Action cells: the header takes the first
+    # non-empty value in the file, and that row falls back to it.
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (
+            REAL_HEADER.strip()
+            + ",Mode,Action\n"
+            + "Scan_01,E2AAA,78,1,92,10:36:07,,\n"
+            + "Scan_01,E2BBB,70,1,10,10:36:08,Inbound,Register\n"
+            + "Scan_01,E2CCC,71,1,11,10:36:09,Outbound,Remove\n"
+        ).encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.mode == "Inbound"
+    assert header.action == "Register"
+
+    lines = {line.epc: line for line in db_session.scalars(select(TagLineData)).all()}
+    assert (lines["E2AAA"].mode, lines["E2AAA"].action) == ("Inbound", "Register")
+    assert (lines["E2BBB"].mode, lines["E2BBB"].action) == ("Inbound", "Register")
+    assert (lines["E2CCC"].mode, lines["E2CCC"].action) == ("Outbound", "Remove")
+
+    # Both the header list and the line list expose the new fields.
+    header_json = client.get("/api/modules/module-1/header-data").json()[0]
+    assert (header_json["mode"], header_json["action"]) == ("Inbound", "Register")
+    line_json = {row["epc"]: row for row in client.get("/api/modules/module-1/line-data").json()}
+    assert (line_json["E2CCC"]["mode"], line_json["E2CCC"]["action"]) == ("Outbound", "Remove")
+
+
+def test_scan_without_mode_and_action_columns_leaves_them_null(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER + "Scan_01,E2AAA,78,1,92,10:36:07\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    header = db_session.scalar(select(TagHeaderData))
+    line = db_session.scalar(select(TagLineData))
+    assert header.mode is None and header.action is None
+    assert line.mode is None and line.action is None
+
+
 def test_matched_epc_is_converted_and_enriched_from_tag_management(
     client: TestClient, db_session: Session, scan_dirs: Path
 ) -> None:

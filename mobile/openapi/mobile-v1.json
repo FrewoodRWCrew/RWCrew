@@ -1,0 +1,1546 @@
+{
+  "components": {
+    "schemas": {
+      "CurrentUserResponse": {
+        "description": "What we tell the frontend about the currently logged-in user.",
+        "properties": {
+          "accessible_module_keys": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Accessible Module Keys",
+            "type": "array"
+          },
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_super_admin": {
+            "title": "Is Super Admin",
+            "type": "boolean"
+          },
+          "language_preference": {
+            "title": "Language Preference",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "email",
+          "display_name",
+          "is_super_admin",
+          "language_preference",
+          "accessible_module_keys"
+        ],
+        "title": "CurrentUserResponse",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "InterventionRequestCreateRequest": {
+        "description": "What's sent to create a brand-new intervention request.\n\nrequest_number and submitted_at are never accepted here \u2014 both are\ncomputed by the endpoint itself (see create_intervention_request).",
+        "properties": {
+          "cart_number": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cart Number"
+          },
+          "delivery_location": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Location"
+          },
+          "employee_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Name"
+          },
+          "employee_phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Phone"
+          },
+          "handled_by": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handled By"
+          },
+          "preferred_delivery_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Delivery At"
+          },
+          "question": {
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          },
+          "team_cart_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Cart User Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "question",
+          "status_id"
+        ],
+        "title": "InterventionRequestCreateRequest",
+        "type": "object"
+      },
+      "InterventionRequestResponse": {
+        "description": "One intervention request, as shown on the Intervention Requests screen.",
+        "properties": {
+          "cart_number": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cart Number"
+          },
+          "delivery_location": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Location"
+          },
+          "employee_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Name"
+          },
+          "employee_phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Phone"
+          },
+          "handled_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handled By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "preferred_delivery_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Delivery At"
+          },
+          "question": {
+            "title": "Question",
+            "type": "string"
+          },
+          "request_number": {
+            "title": "Request Number",
+            "type": "string"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          },
+          "submitted_at": {
+            "format": "date-time",
+            "title": "Submitted At",
+            "type": "string"
+          },
+          "team_cart_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Cart User Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "id",
+          "request_number",
+          "submitted_at",
+          "team_id",
+          "team_name",
+          "cart_number",
+          "question",
+          "employee_name",
+          "employee_phone",
+          "preferred_delivery_at",
+          "delivery_location",
+          "zone",
+          "status_id",
+          "handled_by",
+          "team_cart_user_id"
+        ],
+        "title": "InterventionRequestResponse",
+        "type": "object"
+      },
+      "InterventionRequestUpdateRequest": {
+        "description": "What's sent to update an existing intervention request \u2014 same shape\nas creating one (request_number/submitted_at stay fixed once set).",
+        "properties": {
+          "cart_number": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cart Number"
+          },
+          "delivery_location": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Delivery Location"
+          },
+          "employee_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Name"
+          },
+          "employee_phone": {
+            "anyOf": [
+              {
+                "maxLength": 50,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Employee Phone"
+          },
+          "handled_by": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Handled By"
+          },
+          "preferred_delivery_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Preferred Delivery At"
+          },
+          "question": {
+            "minLength": 1,
+            "title": "Question",
+            "type": "string"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          },
+          "team_cart_user_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Cart User Id"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "zone": {
+            "anyOf": [
+              {
+                "maxLength": 100,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Zone"
+          }
+        },
+        "required": [
+          "question",
+          "status_id"
+        ],
+        "title": "InterventionRequestUpdateRequest",
+        "type": "object"
+      },
+      "InterventionRequestsDashboardResponse": {
+        "description": "Aggregate KPI stats for Intervention Requests' landing dashboard\n(\"KPI overview\").",
+        "properties": {
+          "closed_requests": {
+            "title": "Closed Requests",
+            "type": "integer"
+          },
+          "open_requests": {
+            "title": "Open Requests",
+            "type": "integer"
+          },
+          "status_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/InterventionRequestsStatusBreakdownItem"
+            },
+            "title": "Status Breakdown",
+            "type": "array"
+          },
+          "team_breakdown": {
+            "items": {
+              "$ref": "#/components/schemas/InterventionRequestsTeamBreakdownItem"
+            },
+            "title": "Team Breakdown",
+            "type": "array"
+          },
+          "total_requests": {
+            "title": "Total Requests",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total_requests",
+          "open_requests",
+          "closed_requests",
+          "status_breakdown",
+          "team_breakdown"
+        ],
+        "title": "InterventionRequestsDashboardResponse",
+        "type": "object"
+      },
+      "InterventionRequestsStatusBreakdownItem": {
+        "description": "One status, with how many intervention requests currently carry it \u2014\none bar of the KPI dashboard's status breakdown chart.",
+        "properties": {
+          "color": {
+            "enum": [
+              "red",
+              "orange",
+              "amber",
+              "green",
+              "teal",
+              "blue",
+              "indigo",
+              "purple",
+              "gray"
+            ],
+            "title": "Color",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status_name",
+          "color",
+          "count"
+        ],
+        "title": "InterventionRequestsStatusBreakdownItem",
+        "type": "object"
+      },
+      "InterventionRequestsTeamBreakdownItem": {
+        "description": "One team/association name, with how many intervention requests were\nlogged for it \u2014 one bar of the KPI dashboard's team breakdown chart.",
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "team_name": {
+            "title": "Team Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "team_name",
+          "count"
+        ],
+        "title": "InterventionRequestsTeamBreakdownItem",
+        "type": "object"
+      },
+      "InterventionRequestsTeamResponse": {
+        "description": "One MasterData team, as shown in the Intervention Requests screen's\n\"Ploeg\" dropdown \u2014 just enough to populate it (id + name), read\ndirectly from MasterData_team (see app/db/models/team.py) rather than\nMasterData's own TeamResponse, so Intervention Requests users can\nalways pick a team regardless of whether they also have a MasterData\nrole (see the \"teams\" endpoint in module_3/router.py).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "InterventionRequestsTeamResponse",
+        "type": "object"
+      },
+      "InterventionStatusResponse": {
+        "description": "One status, as shown on the Intervention Statuses screen.",
+        "properties": {
+          "color": {
+            "enum": [
+              "red",
+              "orange",
+              "amber",
+              "green",
+              "teal",
+              "blue",
+              "indigo",
+              "purple",
+              "gray"
+            ],
+            "title": "Color",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "is_open": {
+            "title": "Is Open",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "is_open",
+          "color"
+        ],
+        "title": "InterventionStatusResponse",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "description": "What the frontend must send us to log a user in.",
+        "properties": {
+          "email": {
+            "format": "email",
+            "title": "Email",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "MobileModule3LookupsResponse": {
+        "description": "Every dropdown list the request form needs, in one round trip.",
+        "properties": {
+          "statuses": {
+            "items": {
+              "$ref": "#/components/schemas/InterventionStatusResponse"
+            },
+            "title": "Statuses",
+            "type": "array"
+          },
+          "teamkar_members": {
+            "items": {
+              "$ref": "#/components/schemas/TeamKarMemberOptionResponse"
+            },
+            "title": "Teamkar Members",
+            "type": "array"
+          },
+          "teams": {
+            "items": {
+              "$ref": "#/components/schemas/InterventionRequestsTeamResponse"
+            },
+            "title": "Teams",
+            "type": "array"
+          }
+        },
+        "required": [
+          "statuses",
+          "teams",
+          "teamkar_members"
+        ],
+        "title": "MobileModule3LookupsResponse",
+        "type": "object"
+      },
+      "MobileModule3PermissionsResponse": {
+        "description": "What the calling user may do on the phone's Intervention Requests\n\"Akties\" screen, so the app only shows buttons the web roles allow.\n(There is no delete flag: deleting is web-only.)",
+        "properties": {
+          "can_create_requests": {
+            "title": "Can Create Requests",
+            "type": "boolean"
+          },
+          "can_edit_requests": {
+            "title": "Can Edit Requests",
+            "type": "boolean"
+          },
+          "can_view_requests": {
+            "title": "Can View Requests",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_view_requests",
+          "can_create_requests",
+          "can_edit_requests"
+        ],
+        "title": "MobileModule3PermissionsResponse",
+        "type": "object"
+      },
+      "MobileRefreshRequest": {
+        "description": "What the phone sends to swap its refresh token for a fresh pair.\n\nThe web app keeps this token in a cookie; the phone has no cookie jar,\nso it stores the token in the device's secure storage and sends it here.",
+        "properties": {
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          }
+        },
+        "required": [
+          "refresh_token"
+        ],
+        "title": "MobileRefreshRequest",
+        "type": "object"
+      },
+      "MobileTokenResponse": {
+        "description": "The tokens (plus who the user is) handed back after login/refresh.",
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "refresh_token": {
+            "title": "Refresh Token",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "$ref": "#/components/schemas/CurrentUserResponse"
+          }
+        },
+        "required": [
+          "access_token",
+          "refresh_token",
+          "expires_in",
+          "user"
+        ],
+        "title": "MobileTokenResponse",
+        "type": "object"
+      },
+      "ModuleResponse": {
+        "description": "One module/tile, as shown on the landing page.",
+        "properties": {
+          "key": {
+            "title": "Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "sort_order": {
+            "title": "Sort Order",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "key",
+          "name",
+          "sort_order"
+        ],
+        "title": "ModuleResponse",
+        "type": "object"
+      },
+      "TeamKarMemberOptionResponse": {
+        "description": "One current TeamKar member, as shown in the Intervention Requests\nscreen's \"Team Kar\" dropdown \u2014 just enough to populate it (id + name).\nGated by Intervention Requests' own \"requests\" screen permission, not\nTeamKar's own, the same reasoning as the \"teams\" endpoint below: a user\ncan always pick a Team Kar member here regardless of whether they also\nhave the TeamKar screen's permission.",
+        "properties": {
+          "display_name": {
+            "title": "Display Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "display_name"
+        ],
+        "title": "TeamKarMemberOptionResponse",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "ctx": {
+            "title": "Context",
+            "type": "object"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    }
+  },
+  "info": {
+    "title": "RW Crew mobile API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/mobile/v1/auth/login": {
+      "post": {
+        "description": "Check an email/password combination and hand back tokens in the body.",
+        "operationId": "mobile_login_api_mobile_v1_auth_login_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mobile Login",
+        "tags": [
+          "mobile-auth"
+        ]
+      }
+    },
+    "/api/mobile/v1/auth/logout": {
+      "post": {
+        "description": "Revoke the phone's refresh token so it can never be used again.",
+        "operationId": "mobile_logout_api_mobile_v1_auth_logout_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "type": "boolean"
+                  },
+                  "title": "Response Mobile Logout Api Mobile V1 Auth Logout Post",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mobile Logout",
+        "tags": [
+          "mobile-auth"
+        ]
+      }
+    },
+    "/api/mobile/v1/auth/me": {
+      "get": {
+        "description": "Who is logged in, and which modules can they open (Bearer token required).",
+        "operationId": "mobile_me_api_mobile_v1_auth_me_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CurrentUserResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mobile Me",
+        "tags": [
+          "mobile-auth"
+        ]
+      }
+    },
+    "/api/mobile/v1/auth/refresh": {
+      "post": {
+        "description": "Swap a valid refresh token for a brand-new access + refresh token.",
+        "operationId": "mobile_refresh_api_mobile_v1_auth_refresh_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MobileRefreshRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileTokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mobile Refresh",
+        "tags": [
+          "mobile-auth"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-3/dashboard": {
+      "get": {
+        "description": "The KPI overview numbers, gated only by module access like on the web.",
+        "operationId": "get_dashboard_api_mobile_v1_module_3_dashboard_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionRequestsDashboardResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Dashboard",
+        "tags": [
+          "mobile-module-3"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-3/intervention-requests": {
+      "get": {
+        "description": "Every request, newest first; open_only=true keeps only requests\nwhose status is an \"open\" one (the web screen's default filter).",
+        "operationId": "list_intervention_requests_api_mobile_v1_module_3_intervention_requests_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "open_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Open Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/InterventionRequestResponse"
+                  },
+                  "title": "Response List Intervention Requests Api Mobile V1 Module 3 Intervention Requests Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Intervention Requests",
+        "tags": [
+          "mobile-module-3"
+        ]
+      },
+      "post": {
+        "description": "Create a request. Its number and timestamp are set here, never by the app.",
+        "operationId": "create_intervention_request_api_mobile_v1_module_3_intervention_requests_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterventionRequestCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionRequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Intervention Request",
+        "tags": [
+          "mobile-module-3"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-3/intervention-requests/{request_id}": {
+      "get": {
+        "description": "One request, for the phone's detail/edit screen.",
+        "operationId": "get_intervention_request_api_mobile_v1_module_3_intervention_requests__request_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionRequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Intervention Request",
+        "tags": [
+          "mobile-module-3"
+        ]
+      },
+      "put": {
+        "description": "Update every editable field (number and timestamp stay fixed).",
+        "operationId": "update_intervention_request_api_mobile_v1_module_3_intervention_requests__request_id__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "request_id",
+            "required": true,
+            "schema": {
+              "title": "Request Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/InterventionRequestUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/InterventionRequestResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Intervention Request",
+        "tags": [
+          "mobile-module-3"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-3/lookups": {
+      "get": {
+        "description": "The statuses, teams and TeamKar members for the request form.\n\nGated by the requests screen's own permission (not the MasterData\n\"statuses\" screen), so anyone who can see requests can always name and\npick a status, exactly like the web's teams/TeamKar dropdown endpoints.",
+        "operationId": "get_lookups_api_mobile_v1_module_3_lookups_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileModule3LookupsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Lookups",
+        "tags": [
+          "mobile-module-3"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-3/permissions": {
+      "get": {
+        "description": "What this user may do on the requests screen (view / create / edit).",
+        "operationId": "get_my_permissions_api_mobile_v1_module_3_permissions_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileModule3PermissionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get My Permissions",
+        "tags": [
+          "mobile-module-3"
+        ]
+      }
+    },
+    "/api/mobile/v1/modules": {
+      "get": {
+        "description": "The landing-page tiles for this user, in tile order.\n\nA module appears only if (1) the phone supports it, (2) it is switched\non site-wide, and (3) the super admin granted this user access to it.\nBeing super admin does not grant access by itself, exactly like the web.",
+        "operationId": "list_phone_modules_api_mobile_v1_modules_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ModuleResponse"
+                  },
+                  "title": "Response List Phone Modules Api Mobile V1 Modules Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Phone Modules",
+        "tags": [
+          "mobile-modules"
+        ]
+      }
+    }
+  }
+}

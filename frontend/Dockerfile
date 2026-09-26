@@ -21,6 +21,9 @@ COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+# Public site address printed into karblad QR codes (optional) — see src/lib/config.ts.
+ARG NEXT_PUBLIC_SITE_URL
+ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 # Set only for the test deployment, so a banner warns people they're not on
 # the real production site — see src/lib/config.ts / src/app/layout.tsx.
 ARG NEXT_PUBLIC_ENVIRONMENT_LABEL

@@ -1,7 +1,8 @@
 "use client";
 
 // The super admin's "Manage Access" screen: a table with one row per
-// user and one checkbox per module, plus buttons to create, change, and
+// user (with phone, Super admin and Altsien Kernlid flags) and one
+// checkbox per module, plus buttons to create, change, and
 // delete user accounts. This is the ONLY place module access is granted
 // or revoked — see backend/app/landing/admin.py for the matching API
 // endpoints.
@@ -11,7 +12,7 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
-import { ApiError, createUser, deleteUser, setUserModuleAccess } from "@/lib/api";
+import { ApiError, createUser, deleteUser, setUserModuleAccess, updateUser } from "@/lib/api";
 import type { ModuleInfo, UserSummary } from "@/lib/types";
 import {
   AlertDialog,
@@ -24,7 +25,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -43,9 +43,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface AccessManagementProps {
   initialUsers: UserSummary[];
   modules: ModuleInfo[];
+  // The logged-in super admin — their own Super admin box is locked so they
+  // can't remove their own access (the backend refuses it too).
+  currentUserId: number;
 }
 
-export function AccessManagement({ initialUsers, modules }: AccessManagementProps) {
+export function AccessManagement({ initialUsers, modules, currentUserId }: AccessManagementProps) {
   const t = useTranslations("admin.access");
   const router = useRouter();
 
@@ -80,6 +83,24 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
     }
   }
 
+  // Saves one of the two flags immediately, like the module checkboxes do.
+  async function handleToggleFlag(
+    user: UserSummary,
+    flag: "is_super_admin" | "is_altsien_kernlid",
+    isChecked: boolean,
+  ) {
+    setPendingCheckbox(`${user.id}:${flag}`);
+    try {
+      const updatedUser = await updateUser(user.id, { [flag]: isChecked });
+      setUsers((currentUsers) => currentUsers.map((current) => (current.id === user.id ? updatedUser : current)));
+      toast.success(t("detailsUpdated"));
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("detailsUpdateFailed"));
+    } finally {
+      setPendingCheckbox(null);
+    }
+  }
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
@@ -101,7 +122,9 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
             <TableRow>
               <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableName")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableEmail")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTableSuperAdmin")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background align-bottom pb-3 font-bold underline">{t("userTablePhone")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-center align-bottom pb-3 font-bold underline">{t("userTableSuperAdmin")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-center align-bottom pb-3 font-bold underline">{t("userTableAltsienKernlid")}</TableHead>
               {sortedModules.map((module) => (
                 <TableHead
                   key={module.key}
@@ -131,7 +154,23 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
               <TableRow key={user.id} className="group">
                 <TableCell className="font-medium">{user.display_name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell>{user.is_super_admin && <Badge variant="secondary">{t("superAdminLabel")}</Badge>}</TableCell>
+                <TableCell className="text-muted-foreground">{user.phone}</TableCell>
+                <TableCell className="text-center">
+                  <Checkbox
+                    checked={user.is_super_admin}
+                    disabled={user.id === currentUserId || pendingCheckbox === `${user.id}:is_super_admin`}
+                    onCheckedChange={(checked) => handleToggleFlag(user, "is_super_admin", checked === true)}
+                    aria-label={`${t("superAdminLabel")} – ${user.display_name}`}
+                  />
+                </TableCell>
+                <TableCell className="text-center">
+                  <Checkbox
+                    checked={user.is_altsien_kernlid}
+                    disabled={pendingCheckbox === `${user.id}:is_altsien_kernlid`}
+                    onCheckedChange={(checked) => handleToggleFlag(user, "is_altsien_kernlid", checked === true)}
+                    aria-label={`${t("altsienKernlidLabel")} – ${user.display_name}`}
+                  />
+                </TableCell>
                 {sortedModules.map((module) => {
                   const checkboxId = `${user.id}:${module.key}`;
                   return (
@@ -150,6 +189,7 @@ export function AccessManagement({ initialUsers, modules }: AccessManagementProp
                     <ChangeAccessDialog
                       user={user}
                       modules={sortedModules}
+                      isSelf={user.id === currentUserId}
                       onUpdated={(updatedUser) => {
                         setUsers((currentUsers) =>
                           currentUsers.map((current) => (current.id === updatedUser.id ? updatedUser : current)),
@@ -185,13 +225,17 @@ function CreateUserDialog({ onCreated }: CreateUserDialogProps) {
   const [displayName, setDisplayName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [phone, setPhone] = useState("");
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
+  const [isAltsienKernlid, setIsAltsienKernlid] = useState(false);
 
   function resetForm() {
     setDisplayName("");
     setEmail("");
     setPassword("");
+    setPhone("");
     setIsSuperAdmin(false);
+    setIsAltsienKernlid(false);
   }
 
   async function handleSubmit() {
@@ -202,6 +246,8 @@ function CreateUserDialog({ onCreated }: CreateUserDialogProps) {
         email,
         password,
         is_super_admin: isSuperAdmin,
+        is_altsien_kernlid: isAltsienKernlid,
+        phone: phone.trim() || null,
       });
       toast.success(t("userCreated"));
       onCreated(newUser);
@@ -247,6 +293,10 @@ function CreateUserDialog({ onCreated }: CreateUserDialogProps) {
               onChange={(event) => setPassword(event.target.value)}
             />
           </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="new-user-phone">{t("phoneLabel")}</Label>
+            <Input id="new-user-phone" type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+          </div>
           <div className="flex items-center gap-2">
             <Checkbox
               id="new-user-super-admin"
@@ -254,6 +304,14 @@ function CreateUserDialog({ onCreated }: CreateUserDialogProps) {
               onCheckedChange={(checked) => setIsSuperAdmin(checked === true)}
             />
             <Label htmlFor="new-user-super-admin">{t("superAdminLabel")}</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id="new-user-altsien-kernlid"
+              checked={isAltsienKernlid}
+              onCheckedChange={(checked) => setIsAltsienKernlid(checked === true)}
+            />
+            <Label htmlFor="new-user-altsien-kernlid">{t("altsienKernlidLabel")}</Label>
           </div>
         </div>
 
@@ -270,10 +328,12 @@ function CreateUserDialog({ onCreated }: CreateUserDialogProps) {
 interface ChangeAccessDialogProps {
   user: UserSummary;
   modules: ModuleInfo[];
+  // True when this row is the logged-in super admin: their Super admin box is locked.
+  isSelf: boolean;
   onUpdated: (user: UserSummary) => void;
 }
 
-function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProps) {
+function ChangeAccessDialog({ user, modules, isSelf, onUpdated }: ChangeAccessDialogProps) {
   const t = useTranslations("admin.access");
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -283,6 +343,12 @@ function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProp
   // request instead of one per checkbox (unlike the table's checkboxes,
   // which save immediately).
   const [selectedModuleKeys, setSelectedModuleKeys] = useState<string[]>(user.accessible_module_keys);
+  // Same idea for the phone number and the two flags: local until "Change".
+  const [phone, setPhone] = useState(user.phone ?? "");
+  const [isSuperAdmin, setIsSuperAdmin] = useState(user.is_super_admin);
+  const [isAltsienKernlid, setIsAltsienKernlid] = useState(user.is_altsien_kernlid);
+  // Optional new password (an admin reset); empty means "keep the current one".
+  const [newPassword, setNewPassword] = useState("");
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
@@ -291,6 +357,10 @@ function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProp
       // is opened, in case it changed since last time (e.g. via the
       // table's own checkboxes).
       setSelectedModuleKeys(user.accessible_module_keys);
+      setPhone(user.phone ?? "");
+      setIsSuperAdmin(user.is_super_admin);
+      setIsAltsienKernlid(user.is_altsien_kernlid);
+      setNewPassword("");
     }
   }
 
@@ -303,8 +373,24 @@ function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProp
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
+      // Only send the details request if something in it actually changed.
+      const newPhone = phone.trim() || null;
+      const detailsChanged =
+        newPhone !== user.phone ||
+        isSuperAdmin !== user.is_super_admin ||
+        isAltsienKernlid !== user.is_altsien_kernlid ||
+        newPassword !== "";
+      if (detailsChanged) {
+        await updateUser(user.id, {
+          phone: newPhone,
+          is_super_admin: isSuperAdmin,
+          is_altsien_kernlid: isAltsienKernlid,
+          // Only sent when filled in, so an empty box never touches the password.
+          ...(newPassword !== "" ? { password: newPassword } : {}),
+        });
+      }
       const updatedUser = await setUserModuleAccess(user.id, selectedModuleKeys);
-      toast.success(t("accessUpdated"));
+      toast.success(newPassword !== "" ? t("passwordReset") : t("accessUpdated"));
       onUpdated(updatedUser);
       setIsOpen(false);
     } catch (error) {
@@ -330,6 +416,45 @@ function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProp
           <DialogDescription>{t("changeAccessDescription", { name: user.display_name })}</DialogDescription>
         </DialogHeader>
 
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`change-phone-${user.id}`}>{t("phoneLabel")}</Label>
+            <Input
+              id={`change-phone-${user.id}`}
+              type="tel"
+              value={phone}
+              onChange={(event) => setPhone(event.target.value)}
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={`change-password-${user.id}`}>{t("newPasswordLabel")}</Label>
+            <Input
+              id={`change-password-${user.id}`}
+              type="password"
+              autoComplete="new-password"
+              value={newPassword}
+              onChange={(event) => setNewPassword(event.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`change-super-admin-${user.id}`}
+              checked={isSuperAdmin}
+              disabled={isSelf}
+              onCheckedChange={(checked) => setIsSuperAdmin(checked === true)}
+            />
+            <Label htmlFor={`change-super-admin-${user.id}`}>{t("superAdminLabel")}</Label>
+          </div>
+          <div className="flex items-center gap-2">
+            <Checkbox
+              id={`change-altsien-kernlid-${user.id}`}
+              checked={isAltsienKernlid}
+              onCheckedChange={(checked) => setIsAltsienKernlid(checked === true)}
+            />
+            <Label htmlFor={`change-altsien-kernlid-${user.id}`}>{t("altsienKernlidLabel")}</Label>
+          </div>
+        </div>
+
         <div className="flex flex-col gap-3">
           {modules.map((module) => {
             const checkboxId = `change-access-${user.id}-${module.key}`;
@@ -347,7 +472,7 @@ function ChangeAccessDialog({ user, modules, onUpdated }: ChangeAccessDialogProp
         </div>
 
         <DialogFooter>
-          <Button onClick={handleSubmit} disabled={isSubmitting}>
+          <Button onClick={handleSubmit} disabled={isSubmitting || (newPassword !== "" && newPassword.length < 8)}>
             {t("change")}
           </Button>
         </DialogFooter>

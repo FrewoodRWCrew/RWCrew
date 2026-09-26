@@ -4,7 +4,7 @@
 # Kernlid is an optional cross-module reference, same pattern as
 # KarTrackerDistributiepunt's own.
 
-from sqlalchemy import ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -41,8 +41,16 @@ class KarTrackerAfleverlocatie(Base):
     # fixed format was specified.
     terrein_positie: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    # Selected from module-9's existing "Altsien Kernleden" master data —
+    # Selected from the users flagged "Altsien Kernlid" on Manage Access —
     # optional, a delivery location need not have one assigned.
     altsien_kernlid_id: Mapped[int | None] = mapped_column(
-        ForeignKey("MasterData_altsien_kernlid.id"), nullable=True
+        ForeignKey("Landing_users.id", ondelete="SET NULL"), nullable=True
+    )
+
+    # Whether this delivery location is still in use. Inactive locations
+    # stay in the table (existing plans may reference them) but are no
+    # longer offered on the "Plan a kar" screen — same convention as
+    # Team.active/Festival.active.
+    active: Mapped[bool] = mapped_column(
+        Boolean, default=True, server_default=text("true"), nullable=False
     )

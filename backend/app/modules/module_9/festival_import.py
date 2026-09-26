@@ -25,7 +25,11 @@ from app.db.models.festival import Festival
 from app.db.models.season import Season
 from app.schemas.masterdata import FestivalImportRowResult
 
-TEMPLATE_COLUMNS = ["name", "start_date", "end_date", "season_name"]
+TEMPLATE_COLUMNS = ["name", "start_date", "end_date", "season_name", "active"]
+
+# Accepted spellings for the optional "active" column, compared lowercase.
+_TRUE_VALUES = {"true", "yes", "ja", "1", "y"}
+_FALSE_VALUES = {"false", "no", "nee", "0", "n"}
 
 
 def build_festival_template_xlsx() -> bytes:
@@ -62,6 +66,21 @@ def _parse_date_cell(value: object) -> date | None:
     if isinstance(value, date):
         return value
     return date.fromisoformat(str(value).strip())
+
+
+def _parse_active_cell(value: object) -> bool:
+    """A blank cell means active (the default); otherwise it must be a recognisable yes/no."""
+    if isinstance(value, bool):
+        return value
+    text = _cell_text(value)
+    if text is None:
+        return True
+    lowered = text.lower()
+    if lowered in _TRUE_VALUES:
+        return True
+    if lowered in _FALSE_VALUES:
+        return False
+    raise ValueError(f'active "{text}" is not a valid yes/no value')
 
 
 def _resolve_season_id(db: Session, season_name: str | None) -> int:
@@ -115,7 +134,9 @@ def import_festivals_from_xlsx(db: Session, file_bytes: bytes) -> list[FestivalI
 
             season_id = _resolve_season_id(db, _cell_text(cell(row, "season_name")))
 
-            db.add(Festival(name=name, start_date=start_date, end_date=end_date, season_id=season_id))
+            active = _parse_active_cell(cell(row, "active"))
+
+            db.add(Festival(name=name, start_date=start_date, end_date=end_date, season_id=season_id, active=active))
 
             savepoint.commit()
             results.append(FestivalImportRowResult(row_number=row_number, name=name, outcome="created", detail=None))
@@ -150,6 +171,7 @@ def export_festivals_to_xlsx(db: Session) -> bytes:
                 festival.start_date,
                 festival.end_date,
                 seasons.get(festival.season_id, ""),
+                "yes" if festival.active else "no",
             ]
         )
 

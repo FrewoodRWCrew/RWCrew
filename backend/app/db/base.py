@@ -5,7 +5,13 @@
 # list of models.
 
 from app.core.database import Base  # noqa: F401  (re-exported for convenience)
-from app.db.models.altsien_kernlid import AltsienKernlid  # noqa: F401
+from app.db.models.altsien_select_request_status import AltsienSelectRequestStatus  # noqa: F401
+from app.db.models.altsien_select_role import AltsienSelectRole  # noqa: F401
+from app.db.models.altsien_select_role_permission import AltsienSelectRolePermission  # noqa: F401
+from app.db.models.altsien_select_screen import AltsienSelectScreen  # noqa: F401
+from app.db.models.altsien_select_special_request import AltsienSelectSpecialRequest  # noqa: F401
+from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress  # noqa: F401
+from app.db.models.altsien_select_user_role import AltsienSelectUserRole  # noqa: F401
 from app.db.models.delivery_method import DeliveryMethod  # noqa: F401
 from app.db.models.festival import Festival  # noqa: F401
 from app.db.models.intervention_request import InterventionRequest  # noqa: F401
@@ -16,8 +22,11 @@ from app.db.models.intervention_requests_user_role import InterventionRequestsUs
 from app.db.models.intervention_status import InterventionStatus  # noqa: F401
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie  # noqa: F401
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt  # noqa: F401
+from app.db.models.kartracker_groundplan import KarTrackerGroundplan  # noqa: F401
 from app.db.models.kartracker_kar import KarTrackerKar  # noqa: F401
+from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie  # noqa: F401
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus  # noqa: F401
+from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum  # noqa: F401
 from app.db.models.kartracker_role import KarTrackerRole  # noqa: F401
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission  # noqa: F401
 from app.db.models.kartracker_screen import KarTrackerScreen  # noqa: F401
@@ -46,6 +55,7 @@ from app.db.models.tagscan_screen import TagscanScreen  # noqa: F401
 from app.db.models.tagscan_settings import TagscanSettings  # noqa: F401
 from app.db.models.tagscan_user_role import TagscanUserRole  # noqa: F401
 from app.db.models.team import Team  # noqa: F401
+from app.db.models.team_festival import TeamFestival  # noqa: F401
 from app.db.models.team_kernlid import TeamKernlid  # noqa: F401
 from app.db.models.team_location import TeamLocation  # noqa: F401
 from app.db.models.team_task import TeamTask  # noqa: F401

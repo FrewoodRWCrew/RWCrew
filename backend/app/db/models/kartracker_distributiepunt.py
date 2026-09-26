@@ -2,7 +2,7 @@
 # distribution-point master data, maintained on the Distributiepunten
 # screen and referenced from Afleverlocatie (see
 # kartracker_afleverlocatie.py). Altsien Kernlid is an optional reference
-# to module-9's existing Altsien Kernleden contact list — same
+# to a user flagged Altsien Kernlid — same
 # cross-module FK pattern as KarTrackerKar.team_id/transport_type_id.
 
 from sqlalchemy import ForeignKey, String
@@ -30,8 +30,8 @@ class KarTrackerDistributiepunt(Base):
     # fixed format was specified.
     terrein_positie: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
-    # Selected from module-9's existing "Altsien Kernleden" master data —
+    # Selected from the users flagged "Altsien Kernlid" on Manage Access —
     # optional, a distribution point need not have one assigned.
     altsien_kernlid_id: Mapped[int | None] = mapped_column(
-        ForeignKey("MasterData_altsien_kernlid.id"), nullable=True
+        ForeignKey("Landing_users.id", ondelete="SET NULL"), nullable=True
     )

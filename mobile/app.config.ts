@@ -1,0 +1,101 @@
+// The Expo app configuration. It is a .ts file (not app.json) so ONE codebase
+// can produce two distinct apps that install side by side on a phone:
+//   test        -> "RWCrew Test", talks to https://test.rwcrew.eu
+//   production  -> "RWCrew",      talks to https://rwcrew.eu
+// The variant is chosen with the APP_VARIANT environment variable (set per
+// build profile in eas.json). Without it we default to "test", so local
+// development never touches production by accident.
+
+import type { ExpoConfig } from "expo/config";
+
+// Which of the two apps are we building?
+const variant: "test" | "production" = process.env.APP_VARIANT === "production" ? "production" : "test";
+const isProduction = variant === "production";
+
+// The API address of the matching website. API_URL can override it to point
+// at your PC's local backend during development — it belongs in
+// mobile/.env.development.local, which Expo only loads for `npx expo start`
+// (never for `eas update`/`expo export`, which bundle in production mode).
+const defaultApiUrl = isProduction ? "https://rwcrew.eu" : "https://test.rwcrew.eu";
+const apiUrl = process.env.API_URL ?? defaultApiUrl;
+
+// Safety net: a plain-http (local/LAN) backend address must never end up in
+// an app or over-the-air update that real users install. Stop right here if
+// one would, whatever way API_URL got set.
+const isReleaseBundle =
+  isProduction || process.env.EAS_BUILD === "true" || process.env.NODE_ENV === "production";
+if (isReleaseBundle && !apiUrl.startsWith("https://")) {
+  throw new Error(
+    `API_URL "${apiUrl}" is a local development address and cannot be used for a ${variant} build or update. ` +
+      "Put local overrides in mobile/.env.development.local and unset API_URL.",
+  );
+}
+
+const config: ExpoConfig = {
+  name: isProduction ? "RWCrew" : "RWCrew Test",
+  slug: "rwcrew",
+  // The app version (bump it for every new APK; the matching git tag is mobile-v<version>).
+  version: "1.0.0",
+  scheme: isProduction ? "rwcrew" : "rwcrew-test",
+  orientation: "portrait",
+  icon: "./assets/icon.png",
+  userInterfaceStyle: "automatic",
+  ios: {
+    supportsTablet: false,
+    // A different bundle id per variant is what lets both apps coexist.
+    bundleIdentifier: isProduction ? "eu.rwcrew.app" : "eu.rwcrew.app.test",
+    // Only standard HTTPS is used, which Apple exempts from export rules;
+    // declaring it here skips the encryption question on every TestFlight upload.
+    config: { usesNonExemptEncryption: false },
+    infoPlist: {
+      // Texts iOS shows when the app asks for the camera / location.
+      NSCameraUsageDescription: "RWCrew uses the camera to attach photos.",
+      NSLocationWhenInUseUsageDescription: "RWCrew uses your location to tag where something happened.",
+    },
+  },
+  android: {
+    package: isProduction ? "eu.rwcrew.app" : "eu.rwcrew.app.test",
+    adaptiveIcon: {
+      backgroundColor: "#10261F",
+      foregroundImage: "./assets/android-icon-foreground.png",
+      backgroundImage: "./assets/android-icon-background.png",
+      monochromeImage: "./assets/android-icon-monochrome.png",
+    },
+    predictiveBackGestureEnabled: false,
+  },
+  web: { favicon: "./assets/favicon.png" },
+  plugins: [
+    "expo-router",
+    "expo-secure-store",
+    // Startup splash: the cream RW mark centred on the icon's dark green.
+    // imageWidth is larger than the default because the mark only fills ~60%
+    // of splash-icon.png (it keeps padding for Android's safe zone).
+    [
+      "expo-splash-screen",
+      {
+        image: "./assets/splash-icon.png",
+        backgroundColor: "#10261F",
+        imageWidth: 280,
+      },
+    ],
+  ],
+  // Expo Router's typed routes are on by default; off here because its
+  // generator wrongly lists non-route folders (src/lib, src/components) and
+  // then rejects our dynamic paths like /module-3/request/12.
+  experiments: { typedRoutes: false },
+  // Values the app reads at runtime via expo-constants (see src/lib/config.ts).
+  extra: {
+    variant,
+    apiUrl,
+    // Links this project to its EAS project (needed by `eas build`/`eas update`).
+    eas: { projectId: "fa3ed3ad-15b4-434d-a487-6b5a2261fb55" },
+  },
+  // The Expo account that owns the EAS project.
+  owner: "rwcrewmobile",
+  // Over-the-air updates (`eas update`): where the app looks for them, and
+  // which builds may receive which update (same app version = compatible).
+  updates: { url: "https://u.expo.dev/fa3ed3ad-15b4-434d-a487-6b5a2261fb55" },
+  runtimeVersion: { policy: "appVersion" },
+};
+
+export default config;

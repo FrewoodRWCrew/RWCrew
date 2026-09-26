@@ -5,6 +5,14 @@
 
 import { API_BASE_URL } from "./config";
 import type {
+  AltsienSelectDashboardStats,
+  AltsienSelectRequestStatus,
+  AltsienSelectRequestStatusInput,
+  AltsienSelectRole,
+  AltsienSelectSpecialRequest,
+  AltsienSelectTeamState,
+  AltsienSelectTeamSummary,
+  AltsienSelectUserSummary,
   CurrentUser,
   ModuleInfo,
   ModuleRoleAssignment,
@@ -12,8 +20,6 @@ import type {
   ModuleStatus,
   AfleverlocatieImportResponse,
   AltsienKernlid,
-  AltsienKernlidImportResponse,
-  AltsienKernlidInput,
   DeliveryMethod,
   DeliveryMethodImportResponse,
   DistributiepuntImportResponse,
@@ -36,10 +42,19 @@ import type {
   KarTrackerAfleverlocatieInput,
   KarTrackerDistributiepunt,
   KarTrackerDistributiepuntInput,
+  KarTrackerGroundplan,
   KarTrackerKar,
   KarTrackerKarInput,
+  KarTrackerKarMapResponse,
+  KarTrackerKarPlanningReport,
   KarTrackerKarStatus,
+  KarTrackerLeverdatum,
+  KarTrackerLeverdatumSaveInput,
   KarTrackerMyPermissions,
+  KarTrackerPlanKar,
+  KarTrackerPlanKarAfleverlocatieOption,
+  KarTrackerPlanKarOption,
+  KarTrackerPlanKarSaveInput,
   KarTrackerRole,
   KarTrackerScreen,
   KarTrackerUserSummary,
@@ -67,6 +82,7 @@ import type {
   ScannerApiKey,
   ScannerInput,
   Season,
+  SeasonInput,
   SeasonImportResponse,
   TagDashboardStats,
   TagHeaderDataEntry,
@@ -108,6 +124,46 @@ export class ApiError extends Error {
   }
 }
 
+// The refresh call currently in flight, if any. Several requests often hit
+// an expired session at the same moment; they must share ONE refresh,
+// because the backend rotates the refresh token on every use and would
+// reject the second caller's (already rotated-away) copy.
+let refreshInFlight: Promise<boolean> | null = null;
+
+/** Ask the backend for a new access token using the refresh cookie. True on success. */
+function refreshSessionInBrowser(): Promise<boolean> {
+  if (refreshInFlight === null) {
+    refreshInFlight = fetch(`${API_BASE_URL}/api/auth/refresh`, { method: "POST", credentials: "include" })
+      .then((response) => response.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
+/**
+ * Like fetch, but when the backend answers 401 (the 15-minute access
+ * token expired) it silently renews the session once and repeats the
+ * request, so the user isn't sent back to the login screen while the
+ * refresh token (max 6 h since login) is still valid. Login and public endpoints are left
+ * alone: a 401 there is a real answer (e.g. wrong password), not an expiry.
+ */
+async function fetchWithRefresh(url: string, init: RequestInit): Promise<Response> {
+  const response = await fetch(url, init);
+  const isAuthEndpoint = /\/api\/auth\/(login|logout|refresh)$/.test(url);
+  if (response.status !== 401 || isAuthEndpoint || url.includes("/api/public/")) {
+    return response;
+  }
+
+  // Still 401 after refreshing (or refreshing failed): return that answer as-is.
+  if (!(await refreshSessionInBrowser())) {
+    return response;
+  }
+  return fetch(url, init);
+}
+
 /**
  * Send one request to the backend and return its parsed JSON response.
  *
@@ -116,7 +172,7 @@ export class ApiError extends Error {
  * the backend sends back (e.g. right after logging in).
  */
 async function apiFetch<TResponse>(path: string, init?: RequestInit): Promise<TResponse> {
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, {
     ...init,
     credentials: "include",
     headers: {
@@ -147,6 +203,14 @@ export function login(email: string, password: string): Promise<CurrentUser> {
   return apiFetch<CurrentUser>("/api/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
+  });
+}
+
+/** Change the logged-in user's own password (their other sessions are ended). */
+export function changePassword(currentPassword: string, newPassword: string): Promise<CurrentUser> {
+  return apiFetch<CurrentUser>("/api/auth/change-password", {
+    method: "POST",
+    body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
   });
 }
 
@@ -194,9 +258,21 @@ export function createUser(payload: {
   password: string;
   display_name: string;
   is_super_admin: boolean;
+  is_altsien_kernlid: boolean;
+  phone: string | null;
 }): Promise<UserSummary> {
   return apiFetch<UserSummary>("/api/admin/users", {
     method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateUser(
+  userId: number,
+  payload: { is_super_admin?: boolean; is_altsien_kernlid?: boolean; phone?: string | null; password?: string },
+): Promise<UserSummary> {
+  return apiFetch<UserSummary>(`/api/admin/users/${userId}`, {
+    method: "PATCH",
     body: JSON.stringify(payload),
   });
 }
@@ -230,17 +306,17 @@ export function listSeasons(): Promise<Season[]> {
   return apiFetch<Season[]>("/api/modules/module-9/seasons");
 }
 
-export function createSeason(name: string): Promise<Season> {
+export function createSeason(payload: SeasonInput): Promise<Season> {
   return apiFetch<Season>("/api/modules/module-9/seasons", {
     method: "POST",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(payload),
   });
 }
 
-export function updateSeason(seasonId: number, name: string): Promise<Season> {
+export function updateSeason(seasonId: number, payload: SeasonInput): Promise<Season> {
   return apiFetch<Season>(`/api/modules/module-9/seasons/${seasonId}`, {
     method: "PUT",
-    body: JSON.stringify({ name }),
+    body: JSON.stringify(payload),
   });
 }
 
@@ -368,28 +444,10 @@ export function deleteFestival(festivalId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/festivals/${festivalId}`, { method: "DELETE" });
 }
 
-// --- Altsien Kernleden (module-9's "masterdata.altsien-kernleden" screen) ---
+// --- Altsien Kernleden: users flagged on the Manage Access screen ---
 
 export function listAltsienKernleden(): Promise<AltsienKernlid[]> {
-  return apiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden");
-}
-
-export function createAltsienKernlid(payload: AltsienKernlidInput): Promise<AltsienKernlid> {
-  return apiFetch<AltsienKernlid>("/api/modules/module-9/altsien-kernleden", {
-    method: "POST",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function updateAltsienKernlid(id: number, payload: AltsienKernlidInput): Promise<AltsienKernlid> {
-  return apiFetch<AltsienKernlid>(`/api/modules/module-9/altsien-kernleden/${id}`, {
-    method: "PUT",
-    body: JSON.stringify(payload),
-  });
-}
-
-export function deleteAltsienKernlid(id: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/altsien-kernleden/${id}`, { method: "DELETE" });
+  return apiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden");
 }
 
 // --- Products (module-9's "masterdata.products" screen) -----------------
@@ -707,7 +765,7 @@ export async function importRfidTags(file: File): Promise<RfidTagImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -814,7 +872,7 @@ export async function importSeasons(file: File): Promise<SeasonImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/season-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/season-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -833,7 +891,7 @@ export async function importProductTypes(file: File): Promise<ProductTypeImportR
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -852,7 +910,7 @@ export async function importWarehouses(file: File): Promise<WarehouseImportRespo
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -871,7 +929,7 @@ export async function importProductCategories(file: File): Promise<ProductCatego
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -890,7 +948,7 @@ export async function importProductLimits(file: File): Promise<ProductLimitImpor
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -909,7 +967,7 @@ export async function importTeamLocations(file: File): Promise<TeamLocationImpor
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-location-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-location-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -928,7 +986,7 @@ export async function importDeliveryMethods(file: File): Promise<DeliveryMethodI
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/delivery-method-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/delivery-method-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -947,7 +1005,7 @@ export async function importTeamTasks(file: File): Promise<TeamTaskImportRespons
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-task-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-task-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -966,7 +1024,7 @@ export async function importFestivals(file: File): Promise<FestivalImportRespons
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/festival-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/festival-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -985,7 +1043,7 @@ export async function importProducts(file: File): Promise<ProductImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/product-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1006,7 +1064,7 @@ export async function importTeams(file: File): Promise<TeamImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/team-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/team-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1019,25 +1077,6 @@ export async function importTeams(file: File): Promise<TeamImportResponse> {
   }
 
   return (await response.json()) as TeamImportResponse;
-}
-
-export async function importAltsienKernleden(file: File): Promise<AltsienKernlidImportResponse> {
-  const formData = new FormData();
-  formData.append("file", file);
-
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-9/altsien-kernlid-import`, {
-    method: "POST",
-    credentials: "include",
-    body: formData,
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.json().catch(() => null);
-    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
-    throw new ApiError(message, response.status);
-  }
-
-  return (await response.json()) as AltsienKernlidImportResponse;
 }
 
 // --- Intervention Requests (module-3): KPI landing dashboard ---------------
@@ -1135,6 +1174,94 @@ export function getKarTrackerMyPermissions(): Promise<KarTrackerMyPermissions> {
 
 export function listKarTrackerScreens(): Promise<KarTrackerScreen[]> {
   return apiFetch<KarTrackerScreen[]>("/api/modules/module-2/screens");
+}
+
+export function listKarTrackerGroundplans(): Promise<KarTrackerGroundplan[]> {
+  return apiFetch<KarTrackerGroundplan[]>("/api/modules/module-2/groundplans");
+}
+
+/**
+ * Sends a ground plan's FormData (name, four corner coordinates and an
+ * image). Uses a plain fetch instead of apiFetch, same reason as
+ * importKarren below: the browser must set its own multipart Content-Type
+ * (with boundary) — setting it manually would break the upload.
+ */
+async function sendKarTrackerGroundplanForm(path: string, method: "POST" | "PUT", formData: FormData) {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, {
+    method,
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as KarTrackerGroundplan;
+}
+
+/** Adds a new ground plan — the image is required here. */
+export function createKarTrackerGroundplan(formData: FormData): Promise<KarTrackerGroundplan> {
+  return sendKarTrackerGroundplanForm("/api/modules/module-2/groundplans", "POST", formData);
+}
+
+/** Updates a ground plan — the image is optional, the old one is kept when omitted. */
+export function updateKarTrackerGroundplan(groundplanId: number, formData: FormData): Promise<KarTrackerGroundplan> {
+  return sendKarTrackerGroundplanForm(`/api/modules/module-2/groundplans/${groundplanId}`, "PUT", formData);
+}
+
+export function deleteKarTrackerGroundplan(groundplanId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/groundplans/${groundplanId}`, { method: "DELETE" });
+}
+
+/** A ground plan image's direct URL, for use as an <img>/Leaflet
+ * ImageOverlay source — the browser sends the auth cookie automatically
+ * since the frontend and backend are always same-site, so no fetch-and-
+ * blob round trip is needed here. `updatedAt` is appended so the browser
+ * re-fetches the image after it has been replaced instead of showing a
+ * stale cached copy. */
+export function karTrackerGroundplanImageUrl(groundplanId: number, updatedAt: string): string {
+  return `${API_BASE_URL}/api/modules/module-2/groundplans/${groundplanId}/image?v=${encodeURIComponent(updatedAt)}`;
+}
+
+// "Plan a kar": per team, one delivery location per active festival of a season.
+
+/** The active teams offered in the "Plan a kar" team dropdown. */
+export function listPlanKarTeams(): Promise<KarTrackerPlanKarOption[]> {
+  return apiFetch<KarTrackerPlanKarOption[]>("/api/modules/module-2/plan-kar/teams");
+}
+
+/** The active delivery locations offered in every "Plan a kar" row. */
+export function listPlanKarAfleverlocaties(): Promise<KarTrackerPlanKarAfleverlocatieOption[]> {
+  return apiFetch<KarTrackerPlanKarAfleverlocatieOption[]>("/api/modules/module-2/plan-kar/afleverlocaties");
+}
+
+/** The matrix (active festivals of the season + saved locations) for one team. */
+export function getPlanKar(seasonId: number, teamId: number): Promise<KarTrackerPlanKar> {
+  return apiFetch<KarTrackerPlanKar>(`/api/modules/module-2/plan-kar?season_id=${seasonId}&team_id=${teamId}`);
+}
+
+/** Saves the whole matrix; existing (season, festival, team) records are updated, not duplicated. */
+export function savePlanKar(payload: KarTrackerPlanKarSaveInput): Promise<KarTrackerPlanKar> {
+  return apiFetch<KarTrackerPlanKar>("/api/modules/module-2/plan-kar", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** The "Delivery Dates" table: active festivals of the season + their saved dates. */
+export function getLeverdata(seasonId: number): Promise<KarTrackerLeverdatum> {
+  return apiFetch<KarTrackerLeverdatum>(`/api/modules/module-2/leverdata?season_id=${seasonId}`);
+}
+
+/** Saves the whole table; existing per-festival records are updated, not duplicated. */
+export function saveLeverdata(payload: KarTrackerLeverdatumSaveInput): Promise<KarTrackerLeverdatum> {
+  return apiFetch<KarTrackerLeverdatum>("/api/modules/module-2/leverdata", {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
 }
 
 export function listKarTrackerRoles(): Promise<KarTrackerRole[]> {
@@ -1248,6 +1375,48 @@ export function deleteKar(karId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-2/karren/${karId}`, { method: "DELETE" });
 }
 
+// --- Kar Planning (module-2's "kartracker.karplanning" read-only report) ---
+
+/** With a season id the report also carries one afleverlocatie column per active festival of it. */
+export function listKarPlanning(seasonId?: number | null): Promise<KarTrackerKarPlanningReport> {
+  const query = seasonId != null ? `?season_id=${seasonId}` : "";
+  return apiFetch<KarTrackerKarPlanningReport>(`/api/modules/module-2/kar-planning${query}`);
+}
+
+/**
+ * The Kar Planning "Print" button: asks the backend for one PDF page (a
+ * "karblad") per selected kar and returns the PDF itself. `siteUrl` is the
+ * public address the pages' QR codes should point to. Plain fetch because
+ * the response is a binary PDF, not JSON (apiFetch would try to parse it).
+ */
+export async function printKarPlanning(
+  seasonId: number,
+  karIds: number[],
+  siteUrl: string,
+  locale: string,
+): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-planning/print`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ season_id: seasonId, kar_ids: karIds, site_url: siteUrl, locale }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+// --- Kar Map (module-2's "kartracker.karmap" read-only map report) ---
+
+export function listKarMap(): Promise<KarTrackerKarMapResponse> {
+  return apiFetch<KarTrackerKarMapResponse>("/api/modules/module-2/kar-map");
+}
+
 /**
  * Uploads an XLSX file to bulk-register new karren. Uses a plain fetch
  * instead of apiFetch: the body is FormData, not JSON, and the browser
@@ -1258,7 +1427,7 @@ export async function importKarren(file: File): Promise<KarImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1281,7 +1450,7 @@ export async function importKarStatuses(file: File): Promise<KarStatusImportResp
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/kar-status-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-status-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1328,7 +1497,7 @@ export async function importDistributiepunten(file: File): Promise<Distributiepu
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/distributiepunt-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/distributiepunt-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1372,7 +1541,7 @@ export async function importZones(file: File): Promise<ZoneImportResponse> {
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/zone-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/zone-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1419,7 +1588,7 @@ export async function importAfleverlocaties(file: File): Promise<AfleverlocatieI
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetch(`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/afleverlocatie-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1532,4 +1701,189 @@ export function updateInterventionRequest(
 
 export function deleteInterventionRequest(requestId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-3/intervention-requests/${requestId}`, { method: "DELETE" });
+}
+
+// --- Altsien Select (module-8) ----------------------------------------------
+//
+// KPI dashboard, the Ploeg Wizard (festivals, delivery locations, steps,
+// special requests), the Ploegfiche, the organisation's request follow-up,
+// the request-status MasterData, and the usual custom-roles endpoints.
+
+const ALTSIEN_SELECT_BASE = "/api/modules/module-8";
+
+export function getAltsienSelectDashboard(seasonId: number | null): Promise<AltsienSelectDashboardStats> {
+  const query = seasonId === null ? "" : `?season_id=${seasonId}`;
+  return apiFetch<AltsienSelectDashboardStats>(`${ALTSIEN_SELECT_BASE}/dashboard${query}`);
+}
+
+export function listAltsienSelectSeasons(): Promise<Season[]> {
+  return apiFetch<Season[]>(`${ALTSIEN_SELECT_BASE}/seasons`);
+}
+
+export function listAltsienSelectTeams(seasonId: number): Promise<AltsienSelectTeamSummary[]> {
+  return apiFetch<AltsienSelectTeamSummary[]>(`${ALTSIEN_SELECT_BASE}/teams?season_id=${seasonId}`);
+}
+
+export function getAltsienSelectWizard(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}?season_id=${seasonId}`);
+}
+
+export function saveAltsienSelectFestivals(
+  teamId: number,
+  seasonId: number,
+  festivalIds: number[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/festivals`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, festival_ids: festivalIds }),
+  });
+}
+
+export function saveAltsienSelectAfleverlocaties(
+  teamId: number,
+  seasonId: number,
+  rows: { festival_id: number; afleverlocatie_id: number | null }[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/afleverlocaties`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, rows }),
+  });
+}
+
+/** Mark a wizard step as done (complete=true) or reopen it (false). */
+export function setAltsienSelectStepComplete(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+  complete: boolean,
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/complete?season_id=${seasonId}`,
+    { method: complete ? "POST" : "DELETE" },
+  );
+}
+
+export function createAltsienSelectRequest(
+  teamId: number,
+  seasonId: number,
+  text: string,
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests?season_id=${seasonId}`,
+    { method: "POST", body: JSON.stringify({ text }) },
+  );
+}
+
+export function updateAltsienSelectRequest(
+  teamId: number,
+  requestId: number,
+  text: string,
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
+  });
+}
+
+export function deleteAltsienSelectRequest(teamId: number, requestId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, { method: "DELETE" });
+}
+
+export function getAltsienSelectPloegfiche(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/ploegfiche/${teamId}?season_id=${seasonId}`);
+}
+
+/** Direct link to the Ploegfiche PDF (opened in a new tab; the auth cookies travel along). */
+export function altsienSelectPloegfichePdfUrl(teamId: number, seasonId: number, locale: string): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/ploegfiche/${teamId}/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
+export function listAltsienSelectFollowUpRequests(seasonId: number): Promise<AltsienSelectSpecialRequest[]> {
+  return apiFetch<AltsienSelectSpecialRequest[]>(`${ALTSIEN_SELECT_BASE}/requests?season_id=${seasonId}`);
+}
+
+export function followUpAltsienSelectRequest(
+  requestId: number,
+  payload: { status_id: number; organisation_note: string | null },
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/requests/${requestId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listAltsienSelectRequestStatuses(): Promise<AltsienSelectRequestStatus[]> {
+  return apiFetch<AltsienSelectRequestStatus[]>(`${ALTSIEN_SELECT_BASE}/request-statuses`);
+}
+
+export function createAltsienSelectRequestStatus(
+  payload: AltsienSelectRequestStatusInput,
+): Promise<AltsienSelectRequestStatus> {
+  return apiFetch<AltsienSelectRequestStatus>(`${ALTSIEN_SELECT_BASE}/request-statuses`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAltsienSelectRequestStatus(
+  statusId: number,
+  payload: AltsienSelectRequestStatusInput,
+): Promise<AltsienSelectRequestStatus> {
+  return apiFetch<AltsienSelectRequestStatus>(`${ALTSIEN_SELECT_BASE}/request-statuses/${statusId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAltsienSelectRequestStatus(statusId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/request-statuses/${statusId}`, { method: "DELETE" });
+}
+
+// Custom roles with per-screen permissions (same shapes as module-3's).
+
+export function createAltsienSelectRole(name: string): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameAltsienSelectRole(roleId: number, name: string): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteAltsienSelectRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function setAltsienSelectRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function setAltsienSelectUserRole(userId: number, roleId: number | null): Promise<AltsienSelectUserSummary> {
+  return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantAltsienSelectUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<AltsienSelectUserSummary> {
+  return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

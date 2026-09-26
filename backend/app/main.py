@@ -17,8 +17,10 @@ from app.core.database import SessionLocal
 from app.landing.admin import router as admin_router
 from app.landing.auth import router as auth_router
 from app.landing.modules import router as modules_router
+from app.mobile.router import router as mobile_router
 from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
+from app.modules.module_10.router import router as module_10_router
 from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
 from app.modules.module_2.router import router as module_2_router
 from app.modules.module_2.screens import sync_screens as sync_kartracker_screens
@@ -30,6 +32,7 @@ from app.modules.module_5.router import router as module_5_router
 from app.modules.module_6.router import router as module_6_router
 from app.modules.module_7.router import router as module_7_router
 from app.modules.module_8.router import router as module_8_router
+from app.modules.module_8.screens import sync_screens as sync_altsien_select_screens
 from app.modules.module_9.router import router as module_9_router
 from app.modules.module_9.screens import sync_screens as sync_masterdata_screens
 
@@ -38,7 +41,7 @@ from app.modules.module_9.screens import sync_screens as sync_masterdata_screens
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
     """Runs once when the backend starts up, before it accepts any
     requests. Used to keep TagScan's, KarTracker's, Intervention Requests',
-    and MasterData's screen registries (Tagscan_screens / KarTracker_screens
+    Altsien Select's and MasterData's screen registries (Tagscan_screens / KarTracker_screens
     / InterventionRequests_screens / MasterData_screens) in sync with the
     SCREEN_DEFINITIONS lists in code — see app/modules/module_1/screens.py,
     app/modules/module_2/screens.py, app/modules/module_3/screens.py, and
@@ -48,6 +51,7 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         sync_tagscan_screens(db)
         sync_kartracker_screens(db)
         sync_intervention_requests_screens(db)
+        sync_altsien_select_screens(db)
         sync_masterdata_screens(db)
     yield
 
@@ -82,6 +86,9 @@ app.include_router(module_6_router)
 app.include_router(module_7_router)
 app.include_router(module_8_router)
 app.include_router(module_9_router)
+app.include_router(module_10_router)
+# The smartphone app's whole API (/api/mobile/v1/...), kept in app/mobile/.
+app.include_router(mobile_router)
 
 
 @app.get("/api/health")

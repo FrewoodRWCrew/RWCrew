@@ -19,3 +19,5 @@ frontend/.env.local
 .DS_Store
 Thumbs.db
 *.log
+docs/RWCrew-Brochure.pdf
+docs/RWCrew-Brochure-NL.pdf

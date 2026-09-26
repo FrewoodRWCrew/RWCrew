@@ -64,14 +64,28 @@ def verify_password(plain_password: str, stored_hash: str) -> bool:
     return hmac.compare_digest(candidate_digest.hex(), expected_hex)
 
 
-def create_access_token(user_id: int) -> str:
-    """Create a short-lived JWT that proves who the logged-in user is."""
-    return _create_token(user_id, token_type="access", expires_delta=timedelta(minutes=settings.access_token_minutes))
+def create_access_token(user_id: int, session_expires_at: datetime | None = None) -> str:
+    """Create a short-lived JWT that proves who the logged-in user is.
+
+    When the login session ends sooner than the normal lifetime, the token
+    is cut short so it never outlives the session.
+    """
+    lifetime = timedelta(minutes=settings.access_token_minutes)
+    if session_expires_at is not None:
+        lifetime = min(lifetime, session_expires_at - datetime.now(timezone.utc))
+    return _create_token(user_id, token_type="access", expires_delta=lifetime)
 
 
-def create_refresh_token(user_id: int) -> str:
-    """Create a longer-lived JWT used only to request a new access token."""
-    return _create_token(user_id, token_type="refresh", expires_delta=timedelta(days=settings.refresh_token_days))
+def create_refresh_token(user_id: int, expires_at: datetime | None = None) -> str:
+    """Create a JWT used only to request a new access token.
+
+    It expires at the end of the login session: `expires_at` when renewing an
+    existing session (so rotation never extends it), otherwise
+    `session_max_hours` from now (a fresh login).
+    """
+    if expires_at is None:
+        expires_at = datetime.now(timezone.utc) + timedelta(hours=settings.session_max_hours)
+    return _create_token(user_id, token_type="refresh", expires_delta=expires_at - datetime.now(timezone.utc))
 
 
 def _create_token(user_id: int, token_type: Literal["access", "refresh"], expires_delta: timedelta) -> str:

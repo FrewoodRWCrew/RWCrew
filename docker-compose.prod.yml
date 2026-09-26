@@ -18,8 +18,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db_data:/var/lib/postgresql/data
-    # Not published to the host: only the backend container needs to reach
-    # it, over the private docker-compose network.
+    # Published on the VPS's loopback address only (127.0.0.1), never on the
+    # public internet. The backend still reaches it over the private
+    # docker-compose network; this port exists so pgAdmin on a developer's PC
+    # can read the database for debugging through an SSH tunnel (read-only
+    # login, see deploy/scripts/create-readonly-db-user.sh). The ":?" makes
+    # the deploy fail loudly if DB_HOST_PORT is missing from .env.
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:?set DB_HOST_PORT in .env}:5432"
 
   backend:
     build:
@@ -40,6 +46,14 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       TAGSCAN_SOURCE_DIR: /app/TagScans
+      # Phone app settings (backend/app/core/config.py): the oldest app
+      # version still accepted, and what the "Mobile App" download page
+      # (module-10) shows. All optional; empty hides that item.
+      MOBILE_MIN_APP_VERSION: ${MOBILE_MIN_APP_VERSION:-0.0.0}
+      MOBILE_ANDROID_DOWNLOAD_URL: ${MOBILE_ANDROID_DOWNLOAD_URL:-}
+      MOBILE_IOS_TESTFLIGHT_URL: ${MOBILE_IOS_TESTFLIGHT_URL:-}
+      MOBILE_LATEST_VERSION: ${MOBILE_LATEST_VERSION:-}
+      MOBILE_CHANGELOG: ${MOBILE_CHANGELOG:-}
     volumes:
       # TagScan's CSV intake folder (see backend/app/core/config.py's
       # tagscan_source_dir) — kept outside the container so uploaded/scanned
@@ -55,6 +69,8 @@ services:
         # Baked in at build time — see frontend/Dockerfile's comment on why
         # this can't be a plain runtime environment variable.
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+        # Public site address for QR codes on printed karbladen; optional.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-}
         # Only set in test's .env — shows a "this isn't production" banner.
         NEXT_PUBLIC_ENVIRONMENT_LABEL: ${NEXT_PUBLIC_ENVIRONMENT_LABEL:-}
     restart: unless-stopped

@@ -21,7 +21,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -236,9 +235,9 @@ def test_team_import_resolves_location_and_rejects_duplicate_names(client: TestC
     db_session.commit()
 
     xlsx_bytes = _build_xlsx(
-        ["name", "location_name", "delivery_method_name", "description"],
+        ["name", "location_name", "delivery_method_name", "description", "active"],
         [
-            ["Bar Team", "Main Stage", "", "Serves drinks"],
+            ["Bar Team", "Main Stage", "", "Serves drinks", "no"],
             ["Logistics", "", "", ""],
             ["Ghost Team", "Nonexistent Location", "", ""],
         ],
@@ -257,6 +256,7 @@ def test_team_import_resolves_location_and_rejects_duplicate_names(client: TestC
     new_team = db_session.scalar(select(Team).where(Team.name == "Bar Team"))
     assert new_team is not None
     assert new_team.location_id == location.id
+    assert new_team.active is False
 
 
 def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient, db_session: Session) -> None:
@@ -270,7 +270,7 @@ def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient
     assert response.status_code == 200
     workbook = load_workbook(io.BytesIO(response.content))
     header_row = [cell.value for cell in workbook.active[1]]
-    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description"]
+    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description", "active"]
 
 
 # --- Product: several optional FK-by-name lookups + booleans, no dup rule --
@@ -363,34 +363,6 @@ def test_my_permissions_reports_dataupload_as_creatable_when_granted(client: Tes
     body = response.json()
     assert "masterdata.dataupload" in body["viewable_screen_keys"]
     assert "masterdata.dataupload" in body["creatable_screen_keys"]
-
-
-def test_altsien_kernlid_import_rejects_a_telephone_number_excel_stored_as_a_number(
-    client: TestClient, db_session: Session
-) -> None:
-    # An unformatted Excel column will happily store "0471234567" as the
-    # number 471234567 — silently dropping the leading zero. Rather than
-    # importing that corrupted value, this cell must be rejected so the
-    # person re-enters it with the column formatted as Text.
-    _login_as_admin(client, db_session)
-
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.append(["first_name", "name", "telephone_number", "email"])
-    sheet.append(["Jane", "Doe", 471234567, "jane@example.com"])
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-
-    response = client.post(
-        "/api/modules/module-9/altsien-kernlid-import",
-        files={"file": ("contacts.xlsx", buffer.getvalue(), XLSX_CONTENT_TYPE)},
-    )
-
-    assert response.status_code == 200
-    result = response.json()["results"][0]
-    assert result["outcome"] == "error"
-    assert "telephone_number" in result["detail"]
-    assert db_session.scalar(select(AltsienKernlid).where(AltsienKernlid.name == "Doe")) is None
 
 
 def test_my_permissions_does_not_report_dataupload_as_creatable_for_view_only_user(

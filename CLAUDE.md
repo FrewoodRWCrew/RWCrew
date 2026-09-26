@@ -42,6 +42,10 @@ frontend/
     modules/module-1/             TagScan: CSV-intake module with its own custom-roles system
                                   (Roles + Users under "Access Rights") — see
                                   docs/module-custom-roles-pattern.md
+    modules/module-8/             Altsien Select: KPI, "Ploeg Wizard" (per team + season a
+                                  Kernlid walks through steps), "Ploegfiche" (all choices on
+                                  one screen + PDF), request follow-up, request statuses,
+                                  Access Rights — see "Altsien Select (module-8)" below
     modules/module-2..9/         One route folder per module, thin wrapper around
                                   ModulePlaceholderPage until real content is designed
   src/lib/api.ts               Browser-side API client (fetch with credentials: "include")
@@ -49,8 +53,95 @@ frontend/
   src/lib/module-theme.ts      Per-module accent colours (tileClassName = solid landing-tile fill,
                                 badgeClassName = soft pill used on the module's own page)
   messages/nl.json (default), en.json    next-intl translations
+mobile/              Smartphone app (iOS + Android, React Native + Expo) — 100% separate from the
+                      web app, see "Mobile app (`mobile/`)" below
 docker-compose.yml   Local Postgres for dev only (port 5433, see Gotchas)
 ```
+
+## Altsien Select (module-8)
+
+A wizard in which Altsien Kernleden make, per team and per season, the choices the organisation
+builds its instructions on. Same custom-roles-per-screen system as module-3 (`AltsienSelect_*` roles
+tables, `backend/app/modules/module_8/screens.py`).
+
+- **Team scope**: a user sees the teams linked to them in `MasterData_team_kernlid`; a role with
+  "view" on the `altsienselect.allteams` switch-screen sees every team (organisation). Other teams → 404.
+- **Season lock**: changes are refused (403) once `Season.periode_open` is off, unless the user has
+  "edit" on `altsienselect.allteams`. The module has its own season dropdown (all seasons, `?season=`)
+  because the header's selector only lists open seasons.
+- **Where choices are stored**: only step progress (`AltsienSelect_step_progress`) and special requests
+  (`AltsienSelect_special_requests` + editable `AltsienSelect_request_status`, lowest `sort_order` = the
+  start status) live in module-8 tables. Festivals go to `MasterData_team_festival`; delivery locations go
+  to KarTracker's Plan a kar table via `module_2/plan_kar_service.py` (shared with module-2's own screen).
+- **Adding a wizard step**: add a `StepDefinition` in `backend/app/modules/module_8/steps.py` (optional
+  completion check), a component in `frontend/src/components/module-8/wizard/steps/` registered in its
+  `index.ts` (unknown keys fall back to a placeholder), translations under `altsienSelect.steps.<key>`,
+  and optionally a section in `module_8/ploegfiche_pdf.py`. Progress is keyed by string: no migration.
+- Products and walkie-talkies are placeholder steps until their own modules exist.
+
+## Mobile app (`mobile/`)
+
+A React Native + Expo (TypeScript) phone app that uses camera/GPS and talks to this same backend, so the
+database and the user/module/role rights stay managed here. Rules — follow them for any change:
+
+- **All app code lives in `mobile/`** (own `package.json`, lockfile, tsconfig, eslint, README). Nothing
+  under `frontend/` or `backend/` imports from `mobile/`, and `mobile/` never imports from `frontend/`.
+  Never share source code between web and phone; the only shared knowledge is the API contract
+  (OpenAPI snapshot of `/api/mobile/v1` in `mobile/openapi/`, generated types in `mobile/src/api/generated/`).
+- **The phone never touches the DB.** It calls the FastAPI backend; module access and module roles are
+  enforced by the same `require_module_*` deps as the web app.
+- **Backend code for the phone lives in `backend/app/mobile/`** (routers, schemas, version gate, bearer-token
+  endpoints; tests in `backend/tests/mobile/`). Web code never imports it. Edits to shared files are limited to
+  tiny hooks: bearer-token support in `landing/deps.py` (cookie path stays first and unchanged), router
+  registration in `main.py`, `module-10` in `modules/registry.py`, settings entries.
+- **What the phone does today**: after login a landing page (`mobile/src/app/(app)/index.tsx`, same idea as the
+  web "Overzicht Modules": one coloured tile per module from `GET /api/mobile/v1/modules`), and one module,
+  **Interventie Aanvragen (module-3): only "KPI overzicht" + "Akties"** (list, create, edit requests; each button
+  follows the user's web role). **MasterData (statuses, TeamKar) and Access Rights (roles, users) are never
+  replicated on the phone**, and neither are deleting a request or its PDF — a backend test
+  (`test_openapi_contract.py`) fails if the phone contract ever gains a DELETE, `/pdf` or admin path.
+- **Adding a phone module**: add its key to `backend/app/mobile/registry.py` (`PHONE_MODULE_KEYS`), a router
+  `backend/app/mobile/module_<n>_router.py` that reuses that module's own `require_screen_permission` deps, its
+  tile in `mobile/src/lib/module-theme.ts`, and its routes under `mobile/src/app/(app)/module-<n>/`.
+- **The API contract is the only link**: after changing anything under `backend/app/mobile/`, run
+  `.venv/Scripts/python -m app.cli.export_mobile_openapi` (from `backend/`) then `npm run gen:api` (in `mobile/`).
+  `backend/tests/mobile/test_openapi_contract.py` fails when `mobile/openapi/mobile-v1.json` is stale.
+- **Phone dev loop** (Expo Go on a real phone): backend must listen on the LAN
+  (`uvicorn app.main:app --port 8020 --host 0.0.0.0`, restart it after backend changes — no `--reload`, see
+  Gotchas), `mobile/.env.development.local` sets `API_URL=http://<PC LAN IP>:8020` (git-ignored; template
+  `.env.example`). **Never use `mobile/.env.local` for this**: Expo loads it in every mode, so an `eas update` run
+  from this PC would bake the LAN address into the test/production update. `app.config.ts` also refuses a
+  non-https `API_URL` for production, EAS builds and production-mode bundles. Three environments result:
+  localhost (Expo Go + `.env.development.local`), test (`eas.json` profile `test` → test.rwcrew.eu), production
+  (profile `production` → rwcrew.eu),
+  then `npx expo start` in `mobile/`. Expo Go needs the same Expo account on phone and PC (`npx expo login`, or
+  `EXPO_TOKEN` for Google-created accounts). Checks: `npx tsc --noEmit`, `npx expo-doctor`.
+- **Mobile gotchas**: (1) `mobile/.npmrc` sets `legacy-peer-deps=true` because expo-router pulls a web-only
+  `react-dom@19.3` whose peer wants React 19.3 while RN 0.86 pins 19.2.3 — re-check on every Expo SDK upgrade.
+  (2) Typed routes are switched off in `mobile/app.config.ts` (the SDK 57 generator lists `src/lib` etc. as routes
+  and then rejects dynamic paths); the generated `mobile/.expo/types/router.d.ts` is git-ignored — delete it if
+  it ever comes back. (3) On Windows PowerShell 5.1, `Set-Content -Encoding utf8` writes a BOM that breaks
+  `package.json`; edit JSON with the Edit tool. (4) Follow `mobile/AGENTS.md`: Expo SDK 57 APIs differ from
+  older docs, check https://docs.expo.dev/versions/v57.0.0/ before using one.
+- **`module-10` ("Mobile App")** is the web-side download page (install links, latest version/changelog),
+  a normal module granted through "Manage Access". It contains no phone app code.
+- **Independent releases, same repo, same branches** (`develop` = test, `main` = production):
+  - Web deploy workflows (`deploy-test.yml`, `deploy-production.yml`) ignore `mobile/**`; mobile workflows
+    (`.github/workflows/mobile-*.yml`) only run on `mobile/**` paths or `mobile-v*` tags
+    (`working-directory: mobile`).
+  - Tags: `mobile-v1.4.0-test.N` (test build) and `mobile-v1.4.0` (production). Web releases never use the
+    `mobile-` prefix.
+- **Two app variants**, installable side by side, selected by `APP_VARIANT` in `mobile/app.config.ts`:
+  test = "RWCrew Test", `eu.rwcrew.app.test`, API of `test.rwcrew.eu`; production = "RWCrew",
+  `eu.rwcrew.app`, API of `rwcrew.eu`. Separate EAS build profiles and Update channels (`test`, `production`).
+  Each environment has its own JWT secret/DB, so tokens never work across variants.
+- **Distribution**: iOS via TestFlight (or Apple Business Manager Custom Apps) — an IPA can't be downloaded
+  directly; Android via Play internal track (APK/AAB attached to the GitHub Release as fallback).
+- Backend `min_supported_app_version` (per environment) makes the API answer 426 to outdated app builds; bump
+  it only for breaking API changes.
+- Order of work when touching shared files: workflow `paths-ignore` first, then `backend/app/mobile/` +
+  tests, then the bearer hook, then `module-10`, then the app. Run the full backend suite before and after.
+  Verify on `develop` (test) before merging to `main`.
 
 ## Running locally
 
@@ -124,6 +215,16 @@ tests for core logic only).
   specifically because two tokens for the same user issued within the same second would
   otherwise be byte-for-byte identical (all other claims round to the same second), silently
   breaking refresh-token rotation/reuse-detection. Found via a genuinely flaky test — don't remove it.
+- **Silent session refresh happens in two places, both needed.** The access cookie lives 15 min, the
+  refresh cookie ends the login session after `session_max_hours` (6 h, absolute from the password entry; rotation never extends it — `backend/app/core/config.py`). (1) `frontend/src/proxy.ts` — on a page
+  request with a refresh cookie but no access cookie, it calls `/api/auth/refresh` *before* rendering
+  (via `lib/session-refresh.ts`) and sets the new cookies on both the request (so Server Components see
+  them) and the response. Server Components can't set cookies, so this can't move into
+  `server-auth.ts`. (2) `lib/api.ts` `fetchWithRefresh` — retries once after a 401 for calls made
+  from the browser. Both share ONE in-flight refresh per token (the backend rotates the refresh token
+  on every use, so a second concurrent refresh with the same token gets a 401) — keep that
+  single-flight/short result cache if you touch either. New plain `fetch` calls to the backend in
+  `api.ts` should use `fetchWithRefresh`, not `fetch`.
 - **SQLite ignores `ON DELETE CASCADE` unless told to.** `backend/tests/conftest.py` runs
   `PRAGMA foreign_keys=ON` on connect so deleting a user in tests actually cascades to their
   `Landing_user_module_access`/`Landing_module_roles`/`Landing_refresh_tokens` rows the same way
@@ -157,6 +258,18 @@ tests for core logic only).
 - `NEXT_PUBLIC_API_URL` (`frontend/.env.local`) and the URL used to open the frontend in the
   browser must use the **same hostname** (`localhost` vs `127.0.0.1` count as different sites for
   the `SameSite=Lax` auth cookies) — mismatching them silently breaks every authenticated request.
+- **Raspberry Pi → VPS CSV push (TagScan)**: a Pi runs `scripts/pi-watcher/` and POSTs finished CSVs
+  over HTTPS to `POST /api/public/tagscan-intake` (`module_1/device_router.py`, per-scanner
+  `X-API-Key`); files land in `Unreaded Tags` and are ingested by the manual "Scan" button. Full
+  setup: `docs/tagscan-raspi-setup-guide.pdf`. Things that bite:
+  - nginx's default 1 MB body limit rejects larger CSVs before FastAPI sees them —
+    `deploy/nginx/rwcrew.conf` sets `client_max_body_size 25m` on that one location (app limit is
+    `tagscan_intake_max_file_mb`, 20). The same location is rate-limited (`limit_req`). After
+    certbot rewrites the file on the server, those directives must exist in the `443` blocks too.
+  - The Pi's producing app must write `name.csv.tmp` then `rename()` to `name.csv`, and use unique
+    filenames. The backend dedupes by filename + content: same name and bytes → `duplicate`; same
+    name, *different* bytes → stored as `name__<sha256-12>.csv` (never dropped).
+  - A scanner's API key only works on the environment (test vs production) it was generated on.
 - Documentation style for this project: comment every logical block/statement in plain language
   (not literally every line, not just top-level docstrings) — see any file under `app/` or `src/`
   for the expected density. This applies to backend and frontend code we write; generated files

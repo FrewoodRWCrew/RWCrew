@@ -4,8 +4,8 @@
 // a table with add/change/delete. Modeled on KarManagement (a bespoke,
 // multi-field CRUD screen): Zone and Distributiepunt are required
 // dropdowns sourced from this module's own master data, Altsien Kernlid is
-// an optional dropdown sourced from module-9's existing Altsien Kernleden
-// (cross-module, same pattern as KarManagement's own Team dropdown).
+// an optional dropdown of the users flagged Altsien Kernlid on
+// Manage Access (cross-module, same pattern as KarManagement's own Team dropdown).
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -32,6 +32,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -78,6 +79,7 @@ const EMPTY_FORM: AfleverlocatieFormState = {
   longitude: null,
   terrein_positie: null,
   altsien_kernlid_id: null,
+  active: true,
 };
 
 function toFormValues(afleverlocatie: KarTrackerAfleverlocatie): AfleverlocatieFormState {
@@ -90,11 +92,12 @@ function toFormValues(afleverlocatie: KarTrackerAfleverlocatie): AfleverlocatieF
     longitude: afleverlocatie.longitude,
     terrein_positie: afleverlocatie.terrein_positie,
     altsien_kernlid_id: afleverlocatie.altsien_kernlid_id,
+    active: afleverlocatie.active,
   };
 }
 
 function kernlidLabel(kernlid: AltsienKernlid) {
-  return `${kernlid.first_name} ${kernlid.name}`;
+  return kernlid.display_name;
 }
 
 export function AfleverlocatieManagement({
@@ -168,6 +171,7 @@ export function AfleverlocatieManagement({
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
                 {t("columnAltsienKernlid")}
               </TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnActive")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
               </TableHead>
@@ -187,6 +191,9 @@ export function AfleverlocatieManagement({
                 <TableCell className="text-muted-foreground">{afleverlocatie.terrein_positie ?? ""}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {kernlidLabelFor(afleverlocatie.altsien_kernlid_id)}
+                </TableCell>
+                <TableCell className="text-muted-foreground">
+                  {afleverlocatie.active ? t("activeYes") : t("activeNo")}
                 </TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
@@ -395,6 +402,15 @@ function AfleverlocatieFormDialog({
                 ))}
               </SelectContent>
             </Select>
+          </div>
+          {/* Inactive locations are hidden from the "Plan a kar" dropdowns. */}
+          <div className="col-span-2 flex items-center gap-2">
+            <Checkbox
+              id="afleverlocatie-active"
+              checked={form.active}
+              onCheckedChange={(checked) => updateField("active", checked === true)}
+            />
+            <Label htmlFor="afleverlocatie-active">{t("activeLabel")}</Label>
           </div>
         </div>
 

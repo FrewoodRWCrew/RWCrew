@@ -10,7 +10,7 @@
 # its own per-role view/create/edit/delete permissions instead of a flat
 # "super admin only" check.
 
-from sqlalchemy import String
+from sqlalchemy import Boolean, String, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -28,3 +28,9 @@ class Season(Base):
     # The season's name, e.g. "2026". Must be unique so the same season
     # can't accidentally be entered twice.
     name: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
+
+    # Whether this season's period is currently "open" — stored here so
+    # other modules can later pre-select/filter on it. Defaults to closed
+    # for both new rows and, via server_default, any row that predates
+    # this column.
+    periode_open: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default=text("false"))

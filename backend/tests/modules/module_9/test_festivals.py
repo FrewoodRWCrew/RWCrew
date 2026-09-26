@@ -320,6 +320,35 @@ def test_super_admin_can_update_a_festival(client: TestClient, db_session: Sessi
     assert body["end_date"] == "2026-08-03"
 
 
+def test_festival_is_active_by_default_and_active_can_be_set_on_create_and_update(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    season = _create_season(db_session)
+    _login(client, "admin@example.com")
+    base = {"name": "Summer Bash", "start_date": "2026-07-01", "end_date": "2026-07-03", "season_id": season.id}
+
+    # Omitting "active" on create means the festival is active.
+    default_response = client.post("/api/modules/module-9/festivals", json=base)
+    assert default_response.status_code == 201
+    assert default_response.json()["active"] is True
+
+    # An explicit false is stored...
+    inactive_response = client.post("/api/modules/module-9/festivals", json={**base, "active": False})
+    assert inactive_response.status_code == 201
+    assert inactive_response.json()["active"] is False
+    festival_id = inactive_response.json()["id"]
+
+    # ...and can be flipped back on update, then shows up in the list.
+    update_response = client.put(f"/api/modules/module-9/festivals/{festival_id}", json={**base, "active": True})
+    assert update_response.status_code == 200
+    assert update_response.json()["active"] is True
+    assert all(row["active"] is True for row in client.get("/api/modules/module-9/festivals").json())
+
+
 def test_updating_a_missing_festival_returns_404(client: TestClient, db_session: Session) -> None:
     sync_screens(db_session)
     module = _create_masterdata_module(db_session)

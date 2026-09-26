@@ -4,9 +4,15 @@ name: Deploy production
 # deploy/scripts/deploy.sh inside /opt/rwcrew/production — see
 # docs/deploying-to-hostinger.pdf, Step 8, for how SSH_HOST / SSH_USER /
 # SSH_PRIVATE_KEY are set up as repo secrets.
+#
+# Changes that only touch mobile/ (the phone app) never redeploy the web app:
+# the mobile app has its own release workflows (see CLAUDE.md, "Mobile app").
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - "mobile/**"
+      - ".github/workflows/mobile-*.yml"
 
 jobs:
   deploy:

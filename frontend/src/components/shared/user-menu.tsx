@@ -3,11 +3,13 @@
 // The header control showing the logged-in user's name, with a dropdown
 // to log out.
 
-import { LogOut } from "lucide-react";
+import { useState } from "react";
+import { KeyRound, LogOut } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { logout } from "@/lib/api";
 import type { CurrentUser } from "@/lib/types";
+import { ChangePasswordDialog } from "@/components/shared/change-password-dialog";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -27,13 +29,18 @@ interface UserMenuProps {
 /** Turn "RW Crew Admin" into "RC" for the little round avatar. */
 function getInitials(displayName: string): string {
   const words = displayName.trim().split(/\s+/);
-  const firstLetters = words.slice(0, 2).map((word) => word.charAt(0).toUpperCase());
+  const firstLetters = words
+    .slice(0, 2)
+    .map((word) => word.charAt(0).toUpperCase());
   return firstLetters.join("") || "?";
 }
 
 export function UserMenu({ user }: UserMenuProps) {
   const t = useTranslations("common");
   const router = useRouter();
+  // The change-password dialog lives outside the dropdown (a dialog inside a
+  // closing menu would unmount with it) and is opened from a menu item.
+  const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
 
   async function handleLogout() {
     // Ask the backend to end this session (revoking the refresh token
@@ -47,27 +54,43 @@ export function UserMenu({ user }: UserMenuProps) {
   }
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger
-        render={
-          <Button variant="ghost" className="flex items-center gap-2 px-2">
-            <Avatar className="size-7">
-              <AvatarFallback>{getInitials(user.display_name)}</AvatarFallback>
-            </Avatar>
-            <span className="hidden text-sm font-medium sm:inline">{user.display_name}</span>
-          </Button>
-        }
+    <>
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          render={
+            <Button variant="ghost" className="flex items-center gap-2 px-2">
+              <Avatar className="size-7">
+                <AvatarFallback>
+                  {getInitials(user.display_name)}
+                </AvatarFallback>
+              </Avatar>
+              <span className="hidden text-sm font-medium sm:inline">
+                {user.display_name}
+              </span>
+            </Button>
+          }
+        />
+        <DropdownMenuContent align="end">
+          <DropdownMenuGroup>
+            <DropdownMenuLabel className="max-w-56 truncate">
+              {user.email}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => setIsPasswordDialogOpen(true)}>
+              <KeyRound className="size-4" />
+              {t("changePassword.menuItem")}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
+              <LogOut className="size-4" />
+              {t("logout")}
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
+        </DropdownMenuContent>
+      </DropdownMenu>
+      <ChangePasswordDialog
+        open={isPasswordDialogOpen}
+        onOpenChange={setIsPasswordDialogOpen}
       />
-      <DropdownMenuContent align="end">
-        <DropdownMenuGroup>
-          <DropdownMenuLabel className="max-w-56 truncate">{user.email}</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleLogout}>
-            <LogOut className="size-4" />
-            {t("logout")}
-          </DropdownMenuItem>
-        </DropdownMenuGroup>
-      </DropdownMenuContent>
-    </DropdownMenu>
+    </>
   );
 }

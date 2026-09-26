@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import type { CurrentUser } from "@/lib/types";
 import { LanguageSwitcher } from "@/components/shared/language-switcher";
+import { SeasonSelector } from "@/components/shared/season-selector";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { UserMenu } from "@/components/shared/user-menu";
 
@@ -29,6 +30,7 @@ export function Topbar({ user }: TopbarProps) {
       <div className="flex items-center gap-1">
         <LanguageSwitcher />
         <ThemeToggle />
+        <SeasonSelector />
         <UserMenu user={user} />
       </div>
     </header>

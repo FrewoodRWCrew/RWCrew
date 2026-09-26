@@ -11,6 +11,10 @@ import type { ModuleInfo } from "@/lib/types";
 import { ModuleTile } from "@/components/landing/module-tile";
 import { getModuleTranslationKey } from "@/lib/module-theme";
 
+// The phone-app download page (module-10) — not a real module, so it gets
+// its own small tile instead of a spot in the grid.
+const MOBILE_MODULE_KEY = "module-10";
+
 export default async function LandingPage() {
   const t = await getTranslations("landing");
   // Root translator (no namespace) so we can look up each module's own
@@ -33,18 +37,32 @@ export default async function LandingPage() {
       return translationKey ? { ...module, name: tRoot(translationKey) } : module;
     });
 
+  // The "Mobile App" download page isn't a real module, so it's pulled out
+  // of the grid and shown as a smaller shortcut tile in the top-right
+  // corner, just below the user menu in the header.
+  const mobileModule = accessibleModules.find((module) => module.key === MOBILE_MODULE_KEY);
+  const gridModules = accessibleModules.filter((module) => module.key !== MOBILE_MODULE_KEY);
+
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
-        <p className="text-muted-foreground">{t("subtitle")}</p>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
+          <p className="text-muted-foreground">{t("subtitle")}</p>
+        </div>
+        {/* w-27 is about half of one grid column's width below. */}
+        {mobileModule && (
+          <div className="w-27 shrink-0">
+            <ModuleTile module={mobileModule} compact />
+          </div>
+        )}
       </div>
 
-      {accessibleModules.length === 0 ? (
+      {gridModules.length === 0 ? (
         <p className="rounded-md border border-dashed p-4 text-sm text-muted-foreground">{t("noAccess")}</p>
       ) : (
         <div className="grid max-w-2xl grid-cols-3 gap-4">
-          {accessibleModules.map((module) => (
+          {gridModules.map((module) => (
             <ModuleTile key={module.key} module={module} />
           ))}
         </div>

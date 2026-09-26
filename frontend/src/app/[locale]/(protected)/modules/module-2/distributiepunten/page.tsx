@@ -13,13 +13,11 @@ export default async function DistributiepuntenPage() {
   let altsienKernleden: AltsienKernlid[] = [];
   try {
     // Independent of each other, so fetch concurrently. The Altsien
-    // Kernleden lookup is caught separately: a user might manage
-    // distribution points without also being able to view module-9's
-    // Altsien Kernleden screen directly, in which case the dropdown just
-    // starts empty.
+    // Kernleden lookup is caught separately so a failure there just
+    // leaves the dropdown empty instead of breaking the screen.
     [distributiepunten, altsienKernleden] = await Promise.all([
       serverApiFetch<KarTrackerDistributiepunt[]>("/api/modules/module-2/distributiepunten"),
-      serverApiFetch<AltsienKernlid[]>("/api/modules/module-9/altsien-kernleden").catch(() => []),
+      serverApiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden").catch(() => []),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {

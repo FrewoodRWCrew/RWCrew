@@ -42,6 +42,8 @@ def test_successful_login_is_recorded(client: TestClient, db_session: Session) -
     assert rows[0].success is True
     assert rows[0].user_id == user.id
     assert rows[0].email_attempted == "user@example.com"
+    # The browser login endpoint marks its attempts as coming from the web app.
+    assert rows[0].source == "web"
 
 
 def test_wrong_password_is_recorded_with_the_matched_user(client: TestClient, db_session: Session) -> None:
@@ -94,7 +96,10 @@ def test_super_admin_sees_login_history_newest_first(client: TestClient, db_sess
     # happened last (just now) so it sorts first.
     assert body["total"] == 3
     assert body["items"][0]["display_name"] == "admin@example.com"
+    assert body["items"][0]["source"] == "web"
     assert body["items"][1]["success"] is False
+    # Seeded rows without a source (like pre-existing history) come back as null.
+    assert body["items"][1]["source"] is None
     assert body["items"][1]["display_name"] == "member@example.com"
 
 

@@ -38,6 +38,14 @@ class User(Base):
     # flag controls — it does not grant any role inside a specific module.
     is_super_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
 
+    # Whether this person is an "Altsien Kernlid" (core member). Set from the
+    # "Manage Access" screen; flagged users are who the Teams (Kernleden),
+    # Distributiepunt and Afleverlocatie screens let you pick from.
+    is_altsien_kernlid: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+
+    # Optional phone number, shown on the "Manage Access" screen.
+    phone: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
     # Whether this account can currently log in at all. Admins can disable
     # an account (e.g. someone who left) without deleting their history.
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)

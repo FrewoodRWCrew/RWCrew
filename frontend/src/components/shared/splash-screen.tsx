@@ -16,7 +16,7 @@ import Image from "next/image";
 import { useEffect, useState } from "react";
 
 // How long the splash stays fully visible before it starts fading away.
-const SPLASH_VISIBLE_MS = 4000;
+const SPLASH_VISIBLE_MS = 1250;
 // How long the fade-out transition itself takes, once it starts.
 const SPLASH_FADE_MS = 500;
 

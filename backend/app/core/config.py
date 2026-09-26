@@ -38,10 +38,12 @@ class Settings(BaseSettings):
     # who the user is.
     access_token_minutes: int = 15
 
-    # How long a longer-lived "refresh token" stays valid, in days.
-    # This token is only used to silently obtain a new access token
-    # once the short one expires, without forcing the user to log in again.
-    refresh_token_days: int = 30
+    # The absolute lifetime of a login session, in hours. The refresh token
+    # silently renews the short access token, but only until this many hours
+    # after the moment the password was entered; rotating the refresh token
+    # never extends it. After that the user must log in again, so the login
+    # history reflects real, recent logins (no session left open overnight).
+    session_max_hours: int = 6
 
     # Which website(s) are allowed to call this API from a browser
     # (Cross-Origin Resource Sharing). During local development this is
@@ -61,6 +63,25 @@ class Settings(BaseSettings):
     # watcher script, in megabytes. Deliberately generous for a CSV of RFID
     # scan lines, while still rejecting an obviously-wrong/corrupt upload.
     tagscan_intake_max_file_mb: int = 20
+
+    # The oldest version of the smartphone app (see mobile/ and
+    # app/mobile/) this environment still accepts. Phone requests send their
+    # version in an "X-App-Version" header; anything older gets a "426
+    # Upgrade Required". "0.0.0" (the default) means every version is
+    # accepted. Only raise this when a breaking API change ships.
+    mobile_min_app_version: str = "0.0.0"
+
+    # What the web-side "Mobile App" download page (module-10) shows. They
+    # are settings (set per environment in the server's .env) so publishing a
+    # new phone build never needs a web redeploy of code, only a config edit.
+    # The iOS link is the TestFlight public link; the Android link is a direct
+    # APK/store URL. An empty value simply hides that platform's button.
+    mobile_ios_testflight_url: str = ""
+    mobile_android_download_url: str = ""
+    # The newest published phone app version and a short plain-text changelog
+    # (one change per line).
+    mobile_latest_version: str = ""
+    mobile_changelog: str = ""
 
 
 # Create one shared Settings object that the rest of the app can import

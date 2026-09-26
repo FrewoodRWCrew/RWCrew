@@ -3,7 +3,7 @@
 # automatically (e.g. rejecting a login attempt with no password) and to
 # document the API.
 
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, Field
 
 
 class LoginRequest(BaseModel):
@@ -11,6 +11,13 @@ class LoginRequest(BaseModel):
 
     email: EmailStr
     password: str
+
+
+class ChangePasswordRequest(BaseModel):
+    """What a logged-in user sends to change their own password."""
+
+    current_password: str
+    new_password: str = Field(min_length=8)
 
 
 class CurrentUserResponse(BaseModel):

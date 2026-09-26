@@ -5,9 +5,15 @@ name: Deploy test
 # docs/deploying-to-hostinger.pdf, Step 8, for how SSH_HOST / SSH_USER /
 # SSH_PRIVATE_KEY are set up as repo secrets (shared with the production
 # workflow — same VPS, same deploy user).
+#
+# Changes that only touch mobile/ (the phone app) never redeploy the web app:
+# the mobile app has its own release workflows (see CLAUDE.md, "Mobile app").
 on:
   push:
     branches: [develop]
+    paths-ignore:
+      - "mobile/**"
+      - ".github/workflows/mobile-*.yml"
 
 jobs:
   deploy:

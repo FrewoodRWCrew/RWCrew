@@ -12,6 +12,7 @@
 # manual "Scan" button (scan_unreaded_tags(), see tag_header_data.py) is
 # what actually ingests it, unchanged.
 
+import hashlib
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -68,11 +69,15 @@ def upload_csv(
 ) -> IntakeUploadResponse:
     """Receive one CSV file from a device's watcher script.
 
-    Idempotent by filename: if this exact filename has already been
-    received (still sitting in Unreaded Tags, already moved to Read Tags
-    by a scan, or already logged as TagHeaderData), nothing is
-    re-written — this is what makes it safe for the watcher to retry a
-    POST whose response it never saw.
+    Idempotent, so it is safe for the watcher to retry a POST whose
+    response it never saw:
+      - the same filename with the same bytes already in Unreaded Tags or
+        Read Tags is a "duplicate" and nothing is re-written;
+      - a filename already logged as TagHeaderData whose file is gone
+        (so its bytes can't be compared) is also treated as a "duplicate";
+      - the same filename but DIFFERENT bytes is NOT dropped — that would
+        silently lose scan data — it is stored under a content-hash suffix
+        (see _content_hash_name) and reported back under that stored name.
     """
     filename = Path(file.filename or "").name
     if not filename.lower().endswith(".csv"):
@@ -92,22 +97,50 @@ def upload_csv(
     unreaded_dir = root / UNREADED_SUBFOLDER
     readed_dir = root / READED_SUBFOLDER
 
-    already_received = (
-        (unreaded_dir / filename).exists()
-        or (readed_dir / filename).exists()
-        or db.scalar(select(TagHeaderData).where(TagHeaderData.filename == filename)) is not None
-    )
+    # Where a file of this name could already be sitting, if we have seen it.
+    existing_paths = [unreaded_dir / filename, readed_dir / filename]
+    name_taken = any(path.exists() for path in existing_paths)
+
+    stored_name = filename
+    already_received = False
+
+    if name_taken:
+        if any(path.exists() and path.read_bytes() == contents for path in existing_paths):
+            # Identical bytes under the same name: a retried upload.
+            already_received = True
+        else:
+            # Same name, different bytes: keep both by storing this one
+            # under a name derived from its own content. Uploading it again
+            # lands on that same derived name, so the retry is still safe.
+            stored_name = _content_hash_name(filename, contents)
+            already_received = (unreaded_dir / stored_name).exists() or (readed_dir / stored_name).exists()
+    elif db.scalar(select(TagHeaderData).where(TagHeaderData.filename == filename)) is not None:
+        # Already ingested and its file is no longer on disk to compare
+        # against — the same trust-the-filename rule as before.
+        already_received = True
 
     if not already_received:
         # Write under a temporary name first, then atomically rename into
         # place, so a file the "Scan" button might read concurrently is
         # never visible half-written.
         unreaded_dir.mkdir(parents=True, exist_ok=True)
-        tmp_path = unreaded_dir / f"{filename}.uploading"
+        tmp_path = unreaded_dir / f"{stored_name}.uploading"
         tmp_path.write_bytes(contents)
-        tmp_path.replace(unreaded_dir / filename)
+        tmp_path.replace(unreaded_dir / stored_name)
 
     scanner.api_key_last_used_at = datetime.now(timezone.utc)
     db.commit()
 
-    return IntakeUploadResponse(status="duplicate" if already_received else "received", filename=filename)
+    return IntakeUploadResponse(status="duplicate" if already_received else "received", filename=stored_name)
+
+
+def _content_hash_name(filename: str, contents: bytes) -> str:
+    """Derive a collision-free filename from the file's own bytes.
+
+    "scan.csv" becomes "scan__<12 hex chars of sha256>.csv" — the same
+    content always maps to the same name, different content to a different
+    one.
+    """
+    path = Path(filename)
+    digest = hashlib.sha256(contents).hexdigest()[:12]
+    return f"{path.stem}__{digest}{path.suffix}"

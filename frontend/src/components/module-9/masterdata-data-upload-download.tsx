@@ -8,17 +8,16 @@
 // self-contained under its own components/module-{N}/ folder).
 //
 // Each tile's dialog combines template download / bulk upload / export.
-// None of the twelve tables have an "updated" outcome — a row naming
+// None of the eleven tables have an "updated" outcome — a row naming
 // something that already exists (for the tables with a uniqueness rule)
 // is reported as an error, never upserted — see each table's own
 // {table}_import.py on the backend for why. Team's tile only covers its
 // scalar fields (name/location/delivery method/description); its task
-// and Altsien Kernleden links are not part of this bulk tool.
+// and Kernleden links are not part of this bulk tool.
 
 import { useState } from "react";
 import {
   CalendarRange,
-  Contact,
   Gauge,
   Layers,
   ListChecks,
@@ -36,7 +35,6 @@ import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
 import {
   ApiError,
-  importAltsienKernleden,
   importDeliveryMethods,
   importFestivals,
   importProductCategories,
@@ -113,7 +111,6 @@ export function MasterDataDataUploadDownload({ canUpload }: MasterDataDataUpload
         <TeamLocationDataTile canUpload={canUpload} />
         <DeliveryMethodDataTile canUpload={canUpload} />
         <TeamTaskDataTile canUpload={canUpload} />
-        <AltsienKernlidDataTile canUpload={canUpload} />
       </div>
     </div>
   );
@@ -499,41 +496,6 @@ function TeamTaskDataTile({ canUpload }: { canUpload: boolean }) {
       onUpload={async (file) => {
         const response = await importTeamTasks(file);
         return response.results.map((row) => ({ ...row, key: row.team_tasks }));
-      }}
-    />
-  );
-}
-
-function AltsienKernlidDataTile({ canUpload }: { canUpload: boolean }) {
-  const t = useTranslations("masterdata.dataUploadDownload");
-  const tTable = useTranslations("masterdata.dataUploadDownload.altsienKernleden");
-
-  return (
-    <DataTopicTile
-      icon={Contact}
-      tileTitle={tTable("tileTitle")}
-      dialogTitle={tTable("tileTitle")}
-      dialogDescription={tTable("dialogDescription")}
-      templateUrl={`${API_BASE_URL}/api/modules/module-9/altsien-kernlid-import/template`}
-      exportUrl={`${API_BASE_URL}/api/modules/module-9/altsien-kernleden/export`}
-      downloadTemplateLabel={t("downloadTemplateLabel")}
-      downloadTemplateButton={t("downloadTemplateButton")}
-      canUpload={canUpload}
-      uploadNotAllowed={t("uploadNotAllowed")}
-      chooseFileLabel={t("chooseFileLabel")}
-      uploadButton={t("uploadButton")}
-      importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
-      importColumnRow={t("importColumnRow")}
-      importColumnKey={tTable("importColumnKey")}
-      importColumnOutcome={t("importColumnOutcome")}
-      importColumnDetail={t("importColumnDetail")}
-      importOutcomeLabel={(outcome) => t(`importOutcome.${outcome}`)}
-      exportLabel={t("exportLabel")}
-      exportButton={tTable("exportButton")}
-      onUpload={async (file) => {
-        const response = await importAltsienKernleden(file);
-        return response.results.map((row) => ({ ...row, key: row.name }));
       }}
     />
   );

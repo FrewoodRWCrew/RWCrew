@@ -1,11 +1,14 @@
-// This is Module 8's own page file. Right now it just renders the
-// shared "coming soon" placeholder (see ModulePlaceholderPage) for its
-// own module key. Once Module 8's real functionality is designed,
-// this file is where its actual page content gets built, keeping
-// everything about Module 8's frontend together in this folder.
+// Altsien Select's landing page: the KPI dashboard ("KPI overzicht") —
+// wizard progress and special requests for the chosen season, limited to
+// the teams the user can see. The module's own layout.tsx already checked
+// module access; the dashboard itself is gated by plain module access too.
 
-import { ModulePlaceholderPage } from "@/components/shared/module-placeholder-page";
+import { serverApiFetch } from "@/lib/server-api";
+import type { Season } from "@/lib/types";
+import { AltsienSelectDashboard } from "@/components/module-8/altsien-select-dashboard";
 
-export default function ModulePage() {
-  return <ModulePlaceholderPage moduleKey="module-8" />;
+export default async function AltsienSelectLandingPage() {
+  const seasons = await serverApiFetch<Season[]>("/api/modules/module-8/seasons");
+
+  return <AltsienSelectDashboard seasons={seasons} />;
 }

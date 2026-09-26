@@ -10,7 +10,6 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
-from app.db.models.altsien_kernlid import AltsienKernlid
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
@@ -117,8 +116,14 @@ def _create_team_task(db_session: Session, *, team_tasks: str = "Inkom") -> Team
     return task
 
 
-def _create_kernlid(db_session: Session, *, first_name: str = "Jane", name: str = "Doe") -> AltsienKernlid:
-    kernlid = AltsienKernlid(first_name=first_name, name=name, telephone_number="0123456789", email="jane@example.com")
+def _create_kernlid(db_session: Session, *, first_name: str = "Jane", name: str = "Doe", flagged: bool = True) -> User:
+    """A user flagged "Altsien Kernlid" (what Teams' Kernleden picker now uses)."""
+    kernlid = User(
+        email=f"{first_name}.{name}@example.com".lower(),
+        hashed_password=hash_password("password123"),
+        display_name=f"{first_name} {name}",
+        is_altsien_kernlid=flagged,
+    )
     db_session.add(kernlid)
     db_session.commit()
     db_session.refresh(kernlid)
@@ -233,6 +238,35 @@ def test_super_admin_can_rename_a_team(client: TestClient, db_session: Session) 
 
     assert response.status_code == 200
     assert response.json()["name"] == "Renamed Team"
+
+
+def test_team_is_active_by_default_and_active_can_be_set_on_create_and_update(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    # Omitting "active" on create means the team is active.
+    default_response = client.post("/api/modules/module-9/teams", json={"name": "Bar Team"})
+    assert default_response.status_code == 201
+    assert default_response.json()["active"] is True
+
+    # An explicit false is stored...
+    inactive_response = client.post("/api/modules/module-9/teams", json={"name": "Old Team", "active": False})
+    assert inactive_response.status_code == 201
+    assert inactive_response.json()["active"] is False
+    team_id = inactive_response.json()["id"]
+
+    # ...shows up in the list, and can be flipped back on update.
+    listed = {row["name"]: row["active"] for row in client.get("/api/modules/module-9/teams").json()}
+    assert listed == {"Bar Team": True, "Old Team": False}
+
+    update_response = client.put(f"/api/modules/module-9/teams/{team_id}", json={"name": "Old Team", "active": True})
+    assert update_response.status_code == 200
+    assert update_response.json()["active"] is True
 
 
 def test_renaming_a_missing_team_returns_404(client: TestClient, db_session: Session) -> None:
@@ -399,6 +433,21 @@ def test_updating_a_team_replaces_its_task_links_rather_than_appending(
     assert update_response.json()["task_ids"] == [task_c.id]
     remaining_links = db_session.scalars(select(TeamTeamTask).where(TeamTeamTask.team_id == team_id)).all()
     assert [link.team_task_id for link in remaining_links] == [task_c.id]
+
+
+def test_creating_a_team_with_a_user_who_is_not_flagged_altsien_kernlid_returns_404(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    unflagged = _create_kernlid(db_session, first_name="Not", name="Flagged", flagged=False)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-9/teams", json={"name": "Bar Team", "kernlid_ids": [unflagged.id]})
+
+    assert response.status_code == 404
 
 
 def test_updating_a_team_replaces_its_kernlid_links_rather_than_appending(

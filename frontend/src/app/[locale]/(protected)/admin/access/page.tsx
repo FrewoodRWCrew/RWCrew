@@ -25,5 +25,5 @@ export default async function AccessManagementPage() {
     serverApiFetch<ModuleInfo[]>("/api/modules"),
   ]);
 
-  return <AccessManagement initialUsers={users} modules={modules} />;
+  return <AccessManagement initialUsers={users} modules={modules} currentUserId={user.id} />;
 }
