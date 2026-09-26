@@ -28,12 +28,15 @@ class ModuleDefinition:
 # module-3 (Intervention Requests) also has a bespoke router with multiple
 # screens and per-screen permissions, so it belongs with TagScan/MasterData
 # rather than with the placeholder modules using the shared factory.
+# module-8 (Altsien Select) likewise has its own bespoke router: the Ploeg
+# Wizard in which Altsien Kernleden make their per-team choices.
 #
 # module-10 ("Mobile App") is the web-side download page for the smartphone
 # app (install links, latest version, changelog); it contains no phone code.
 _MODULE_NAMES = {
     "module-1": "TagScan",
     "module-3": "Intervention Requests",
+    "module-8": "Altsien Select",
     "module-9": "MasterData",
     "module-10": "Mobile App",
 }

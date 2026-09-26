@@ -9,6 +9,7 @@
 import { Box, Database, Nfc, Smartphone, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
+import AltsienIcon from "@/components/icons/altsien-icon";
 import RollContainerIcon from "@/components/icons/roll-container-icon";
 
 export interface ModuleTheme {
@@ -91,10 +92,13 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     accentForegroundColorToken: "white",
   },
   "module-8": {
-    tileClassName: "bg-amber-600 text-white",
-    badgeClassName: "bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300",
-    accentColorToken: "amber-600",
-    accentForegroundColorToken: "neutral-950",
+    tileClassName: "bg-fuchsia-600 text-white",
+    badgeClassName: "bg-fuchsia-100 text-fuchsia-700 dark:bg-fuchsia-500/15 dark:text-fuchsia-300",
+    accentColorToken: "fuchsia-600",
+    accentForegroundColorToken: "white",
+    // Altsien Select: a festive fuchsia no other module uses, with the
+    // Altsien logo's swooping "A" as its icon.
+    icon: AltsienIcon,
   },
   "module-9": {
     tileClassName: "bg-cyan-600 text-white",
@@ -177,6 +181,7 @@ const MODULE_TRANSLATION_KEYS: Record<string, string> = {
   "module-1": "tagscan.moduleTitle",
   "module-2": "karTracker.moduleTitle",
   "module-3": "interventionRequests.moduleTitle",
+  "module-8": "altsienSelect.moduleTitle",
   "module-9": "masterdata.moduleTitle",
 };
 

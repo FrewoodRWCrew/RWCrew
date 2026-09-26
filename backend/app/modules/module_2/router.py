@@ -60,6 +60,7 @@ from app.modules.module_2.karblad_pdf import (
     build_karbladen_pdf,
     build_request_url,
 )
+from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.modules.module_2.kar_status_import import (
     build_kar_status_template_xlsx,
@@ -1186,35 +1187,10 @@ def save_plan_kar(
             status_code=status.HTTP_400_BAD_REQUEST, detail="Every delivery location must exist and be active"
         )
 
-    # Existing assignments for this team+season, keyed by festival.
-    existing_by_festival = {
-        record.festival_id: record
-        for record in db.scalars(
-            select(KarTrackerKarAfleverlocatie).where(
-                KarTrackerKarAfleverlocatie.season_id == payload.season_id,
-                KarTrackerKarAfleverlocatie.team_id == payload.team_id,
-            )
-        ).all()
-    }
-
-    for row in payload.rows:
-        existing = existing_by_festival.get(row.festival_id)
-        if row.afleverlocatie_id is None:
-            # No location chosen: remove any earlier assignment.
-            if existing is not None:
-                db.delete(existing)
-        elif existing is not None:
-            # Already registered: update in place, never add a second line.
-            existing.afleverlocatie_id = row.afleverlocatie_id
-        else:
-            db.add(
-                KarTrackerKarAfleverlocatie(
-                    season_id=payload.season_id,
-                    festival_id=row.festival_id,
-                    team_id=payload.team_id,
-                    afleverlocatie_id=row.afleverlocatie_id,
-                )
-            )
+    # Upsert every row (shared with Altsien Select's Ploeg Wizard).
+    upsert_plan_kar_rows(
+        db, payload.season_id, payload.team_id, [(row.festival_id, row.afleverlocatie_id) for row in payload.rows]
+    )
 
     try:
         db.commit()

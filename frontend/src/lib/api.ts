@@ -5,6 +5,14 @@
 
 import { API_BASE_URL } from "./config";
 import type {
+  AltsienSelectDashboardStats,
+  AltsienSelectRequestStatus,
+  AltsienSelectRequestStatusInput,
+  AltsienSelectRole,
+  AltsienSelectSpecialRequest,
+  AltsienSelectTeamState,
+  AltsienSelectTeamSummary,
+  AltsienSelectUserSummary,
   CurrentUser,
   ModuleInfo,
   ModuleRoleAssignment,
@@ -1693,4 +1701,189 @@ export function updateInterventionRequest(
 
 export function deleteInterventionRequest(requestId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-3/intervention-requests/${requestId}`, { method: "DELETE" });
+}
+
+// --- Altsien Select (module-8) ----------------------------------------------
+//
+// KPI dashboard, the Ploeg Wizard (festivals, delivery locations, steps,
+// special requests), the Ploegfiche, the organisation's request follow-up,
+// the request-status MasterData, and the usual custom-roles endpoints.
+
+const ALTSIEN_SELECT_BASE = "/api/modules/module-8";
+
+export function getAltsienSelectDashboard(seasonId: number | null): Promise<AltsienSelectDashboardStats> {
+  const query = seasonId === null ? "" : `?season_id=${seasonId}`;
+  return apiFetch<AltsienSelectDashboardStats>(`${ALTSIEN_SELECT_BASE}/dashboard${query}`);
+}
+
+export function listAltsienSelectSeasons(): Promise<Season[]> {
+  return apiFetch<Season[]>(`${ALTSIEN_SELECT_BASE}/seasons`);
+}
+
+export function listAltsienSelectTeams(seasonId: number): Promise<AltsienSelectTeamSummary[]> {
+  return apiFetch<AltsienSelectTeamSummary[]>(`${ALTSIEN_SELECT_BASE}/teams?season_id=${seasonId}`);
+}
+
+export function getAltsienSelectWizard(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}?season_id=${seasonId}`);
+}
+
+export function saveAltsienSelectFestivals(
+  teamId: number,
+  seasonId: number,
+  festivalIds: number[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/festivals`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, festival_ids: festivalIds }),
+  });
+}
+
+export function saveAltsienSelectAfleverlocaties(
+  teamId: number,
+  seasonId: number,
+  rows: { festival_id: number; afleverlocatie_id: number | null }[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/afleverlocaties`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, rows }),
+  });
+}
+
+/** Mark a wizard step as done (complete=true) or reopen it (false). */
+export function setAltsienSelectStepComplete(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+  complete: boolean,
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/complete?season_id=${seasonId}`,
+    { method: complete ? "POST" : "DELETE" },
+  );
+}
+
+export function createAltsienSelectRequest(
+  teamId: number,
+  seasonId: number,
+  text: string,
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests?season_id=${seasonId}`,
+    { method: "POST", body: JSON.stringify({ text }) },
+  );
+}
+
+export function updateAltsienSelectRequest(
+  teamId: number,
+  requestId: number,
+  text: string,
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, {
+    method: "PUT",
+    body: JSON.stringify({ text }),
+  });
+}
+
+export function deleteAltsienSelectRequest(teamId: number, requestId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, { method: "DELETE" });
+}
+
+export function getAltsienSelectPloegfiche(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/ploegfiche/${teamId}?season_id=${seasonId}`);
+}
+
+/** Direct link to the Ploegfiche PDF (opened in a new tab; the auth cookies travel along). */
+export function altsienSelectPloegfichePdfUrl(teamId: number, seasonId: number, locale: string): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/ploegfiche/${teamId}/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
+export function listAltsienSelectFollowUpRequests(seasonId: number): Promise<AltsienSelectSpecialRequest[]> {
+  return apiFetch<AltsienSelectSpecialRequest[]>(`${ALTSIEN_SELECT_BASE}/requests?season_id=${seasonId}`);
+}
+
+export function followUpAltsienSelectRequest(
+  requestId: number,
+  payload: { status_id: number; organisation_note: string | null },
+): Promise<AltsienSelectSpecialRequest> {
+  return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/requests/${requestId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listAltsienSelectRequestStatuses(): Promise<AltsienSelectRequestStatus[]> {
+  return apiFetch<AltsienSelectRequestStatus[]>(`${ALTSIEN_SELECT_BASE}/request-statuses`);
+}
+
+export function createAltsienSelectRequestStatus(
+  payload: AltsienSelectRequestStatusInput,
+): Promise<AltsienSelectRequestStatus> {
+  return apiFetch<AltsienSelectRequestStatus>(`${ALTSIEN_SELECT_BASE}/request-statuses`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAltsienSelectRequestStatus(
+  statusId: number,
+  payload: AltsienSelectRequestStatusInput,
+): Promise<AltsienSelectRequestStatus> {
+  return apiFetch<AltsienSelectRequestStatus>(`${ALTSIEN_SELECT_BASE}/request-statuses/${statusId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAltsienSelectRequestStatus(statusId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/request-statuses/${statusId}`, { method: "DELETE" });
+}
+
+// Custom roles with per-screen permissions (same shapes as module-3's).
+
+export function createAltsienSelectRole(name: string): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameAltsienSelectRole(roleId: number, name: string): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteAltsienSelectRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function setAltsienSelectRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<AltsienSelectRole> {
+  return apiFetch<AltsienSelectRole>(`${ALTSIEN_SELECT_BASE}/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function setAltsienSelectUserRole(userId: number, roleId: number | null): Promise<AltsienSelectUserSummary> {
+  return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantAltsienSelectUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<AltsienSelectUserSummary> {
+  return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }

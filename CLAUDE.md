@@ -42,6 +42,10 @@ frontend/
     modules/module-1/             TagScan: CSV-intake module with its own custom-roles system
                                   (Roles + Users under "Access Rights") — see
                                   docs/module-custom-roles-pattern.md
+    modules/module-8/             Altsien Select: KPI, "Ploeg Wizard" (per team + season a
+                                  Kernlid walks through steps), "Ploegfiche" (all choices on
+                                  one screen + PDF), request follow-up, request statuses,
+                                  Access Rights — see "Altsien Select (module-8)" below
     modules/module-2..9/         One route folder per module, thin wrapper around
                                   ModulePlaceholderPage until real content is designed
   src/lib/api.ts               Browser-side API client (fetch with credentials: "include")
@@ -53,6 +57,27 @@ mobile/              Smartphone app (iOS + Android, React Native + Expo) — 100
                       web app, see "Mobile app (`mobile/`)" below
 docker-compose.yml   Local Postgres for dev only (port 5433, see Gotchas)
 ```
+
+## Altsien Select (module-8)
+
+A wizard in which Altsien Kernleden make, per team and per season, the choices the organisation
+builds its instructions on. Same custom-roles-per-screen system as module-3 (`AltsienSelect_*` roles
+tables, `backend/app/modules/module_8/screens.py`).
+
+- **Team scope**: a user sees the teams linked to them in `MasterData_team_kernlid`; a role with
+  "view" on the `altsienselect.allteams` switch-screen sees every team (organisation). Other teams → 404.
+- **Season lock**: changes are refused (403) once `Season.periode_open` is off, unless the user has
+  "edit" on `altsienselect.allteams`. The module has its own season dropdown (all seasons, `?season=`)
+  because the header's selector only lists open seasons.
+- **Where choices are stored**: only step progress (`AltsienSelect_step_progress`) and special requests
+  (`AltsienSelect_special_requests` + editable `AltsienSelect_request_status`, lowest `sort_order` = the
+  start status) live in module-8 tables. Festivals go to `MasterData_team_festival`; delivery locations go
+  to KarTracker's Plan a kar table via `module_2/plan_kar_service.py` (shared with module-2's own screen).
+- **Adding a wizard step**: add a `StepDefinition` in `backend/app/modules/module_8/steps.py` (optional
+  completion check), a component in `frontend/src/components/module-8/wizard/steps/` registered in its
+  `index.ts` (unknown keys fall back to a placeholder), translations under `altsienSelect.steps.<key>`,
+  and optionally a section in `module_8/ploegfiche_pdf.py`. Progress is keyed by string: no migration.
+- Products and walkie-talkies are placeholder steps until their own modules exist.
 
 ## Mobile app (`mobile/`)
 

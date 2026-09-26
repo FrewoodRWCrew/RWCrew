@@ -1201,3 +1201,125 @@ export interface LoginHistoryPage {
   items: LoginHistoryEntry[];
   total: number;
 }
+
+// --- Altsien Select (module-8): Ploeg Wizard, Ploegfiche, special requests ---
+//
+// The custom-roles shapes are identical to Intervention Requests' (the
+// backend re-uses the same schemas), so they're aliased rather than copied.
+
+export type AltsienSelectScreen = InterventionRequestsScreen;
+export type AltsienSelectScreenPermission = InterventionRequestsScreenPermission;
+export type AltsienSelectRole = InterventionRequestsRole;
+export type AltsienSelectUserSummary = InterventionRequestsUserSummary;
+export type AltsienSelectMyPermissions = InterventionRequestsMyPermissions;
+
+/** One step of the Ploeg Wizard (backend: app/modules/module_8/steps.py). */
+export interface AltsienSelectStep {
+  key: string;
+  label: string;
+  sort_order: number;
+  /** True while the step's real content lives in a module that doesn't exist yet. */
+  placeholder: boolean;
+}
+
+/** A completed wizard step, with who/when. */
+export interface AltsienSelectStepProgress {
+  step_key: string;
+  completed_at: string;
+  completed_by_name: string | null;
+}
+
+/** One team in the user's scope, with how far its wizard is. */
+export interface AltsienSelectTeamSummary {
+  team_id: number;
+  team_name: string;
+  completed_step_keys: string[];
+  open_request_count: number;
+}
+
+/** The team's master data, shown at the top of the Ploegfiche. */
+export interface AltsienSelectTeamInfo {
+  id: number;
+  name: string;
+  location: string | null;
+  delivery_method: string | null;
+  description: string | null;
+  kernleden: string[];
+}
+
+/** One festival of the season, whether the team is active there, and its delivery location. */
+export interface AltsienSelectFestivalChoice {
+  festival_id: number;
+  festival_name: string;
+  start_date: string;
+  end_date: string;
+  selected: boolean;
+  afleverlocatie_id: number | null;
+  afleverlocatie_name: string | null;
+  afleverlocatie_description: string | null;
+}
+
+/** One delivery location offered in the wizard's location step. */
+export interface AltsienSelectAfleverlocatieOption {
+  id: number;
+  name: string;
+  description: string | null;
+}
+
+/** One special request, with its status details. */
+export interface AltsienSelectSpecialRequest {
+  id: number;
+  season_id: number;
+  team_id: number;
+  team_name: string;
+  text: string;
+  status_id: number;
+  status_name: string;
+  status_color: string;
+  status_is_open: boolean;
+  organisation_note: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  updated_at: string;
+  /** Whether the current user may still change/withdraw it from the wizard. */
+  editable_by_me: boolean;
+}
+
+/** Everything chosen for one team in one season — the wizard's data and the Ploegfiche. */
+export interface AltsienSelectTeamState {
+  season_id: number;
+  season_name: string;
+  season_open: boolean;
+  can_edit: boolean;
+  team: AltsienSelectTeamInfo;
+  steps: AltsienSelectStep[];
+  progress: AltsienSelectStepProgress[];
+  festivals: AltsienSelectFestivalChoice[];
+  afleverlocaties: AltsienSelectAfleverlocatieOption[];
+  requests: AltsienSelectSpecialRequest[];
+}
+
+/** One special-request status (Altsien Select's MasterData). */
+export interface AltsienSelectRequestStatus {
+  id: number;
+  name: string;
+  is_open: boolean;
+  color: string;
+  sort_order: number;
+}
+
+/** The fields sent to create or update a request status. */
+export type AltsienSelectRequestStatusInput = Omit<AltsienSelectRequestStatus, "id">;
+
+/** Altsien Select's KPI screen figures for one season. */
+export interface AltsienSelectDashboardStats {
+  season_id: number | null;
+  total_teams: number;
+  completed_teams: number;
+  in_progress_teams: number;
+  not_started_teams: number;
+  total_requests: number;
+  open_requests: number;
+  step_breakdown: { step_key: string; label: string; completed_count: number }[];
+  status_breakdown: { status_name: string; color: string; count: number }[];
+}

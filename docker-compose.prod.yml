@@ -18,8 +18,14 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - db_data:/var/lib/postgresql/data
-    # Not published to the host: only the backend container needs to reach
-    # it, over the private docker-compose network.
+    # Published on the VPS's loopback address only (127.0.0.1), never on the
+    # public internet. The backend still reaches it over the private
+    # docker-compose network; this port exists so pgAdmin on a developer's PC
+    # can read the database for debugging through an SSH tunnel (read-only
+    # login, see deploy/scripts/create-readonly-db-user.sh). The ":?" makes
+    # the deploy fail loudly if DB_HOST_PORT is missing from .env.
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:?set DB_HOST_PORT in .env}:5432"
 
   backend:
     build:
