@@ -32,6 +32,7 @@ from app.db.models.altsien_select_special_request import AltsienSelectSpecialReq
 from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress
 from app.db.models.altsien_select_user_role import AltsienSelectUserRole
 from app.db.models.festival import Festival
+from app.db.models.kartracker_groundplan import KarTrackerGroundplan
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.module import Module
@@ -87,6 +88,7 @@ from app.schemas.altsien_select import (
     TeamSummaryResponse,
     UserSummaryResponse,
 )
+from app.schemas.kartracker import KarTrackerGroundplanResponse
 from app.schemas.masterdata import SeasonResponse
 
 router = APIRouter(prefix="/api/modules/module-8", tags=["Altsien Select"])
@@ -468,6 +470,37 @@ def list_teams(
 
 
 # --- Ploeg Wizard ---------------------------------------------------------
+
+
+# --- Ground plans (read-only) -----------------------------------------------
+# Step 2's map overlays KarTracker's ground plans, the same way KarTracker's
+# own Kar Map and Plan a kar do. Altsien Select users don't necessarily have
+# KarTracker access, so the plans are served from here too, gated by this
+# module's own Akties screens. Managing them stays in KarTracker.
+
+
+@router.get("/groundplans", response_model=list[KarTrackerGroundplanResponse])
+def list_groundplans(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_wizard_or_ploegfiche_view),
+) -> list[KarTrackerGroundplan]:
+    """Every ground plan's name and bounds, for the afleverlocatie map."""
+    return list(
+        db.scalars(select(KarTrackerGroundplan).order_by(KarTrackerGroundplan.name, KarTrackerGroundplan.id)).all()
+    )
+
+
+@router.get("/groundplans/{groundplan_id}/image")
+def get_groundplan_image(
+    groundplan_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_wizard_or_ploegfiche_view),
+) -> Response:
+    """One ground plan's raw image bytes, used as a Leaflet ImageOverlay source."""
+    groundplan = db.get(KarTrackerGroundplan, groundplan_id)
+    if groundplan is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ground plan not found")
+    return Response(content=groundplan.image_data, media_type=groundplan.image_content_type)
 
 
 @router.get("/wizard/{team_id}", response_model=TeamStateResponse)

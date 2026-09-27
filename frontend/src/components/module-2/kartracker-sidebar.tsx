@@ -7,8 +7,8 @@
 // landing link, then grouped sections gated by the current user's
 // KarTracker role — see module_2/deps.py.
 //
-// Groups so far, in display order: "Actions" (the placeholder landing link,
-// plus "Kar Planning" — a read-only, cross-table report, and "Kar Map" — a
+// Groups so far, in display order: "Actions" ("Manuele kar beweging" — log
+// a kar movement, plus "Kar Planning" — a read-only, cross-table report, and "Kar Map" — a
 // read-only map view of Karren/Afleverlocaties/Distributiepunten, and "Plan
 // a kar" — pick a delivery location per festival for a team, each gated by
 // its own independent permission), "Masterdata" (KarManagement/

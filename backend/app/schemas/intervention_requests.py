@@ -222,6 +222,33 @@ class InterventionStatusUpdateRequest(BaseModel):
     color: StatusColor = "gray"
 
 
+class MailingRecipientResponse(BaseModel):
+    """One row of the "Mailing List" settings screen."""
+
+    id: int
+    email: str
+    name: str | None
+    is_active: bool
+
+
+class MailingRecipientRequest(BaseModel):
+    """What's sent to add or change a mailing-list row. The address is
+    stored trimmed and lower-case, so "Jan@X.be" and "jan@x.be" count as
+    the same (unique) address.
+    """
+
+    email: EmailStr
+    name: str | None = Field(default=None, max_length=255)
+    is_active: bool = True
+
+    @model_validator(mode="after")
+    def _normalise(self) -> "MailingRecipientRequest":
+        # Lower-case the address and turn a blank name into "no name".
+        self.email = self.email.strip().lower()
+        self.name = self.name.strip() if self.name and self.name.strip() else None
+        return self
+
+
 def _validate_team_reference(team_id: int | None, team_name: str | None) -> None:
     """"Ploeg" is either a real MasterData team (team_id) or, when the
     caller (customer or staff) typed a name that isn't in that list yet, a

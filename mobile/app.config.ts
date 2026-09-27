@@ -31,11 +31,17 @@ if (isReleaseBundle && !apiUrl.startsWith("https://")) {
   );
 }
 
+// Texts iOS shows when the app asks for the camera / location.
+const CAMERA_PERMISSION_TEXT = "RWCrew uses the camera to scan the QR code on a kar and to attach photos.";
+const LOCATION_PERMISSION_TEXT = "RWCrew uses your location to register where a kar was moved to.";
+
 const config: ExpoConfig = {
   name: isProduction ? "RWCrew" : "RWCrew Test",
   slug: "rwcrew",
   // The app version (bump it for every new APK; the matching git tag is mobile-v<version>).
-  version: "1.0.0",
+  // 1.1.0 added the native camera + location modules (KarScan), so 1.0.0
+  // builds can't take its over-the-air updates: a new build is required.
+  version: "1.1.0",
   scheme: isProduction ? "rwcrew" : "rwcrew-test",
   orientation: "portrait",
   icon: "./assets/icon.png",
@@ -49,8 +55,8 @@ const config: ExpoConfig = {
     config: { usesNonExemptEncryption: false },
     infoPlist: {
       // Texts iOS shows when the app asks for the camera / location.
-      NSCameraUsageDescription: "RWCrew uses the camera to attach photos.",
-      NSLocationWhenInUseUsageDescription: "RWCrew uses your location to tag where something happened.",
+      NSCameraUsageDescription: CAMERA_PERMISSION_TEXT,
+      NSLocationWhenInUseUsageDescription: LOCATION_PERMISSION_TEXT,
     },
   },
   android: {
@@ -67,6 +73,10 @@ const config: ExpoConfig = {
   plugins: [
     "expo-router",
     "expo-secure-store",
+    // KarScan: the camera scans the QR code on a kar (no audio needed), and
+    // the phone's GPS position is logged with the kar's movement.
+    ["expo-camera", { cameraPermission: CAMERA_PERMISSION_TEXT, recordAudioAndroid: false }],
+    ["expo-location", { locationWhenInUsePermission: LOCATION_PERMISSION_TEXT }],
     // Startup splash: the cream RW mark centred on the icon's dark green.
     // imageWidth is larger than the default because the mark only fills ~60%
     // of splash-icon.png (it keeps padding for Android's safe zone).

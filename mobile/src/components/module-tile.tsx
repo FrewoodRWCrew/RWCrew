@@ -29,7 +29,12 @@ export function ModuleTile({ module, width, onPress }: Props) {
       ]}
     >
       <View style={styles.iconArea}>
-        <Feather name={theme.icon} size={72} color={theme.onTileColor} />
+        {/* A module's own drawn icon when it has one, otherwise its Feather icon. */}
+        {theme.customIcon ? (
+          <theme.customIcon size={72} color={theme.onTileColor} />
+        ) : (
+          <Feather name={theme.icon} size={72} color={theme.onTileColor} />
+        )}
       </View>
       {/* The name is translated on the phone, like the web landing tile. */}
       <Text style={[styles.name, { color: theme.onTileColor }]} numberOfLines={2}>

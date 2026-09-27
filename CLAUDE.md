@@ -79,6 +79,19 @@ tables, `backend/app/modules/module_8/screens.py`).
   and optionally a section in `module_8/ploegfiche_pdf.py`. Progress is keyed by string: no migration.
 - Products and walkie-talkies are placeholder steps until their own modules exist.
 
+## Outgoing email (Resend)
+
+- `backend/app/core/mail.py` `send_email()` posts to Resend's HTTP API with `httpx` (no extra package). It
+  never raises: errors are logged. With `RESEND_API_KEY`/`MAIL_FROM` empty (local dev, tests) it just logs a skip.
+- Settings per environment in the server's `.env`: `RESEND_API_KEY`, `MAIL_FROM` (its domain must be verified
+  in Resend via DNS), `APP_PUBLIC_URL` (link in mails), and `MAIL_SUBJECT_PREFIX` (e.g. `[TEST] ` on test).
+- **Intervention Requests (module-3) new-request mail**: every new request — staff screen, public QR form
+  *and* phone app — mails the active addresses of `InterventionRequests_mailing_recipient` with the
+  delivery-note PDF attached (`module_3/notifications.py` `queue_new_request_mail`, sent as a FastAPI
+  background task after the 201). The list is managed on "Instellingen > Mailinglijst"
+  (screen key `interventionrequests.mailinglist`). A new create path must call `queue_new_request_mail` too;
+  edits never mail.
+
 ## Mobile app (`mobile/`)
 
 A React Native + Expo (TypeScript) phone app that uses camera/GPS and talks to this same backend, so the
@@ -100,6 +113,16 @@ database and the user/module/role rights stay managed here. Rules — follow the
   follows the user's web role). **MasterData (statuses, TeamKar) and Access Rights (roles, users) are never
   replicated on the phone**, and neither are deleting a request or its PDF — a backend test
   (`test_openapi_contract.py`) fails if the phone contract ever gains a DELETE, `/pdf` or admin path.
+  Second phone module: **KarTracker (module-2)** — its tile opens a home screen mirroring the web sidebar's
+  groups (only phone-supported screens, per role): "Acties" > **Kar Planning** (read-only card list + season
+  dropdown; the PDF "Print" stays web-only), **Kar Map** (Leaflet 1.9.4 + OSM inside `react-native-webview`, same
+  pin colours/popups/default extent as the web; ground plans fetched with the token and passed in as data: URIs,
+  on/off chip) — both via `module_2/kar_report_service.py`, shared with the web — and **KarScan**, the web's "Manuele kar beweging" without the map:
+  scan the kar's QR code (plain `kar_nummer`, matched trimmed + case-insensitive; no typed-number fallback on
+  purpose), GPS taken automatically (`expo-location`), pick the new status, save; below it the kar's last 5
+  movements. Rights = the `kartracker.actions` screen (view to look up, create to save); no delete. Logging goes
+  through `module_2/kar_action_service.py`, shared with the web screen. `expo-camera`/`expo-location` arrived
+  in app version 1.1.0, so 1.0.0 builds can't take later OTA updates.
 - **Adding a phone module**: add its key to `backend/app/mobile/registry.py` (`PHONE_MODULE_KEYS`), a router
   `backend/app/mobile/module_<n>_router.py` that reuses that module's own `require_screen_permission` deps, its
   tile in `mobile/src/lib/module-theme.ts`, and its routes under `mobile/src/app/(app)/module-<n>/`.

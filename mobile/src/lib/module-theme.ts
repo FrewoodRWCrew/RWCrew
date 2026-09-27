@@ -4,7 +4,9 @@
 // add its key there and an entry here.
 
 import type { Feather } from "@expo/vector-icons";
-import type { ComponentProps } from "react";
+import type { ComponentProps, ComponentType } from "react";
+
+import { RollContainerIcon } from "../components/roll-container-icon";
 
 import type { TranslationKey } from "../i18n";
 
@@ -16,11 +18,22 @@ export type ModuleTheme = {
   onTileColor: string;
   // Feather's "box" is the same outline box as the web's lucide "Box" icon.
   icon: FeatherIconName;
+  // A drawn icon used instead of `icon` when no Feather icon matches (the
+  // same custom drawing the web tile uses).
+  customIcon?: ComponentType<{ size: number; color: string }>;
   // The translation key of the module's name.
   titleKey: TranslationKey;
 };
 
 const MODULE_THEMES: Record<string, ModuleTheme> = {
+  "module-2": {
+    tileColor: "#9333ea", // Tailwind purple-600, the web tile colour of module-2
+    onTileColor: "#ffffff",
+    icon: "truck",
+    // The web tile's rolcontainer drawing (Attachment/rolcontainer.jpg).
+    customIcon: RollContainerIcon,
+    titleKey: "karTracker.moduleTitle",
+  },
   "module-3": {
     tileColor: "#ea580c", // Tailwind orange-600, the web tile colour of module-3
     onTileColor: "#ffffff",

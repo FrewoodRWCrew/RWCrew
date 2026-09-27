@@ -641,6 +641,536 @@
         "title": "InterventionStatusResponse",
         "type": "object"
       },
+      "KarActionCreateRequest": {
+        "description": "What's sent to log one kar movement. The team and timestamp are filled\nin by the server, never by the client.",
+        "properties": {
+          "kar_id": {
+            "title": "Kar Id",
+            "type": "integer"
+          },
+          "latitude": {
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "title": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "title": "Longitude",
+            "type": "number"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kar_id",
+          "status_id",
+          "latitude",
+          "longitude"
+        ],
+        "title": "KarActionCreateRequest",
+        "type": "object"
+      },
+      "KarActionKarOption": {
+        "description": "One entry of the \"Manuele kar beweging\" kar dropdown: the kar plus its\ncurrent team (shown read-only, logged as snapshot) and current status\n(used to pre-select the status dropdown).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kar_nummer": {
+            "title": "Kar Nummer",
+            "type": "string"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          }
+        },
+        "required": [
+          "id",
+          "kar_nummer",
+          "team_id",
+          "team_name",
+          "status_id"
+        ],
+        "title": "KarActionKarOption",
+        "type": "object"
+      },
+      "KarActionResponse": {
+        "description": "One logged kar movement, with the names needed for the history table.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kar_id": {
+            "title": "Kar Id",
+            "type": "integer"
+          },
+          "kar_nummer": {
+            "title": "Kar Nummer",
+            "type": "string"
+          },
+          "latitude": {
+            "title": "Latitude",
+            "type": "number"
+          },
+          "longitude": {
+            "title": "Longitude",
+            "type": "number"
+          },
+          "recorded_at": {
+            "format": "date-time",
+            "title": "Recorded At",
+            "type": "string"
+          },
+          "status_id": {
+            "title": "Status Id",
+            "type": "integer"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          },
+          "team_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Id"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "user_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Name"
+          }
+        },
+        "required": [
+          "id",
+          "kar_id",
+          "kar_nummer",
+          "status_id",
+          "status_name",
+          "team_id",
+          "team_name",
+          "latitude",
+          "longitude",
+          "recorded_at",
+          "user_name"
+        ],
+        "title": "KarActionResponse",
+        "type": "object"
+      },
+      "KarMapAfleverlocatieRow": {
+        "description": "One delivery location's pin/list entry on the Kar Map screen,\njoined with its zone and distribution point names.",
+        "properties": {
+          "description": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description"
+          },
+          "distributiepunt_name": {
+            "title": "Distributiepunt Name",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "zone_name": {
+            "title": "Zone Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "zone_name",
+          "distributiepunt_name",
+          "latitude",
+          "longitude"
+        ],
+        "title": "KarMapAfleverlocatieRow",
+        "type": "object"
+      },
+      "KarMapDistributiepuntRow": {
+        "description": "One distribution point's pin/list entry on the Kar Map screen.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "terrein_positie": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Terrein Positie"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "terrein_positie",
+          "latitude",
+          "longitude"
+        ],
+        "title": "KarMapDistributiepuntRow",
+        "type": "object"
+      },
+      "KarMapKarRow": {
+        "description": "One kar's pin/list entry on the Kar Map screen \u2014 KarManagement\njoined with its status/team lookups for the popup's \"resume\" content.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kar_nummer": {
+            "title": "Kar Nummer",
+            "type": "string"
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latitude"
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Longitude"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          }
+        },
+        "required": [
+          "id",
+          "kar_nummer",
+          "status_name",
+          "team_name",
+          "latitude",
+          "longitude"
+        ],
+        "title": "KarMapKarRow",
+        "type": "object"
+      },
+      "KarMapResponse": {
+        "description": "The full Kar Map payload: one array per layer. Rows with no\nlatitude/longitude are included too \u2014 the frontend excludes them from\nthe map itself but still lists them in the side panel.",
+        "properties": {
+          "afleverlocaties": {
+            "items": {
+              "$ref": "#/components/schemas/KarMapAfleverlocatieRow"
+            },
+            "title": "Afleverlocaties",
+            "type": "array"
+          },
+          "distributiepunten": {
+            "items": {
+              "$ref": "#/components/schemas/KarMapDistributiepuntRow"
+            },
+            "title": "Distributiepunten",
+            "type": "array"
+          },
+          "karren": {
+            "items": {
+              "$ref": "#/components/schemas/KarMapKarRow"
+            },
+            "title": "Karren",
+            "type": "array"
+          }
+        },
+        "required": [
+          "karren",
+          "afleverlocaties",
+          "distributiepunten"
+        ],
+        "title": "KarMapResponse",
+        "type": "object"
+      },
+      "KarPlanningFestivalResponse": {
+        "description": "One festival column of the Kar Planning report.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "KarPlanningFestivalResponse",
+        "type": "object"
+      },
+      "KarPlanningReportResponse": {
+        "description": "The whole Kar Planning report: the active festivals of the requested\nseason (one extra table column each, in start-date order) plus one row\nper kar. `festivals` is empty when no season was requested.",
+        "properties": {
+          "festivals": {
+            "items": {
+              "$ref": "#/components/schemas/KarPlanningFestivalResponse"
+            },
+            "title": "Festivals",
+            "type": "array"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/KarPlanningResponse"
+            },
+            "title": "Rows",
+            "type": "array"
+          }
+        },
+        "required": [
+          "festivals",
+          "rows"
+        ],
+        "title": "KarPlanningReportResponse",
+        "type": "object"
+      },
+      "KarPlanningResponse": {
+        "description": "One kar, denormalized by joining KarManagement with its status/team/\ntransport-type lookups \u2014 the first query in what will grow into a\nwider, multi-table Kar Planning report as more tables are added.",
+        "properties": {
+          "afleverlocaties": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Afleverlocaties",
+            "type": "object"
+          },
+          "geolocation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Geolocation"
+          },
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "kar_nummer": {
+            "title": "Kar Nummer",
+            "type": "string"
+          },
+          "status_name": {
+            "title": "Status Name",
+            "type": "string"
+          },
+          "team_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Team Name"
+          },
+          "transport_type_name": {
+            "title": "Transport Type Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "kar_nummer",
+          "status_name",
+          "team_name",
+          "transport_type_name",
+          "afleverlocaties",
+          "geolocation"
+        ],
+        "title": "KarPlanningResponse",
+        "type": "object"
+      },
+      "KarTrackerGroundplanResponse": {
+        "description": "One ground-plan overlay: its name and south-west/north-east corner\ncoordinates. The image itself is served separately by\nGET /groundplans/{id}/image; updated_at lets the frontend cache-bust\nthat URL after the image is replaced.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "ne_latitude": {
+            "title": "Ne Latitude",
+            "type": "number"
+          },
+          "ne_longitude": {
+            "title": "Ne Longitude",
+            "type": "number"
+          },
+          "sw_latitude": {
+            "title": "Sw Latitude",
+            "type": "number"
+          },
+          "sw_longitude": {
+            "title": "Sw Longitude",
+            "type": "number"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sw_latitude",
+          "sw_longitude",
+          "ne_latitude",
+          "ne_longitude",
+          "updated_at"
+        ],
+        "title": "KarTrackerGroundplanResponse",
+        "type": "object"
+      },
       "LoginRequest": {
         "description": "What the frontend must send us to log a user in.",
         "properties": {
@@ -659,6 +1189,56 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "MobileKarScanResponse": {
+        "description": "The kar found for a scanned QR code, with its latest movements.",
+        "properties": {
+          "kar": {
+            "$ref": "#/components/schemas/KarActionKarOption"
+          },
+          "recent_actions": {
+            "items": {
+              "$ref": "#/components/schemas/KarActionResponse"
+            },
+            "title": "Recent Actions",
+            "type": "array"
+          }
+        },
+        "required": [
+          "kar",
+          "recent_actions"
+        ],
+        "title": "MobileKarScanResponse",
+        "type": "object"
+      },
+      "MobileModule2PermissionsResponse": {
+        "description": "What the calling user may do in the phone's KarTracker: KarScan (the\nweb's \"Manuele kar beweging\"), Kar Planning and Kar Map. There is no\ndelete flag: deleting a movement is web-only.",
+        "properties": {
+          "can_create_actions": {
+            "title": "Can Create Actions",
+            "type": "boolean"
+          },
+          "can_view_actions": {
+            "title": "Can View Actions",
+            "type": "boolean"
+          },
+          "can_view_karmap": {
+            "title": "Can View Karmap",
+            "type": "boolean"
+          },
+          "can_view_karplanning": {
+            "title": "Can View Karplanning",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "can_view_actions",
+          "can_create_actions",
+          "can_view_karplanning",
+          "can_view_karmap"
+        ],
+        "title": "MobileModule2PermissionsResponse",
         "type": "object"
       },
       "MobileModule3LookupsResponse": {
@@ -732,6 +1312,25 @@
         "title": "MobileRefreshRequest",
         "type": "object"
       },
+      "MobileSeasonResponse": {
+        "description": "One open season, for the phone's Kar Planning season dropdown.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "MobileSeasonResponse",
+        "type": "object"
+      },
       "MobileTokenResponse": {
         "description": "The tokens (plus who the user is) handed back after login/refresh.",
         "properties": {
@@ -787,6 +1386,25 @@
           "sort_order"
         ],
         "title": "ModuleResponse",
+        "type": "object"
+      },
+      "PlanKarOption": {
+        "description": "One entry of a \"Plan a kar\" dropdown (a team or a delivery location).",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "title": "PlanKarOption",
         "type": "object"
       },
       "TeamKarMemberOptionResponse": {
@@ -1087,6 +1705,510 @@
         "summary": "Mobile Refresh",
         "tags": [
           "mobile-auth"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/groundplans": {
+      "get": {
+        "description": "The ground plans overlaid on the Kar Map: name and corner coordinates.",
+        "operationId": "get_groundplans_api_mobile_v1_module_2_groundplans_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/KarTrackerGroundplanResponse"
+                  },
+                  "title": "Response Get Groundplans Api Mobile V1 Module 2 Groundplans Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Groundplans",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/groundplans/{groundplan_id}/image": {
+      "get": {
+        "description": "One ground plan's image bytes (PNG or JPEG).",
+        "operationId": "get_groundplan_image_api_mobile_v1_module_2_groundplans__groundplan_id__image_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "groundplan_id",
+            "required": true,
+            "schema": {
+              "title": "Groundplan Id",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Groundplan Image",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/kar-actions": {
+      "post": {
+        "description": "Log one kar movement, exactly like the web's Save button: the team and\ntimestamp are set here, and the kar's latest status/location follow.",
+        "operationId": "create_kar_action_api_mobile_v1_module_2_kar_actions_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KarActionCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KarActionResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Kar Action",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/kar-map": {
+      "get": {
+        "description": "Every kar, afleverlocatie and distributiepunt for the map, identical\nto the web's Kar Map data (rows without coordinates included).",
+        "operationId": "get_kar_map_api_mobile_v1_module_2_kar_map_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KarMapResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Kar Map",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/kar-planning": {
+      "get": {
+        "description": "The Kar Planning report, identical to the web's; with a season, one\nplanned afleverlocatie per active festival of it.",
+        "operationId": "get_kar_planning_api_mobile_v1_module_2_kar_planning_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "season_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Season Id"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/KarPlanningReportResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Kar Planning",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/kar-statuses": {
+      "get": {
+        "description": "The status dropdown, gated by the movement screen itself (like the\nweb's /kar-actions/lookups) so no KarStatussen rights are needed.",
+        "operationId": "list_kar_statuses_api_mobile_v1_module_2_kar_statuses_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/PlanKarOption"
+                  },
+                  "title": "Response List Kar Statuses Api Mobile V1 Module 2 Kar Statuses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Kar Statuses",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/karren/by-nummer/{kar_nummer}": {
+      "get": {
+        "description": "The kar whose QR code was scanned, plus its last few movements.\n\nThe scanned text is trimmed and matched case-insensitively, so a QR code\nprinted as \"b001 \" still finds kar \"B001\".",
+        "operationId": "get_kar_by_nummer_api_mobile_v1_module_2_karren_by_nummer__kar_nummer__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "kar_nummer",
+            "required": true,
+            "schema": {
+              "title": "Kar Nummer",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileKarScanResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Kar By Nummer",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/permissions": {
+      "get": {
+        "description": "What this user may do in the phone's KarTracker, so the app only\nshows the menu items and buttons the web roles allow.",
+        "operationId": "get_my_permissions_api_mobile_v1_module_2_permissions_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MobileModule2PermissionsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get My Permissions",
+        "tags": [
+          "mobile-module-2"
+        ]
+      }
+    },
+    "/api/mobile/v1/module-2/seasons": {
+      "get": {
+        "description": "The open seasons (the same ones the web header's season selector\noffers), newest first, for the Kar Planning season dropdown.",
+        "operationId": "list_open_seasons_api_mobile_v1_module_2_seasons_get",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "x-app-version",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-App-Version"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MobileSeasonResponse"
+                  },
+                  "title": "Response List Open Seasons Api Mobile V1 Module 2 Seasons Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Open Seasons",
+        "tags": [
+          "mobile-module-2"
         ]
       }
     },

@@ -52,10 +52,6 @@ const LAYER_COLORS: Record<LayerKey, string> = {
   distributiepunt: "var(--color-amber-600)",
 };
 
-// Fallback map center when there isn't a single located row to average —
-// no organization-wide "home base" coordinate exists elsewhere in the app.
-const FALLBACK_CENTER: [number, number] = [50.85, 4.35];
-
 function textMatches(fieldValue: string, filterValue: string): boolean {
   if (!filterValue) return true;
   return fieldValue.toLowerCase().includes(filterValue.toLowerCase());
@@ -287,7 +283,6 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
       <div className="h-[65vh] w-full overflow-hidden rounded-md border">
         <KarMapLeaflet
           pins={pins}
-          center={FALLBACK_CENTER}
           onReady={setMapHandle}
           showGroundplan={showGroundplan}
           groundplanOverlays={groundplanOverlays}

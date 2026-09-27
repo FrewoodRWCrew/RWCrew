@@ -114,6 +114,8 @@ class MyPermissionsResponse(BaseModel):
     viewable_screen_keys: list[str]
     creatable_screen_keys: list[str]
     editable_screen_keys: list[str]
+    # Used e.g. by "Manuele kar beweging" to show its delete button.
+    deletable_screen_keys: list[str]
 
 
 class KarStatusResponse(BaseModel):
@@ -407,9 +409,13 @@ class PlanKarOption(BaseModel):
 
 
 class PlanKarAfleverlocatieOption(PlanKarOption):
-    """A delivery-location dropdown entry: its name plus its description, shown next to it."""
+    """A delivery-location dropdown entry: its name plus its description, shown next to it,
+    and its coordinates so the chosen locations can be pinned on the map below the matrix.
+    """
 
     description: str | None
+    latitude: float | None
+    longitude: float | None
 
 
 class PlanKarFestivalRow(BaseModel):
@@ -443,6 +449,53 @@ class PlanKarSaveRequest(BaseModel):
     rows: list[PlanKarSaveRow]
 
 
+class KarActionKarOption(BaseModel):
+    """One entry of the "Manuele kar beweging" kar dropdown: the kar plus its
+    current team (shown read-only, logged as snapshot) and current status
+    (used to pre-select the status dropdown).
+    """
+
+    id: int
+    kar_nummer: str
+    team_id: int | None
+    team_name: str | None
+    status_id: int
+
+
+class KarActionLookupsResponse(BaseModel):
+    """Everything the "Manuele kar beweging" form's dropdowns need."""
+
+    karren: list[KarActionKarOption]
+    statuses: list[PlanKarOption]
+
+
+class KarActionCreateRequest(BaseModel):
+    """What's sent to log one kar movement. The team and timestamp are filled
+    in by the server, never by the client.
+    """
+
+    kar_id: int
+    status_id: int
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+
+
+class KarActionResponse(BaseModel):
+    """One logged kar movement, with the names needed for the history table."""
+
+    id: int
+    kar_id: int
+    kar_nummer: str
+    status_id: int
+    status_name: str
+    team_id: int | None
+    team_name: str | None
+    latitude: float
+    longitude: float
+    recorded_at: datetime
+    user_name: str | None
+
+
 class LeverdatumRow(BaseModel):
     """One "Delivery Dates" row: a festival plus its saved dates, if any."""
 
@@ -472,6 +525,24 @@ class LeverdatumSaveRequest(BaseModel):
 
     season_id: int
     rows: list[LeverdatumSaveRow]
+
+
+class LeverdatumImportRowResult(BaseModel):
+    """What happened to one row of an uploaded Leverdata import. Unlike the
+    other KarTracker imports this one upserts (one row per festival), and a
+    row without any date is skipped instead of clearing saved dates.
+    """
+
+    row_number: int
+    festival_name: str | None
+    outcome: Literal["created", "updated", "skipped", "error"]
+    detail: str | None
+
+
+class LeverdatumImportResponse(BaseModel):
+    """The full outcome of a Leverdata import — one result per row, in order."""
+
+    results: list[LeverdatumImportRowResult]
 
 
 class AfleverlocatieResponse(BaseModel):
@@ -530,3 +601,50 @@ class AfleverlocatieImportResponse(BaseModel):
     """The full outcome of a bulk afleverlocatie import — one result per row, in order."""
 
     results: list[AfleverlocatieImportRowResult]
+
+
+class KarTrackerDashboardStatusBreakdownItem(BaseModel):
+    """How many karren currently carry one status (zero-filled)."""
+
+    status_name: str
+    count: int
+
+
+class KarTrackerDashboardTeamBreakdownItem(BaseModel):
+    """How many karren one team currently has (only teams with at least one kar)."""
+
+    team_name: str
+    count: int
+
+
+class KarTrackerDashboardDailyMovementItem(BaseModel):
+    """How many kar movements were logged on one (UTC) day."""
+
+    day: date
+    count: int
+
+
+class KarTrackerDashboardFestivalPlanItem(BaseModel):
+    """How many active teams already have a delivery location for one festival."""
+
+    festival_name: str
+    planned_teams: int
+
+
+class KarTrackerDashboardResponse(BaseModel):
+    """KarTracker's landing dashboard ("KPI Overview"). The Plan a kar
+    fields are None when no season was asked for.
+    """
+
+    total_karren: int
+    karren_with_team: int
+    karren_without_team: int
+    movements_last_7_days: int
+    status_breakdown: list[KarTrackerDashboardStatusBreakdownItem]
+    team_breakdown: list[KarTrackerDashboardTeamBreakdownItem]
+    movements_per_day: list[KarTrackerDashboardDailyMovementItem]
+    season_id: int | None
+    active_teams: int | None
+    plan_kar_planned: int | None
+    plan_kar_expected: int | None
+    festival_plan_breakdown: list[KarTrackerDashboardFestivalPlanItem] | None

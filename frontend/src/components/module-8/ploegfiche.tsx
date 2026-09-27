@@ -2,7 +2,7 @@
 
 // Altsien Select's "Ploegfiche": pick a team (and season), and see everything
 // chosen for it in the Ploeg Wizard on one screen — team info, the progress
-// of every wizard step, the festivals with their delivery locations, the
+// of every wizard step, the karren KarManagement assigned to the team, the festivals with their delivery locations, the
 // products and walkie-talkies (placeholders until those modules exist) and
 // the special requests with their status and the organisation's answer.
 // The "PDF" button opens the same overview as a printable PDF with the
@@ -13,7 +13,7 @@ import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { altsienSelectPloegfichePdfUrl, getAltsienSelectPloegfiche, listAltsienSelectTeams } from "@/lib/api";
-import type { AltsienSelectTeamState, AltsienSelectTeamSummary, Season } from "@/lib/types";
+import type { AltsienSelectTeamKar, AltsienSelectTeamState, AltsienSelectTeamSummary, Season } from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -287,8 +287,55 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
         </Card>
       </div>
 
+      <KarrenCard karren={state.karren} />
+
       {state.steps.map((step) => sections[step.key] ?? null)}
     </div>
+  );
+}
+
+/** The karren KarManagement (module-2) assigned to the team. The cijfercode
+ * column is a placeholder until KarManagement stores that code. */
+function KarrenCard({ karren }: { karren: AltsienSelectTeamKar[] }) {
+  const t = useTranslations("altsienSelect.ploegfiche");
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("karrenTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {karren.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("noKarren")}</p>
+        ) : (
+          <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                    {t("columnKarNummer")}
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                    {t("columnTransportType")}
+                  </TableHead>
+                  <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                    {t("columnKarCode")}
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {karren.map((kar) => (
+                  <TableRow key={kar.id}>
+                    <TableCell className="font-medium">{kar.kar_nummer}</TableCell>
+                    <TableCell>{kar.transport_type ?? "—"}</TableCell>
+                    <TableCell className="text-muted-foreground italic">{t("karCodePlaceholder")}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 

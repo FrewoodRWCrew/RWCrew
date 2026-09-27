@@ -12,6 +12,7 @@ from sqlalchemy.orm import Session
 from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
+from app.db.models.kartracker_groundplan import KarTrackerGroundplan
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.kartracker_zone import KarTrackerZone
@@ -312,3 +313,49 @@ def test_afleverlocatie_active_flag_round_trips(client: TestClient, db_session: 
 
     assert updated.status_code == 200
     assert updated.json()["active"] is False
+
+
+def test_afleverlocatie_dropdown_includes_the_coordinates(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+    gate = _create_location(db_session, name="Poort 1")
+    gate.latitude = 50.97
+    gate.longitude = 4.69
+    db_session.commit()
+    _create_location(db_session, name="Poort 2")
+
+    locations = client.get("/api/modules/module-2/plan-kar/afleverlocaties").json()
+
+    # The map below the matrix pins located entries; unlocated ones come back as null.
+    assert [(item["latitude"], item["longitude"]) for item in locations] == [(50.97, 4.69), (None, None)]
+
+
+def test_plankar_viewer_can_read_the_ground_plans(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = create_kartracker_module(db_session)
+    user = create_user(db_session, email="planner@example.com")
+    grant_module_access(db_session, user, module)
+    # Only Plan a kar — no Kar Map or Grondplan permission.
+    role = create_role_with_permissions(db_session, name="Planner", screen_key="kartracker.plankar", can_view=True)
+    db_session.add(KarTrackerUserRole(user_id=user.id, role_id=role.id))
+    plan = KarTrackerGroundplan(
+        name="Terrein",
+        image_data=b"png-bytes",
+        image_content_type="image/png",
+        sw_latitude=50.0,
+        sw_longitude=4.0,
+        ne_latitude=51.0,
+        ne_longitude=5.0,
+    )
+    db_session.add(plan)
+    db_session.commit()
+    login(client, "planner@example.com")
+
+    listed = client.get("/api/modules/module-2/groundplans")
+    image = client.get(f"/api/modules/module-2/groundplans/{plan.id}/image")
+
+    assert listed.status_code == 200
+    assert [item["name"] for item in listed.json()] == ["Terrein"]
+    assert image.status_code == 200
+    assert image.content == b"png-bytes"
+    # Reading is all a Plan a kar user gets: managing plans stays with the Grondplan screen.
+    assert client.delete(f"/api/modules/module-2/groundplans/{plan.id}").status_code == 403

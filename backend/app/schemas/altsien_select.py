@@ -66,6 +66,16 @@ class TeamInfoResponse(BaseModel):
     kernleden: list[str]
 
 
+class TeamKarResponse(BaseModel):
+    """One kar from KarManagement (module-2) currently assigned to the team.
+    The kar's cijfercode is not stored yet; it is a placeholder on screen.
+    """
+
+    id: int
+    kar_nummer: str
+    transport_type: str | None
+
+
 class FestivalChoiceResponse(BaseModel):
     """One active festival of the season, whether the team is active there,
     and (if so) the delivery location chosen for it.
@@ -82,11 +92,15 @@ class FestivalChoiceResponse(BaseModel):
 
 
 class AfleverlocatieOptionResponse(BaseModel):
-    """One delivery location offered in step 2's dropdowns."""
+    """One delivery location offered in step 2's dropdowns, with its
+    coordinates so the chosen locations can be pinned on the step's map.
+    """
 
     id: int
     name: str
     description: str | None
+    latitude: float | None
+    longitude: float | None
 
 
 # --- Special requests -----------------------------------------------------
@@ -140,6 +154,8 @@ class TeamStateResponse(BaseModel):
     # Whether the calling user may still change these choices.
     can_edit: bool
     team: TeamInfoResponse
+    # The karren KarManagement assigned to the team (not season-scoped).
+    karren: list[TeamKarResponse]
     steps: list[StepResponse]
     progress: list[StepProgressResponse]
     festivals: list[FestivalChoiceResponse]

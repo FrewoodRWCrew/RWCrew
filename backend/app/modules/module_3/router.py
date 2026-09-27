@@ -9,7 +9,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.intervention_request import InterventionRequest
+from app.db.models.intervention_requests_mailing_recipient import InterventionRequestsMailingRecipient
 from app.db.models.intervention_requests_role import InterventionRequestsRole
 from app.db.models.intervention_requests_role_permission import InterventionRequestsRolePermission
 from app.db.models.intervention_requests_screen import InterventionRequestsScreen
@@ -36,7 +37,8 @@ from app.modules.module_3.deps import (
 )
 from app.modules.module_3.intervention_request_pdf import build_delivery_note_pdf
 from app.modules.module_3.intervention_requests_dashboard import build_dashboard_stats
-from app.modules.module_3.service import generate_request_number, list_teams_for_dropdown
+from app.modules.module_3.notifications import queue_new_request_mail
+from app.modules.module_3.service import generate_request_number, list_teams_for_dropdown, resolve_team_name
 from app.schemas.intervention_requests import (
     CreateOrGrantUserRequest,
     InterventionRequestCreateRequest,
@@ -48,6 +50,8 @@ from app.schemas.intervention_requests import (
     InterventionStatusCreateRequest,
     InterventionStatusResponse,
     InterventionStatusUpdateRequest,
+    MailingRecipientRequest,
+    MailingRecipientResponse,
     MyPermissionsResponse,
     RoleCreateRequest,
     RoleResponse,
@@ -528,6 +532,83 @@ def delete_intervention_status(
     db.commit()
 
 
+# --- Mailing List (module-3's "Settings" screen) ------------------------
+# Who gets mailed about every new intervention request — see
+# notifications.py.
+
+
+def _ensure_unique_email(db: Session, email: str, exclude_id: int | None = None) -> None:
+    """Refuse (409) an address that's already on the list — checked up front
+    for a clear message instead of relying on the DB's unique-index error.
+    """
+    query = select(InterventionRequestsMailingRecipient.id).where(InterventionRequestsMailingRecipient.email == email)
+    if exclude_id is not None:
+        query = query.where(InterventionRequestsMailingRecipient.id != exclude_id)
+    if db.scalar(query) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This email address is already on the list")
+
+
+@router.get("/mailing-list", response_model=list[MailingRecipientResponse])
+def list_mailing_recipients(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "view")),
+) -> list[InterventionRequestsMailingRecipient]:
+    """Every address on the mailing list, alphabetically."""
+    return list(
+        db.scalars(select(InterventionRequestsMailingRecipient).order_by(InterventionRequestsMailingRecipient.email)).all()
+    )
+
+
+@router.post("/mailing-list", response_model=MailingRecipientResponse, status_code=status.HTTP_201_CREATED)
+def create_mailing_recipient(
+    payload: MailingRecipientRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "create")),
+) -> InterventionRequestsMailingRecipient:
+    """Add an address to the mailing list."""
+    _ensure_unique_email(db, payload.email)
+    new_recipient = InterventionRequestsMailingRecipient(**payload.model_dump())
+    db.add(new_recipient)
+    db.commit()
+    db.refresh(new_recipient)
+    return new_recipient
+
+
+@router.put("/mailing-list/{recipient_id}", response_model=MailingRecipientResponse)
+def update_mailing_recipient(
+    recipient_id: int,
+    payload: MailingRecipientRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "edit")),
+) -> InterventionRequestsMailingRecipient:
+    """Change an address, its name, or pause/resume it."""
+    existing_recipient = db.get(InterventionRequestsMailingRecipient, recipient_id)
+    if existing_recipient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
+
+    _ensure_unique_email(db, payload.email, exclude_id=recipient_id)
+    for field, value in payload.model_dump().items():
+        setattr(existing_recipient, field, value)
+    db.commit()
+    db.refresh(existing_recipient)
+    return existing_recipient
+
+
+@router.delete("/mailing-list/{recipient_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_mailing_recipient(
+    recipient_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "delete")),
+) -> None:
+    """Remove an address from the mailing list."""
+    existing_recipient = db.get(InterventionRequestsMailingRecipient, recipient_id)
+    if existing_recipient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
+
+    db.delete(existing_recipient)
+    db.commit()
+
+
 # --- Intervention Requests (module-3's "Actions" screen) -----------------
 
 
@@ -580,6 +661,7 @@ def list_intervention_requests(
 )
 def create_intervention_request(
     payload: InterventionRequestCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("interventionrequests.requests", "create")),
 ) -> InterventionRequest:
@@ -602,6 +684,8 @@ def create_intervention_request(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+    # Let the mailing list know (sent after this response has gone out).
+    queue_new_request_mail(db, new_request, background_tasks)
     return new_request
 
 
@@ -665,8 +749,7 @@ def download_intervention_request_pdf(
     if existing_request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Intervention request not found")
 
-    team = db.get(Team, existing_request.team_id) if existing_request.team_id is not None else None
-    team_name = team.name if team else (existing_request.team_name or "")
+    team_name = resolve_team_name(db, existing_request)
     pdf_bytes = build_delivery_note_pdf(existing_request, team_name=team_name, locale=locale)
     return Response(
         content=pdf_bytes,

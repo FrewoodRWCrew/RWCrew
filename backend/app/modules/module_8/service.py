@@ -12,7 +12,9 @@ from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
+from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
@@ -28,6 +30,7 @@ from app.schemas.altsien_select import (
     StepProgressResponse,
     StepResponse,
     TeamInfoResponse,
+    TeamKarResponse,
     TeamStateResponse,
     TeamSummaryResponse,
 )
@@ -202,13 +205,34 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         for row in festival_rows
     ]
 
-    # The delivery locations offered in step 2.
+    # The delivery locations offered in step 2, with their coordinates for
+    # the step's map of chosen locations.
     afleverlocaties = [
-        AfleverlocatieOptionResponse(id=row.id, name=row.name, description=row.description)
+        AfleverlocatieOptionResponse(
+            id=row.id, name=row.name, description=row.description, latitude=row.latitude, longitude=row.longitude
+        )
         for row in db.execute(
-            select(KarTrackerAfleverlocatie.id, KarTrackerAfleverlocatie.name, KarTrackerAfleverlocatie.description)
+            select(
+                KarTrackerAfleverlocatie.id,
+                KarTrackerAfleverlocatie.name,
+                KarTrackerAfleverlocatie.description,
+                KarTrackerAfleverlocatie.latitude,
+                KarTrackerAfleverlocatie.longitude,
+            )
             .where(KarTrackerAfleverlocatie.active.is_(True))
             .order_by(KarTrackerAfleverlocatie.name)
+        ).all()
+    ]
+
+    # The karren KarManagement currently assigned to the team, with their
+    # transport type (a product name), sorted by kar number.
+    karren = [
+        TeamKarResponse(id=row.id, kar_nummer=row.kar_nummer, transport_type=row.transport_type)
+        for row in db.execute(
+            select(KarTrackerKar.id, KarTrackerKar.kar_nummer, Product.name.label("transport_type"))
+            .outerjoin(Product, Product.id == KarTrackerKar.transport_type_id)
+            .where(KarTrackerKar.team_id == team.id)
+            .order_by(KarTrackerKar.kar_nummer)
         ).all()
     ]
 
@@ -237,6 +261,7 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         season_open=season.periode_open,
         can_edit=can_edit,
         team=_build_team_info(db, team),
+        karren=karren,
         steps=list_steps(),
         progress=progress,
         festivals=festivals,

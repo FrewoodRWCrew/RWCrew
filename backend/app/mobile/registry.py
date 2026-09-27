@@ -9,6 +9,9 @@
 # colour/icon to mobile/src/lib/module-theme.ts.
 
 PHONE_MODULE_KEYS: list[str] = [
+    # KarTracker: only "KarScan" (scan a kar's QR code, log its new status +
+    # GPS location — the web's "Manuele kar beweging" without the map).
+    "module-2",
     # Intervention Requests: only its "KPI overzicht" and "Akties" (the
     # requests screen). MasterData and Access Rights stay web-only.
     "module-3",

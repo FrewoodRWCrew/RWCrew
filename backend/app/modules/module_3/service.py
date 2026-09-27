@@ -73,3 +73,12 @@ def generate_request_number(db: Session) -> str:
 
     next_sequence = (max(existing_sequences) if existing_sequences else 0) + 1
     return f"{prefix}{next_sequence:04d}"
+
+
+def resolve_team_name(db: Session, request: InterventionRequest) -> str:
+    """The "Ploeg" name to show for a request: the linked MasterData team's
+    name, or the free-text name typed on the public form, or "" if neither.
+    Shared by the PDF download and the new-request mail.
+    """
+    team = db.get(Team, request.team_id) if request.team_id is not None else None
+    return team.name if team else (request.team_name or "")

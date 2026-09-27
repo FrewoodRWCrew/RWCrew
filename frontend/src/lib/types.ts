@@ -702,6 +702,22 @@ export interface InterventionRequestsUserSummary {
 }
 
 /** Which Intervention Requests screens the current user is allowed to view. */
+/** One address on Intervention Requests' "Mailing List" settings screen:
+ * everyone active here is mailed about every new intervention request. */
+export interface MailingRecipient {
+  id: number;
+  email: string;
+  name: string | null;
+  is_active: boolean;
+}
+
+/** The fields sent to add or fully update a mailing-list address. */
+export interface MailingRecipientInput {
+  email: string;
+  name: string | null;
+  is_active: boolean;
+}
+
 export interface InterventionRequestsMyPermissions {
   viewable_screen_keys: string[];
 }
@@ -753,6 +769,7 @@ export interface KarTrackerMyPermissions {
   viewable_screen_keys: string[];
   creatable_screen_keys: string[];
   editable_screen_keys: string[];
+  deletable_screen_keys: string[];
 }
 
 /** One status a kar can be in, as managed on the KarStatussen screen. */
@@ -989,6 +1006,9 @@ export interface KarTrackerPlanKarOption {
 /** A "Plan a kar" delivery-location dropdown entry: name plus description, shown next to it. */
 export interface KarTrackerPlanKarAfleverlocatieOption extends KarTrackerPlanKarOption {
   description: string | null;
+  /** Where it is, for the map of chosen locations (null = not located yet). */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** One "Plan a kar" matrix row: a festival plus its saved delivery location, if any. */
@@ -1005,11 +1025,66 @@ export interface KarTrackerPlanKar {
   rows: KarTrackerPlanKarRow[];
 }
 
+/** KarTracker's landing dashboard ("KPI Overview"). The plan_kar fields are null without a season. */
+export interface KarTrackerDashboardStats {
+  total_karren: number;
+  karren_with_team: number;
+  karren_without_team: number;
+  movements_last_7_days: number;
+  status_breakdown: { status_name: string; count: number }[];
+  team_breakdown: { team_name: string; count: number }[];
+  /** One entry per UTC day (ISO date), oldest first, last 14 days. */
+  movements_per_day: { day: string; count: number }[];
+  season_id: number | null;
+  active_teams: number | null;
+  plan_kar_planned: number | null;
+  plan_kar_expected: number | null;
+  festival_plan_breakdown: { festival_name: string; planned_teams: number }[] | null;
+}
+
 /** What the "Plan a kar" Save button sends. A null afleverlocatie_id clears that festival's assignment. */
 export interface KarTrackerPlanKarSaveInput {
   season_id: number;
   team_id: number;
   rows: { festival_id: number; afleverlocatie_id: number | null }[];
+}
+
+/** One kar in the "Manuele kar beweging" kar dropdown, with its current team and status. */
+export interface KarTrackerKarActionKarOption {
+  id: number;
+  kar_nummer: string;
+  team_id: number | null;
+  team_name: string | null;
+  status_id: number;
+}
+
+/** Everything the "Manuele kar beweging" form's dropdowns need. */
+export interface KarTrackerKarActionLookups {
+  karren: KarTrackerKarActionKarOption[];
+  statuses: KarTrackerPlanKarOption[];
+}
+
+/** What the "Manuele kar beweging" Save button sends. Team and timestamp are set by the backend. */
+export interface KarTrackerKarActionCreateInput {
+  kar_id: number;
+  status_id: number;
+  latitude: number;
+  longitude: number;
+}
+
+/** One logged kar movement (table "KarTracker_kar_actions"). recorded_at is an ISO UTC timestamp. */
+export interface KarTrackerKarAction {
+  id: number;
+  kar_id: number;
+  kar_nummer: string;
+  status_id: number;
+  status_name: string;
+  team_id: number | null;
+  team_name: string | null;
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+  user_name: string | null;
 }
 
 /** One "Delivery Dates" row: a festival plus its saved delivery/pick-up dates (ISO YYYY-MM-DD), if any. */
@@ -1047,6 +1122,20 @@ export interface AfleverlocatieImportRowResult {
 /** The full outcome of a bulk afleverlocatie import — one result per row, in order. */
 export interface AfleverlocatieImportResponse {
   results: AfleverlocatieImportRowResult[];
+}
+
+/** One row's outcome of a Leverdata import. Unlike the other KarTracker
+ * imports this one upserts per festival, and rows without dates are skipped. */
+export interface LeverdatumImportRowResult {
+  row_number: number;
+  festival_name: string | null;
+  outcome: "created" | "updated" | "skipped" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a Leverdata import — one result per row, in order. */
+export interface LeverdatumImportResponse {
+  results: LeverdatumImportRowResult[];
 }
 
 // --- MasterData Data Upload/Download: one row-result pair per table, all
@@ -1247,6 +1336,13 @@ export interface AltsienSelectTeamInfo {
   kernleden: string[];
 }
 
+/** One kar from KarManagement (module-2) assigned to the team; its cijfercode is not stored yet. */
+export interface AltsienSelectTeamKar {
+  id: number;
+  kar_nummer: string;
+  transport_type: string | null;
+}
+
 /** One festival of the season, whether the team is active there, and its delivery location. */
 export interface AltsienSelectFestivalChoice {
   festival_id: number;
@@ -1264,6 +1360,9 @@ export interface AltsienSelectAfleverlocatieOption {
   id: number;
   name: string;
   description: string | null;
+  /** Where it is, for step 2's map of chosen locations (null = not located yet). */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** One special request, with its status details. */
@@ -1292,6 +1391,7 @@ export interface AltsienSelectTeamState {
   season_open: boolean;
   can_edit: boolean;
   team: AltsienSelectTeamInfo;
+  karren: AltsienSelectTeamKar[];
   steps: AltsienSelectStep[];
   progress: AltsienSelectStepProgress[];
   festivals: AltsienSelectFestivalChoice[];

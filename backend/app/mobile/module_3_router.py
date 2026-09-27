@@ -6,7 +6,7 @@
 # Every endpoint reuses module-3's own permission checks (app/modules/
 # module_3/deps.py), so a user can do exactly what their web role allows.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -20,6 +20,7 @@ from app.mobile.schemas import MobileModule3LookupsResponse, MobileModule3Permis
 from app.mobile.version_gate import require_supported_app_version
 from app.modules.module_3.deps import require_module_access, require_screen_permission, user_can
 from app.modules.module_3.intervention_requests_dashboard import build_dashboard_stats
+from app.modules.module_3.notifications import queue_new_request_mail
 from app.modules.module_3.service import generate_request_number, list_teams_for_dropdown
 from app.schemas.intervention_requests import (
     InterventionRequestCreateRequest,
@@ -146,6 +147,7 @@ def get_intervention_request(
 )
 def create_intervention_request(
     payload: InterventionRequestCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(REQUESTS_SCREEN, "create")),
 ) -> InterventionRequest:
@@ -156,6 +158,8 @@ def create_intervention_request(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+    # Same mailing-list notification as the web and public-form paths.
+    queue_new_request_mail(db, new_request, background_tasks)
     return new_request
 
 

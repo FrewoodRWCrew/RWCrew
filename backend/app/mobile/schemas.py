@@ -10,6 +10,7 @@ from app.schemas.intervention_requests import (
     InterventionStatusResponse,
     TeamKarMemberOptionResponse,
 )
+from app.schemas.kartracker import KarActionKarOption, KarActionResponse
 
 
 class MobileRefreshRequest(BaseModel):
@@ -39,6 +40,33 @@ class MobileModule3LookupsResponse(BaseModel):
     statuses: list[InterventionStatusResponse]
     teams: list[InterventionRequestsTeamResponse]
     teamkar_members: list[TeamKarMemberOptionResponse]
+
+
+class MobileModule2PermissionsResponse(BaseModel):
+    """What the calling user may do in the phone's KarTracker: KarScan (the
+    web's "Manuele kar beweging"), Kar Planning and Kar Map. There is no
+    delete flag: deleting a movement is web-only.
+    """
+
+    can_view_actions: bool
+    can_create_actions: bool
+    can_view_karplanning: bool
+    can_view_karmap: bool
+
+
+class MobileSeasonResponse(BaseModel):
+    """One open season, for the phone's Kar Planning season dropdown."""
+
+    id: int
+    name: str
+
+
+class MobileKarScanResponse(BaseModel):
+    """The kar found for a scanned QR code, with its latest movements."""
+
+    kar: KarActionKarOption
+    # Newest first, at most a handful — the full history stays on the web.
+    recent_actions: list[KarActionResponse]
 
 
 class MobileTokenResponse(BaseModel):

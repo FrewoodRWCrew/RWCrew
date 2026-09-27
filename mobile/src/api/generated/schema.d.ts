@@ -84,6 +84,195 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/mobile/v1/module-2/groundplans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Groundplans
+         * @description The ground plans overlaid on the Kar Map: name and corner coordinates.
+         */
+        get: operations["get_groundplans_api_mobile_v1_module_2_groundplans_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/groundplans/{groundplan_id}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Groundplan Image
+         * @description One ground plan's image bytes (PNG or JPEG).
+         */
+        get: operations["get_groundplan_image_api_mobile_v1_module_2_groundplans__groundplan_id__image_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/kar-actions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Kar Action
+         * @description Log one kar movement, exactly like the web's Save button: the team and
+         *     timestamp are set here, and the kar's latest status/location follow.
+         */
+        post: operations["create_kar_action_api_mobile_v1_module_2_kar_actions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/kar-map": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kar Map
+         * @description Every kar, afleverlocatie and distributiepunt for the map, identical
+         *     to the web's Kar Map data (rows without coordinates included).
+         */
+        get: operations["get_kar_map_api_mobile_v1_module_2_kar_map_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/kar-planning": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kar Planning
+         * @description The Kar Planning report, identical to the web's; with a season, one
+         *     planned afleverlocatie per active festival of it.
+         */
+        get: operations["get_kar_planning_api_mobile_v1_module_2_kar_planning_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/kar-statuses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Kar Statuses
+         * @description The status dropdown, gated by the movement screen itself (like the
+         *     web's /kar-actions/lookups) so no KarStatussen rights are needed.
+         */
+        get: operations["list_kar_statuses_api_mobile_v1_module_2_kar_statuses_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/karren/by-nummer/{kar_nummer}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Kar By Nummer
+         * @description The kar whose QR code was scanned, plus its last few movements.
+         *
+         *     The scanned text is trimmed and matched case-insensitively, so a QR code
+         *     printed as "b001 " still finds kar "B001".
+         */
+        get: operations["get_kar_by_nummer_api_mobile_v1_module_2_karren_by_nummer__kar_nummer__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/permissions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get My Permissions
+         * @description What this user may do in the phone's KarTracker, so the app only
+         *     shows the menu items and buttons the web roles allow.
+         */
+        get: operations["get_my_permissions_api_mobile_v1_module_2_permissions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/mobile/v1/module-2/seasons": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Open Seasons
+         * @description The open seasons (the same ones the web header's season selector
+         *     offers), newest first, for the Kar Planning season dropdown.
+         */
+        get: operations["list_open_seasons_api_mobile_v1_module_2_seasons_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/mobile/v1/module-3/dashboard": {
         parameters: {
             query?: never;
@@ -428,6 +617,212 @@ export interface components {
             name: string;
         };
         /**
+         * KarActionCreateRequest
+         * @description What's sent to log one kar movement. The team and timestamp are filled
+         *     in by the server, never by the client.
+         */
+        KarActionCreateRequest: {
+            /** Kar Id */
+            kar_id: number;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /** Status Id */
+            status_id: number;
+        };
+        /**
+         * KarActionKarOption
+         * @description One entry of the "Manuele kar beweging" kar dropdown: the kar plus its
+         *     current team (shown read-only, logged as snapshot) and current status
+         *     (used to pre-select the status dropdown).
+         */
+        KarActionKarOption: {
+            /** Id */
+            id: number;
+            /** Kar Nummer */
+            kar_nummer: string;
+            /** Status Id */
+            status_id: number;
+            /** Team Id */
+            team_id: number | null;
+            /** Team Name */
+            team_name: string | null;
+        };
+        /**
+         * KarActionResponse
+         * @description One logged kar movement, with the names needed for the history table.
+         */
+        KarActionResponse: {
+            /** Id */
+            id: number;
+            /** Kar Id */
+            kar_id: number;
+            /** Kar Nummer */
+            kar_nummer: string;
+            /** Latitude */
+            latitude: number;
+            /** Longitude */
+            longitude: number;
+            /**
+             * Recorded At
+             * Format: date-time
+             */
+            recorded_at: string;
+            /** Status Id */
+            status_id: number;
+            /** Status Name */
+            status_name: string;
+            /** Team Id */
+            team_id: number | null;
+            /** Team Name */
+            team_name: string | null;
+            /** User Name */
+            user_name: string | null;
+        };
+        /**
+         * KarMapAfleverlocatieRow
+         * @description One delivery location's pin/list entry on the Kar Map screen,
+         *     joined with its zone and distribution point names.
+         */
+        KarMapAfleverlocatieRow: {
+            /** Description */
+            description: string | null;
+            /** Distributiepunt Name */
+            distributiepunt_name: string;
+            /** Id */
+            id: number;
+            /** Latitude */
+            latitude: number | null;
+            /** Longitude */
+            longitude: number | null;
+            /** Name */
+            name: string;
+            /** Zone Name */
+            zone_name: string;
+        };
+        /**
+         * KarMapDistributiepuntRow
+         * @description One distribution point's pin/list entry on the Kar Map screen.
+         */
+        KarMapDistributiepuntRow: {
+            /** Id */
+            id: number;
+            /** Latitude */
+            latitude: number | null;
+            /** Longitude */
+            longitude: number | null;
+            /** Name */
+            name: string;
+            /** Terrein Positie */
+            terrein_positie: string | null;
+        };
+        /**
+         * KarMapKarRow
+         * @description One kar's pin/list entry on the Kar Map screen — KarManagement
+         *     joined with its status/team lookups for the popup's "resume" content.
+         */
+        KarMapKarRow: {
+            /** Id */
+            id: number;
+            /** Kar Nummer */
+            kar_nummer: string;
+            /** Latitude */
+            latitude: number | null;
+            /** Longitude */
+            longitude: number | null;
+            /** Status Name */
+            status_name: string;
+            /** Team Name */
+            team_name: string | null;
+        };
+        /**
+         * KarMapResponse
+         * @description The full Kar Map payload: one array per layer. Rows with no
+         *     latitude/longitude are included too — the frontend excludes them from
+         *     the map itself but still lists them in the side panel.
+         */
+        KarMapResponse: {
+            /** Afleverlocaties */
+            afleverlocaties: components["schemas"]["KarMapAfleverlocatieRow"][];
+            /** Distributiepunten */
+            distributiepunten: components["schemas"]["KarMapDistributiepuntRow"][];
+            /** Karren */
+            karren: components["schemas"]["KarMapKarRow"][];
+        };
+        /**
+         * KarPlanningFestivalResponse
+         * @description One festival column of the Kar Planning report.
+         */
+        KarPlanningFestivalResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /**
+         * KarPlanningReportResponse
+         * @description The whole Kar Planning report: the active festivals of the requested
+         *     season (one extra table column each, in start-date order) plus one row
+         *     per kar. `festivals` is empty when no season was requested.
+         */
+        KarPlanningReportResponse: {
+            /** Festivals */
+            festivals: components["schemas"]["KarPlanningFestivalResponse"][];
+            /** Rows */
+            rows: components["schemas"]["KarPlanningResponse"][];
+        };
+        /**
+         * KarPlanningResponse
+         * @description One kar, denormalized by joining KarManagement with its status/team/
+         *     transport-type lookups — the first query in what will grow into a
+         *     wider, multi-table Kar Planning report as more tables are added.
+         */
+        KarPlanningResponse: {
+            /** Afleverlocaties */
+            afleverlocaties: {
+                [key: string]: string;
+            };
+            /** Geolocation */
+            geolocation: string | null;
+            /** Id */
+            id: number;
+            /** Kar Nummer */
+            kar_nummer: string;
+            /** Status Name */
+            status_name: string;
+            /** Team Name */
+            team_name: string | null;
+            /** Transport Type Name */
+            transport_type_name: string;
+        };
+        /**
+         * KarTrackerGroundplanResponse
+         * @description One ground-plan overlay: its name and south-west/north-east corner
+         *     coordinates. The image itself is served separately by
+         *     GET /groundplans/{id}/image; updated_at lets the frontend cache-bust
+         *     that URL after the image is replaced.
+         */
+        KarTrackerGroundplanResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+            /** Ne Latitude */
+            ne_latitude: number;
+            /** Ne Longitude */
+            ne_longitude: number;
+            /** Sw Latitude */
+            sw_latitude: number;
+            /** Sw Longitude */
+            sw_longitude: number;
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+        };
+        /**
          * LoginRequest
          * @description What the frontend must send us to log a user in.
          */
@@ -439,6 +834,31 @@ export interface components {
             email: string;
             /** Password */
             password: string;
+        };
+        /**
+         * MobileKarScanResponse
+         * @description The kar found for a scanned QR code, with its latest movements.
+         */
+        MobileKarScanResponse: {
+            kar: components["schemas"]["KarActionKarOption"];
+            /** Recent Actions */
+            recent_actions: components["schemas"]["KarActionResponse"][];
+        };
+        /**
+         * MobileModule2PermissionsResponse
+         * @description What the calling user may do in the phone's KarTracker: KarScan (the
+         *     web's "Manuele kar beweging"), Kar Planning and Kar Map. There is no
+         *     delete flag: deleting a movement is web-only.
+         */
+        MobileModule2PermissionsResponse: {
+            /** Can Create Actions */
+            can_create_actions: boolean;
+            /** Can View Actions */
+            can_view_actions: boolean;
+            /** Can View Karmap */
+            can_view_karmap: boolean;
+            /** Can View Karplanning */
+            can_view_karplanning: boolean;
         };
         /**
          * MobileModule3LookupsResponse
@@ -478,6 +898,16 @@ export interface components {
             refresh_token: string;
         };
         /**
+         * MobileSeasonResponse
+         * @description One open season, for the phone's Kar Planning season dropdown.
+         */
+        MobileSeasonResponse: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
+        };
+        /**
          * MobileTokenResponse
          * @description The tokens (plus who the user is) handed back after login/refresh.
          */
@@ -506,6 +936,16 @@ export interface components {
             name: string;
             /** Sort Order */
             sort_order: number;
+        };
+        /**
+         * PlanKarOption
+         * @description One entry of a "Plan a kar" dropdown (a team or a delivery location).
+         */
+        PlanKarOption: {
+            /** Id */
+            id: number;
+            /** Name */
+            name: string;
         };
         /**
          * TeamKarMemberOptionResponse
@@ -669,6 +1109,295 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MobileTokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_groundplans_api_mobile_v1_module_2_groundplans_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KarTrackerGroundplanResponse"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_groundplan_image_api_mobile_v1_module_2_groundplans__groundplan_id__image_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path: {
+                groundplan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_kar_action_api_mobile_v1_module_2_kar_actions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KarActionCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KarActionResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kar_map_api_mobile_v1_module_2_kar_map_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KarMapResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kar_planning_api_mobile_v1_module_2_kar_planning_get: {
+        parameters: {
+            query?: {
+                season_id?: number | null;
+            };
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KarPlanningReportResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_kar_statuses_api_mobile_v1_module_2_kar_statuses_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlanKarOption"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_kar_by_nummer_api_mobile_v1_module_2_karren_by_nummer__kar_nummer__get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path: {
+                kar_nummer: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MobileKarScanResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_my_permissions_api_mobile_v1_module_2_permissions_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MobileModule2PermissionsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_open_seasons_api_mobile_v1_module_2_seasons_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-app-version"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MobileSeasonResponse"][];
                 };
             };
             /** @description Validation Error */

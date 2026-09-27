@@ -36,6 +36,8 @@ import type {
   InterventionRequestsUserSummary,
   InterventionStatus,
   InterventionStatusInput,
+  MailingRecipient,
+  MailingRecipientInput,
   KarImportResponse,
   KarStatusImportResponse,
   KarTrackerAfleverlocatie,
@@ -43,6 +45,9 @@ import type {
   KarTrackerDistributiepunt,
   KarTrackerDistributiepuntInput,
   KarTrackerGroundplan,
+  KarTrackerKarAction,
+  KarTrackerKarActionCreateInput,
+  KarTrackerKarActionLookups,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarMapResponse,
@@ -51,6 +56,7 @@ import type {
   KarTrackerLeverdatum,
   KarTrackerLeverdatumSaveInput,
   KarTrackerMyPermissions,
+  KarTrackerDashboardStats,
   KarTrackerPlanKar,
   KarTrackerPlanKarAfleverlocatieOption,
   KarTrackerPlanKarOption,
@@ -59,6 +65,7 @@ import type {
   KarTrackerScreen,
   KarTrackerUserSummary,
   KarTrackerZone,
+  LeverdatumImportResponse,
   LoginHistoryPage,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
@@ -1238,6 +1245,12 @@ export function listPlanKarAfleverlocaties(): Promise<KarTrackerPlanKarAfleverlo
   return apiFetch<KarTrackerPlanKarAfleverlocatieOption[]>("/api/modules/module-2/plan-kar/afleverlocaties");
 }
 
+/** KarTracker's KPI Overview figures; the season adds the Plan a kar coverage. */
+export function getKarTrackerDashboard(seasonId: number | null): Promise<KarTrackerDashboardStats> {
+  const query = seasonId === null ? "" : `?season_id=${seasonId}`;
+  return apiFetch<KarTrackerDashboardStats>(`/api/modules/module-2/dashboard${query}`);
+}
+
 /** The matrix (active festivals of the season + saved locations) for one team. */
 export function getPlanKar(seasonId: number, teamId: number): Promise<KarTrackerPlanKar> {
   return apiFetch<KarTrackerPlanKar>(`/api/modules/module-2/plan-kar?season_id=${seasonId}&team_id=${teamId}`);
@@ -1249,6 +1262,32 @@ export function savePlanKar(payload: KarTrackerPlanKarSaveInput): Promise<KarTra
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+// "Manuele kar beweging": log a kar movement (kar + status + GPS location).
+
+/** The kar and status dropdowns of the movement form. */
+export function getKarActionLookups(): Promise<KarTrackerKarActionLookups> {
+  return apiFetch<KarTrackerKarActionLookups>("/api/modules/module-2/kar-actions/lookups");
+}
+
+/** The movement history, newest first — all karren, or one kar when karId is given. */
+export function listKarActions(karId?: number): Promise<KarTrackerKarAction[]> {
+  const query = karId !== undefined ? `?kar_id=${karId}` : "";
+  return apiFetch<KarTrackerKarAction[]>(`/api/modules/module-2/kar-actions${query}`);
+}
+
+/** Logs one movement; the backend also makes it the kar's latest status/location. */
+export function createKarAction(payload: KarTrackerKarActionCreateInput): Promise<KarTrackerKarAction> {
+  return apiFetch<KarTrackerKarAction>("/api/modules/module-2/kar-actions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Removes a mistakenly logged movement (the kar's latest state is left as it is). */
+export function deleteKarAction(actionId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/kar-actions/${actionId}`, { method: "DELETE" });
 }
 
 /** The "Delivery Dates" table: active festivals of the season + their saved dates. */
@@ -1603,6 +1642,26 @@ export async function importAfleverlocaties(file: File): Promise<AfleverlocatieI
   return (await response.json()) as AfleverlocatieImportResponse;
 }
 
+/** Uploads an XLSX file to bulk-set festival delivery/pick-up dates (upsert per festival). */
+export async function importLeverdata(file: File): Promise<LeverdatumImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/leverdatum-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as LeverdatumImportResponse;
+}
+
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
 
 export function listInterventionStatuses(): Promise<InterventionStatus[]> {
@@ -1628,6 +1687,27 @@ export function updateInterventionStatus(
 
 export function deleteInterventionStatus(statusId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-3/intervention-statuses/${statusId}`, { method: "DELETE" });
+}
+
+// --- Mailing List (module-3's "Settings" screen) -------------------------
+// Who gets mailed about every new intervention request.
+
+export function createMailingRecipient(payload: MailingRecipientInput): Promise<MailingRecipient> {
+  return apiFetch<MailingRecipient>("/api/modules/module-3/mailing-list", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateMailingRecipient(recipientId: number, payload: MailingRecipientInput): Promise<MailingRecipient> {
+  return apiFetch<MailingRecipient>(`/api/modules/module-3/mailing-list/${recipientId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteMailingRecipient(recipientId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-3/mailing-list/${recipientId}`, { method: "DELETE" });
 }
 
 // --- Intervention Requests (module-3's "Actions" screen) -----------------
@@ -1722,6 +1802,18 @@ export function listAltsienSelectSeasons(): Promise<Season[]> {
 
 export function listAltsienSelectTeams(seasonId: number): Promise<AltsienSelectTeamSummary[]> {
   return apiFetch<AltsienSelectTeamSummary[]>(`${ALTSIEN_SELECT_BASE}/teams?season_id=${seasonId}`);
+}
+
+/** KarTracker's ground plans, served read-only by Altsien Select for the
+ * map in Ploeg Wizard step 2 (its users may not have KarTracker access). */
+export function listAltsienSelectGroundplans(): Promise<KarTrackerGroundplan[]> {
+  return apiFetch<KarTrackerGroundplan[]>(`${ALTSIEN_SELECT_BASE}/groundplans`);
+}
+
+/** A ground plan image's direct URL via Altsien Select — same cookie and
+ * cache-busting approach as karTrackerGroundplanImageUrl. */
+export function altsienSelectGroundplanImageUrl(groundplanId: number, updatedAt: string): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/groundplans/${groundplanId}/image?v=${encodeURIComponent(updatedAt)}`;
 }
 
 export function getAltsienSelectWizard(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {

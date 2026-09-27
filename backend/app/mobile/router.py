@@ -6,6 +6,7 @@
 from fastapi import APIRouter
 
 from app.mobile.auth_router import router as auth_router
+from app.mobile.module_2_router import router as module_2_router
 from app.mobile.module_3_router import router as module_3_router
 from app.mobile.modules_router import router as modules_router
 
@@ -16,6 +17,9 @@ router.include_router(auth_router)
 
 # The landing page's tiles: /api/mobile/v1/modules
 router.include_router(modules_router)
+
+# KarTracker's KarScan (scan kar QR -> log movement): /api/mobile/v1/module-2/*
+router.include_router(module_2_router)
 
 # Intervention Requests (KPI overzicht + Akties only): /api/mobile/v1/module-3/*
 router.include_router(module_3_router)

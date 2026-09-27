@@ -83,6 +83,21 @@ class Settings(BaseSettings):
     mobile_latest_version: str = ""
     mobile_changelog: str = ""
 
+    # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
+    # (https://resend.com). The API key is secret and set per environment in
+    # the server's .env; left empty (the default, and in local dev/tests),
+    # every mail is simply skipped with a log line instead of failing.
+    resend_api_key: str = ""
+    # The sender shown on every mail, e.g. "RWCrew <noreply@rwcrew.eu>". Its
+    # domain must be verified in the Resend account.
+    mail_from: str = ""
+    # Put in front of every subject, e.g. "[TEST] " on test.rwcrew.eu, so a
+    # mail from the test environment can't be mistaken for a real one.
+    mail_subject_prefix: str = ""
+    # The public address of the web app (e.g. "https://rwcrew.eu"), used to
+    # put a clickable "open in RWCrew" link in mails. Empty = no link.
+    app_public_url: str = ""
+
 
 # Create one shared Settings object that the rest of the app can import
 # and reuse, instead of re-reading the environment every time.

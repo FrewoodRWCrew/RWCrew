@@ -1,7 +1,7 @@
 # Builds the printable "Ploegfiche" PDF of Altsien Select: everything that
 # was chosen in the Ploeg Wizard for one team in one season, laid out as a
 # friendly one-stop overview for the organisation — Altsien logo header,
-# team info, a progress overview of every wizard step, the festivals with
+# team info, the karren assigned to the team, a progress overview of every wizard step, the festivals with
 # their delivery locations, and the special requests with their status.
 #
 # Uses fpdf2 (pure Python, see CLAUDE.md's Python 3.14 gotcha), the same
@@ -57,6 +57,12 @@ LABELS = {
         "delivery_method": "Leveringswijze",
         "kernleden": "Altsien Kernleden",
         "description": "Omschrijving",
+        "karren_heading": "Karren",
+        "kar_nummer": "Karnummer",
+        "transport_type": "Transporttype",
+        "kar_code": "Kar cijfercode",
+        "kar_code_placeholder": "Later in te vullen",
+        "no_karren": "Er zijn geen karren aan deze ploeg toegewezen.",
         "progress_heading": "Voortgang wizard",
         "step_done": "Afgerond op {date}{by}",
         "step_done_by": " door {name}",
@@ -94,6 +100,12 @@ LABELS = {
         "delivery_method": "Delivery method",
         "kernleden": "Altsien core members",
         "description": "Description",
+        "karren_heading": "Carts",
+        "kar_nummer": "Cart number",
+        "transport_type": "Transport type",
+        "kar_code": "Cart code",
+        "kar_code_placeholder": "To be filled in later",
+        "no_karren": "No carts are assigned to this team.",
         "progress_heading": "Wizard progress",
         "step_done": "Completed on {date}{by}",
         "step_done_by": " by {name}",
@@ -298,6 +310,38 @@ def _table_heading_style() -> FontFace:
     return FontFace(emphasis="BOLD", color=TEXT_DARK, fill_color=(233, 235, 238))
 
 
+def _render_karren(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
+    """Zebra table of the karren assigned to the team; the cijfercode column
+    is a placeholder until KarManagement stores it.
+    """
+    _section_heading(pdf, labels["karren_heading"])
+    if not state.karren:
+        _muted_line(pdf, labels["no_karren"])
+        return
+
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.2)
+    with pdf.table(
+        col_widths=(50, 70, 60),
+        headings_style=_table_heading_style(),
+        cell_fill_color=ZEBRA_FILL,
+        cell_fill_mode="ROWS",
+        borders_layout="HORIZONTAL_LINES",
+        line_height=6.5,
+        padding=2,
+        text_align="LEFT",
+    ) as table:
+        table.row([labels["kar_nummer"], labels["transport_type"], labels["kar_code"]])
+        for kar in state.karren:
+            row = table.row()
+            row.cell(_pdf_text(kar.kar_nummer), style=FontFace(emphasis="BOLD"))
+            row.cell(_pdf_text(kar.transport_type or "-"))
+            row.cell(_pdf_text(labels["kar_code_placeholder"]), style=FontFace(emphasis="ITALICS", color=MUTED_TEXT))
+    pdf.ln(2)
+
+
 def _render_festivals(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
     """Zebra table of the selected festivals and their delivery location."""
     _section_heading(pdf, labels["festivals_heading"])
@@ -393,6 +437,7 @@ def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
 
     _render_header(pdf, state, labels)
     _render_team_info(pdf, state, labels)
+    _render_karren(pdf, state, labels)
     _render_progress(pdf, state, labels)
 
     # One section per wizard step, in wizard order. A step without its own

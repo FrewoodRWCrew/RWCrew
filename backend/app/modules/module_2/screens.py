@@ -45,7 +45,10 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="kartracker.distributiepunten", label="Distributiepunten", sort_order=5),
     ScreenDefinition(key="kartracker.zones", label="Zone", sort_order=6),
     ScreenDefinition(key="kartracker.afleverlocaties", label="Afleverlocatie", sort_order=7),
-    ScreenDefinition(key="kartracker.actions", label="Actions", sort_order=8),
+    # "Manuele kar beweging": log a kar movement (kar + status + GPS
+    # location) into KarTracker_kar_actions. Keeps its original "actions"
+    # key so role permissions granted on the old placeholder carry over.
+    ScreenDefinition(key="kartracker.actions", label="Manuele kar beweging", sort_order=8),
     ScreenDefinition(key="kartracker.dataupload", label="Data Upload/Download", sort_order=9),
     # Read-only report screen living under the "Actions" sidebar group,
     # gated by its own permission so it can be granted independently of
