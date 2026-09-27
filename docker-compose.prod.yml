@@ -54,6 +54,13 @@ services:
       MOBILE_IOS_TESTFLIGHT_URL: ${MOBILE_IOS_TESTFLIGHT_URL:-}
       MOBILE_LATEST_VERSION: ${MOBILE_LATEST_VERSION:-}
       MOBILE_CHANGELOG: ${MOBILE_CHANGELOG:-}
+      # Outgoing email via Resend (backend/app/core/mail.py), e.g. the
+      # Intervention Requests "new request" mail. Empty RESEND_API_KEY or
+      # MAIL_FROM = mails are skipped (only a log line), never an error.
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+      MAIL_SUBJECT_PREFIX: ${MAIL_SUBJECT_PREFIX:-}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-}
     volumes:
       # TagScan's CSV intake folder (see backend/app/core/config.py's
       # tagscan_source_dir) — kept outside the container so uploaded/scanned

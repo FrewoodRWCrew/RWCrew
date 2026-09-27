@@ -85,6 +85,9 @@ tables, `backend/app/modules/module_8/screens.py`).
   never raises: errors are logged. With `RESEND_API_KEY`/`MAIL_FROM` empty (local dev, tests) it just logs a skip.
 - Settings per environment in the server's `.env`: `RESEND_API_KEY`, `MAIL_FROM` (its domain must be verified
   in Resend via DNS), `APP_PUBLIC_URL` (link in mails), and `MAIL_SUBJECT_PREFIX` (e.g. `[TEST] ` on test).
+  **Gotcha:** `docker-compose.prod.yml` passes the backend an explicit `environment:` list, so any new
+  backend setting must be added there too (and to `.env.test/production.example`) — a value only in the
+  server's `.env` never reaches the container. This is why the first test deploy sent no mail.
 - **Intervention Requests (module-3) new-request mail**: every new request — staff screen, public QR form
   *and* phone app — mails the active addresses of `InterventionRequests_mailing_recipient` with the
   delivery-note PDF attached (`module_3/notifications.py` `queue_new_request_mail`, sent as a FastAPI
