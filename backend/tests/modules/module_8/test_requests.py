@@ -24,6 +24,10 @@ def test_new_request_starts_in_the_first_status(as_kernlid: TestClient, world: A
     assert body["editable_by_me"] is True
 
 
+def test_blank_request_text_is_refused(as_kernlid: TestClient, world: AltsienWorld) -> None:
+    assert _create_request(as_kernlid, world, text="   ").status_code == 422
+
+
 def test_kernlid_can_edit_and_delete_while_new(as_kernlid: TestClient, world: AltsienWorld) -> None:
     request_id = _create_request(as_kernlid, world).json()["id"]
 

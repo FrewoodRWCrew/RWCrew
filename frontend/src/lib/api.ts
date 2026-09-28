@@ -6,11 +6,13 @@
 import { API_BASE_URL } from "./config";
 import type {
   AltsienSelectDashboardStats,
+  AltsienSelectPreviousSeason,
   AltsienSelectRequestStatus,
   AltsienSelectRequestStatusInput,
   AltsienSelectRole,
   AltsienSelectSpecialRequest,
   AltsienSelectTeamState,
+  AltsienSelectResponsibleInput,
   AltsienSelectTeamSummary,
   AltsienSelectUserSummary,
   CurrentUser,
@@ -111,6 +113,8 @@ import type {
   TeamKarUser,
   TeamLocation,
   TeamLocationImportResponse,
+  TeamResponsible,
+  TeamResponsibleInput,
   TeamTask,
   TeamTaskImportResponse,
   UserSummary,
@@ -353,6 +357,26 @@ export function updateTeamLocation(teamLocationId: number, location: string): Pr
 
 export function deleteTeamLocation(teamLocationId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/team-locations/${teamLocationId}`, { method: "DELETE" });
+}
+
+// --- Ploegverantwoordelijken (module-9's "masterdata.team-responsibles" screen, nested under Teams) ---
+
+export function createTeamResponsible(payload: TeamResponsibleInput): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>("/api/modules/module-9/team-responsibles", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateTeamResponsible(teamResponsibleId: number, payload: TeamResponsibleInput): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`/api/modules/module-9/team-responsibles/${teamResponsibleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteTeamResponsible(teamResponsibleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/team-responsibles/${teamResponsibleId}`, { method: "DELETE" });
 }
 
 // --- Delivery Method (module-9's "masterdata.delivery-method" screen, nested under Teams) ---
@@ -1855,6 +1879,30 @@ export function setAltsienSelectStepComplete(
   );
 }
 
+/** Last season's values for one wizard step ("copy from last season"). */
+export function getAltsienSelectPreviousSeason(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+): Promise<AltsienSelectPreviousSeason> {
+  return apiFetch<AltsienSelectPreviousSeason>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/previous-season?season_id=${seasonId}`,
+  );
+}
+
+/** Copy the chosen lines of last season into this season. */
+export function copyAltsienSelectPreviousSeason(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+  lineKeys: string[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/copy-previous`,
+    { method: "POST", body: JSON.stringify({ season_id: seasonId, line_keys: lineKeys }) },
+  );
+}
+
 export function createAltsienSelectRequest(
   teamId: number,
   seasonId: number,
@@ -1874,6 +1922,37 @@ export function updateAltsienSelectRequest(
   return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, {
     method: "PUT",
     body: JSON.stringify({ text }),
+  });
+}
+
+// The wizard's "Ploegverantwoordelijken" step — the rows are MasterData's
+// team responsibles (same as its own screen), scoped to the wizard's team.
+
+export function createAltsienSelectResponsible(
+  teamId: number,
+  seasonId: number,
+  payload: AltsienSelectResponsibleInput,
+): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles?season_id=${seasonId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAltsienSelectResponsible(
+  teamId: number,
+  responsibleId: number,
+  payload: AltsienSelectResponsibleInput,
+): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles/${responsibleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAltsienSelectResponsible(teamId: number, responsibleId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles/${responsibleId}`, {
+    method: "DELETE",
   });
 }
 

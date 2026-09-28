@@ -22,7 +22,9 @@ from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
 from app.db.models.user import User
 from app.modules.module_8.deps import season_is_editable_for
+from app.modules.module_8.previous_season import COPYABLE_STEPS
 from app.modules.module_8.steps import STEP_DEFINITIONS, selected_festival_ids
+from app.modules.module_9.team_responsible_service import list_team_responsibles
 from app.schemas.altsien_select import (
     AfleverlocatieOptionResponse,
     FestivalChoiceResponse,
@@ -30,6 +32,7 @@ from app.schemas.altsien_select import (
     StepProgressResponse,
     StepResponse,
     TeamInfoResponse,
+    TeamResponsibleResponse,
     TeamKarResponse,
     TeamStateResponse,
     TeamSummaryResponse,
@@ -39,7 +42,13 @@ from app.schemas.altsien_select import (
 def list_steps() -> list[StepResponse]:
     """The wizard's steps, in order."""
     return [
-        StepResponse(key=step.key, label=step.label, sort_order=step.sort_order, placeholder=step.placeholder)
+        StepResponse(
+            key=step.key,
+            label=step.label,
+            sort_order=step.sort_order,
+            placeholder=step.placeholder,
+            copy_from_previous=step.key in COPYABLE_STEPS,
+        )
         for step in sorted(STEP_DEFINITIONS, key=lambda step: step.sort_order)
     ]
 
@@ -267,6 +276,10 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         festivals=festivals,
         afleverlocaties=afleverlocaties,
         requests=build_request_responses(db, user, list(requests), can_edit),
+        responsibles=[
+            TeamResponsibleResponse.model_validate(row, from_attributes=True)
+            for row in list_team_responsibles(db, season.id, team.id)
+        ],
     )
 
 

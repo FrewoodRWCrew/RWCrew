@@ -77,7 +77,16 @@ tables, `backend/app/modules/module_8/screens.py`).
   completion check), a component in `frontend/src/components/module-8/wizard/steps/` registered in its
   `index.ts` (unknown keys fall back to a placeholder), translations under `altsienSelect.steps.<key>`,
   and optionally a section in `module_8/ploegfiche_pdf.py`. Progress is keyed by string: no migration.
+- **Copy from last season**: steps listed in `COPYABLE_STEPS` (`module_8/previous_season.py`) get a panel
+  above them with last season's values line by line (checkbox each, select all, "Copy"). "Last season" is the
+  season whose name sorts right before the current one; festivals are matched by name ignoring case, 4-digit
+  years and punctuation. Copying only adds/updates, never removes and never marks the step done. Offered now on
+  delivery locations, team leads and special requests; add products there once that step is real.
 - Products and walkie-talkies are placeholder steps until their own modules exist.
+- **Ploegverantwoordelijken** (team leads, per team + season, not RWCrew users) live in MasterData's
+  `MasterData_team_responsible`, managed on module-9's `masterdata.team-responsibles` screen (Teams >
+  Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both
+  write through `module_9/team_responsible_service.py`. No module-8 copy of the data.
 
 ## Outgoing email (Resend)
 

@@ -44,6 +44,10 @@ def test_dashboard_marks_a_team_complete_when_every_step_is_done(
             "rows": [{"festival_id": world.festival_a.id, "afleverlocatie_id": world.location.id}],
         },
     )
+    client.post(
+        f"{BASE}/wizard/{team_id}/responsibles?season_id={world.season.id}",
+        json={"name": "Jan", "email": "jan@example.com", "phone": "0470"},
+    )
     for step in STEP_DEFINITIONS:
         assert client.post(f"{BASE}/wizard/{team_id}/steps/{step.key}/complete?season_id={world.season.id}").status_code == 200
 

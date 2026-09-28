@@ -189,7 +189,58 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
         </CardContent>
       </Card>
     ),
-    products: <PlaceholderCard key="products" title={stepText({ key: "products", label: "Products" }).title} />,
+    ploegverantwoordelijken: (
+      <Card key="ploegverantwoordelijken">
+        <CardHeader>
+          <CardTitle>{t("responsiblesTitle")}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {state.responsibles.length === 0 ? (
+            <p className="text-sm text-muted-foreground">{t("noResponsibles")}</p>
+          ) : (
+            <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                      {t("columnResponsibleName")}
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                      {t("columnResponsibleEmail")}
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                      {t("columnResponsiblePhone")}
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">
+                      {t("columnResponsibleComments")}
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {state.responsibles.map((person) => (
+                    <TableRow key={person.id}>
+                      <TableCell className="font-medium">{person.name}</TableCell>
+                      <TableCell>
+                        <a href={`mailto:${person.email}`} className="hover:underline">
+                          {person.email}
+                        </a>
+                      </TableCell>
+                      <TableCell>
+                        <a href={`tel:${person.phone}`} className="hover:underline">
+                          {person.phone}
+                        </a>
+                      </TableCell>
+                      <TableCell className="whitespace-pre-wrap text-muted-foreground">{person.comments}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    ),
+    products: <PlaceholderCard key="products"title={stepText({ key: "products", label: "Products" }).title} />,
     special_requests: (
       <Card key="special_requests">
         <CardHeader>

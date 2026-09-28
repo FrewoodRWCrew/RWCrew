@@ -27,6 +27,9 @@
     "toggleLabel": "Wissel tussen licht en donker thema"
   },
   "seasonSelector": {
+    "requiredTitle": "Geen seizoen geselecteerd",
+    "required": "Gelieve een seizoen te selecteren.",
+    "requiredOk": "OK",
     "placeholder": "Seizoen…",
     "label": "Seizoen selecteren"
   },
@@ -601,6 +604,44 @@
       "deleteConfirmDescription": "Dit verwijdert het team \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
       "teamDeleted": "Team verwijderd.",
       "deleteFailed": "Verwijderen van team is mislukt."
+    },
+    "teamResponsibles": {
+      "title": "Ploegverantwoordelijken",
+      "description": "Beheer per ploeg en per seizoen de verantwoordelijken en hun contactgegevens. Zij hoeven geen RWCrew-gebruiker te zijn.",
+      "filterSeason": "Seizoen",
+      "filterTeam": "Ploeg",
+      "allSeasons": "Alle seizoenen",
+      "allTeams": "Alle ploegen",
+      "columnTeam": "Ploeg",
+      "columnSeason": "Seizoen",
+      "columnName": "Naam",
+      "columnEmail": "E-mail",
+      "columnPhone": "Telefoonnummer",
+      "columnComments": "Opmerkingen",
+      "tableActions": "Acties",
+      "empty": "Geen ploegverantwoordelijken gevonden.",
+      "newTeamResponsible": "Nieuwe ploegverantwoordelijke",
+      "createTitle": "Nieuwe ploegverantwoordelijke toevoegen",
+      "createDescription": "Voeg een verantwoordelijke toe aan een ploeg voor een seizoen.",
+      "changeTitle": "Ploegverantwoordelijke wijzigen",
+      "changeDescription": "Pas de gegevens van deze ploegverantwoordelijke aan.",
+      "change": "Wijzigen",
+      "delete": "Verwijderen",
+      "teamLabel": "Ploeg",
+      "seasonLabel": "Seizoen",
+      "nameLabel": "Naam",
+      "emailLabel": "E-mail",
+      "phoneLabel": "Telefoonnummer",
+      "commentsLabel": "Opmerkingen",
+      "selectPlaceholder": "— Kies —",
+      "teamResponsibleCreated": "Ploegverantwoordelijke toegevoegd.",
+      "createFailed": "Toevoegen van ploegverantwoordelijke is mislukt.",
+      "teamResponsibleUpdated": "Ploegverantwoordelijke bijgewerkt.",
+      "updateFailed": "Bijwerken van ploegverantwoordelijke is mislukt.",
+      "deleteConfirmTitle": "Ploegverantwoordelijke verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert ploegverantwoordelijke \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt.",
+      "teamResponsibleDeleted": "Ploegverantwoordelijke verwijderd.",
+      "deleteFailed": "Verwijderen van ploegverantwoordelijke is mislukt."
     },
     "teamLocation": {
       "title": "Teamlocatie",
@@ -1203,6 +1244,29 @@
         "columnAfleverlocatie": "Afleverlocatie",
         "noAfleverlocatie": "— Nog niet gekozen —"
       },
+      "ploegverantwoordelijken": {
+        "title": "Ploegverantwoordelijken",
+        "description": "Wie zijn dit seizoen de verantwoordelijken van de ploeg? Geef minstens één persoon op met e-mail en telefoonnummer.",
+        "add": "Verantwoordelijke toevoegen",
+        "addTitle": "Verantwoordelijke toevoegen",
+        "edit": "Wijzigen",
+        "editTitle": "Verantwoordelijke wijzigen",
+        "dialogDescription": "Deze persoon hoeft geen RWCrew-gebruiker te zijn. Opmerkingen zijn optioneel.",
+        "nameLabel": "Naam",
+        "emailLabel": "E-mail",
+        "phoneLabel": "Telefoonnummer",
+        "commentsLabel": "Opmerkingen",
+        "save": "Opslaan",
+        "created": "Verantwoordelijke toegevoegd.",
+        "updated": "Verantwoordelijke bijgewerkt.",
+        "saveFailed": "Opslaan van de verantwoordelijke is mislukt.",
+        "empty": "Er zijn nog geen ploegverantwoordelijken opgegeven.",
+        "delete": "Verwijderen",
+        "deleteConfirmTitle": "Verantwoordelijke verwijderen?",
+        "deleteConfirmDescription": "Dit verwijdert \"{name}\" als ploegverantwoordelijke.",
+        "deleted": "Verantwoordelijke verwijderd.",
+        "deleteFailed": "Verwijderen van de verantwoordelijke is mislukt."
+      },
       "products": {
         "title": "Producten",
         "description": "Welke producten moeten er geleverd worden, en hoeveel?"
@@ -1265,7 +1329,29 @@
       "stepCompleted": "Stap \"{step}\" afgerond.",
       "completeFailed": "Afronden van de stap is mislukt.",
       "noSteps": "Deze wizard heeft nog geen stappen.",
-      "placeholderText": "Deze stap wordt later uitgewerkt in een aparte module. Je kan hem nu al afronden om verder te gaan."
+      "placeholderText": "Deze stap wordt later uitgewerkt in een aparte module. Je kan hem nu al afronden om verder te gaan.",
+      "previousSeason": {
+        "title": "Overnemen van vorig seizoen ({season})",
+        "summary": "{count, plural, =0 {Alles van vorig seizoen staat er al.} one {# lijn kan overgenomen worden.} other {# lijnen kunnen overgenomen worden.}}",
+        "show": "Tonen",
+        "hide": "Verbergen",
+        "loading": "Vorig seizoen laden…",
+        "loadError": "Vorig seizoen laden is mislukt.",
+        "selectAll": "Alles selecteren",
+        "columnLine": "Vorig seizoen",
+        "columnValue": "Waarde",
+        "columnStatus": "Status",
+        "now": "nu: {value}",
+        "copy": "Geselecteerde overnemen ({count})",
+        "copied": "Overgenomen van vorig seizoen.",
+        "copyFailed": "Overnemen van vorig seizoen is mislukt.",
+        "alreadyPresent": "Staat er al",
+        "reason": {
+          "not_in_season": "Festival niet in dit seizoen",
+          "festival_not_selected": "Festival niet gekozen in stap 1",
+          "location_inactive": "Locatie niet meer actief"
+        }
+      }
     },
     "ploegfiche": {
       "title": "Ploegfiche",
@@ -1306,7 +1392,13 @@
       "noRequests": "Er zijn geen speciale aanvragen.",
       "requestBy": "Ingediend door {name} op {date}",
       "organisationNote": "Antwoord organisatie",
-      "placeholder": "Deze gegevens worden later ingevuld via een aparte module."
+      "placeholder": "Deze gegevens worden later ingevuld via een aparte module.",
+      "responsiblesTitle": "Ploegverantwoordelijken",
+      "noResponsibles": "Er zijn nog geen ploegverantwoordelijken opgegeven.",
+      "columnResponsibleName": "Naam",
+      "columnResponsibleEmail": "E-mail",
+      "columnResponsiblePhone": "Telefoonnummer",
+      "columnResponsibleComments": "Opmerkingen"
     },
     "followUp": {
       "title": "Opvolging aanvragen",

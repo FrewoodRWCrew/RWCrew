@@ -73,6 +73,36 @@ export interface SeasonInput {
   periode_open: boolean;
 }
 
+/** One responsible person of a team in a season ("Ploegverantwoordelijke") — not an RWCrew user. */
+export interface TeamResponsible {
+  id: number;
+  season_id: number;
+  team_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string | null;
+}
+
+/** The fields sent to create or fully update a responsible person. */
+export interface TeamResponsibleInput {
+  season_id: number;
+  team_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string | null;
+}
+
+/** What the Altsien Select wizard sends for a responsible person (team and season come from the URL). */
+export type AltsienSelectResponsibleInput = Omit<TeamResponsibleInput, "team_id" | "season_id">;
+
+/** The team/season dropdown choices for the Ploegverantwoordelijken screen. */
+export interface TeamResponsibleOptions {
+  teams: { id: number; name: string }[];
+  seasons: { id: number; name: string }[];
+}
+
 /** One team location, as managed on MasterData's Team Location screen (nested under Teams). */
 export interface TeamLocation {
   id: number;
@@ -1309,6 +1339,32 @@ export interface AltsienSelectStep {
   sort_order: number;
   /** True while the step's real content lives in a module that doesn't exist yet. */
   placeholder: boolean;
+  /** Whether the step offers "copy from last season". */
+  copy_from_previous: boolean;
+}
+
+/** Why one of last season's lines can't be copied. */
+export type AltsienSelectPreviousLineReason = "not_in_season" | "festival_not_selected" | "location_inactive";
+
+/** One of last season's values for a wizard step. */
+export interface AltsienSelectPreviousLine {
+  /** Sent back to say which lines to copy. */
+  key: string;
+  label: string;
+  detail: string | null;
+  /** Where it lands this season, when that differs from the label. */
+  target: string | null;
+  /** The value there now, when it differs from last season's. */
+  current_detail: string | null;
+  already_present: boolean;
+  unavailable_reason: AltsienSelectPreviousLineReason | null;
+}
+
+/** Last season's values for one step (no season when there is none). */
+export interface AltsienSelectPreviousSeason {
+  previous_season_id: number | null;
+  previous_season_name: string | null;
+  lines: AltsienSelectPreviousLine[];
 }
 
 /** A completed wizard step, with who/when. */
@@ -1397,6 +1453,8 @@ export interface AltsienSelectTeamState {
   festivals: AltsienSelectFestivalChoice[];
   afleverlocaties: AltsienSelectAfleverlocatieOption[];
   requests: AltsienSelectSpecialRequest[];
+  /** The team's responsible people ("Ploegverantwoordelijken") this season. */
+  responsibles: TeamResponsible[];
 }
 
 /** One special-request status (Altsien Select's MasterData). */

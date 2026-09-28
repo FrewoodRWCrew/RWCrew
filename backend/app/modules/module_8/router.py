@@ -38,6 +38,7 @@ from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverloca
 from app.db.models.module import Module
 from app.db.models.season import Season
 from app.db.models.team_festival import TeamFestival
+from app.db.models.team_responsible import TeamResponsible
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
@@ -55,6 +56,7 @@ from app.modules.module_8.deps import (
     user_can,
 )
 from app.modules.module_8.ploegfiche_pdf import build_ploegfiche_pdf
+from app.modules.module_8.previous_season import COPYABLE_STEPS, list_previous_lines
 from app.modules.module_8.service import (
     build_request_responses,
     build_team_state,
@@ -65,7 +67,16 @@ from app.modules.module_8.service import (
     selected_festivals_of,
 )
 from app.modules.module_8.steps import STEPS_BY_KEY, selected_festival_ids
+from app.modules.module_9.team_responsible_service import (
+    apply_team_responsible_fields,
+    reopen_step_if_no_responsibles,
+)
 from app.schemas.altsien_select import (
+    CopyPreviousRequest,
+    PreviousSeasonLineResponse,
+    PreviousSeasonResponse,
+    ResponsibleWriteRequest,
+    TeamResponsibleResponse,
     CreateOrGrantUserRequest,
     DashboardResponse,
     MyPermissionsResponse,
@@ -689,6 +700,168 @@ def reopen_step(
     clear_step(db, season.id, team.id, step_key)
     db.commit()
     return build_team_state(db, current_user, season, team)
+
+
+# --- Copy from last season -------------------------------------------------
+# A step registered in previous_season.COPYABLE_STEPS offers last season's
+# values line by line; the Kernlid ticks the lines to copy into this season.
+
+
+def _ensure_copyable_step(step_key: str) -> None:
+    """Only steps with a copy handler offer last season's values."""
+    if step_key not in COPYABLE_STEPS:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step has no copy from last season")
+
+
+@router.get("/wizard/{team_id}/steps/{step_key}/previous-season", response_model=PreviousSeasonResponse)
+def get_previous_season_lines(
+    team_id: int,
+    step_key: str,
+    season_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> PreviousSeasonResponse:
+    """Last season's values for one step, each flagged as already present
+    this season or not copyable (and why).
+    """
+    _ensure_copyable_step(step_key)
+    season = get_season_or_404(db, season_id)
+    team = get_team_in_scope(db, current_user, team_id)
+    previous, lines = list_previous_lines(db, step_key, season, team.id)
+    return PreviousSeasonResponse(
+        previous_season_id=previous.id if previous else None,
+        previous_season_name=previous.name if previous else None,
+        lines=[
+            PreviousSeasonLineResponse(
+                key=line.key,
+                label=line.label,
+                detail=line.detail,
+                target=line.target,
+                current_detail=line.current_detail,
+                already_present=line.already_present,
+                unavailable_reason=line.unavailable_reason,
+            )
+            for line in lines
+        ],
+    )
+
+
+@router.post("/wizard/{team_id}/steps/{step_key}/copy-previous", response_model=TeamStateResponse)
+def copy_previous_season_lines(
+    team_id: int,
+    step_key: str,
+    payload: CopyPreviousRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> TeamStateResponse:
+    """Copy the chosen lines of last season into this season. The lines
+    are recomputed here: an unknown key is refused, a line that is already
+    present or can't be copied is skipped. Never removes current choices
+    and never marks the step as done.
+    """
+    _ensure_copyable_step(step_key)
+    season, team = _load_for_change(db, current_user, team_id, payload.season_id)
+    _previous, lines = list_previous_lines(db, step_key, season, team.id)
+
+    lines_by_key = {line.key: line for line in lines}
+    unknown_keys = set(payload.line_keys) - set(lines_by_key)
+    if unknown_keys:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown line from last season")
+
+    # Each chosen line once, in last season's order, only when it changes something.
+    wanted = set(payload.line_keys)
+    to_copy = [line for line in lines if line.key in wanted and line.copyable]
+    if to_copy:
+        try:
+            COPYABLE_STEPS[step_key].copy_lines(db, current_user, season, team.id, to_copy)
+        except ValueError as error:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+        try:
+            db.commit()
+        except IntegrityError as error:
+            db.rollback()
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Could not copy last season") from error
+    return build_team_state(db, current_user, season, team)
+
+
+# --- Ploegverantwoordelijken (from the wizard) ------------------------------
+# The rows live in MasterData's MasterData_team_responsible (the same ones
+# its "Ploegverantwoordelijken" screen shows), written via the shared
+# module_9/team_responsible_service.py.
+
+
+def _get_team_responsible(db: Session, team_id: int, responsible_id: int) -> TeamResponsible:
+    """Load one responsible person that belongs to the given team, or 404."""
+    team_responsible = db.get(TeamResponsible, responsible_id)
+    if team_responsible is None or team_responsible.team_id != team_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team lead not found")
+    return team_responsible
+
+
+def _write_responsible(team_responsible: TeamResponsible, payload: ResponsibleWriteRequest) -> None:
+    """Copy the wizard's contact details onto the row."""
+    apply_team_responsible_fields(
+        team_responsible,
+        name=payload.name,
+        email=str(payload.email),
+        phone=payload.phone,
+        comments=payload.comments,
+    )
+
+
+@router.post(
+    "/wizard/{team_id}/responsibles", response_model=TeamResponsibleResponse, status_code=status.HTTP_201_CREATED
+)
+def create_responsible(
+    team_id: int,
+    season_id: int,
+    payload: ResponsibleWriteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> TeamResponsible:
+    """Step 3: add a responsible person to the team for this season."""
+    season, team = _load_for_change(db, current_user, team_id, season_id)
+    team_responsible = TeamResponsible(season_id=season.id, team_id=team.id)
+    _write_responsible(team_responsible, payload)
+    db.add(team_responsible)
+    db.commit()
+    db.refresh(team_responsible)
+    return team_responsible
+
+
+@router.put("/wizard/{team_id}/responsibles/{responsible_id}", response_model=TeamResponsibleResponse)
+def update_responsible(
+    team_id: int,
+    responsible_id: int,
+    payload: ResponsibleWriteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> TeamResponsible:
+    """Step 3: change a responsible person's details."""
+    team_responsible = _get_team_responsible(db, team_id, responsible_id)
+    _load_for_change(db, current_user, team_id, team_responsible.season_id)
+    _write_responsible(team_responsible, payload)
+    db.commit()
+    db.refresh(team_responsible)
+    return team_responsible
+
+
+@router.delete("/wizard/{team_id}/responsibles/{responsible_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_responsible(
+    team_id: int,
+    responsible_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> None:
+    """Step 3: remove a responsible person. Removing the last one means
+    the step no longer holds, so it is un-marked as done.
+    """
+    team_responsible = _get_team_responsible(db, team_id, responsible_id)
+    season, team = _load_for_change(db, current_user, team_id, team_responsible.season_id)
+    db.delete(team_responsible)
+    reopen_step_if_no_responsibles(db, season.id, team.id)
+    db.commit()
 
 
 # --- Special requests (from the wizard) -----------------------------------

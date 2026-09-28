@@ -10,12 +10,14 @@ import { createElement, type ComponentType, type ReactElement } from "react";
 import { AfleverlocatieStep } from "@/components/module-8/wizard/steps/afleverlocatie-step";
 import { FestivalStep } from "@/components/module-8/wizard/steps/festival-step";
 import { PlaceholderStep } from "@/components/module-8/wizard/steps/placeholder-step";
+import { PloegverantwoordelijkenStep } from "@/components/module-8/wizard/steps/ploegverantwoordelijken-step";
 import { SpecialRequestsStep } from "@/components/module-8/wizard/steps/special-requests-step";
 import type { WizardStepProps } from "@/components/module-8/wizard/step-types";
 
 const STEP_COMPONENTS: Record<string, ComponentType<WizardStepProps>> = {
   festivals: FestivalStep,
   afleverlocaties: AfleverlocatieStep,
+  ploegverantwoordelijken: PloegverantwoordelijkenStep,
   // products: placeholder until the products module exists.
   special_requests: SpecialRequestsStep,
   // walkies: placeholder until the walkie-talkie module exists.

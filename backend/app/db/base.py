@@ -60,6 +60,7 @@ from app.db.models.team import Team  # noqa: F401
 from app.db.models.team_festival import TeamFestival  # noqa: F401
 from app.db.models.team_kernlid import TeamKernlid  # noqa: F401
 from app.db.models.team_location import TeamLocation  # noqa: F401
+from app.db.models.team_responsible import TeamResponsible  # noqa: F401
 from app.db.models.team_task import TeamTask  # noqa: F401
 from app.db.models.team_team_task import TeamTeamTask  # noqa: F401
 from app.db.models.teamkar_member import TeamKarMember  # noqa: F401

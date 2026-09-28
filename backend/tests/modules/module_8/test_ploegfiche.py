@@ -100,6 +100,10 @@ def test_pdf_handles_filled_in_data_and_non_latin_text(
         f"{BASE}/wizard/{team_id}/requests?season_id={world.season.id}",
         json={"text": "Graag “extra” stroom – 32A € \U0001f600 " + "lange tekst " * 40},
     )
+    as_kernlid.post(
+        f"{BASE}/wizard/{team_id}/responsibles?season_id={world.season.id}",
+        json={"name": "Jan “Janneke” Peeters", "email": "jan@example.com", "phone": "0470 12 34 56", "comments": "Na 18u € \U0001f600"},
+    )
     as_kernlid.post(f"{BASE}/wizard/{team_id}/steps/festivals/complete?season_id={world.season.id}")
 
     response = as_kernlid.get(f"{BASE}/ploegfiche/{team_id}/pdf?season_id={world.season.id}&locale=en")

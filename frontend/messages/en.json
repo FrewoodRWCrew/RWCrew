@@ -27,6 +27,9 @@
     "toggleLabel": "Switch between light and dark theme"
   },
   "seasonSelector": {
+    "requiredTitle": "No season selected",
+    "required": "Please select a season.",
+    "requiredOk": "OK",
     "placeholder": "Season…",
     "label": "Select season"
   },
@@ -601,6 +604,44 @@
       "deleteConfirmDescription": "This will permanently remove the team \"{name}\". This cannot be undone.",
       "teamDeleted": "Team deleted.",
       "deleteFailed": "Failed to delete the team."
+    },
+    "teamResponsibles": {
+      "title": "Team leads",
+      "description": "Manage, per team and per season, the people responsible and their contact details. They don't need to be RWCrew users.",
+      "filterSeason": "Season",
+      "filterTeam": "Team",
+      "allSeasons": "All seasons",
+      "allTeams": "All teams",
+      "columnTeam": "Team",
+      "columnSeason": "Season",
+      "columnName": "Name",
+      "columnEmail": "Email",
+      "columnPhone": "Telephone number",
+      "columnComments": "Comments",
+      "tableActions": "Actions",
+      "empty": "No team leads found.",
+      "newTeamResponsible": "New team lead",
+      "createTitle": "Add a new team lead",
+      "createDescription": "Add a responsible person to a team for a season.",
+      "changeTitle": "Change team lead",
+      "changeDescription": "Update this team lead's details.",
+      "change": "Change",
+      "delete": "Delete",
+      "teamLabel": "Team",
+      "seasonLabel": "Season",
+      "nameLabel": "Name",
+      "emailLabel": "Email",
+      "phoneLabel": "Telephone number",
+      "commentsLabel": "Comments",
+      "selectPlaceholder": "— Select —",
+      "teamResponsibleCreated": "Team lead added.",
+      "createFailed": "Failed to add team lead.",
+      "teamResponsibleUpdated": "Team lead updated.",
+      "updateFailed": "Failed to update team lead.",
+      "deleteConfirmTitle": "Delete team lead?",
+      "deleteConfirmDescription": "This permanently deletes team lead \"{name}\". This can't be undone.",
+      "teamResponsibleDeleted": "Team lead deleted.",
+      "deleteFailed": "Failed to delete team lead."
     },
     "teamLocation": {
       "title": "Team Location",
@@ -1203,6 +1244,29 @@
         "columnAfleverlocatie": "Delivery location",
         "noAfleverlocatie": "— Not chosen yet —"
       },
+      "ploegverantwoordelijken": {
+        "title": "Team leads",
+        "description": "Who are the team's responsible people this season? Add at least one person with email and telephone number.",
+        "add": "Add team lead",
+        "addTitle": "Add team lead",
+        "edit": "Change",
+        "editTitle": "Change team lead",
+        "dialogDescription": "This person doesn't need to be an RWCrew user. Comments are optional.",
+        "nameLabel": "Name",
+        "emailLabel": "Email",
+        "phoneLabel": "Telephone number",
+        "commentsLabel": "Comments",
+        "save": "Save",
+        "created": "Team lead added.",
+        "updated": "Team lead updated.",
+        "saveFailed": "Failed to save the team lead.",
+        "empty": "No team leads have been added yet.",
+        "delete": "Delete",
+        "deleteConfirmTitle": "Delete team lead?",
+        "deleteConfirmDescription": "This removes \"{name}\" as team lead.",
+        "deleted": "Team lead deleted.",
+        "deleteFailed": "Failed to delete the team lead."
+      },
       "products": {
         "title": "Products",
         "description": "Which products must be delivered, and how many?"
@@ -1265,7 +1329,29 @@
       "stepCompleted": "Step \"{step}\" completed.",
       "completeFailed": "Completing the step failed.",
       "noSteps": "This wizard has no steps yet.",
-      "placeholderText": "This step will be worked out later in a separate module. You can already complete it to move on."
+      "placeholderText": "This step will be worked out later in a separate module. You can already complete it to move on.",
+      "previousSeason": {
+        "title": "Copy from last season ({season})",
+        "summary": "{count, plural, =0 {Everything from last season is already here.} one {# line can be copied.} other {# lines can be copied.}}",
+        "show": "Show",
+        "hide": "Hide",
+        "loading": "Loading last season…",
+        "loadError": "Loading last season failed.",
+        "selectAll": "Select all",
+        "columnLine": "Last season",
+        "columnValue": "Value",
+        "columnStatus": "Status",
+        "now": "now: {value}",
+        "copy": "Copy selected ({count})",
+        "copied": "Copied from last season.",
+        "copyFailed": "Copying from last season failed.",
+        "alreadyPresent": "Already present",
+        "reason": {
+          "not_in_season": "Festival not in this season",
+          "festival_not_selected": "Festival not selected in step 1",
+          "location_inactive": "Location no longer active"
+        }
+      }
     },
     "ploegfiche": {
       "title": "Team sheet",
@@ -1306,7 +1392,13 @@
       "noRequests": "There are no special requests.",
       "requestBy": "Submitted by {name} on {date}",
       "organisationNote": "Organisation's answer",
-      "placeholder": "This will be filled in later through a separate module."
+      "placeholder": "This will be filled in later through a separate module.",
+      "responsiblesTitle": "Team leads",
+      "noResponsibles": "No team leads have been added yet.",
+      "columnResponsibleName": "Name",
+      "columnResponsibleEmail": "Email",
+      "columnResponsiblePhone": "Telephone number",
+      "columnResponsibleComments": "Comments"
     },
     "followUp": {
       "title": "Request follow-up",

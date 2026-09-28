@@ -2,7 +2,8 @@
 # was chosen in the Ploeg Wizard for one team in one season, laid out as a
 # friendly one-stop overview for the organisation — Altsien logo header,
 # team info, the karren assigned to the team, a progress overview of every wizard step, the festivals with
-# their delivery locations, and the special requests with their status.
+# their delivery locations, the team leads (Ploegverantwoordelijken), and the
+# special requests with their status.
 #
 # Uses fpdf2 (pure Python, see CLAUDE.md's Python 3.14 gotcha), the same
 # library and conventions as module_3/intervention_request_pdf.py. The
@@ -73,6 +74,12 @@ LABELS = {
         "afleverlocatie": "Afleverlocatie",
         "no_festivals": "Er zijn nog geen festivals gekozen.",
         "no_location": "Nog niet gekozen",
+        "responsibles_heading": "Ploegverantwoordelijken",
+        "responsible_name": "Naam",
+        "responsible_email": "E-mail",
+        "responsible_phone": "Telefoon",
+        "responsible_comments": "Opmerkingen",
+        "no_responsibles": "Er zijn nog geen ploegverantwoordelijken opgegeven.",
         "requests_heading": "Speciale aanvragen",
         "request": "Aanvraag",
         "status": "Status",
@@ -85,6 +92,7 @@ LABELS = {
         "steps": {
             "festivals": "Festivals",
             "afleverlocaties": "Afleverlocaties",
+            "ploegverantwoordelijken": "Ploegverantwoordelijken",
             "products": "Producten",
             "special_requests": "Speciale aanvragen",
             "walkies": "Walkie-talkies",
@@ -116,6 +124,12 @@ LABELS = {
         "afleverlocatie": "Delivery location",
         "no_festivals": "No festivals have been selected yet.",
         "no_location": "Not chosen yet",
+        "responsibles_heading": "Team leads",
+        "responsible_name": "Name",
+        "responsible_email": "Email",
+        "responsible_phone": "Telephone",
+        "responsible_comments": "Comments",
+        "no_responsibles": "No team leads have been added yet.",
         "requests_heading": "Special requests",
         "request": "Request",
         "status": "Status",
@@ -128,6 +142,7 @@ LABELS = {
         "steps": {
             "festivals": "Festivals",
             "afleverlocaties": "Delivery locations",
+            "ploegverantwoordelijken": "Team leads",
             "products": "Products",
             "special_requests": "Special requests",
             "walkies": "Walkie-talkies",
@@ -385,6 +400,44 @@ def _render_festivals(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None
     pdf.ln(2)
 
 
+def _render_responsibles(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
+    """Zebra table of the team's responsible people and their contact details."""
+    _section_heading(pdf, labels["responsibles_heading"])
+    if not state.responsibles:
+        _muted_line(pdf, labels["no_responsibles"])
+        return
+
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.2)
+    with pdf.table(
+        col_widths=(40, 50, 35, 55),
+        headings_style=_table_heading_style(),
+        cell_fill_color=ZEBRA_FILL,
+        cell_fill_mode="ROWS",
+        borders_layout="HORIZONTAL_LINES",
+        line_height=6.5,
+        padding=2,
+        text_align="LEFT",
+    ) as table:
+        table.row(
+            [
+                labels["responsible_name"],
+                labels["responsible_email"],
+                labels["responsible_phone"],
+                labels["responsible_comments"],
+            ]
+        )
+        for responsible in state.responsibles:
+            row = table.row()
+            row.cell(_pdf_text(responsible.name), style=FontFace(emphasis="BOLD"))
+            row.cell(_pdf_text(responsible.email))
+            row.cell(_pdf_text(responsible.phone))
+            row.cell(_pdf_text(responsible.comments or "-"))
+    pdf.ln(2)
+
+
 def _render_requests(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
     """Table of special requests, the status in its own colour."""
     _section_heading(pdf, labels["requests_heading"])
@@ -444,6 +497,7 @@ def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
     # renderer here (e.g. one added later) only appears in the progress list.
     step_renderers = {
         "festivals": lambda: _render_festivals(pdf, state, labels),
+        "ploegverantwoordelijken": lambda: _render_responsibles(pdf, state, labels),
         "products": lambda: _render_placeholder(pdf, labels["steps"]["products"], labels),
         "special_requests": lambda: _render_requests(pdf, state, labels),
         "walkies": lambda: _render_placeholder(pdf, labels["steps"]["walkies"], labels),
