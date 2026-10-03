@@ -577,7 +577,7 @@ def save_festivals(
         if valid_ids != added_ids:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Every festival must be an active festival of the season",
+                detail="Every festival must be an active festival of the year",
             )
 
     # Remove deselected festivals, and their delivery location with them.
@@ -721,7 +721,7 @@ def reopen_step(
 def _ensure_copyable_step(step_key: str) -> None:
     """Only steps with a copy handler offer last season's values."""
     if step_key not in COPYABLE_STEPS:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step has no copy from last season")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Step has no copy from last year")
 
 
 @router.get("/wizard/{team_id}/steps/{step_key}/previous-season", response_model=PreviousSeasonResponse)
@@ -777,7 +777,7 @@ def copy_previous_season_lines(
     lines_by_key = {line.key: line for line in lines}
     unknown_keys = set(payload.line_keys) - set(lines_by_key)
     if unknown_keys:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown line from last season")
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unknown line from last year")
 
     # Each chosen line once, in last season's order, only when it changes something.
     wanted = set(payload.line_keys)
@@ -792,7 +792,7 @@ def copy_previous_season_lines(
             db.commit()
         except IntegrityError as error:
             db.rollback()
-            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Could not copy last season") from error
+            raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Could not copy last year") from error
     return build_team_state(db, current_user, season, team)
 
 

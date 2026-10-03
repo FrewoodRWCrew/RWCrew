@@ -19,7 +19,9 @@ const nextConfig: NextConfig = {
   // the dev server is reached through a temporary *.trycloudflare.com
   // address. Next.js's dev server refuses requests from other addresses
   // unless they are listed here; this setting has no effect on production.
-  allowedDevOrigins: ["*.trycloudflare.com"],
+  // "192.168.*.*" lets a phone on the same Wi-Fi open http://<PC's IP>:3000
+  // (pages work, but without HTTPS the phone blocks the camera and GPS).
+  allowedDevOrigins: ["*.trycloudflare.com", "192.168.*.*"],
 
   // Only when DEV_API_PROXY_TARGET is set (in .env.local, for phone testing):
   // forward "/api/..." to the local backend, so app and API share the

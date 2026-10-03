@@ -43,7 +43,7 @@ class ScreenDefinition:
 # Season permission, and dataupload access does not imply access to any
 # one table's own screen (or vice versa).
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
-    ScreenDefinition(key="masterdata.season", label="Seasons", sort_order=1),
+    ScreenDefinition(key="masterdata.season", label="Years", sort_order=1),
     ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
     ScreenDefinition(key="masterdata.product-types", label="Type", sort_order=3),
     ScreenDefinition(key="masterdata.warehouses", label="Magazijnen", sort_order=4),

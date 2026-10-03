@@ -1,5 +1,6 @@
 // The phone home page: a greeting, "Uitloggen", and one big tile per module
-// that has a phone version and that this user may open.
+// that has a phone version and that this user may open. The year picker sits
+// on top: as on the desktop, a module only opens once a year is chosen.
 
 import { getTranslations } from "next-intl/server";
 import { getCurrentUserOnServer } from "@/lib/server-auth";
@@ -11,6 +12,7 @@ import { PhoneHeader } from "@/components/phone/shared/phone-header";
 import { PhoneLogoutButton } from "@/components/phone/shared/phone-logout-button";
 import { PHONE_MODULE_KEYS } from "@/components/phone/shared/phone-modules";
 import { PhoneNotice } from "@/components/phone/shared/phone-notice";
+import { PhoneSeasonSelect } from "@/components/phone/shared/phone-season-select";
 import { PhoneTileGrid } from "@/components/phone/shared/phone-tile-grid";
 
 export default async function PhoneHomePage() {
@@ -36,6 +38,8 @@ export default async function PhoneHomePage() {
     <>
       <PhoneHeader title={t("title")} action={<PhoneLogoutButton />} />
       <PhoneBody>
+        {/* The year to work in; required before a module tile opens. */}
+        <PhoneSeasonSelect />
         <div>
           <p className="text-sm text-muted-foreground">{tPhone("hello", { name: user?.display_name ?? "" })}</p>
           <p className="text-muted-foreground">{t("subtitle")}</p>

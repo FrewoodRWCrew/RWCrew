@@ -32,7 +32,7 @@ def build_season_template_xlsx() -> bytes:
     """
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = "Seasons"
+    sheet.title = "Years"
 
     sheet.append(TEMPLATE_COLUMNS)
     for cell in sheet[1]:
@@ -88,7 +88,7 @@ def import_seasons_from_xlsx(db: Session, file_bytes: bytes) -> list[SeasonImpor
 
             existing = db.scalar(select(Season).where(Season.name == name))
             if existing is not None:
-                raise ValueError("A season with this name already exists")
+                raise ValueError("A year with this name already exists")
 
             db.add(Season(name=name))
 
@@ -107,7 +107,7 @@ def export_seasons_to_xlsx(db: Session) -> bytes:
     """Every season as a single-sheet workbook."""
     workbook = Workbook()
     sheet = workbook.active
-    sheet.title = "Seasons"
+    sheet.title = "Years"
     sheet.append(["id", "name"])
     for cell in sheet[1]:
         cell.font = Font(bold=True)

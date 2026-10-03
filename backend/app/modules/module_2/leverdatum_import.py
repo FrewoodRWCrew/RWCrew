@@ -133,7 +133,7 @@ def _resolve_festival(db: Session, season_name: str | None, festival_name: str |
 
     season = db.scalar(select(Season).where(func.lower(Season.name) == season_name.lower()))
     if season is None:
-        raise ValueError(f'Season "{season_name}" not found')
+        raise ValueError(f'Year "{season_name}" not found')
 
     festival = db.scalar(
         select(Festival).where(
@@ -143,7 +143,7 @@ def _resolve_festival(db: Session, season_name: str | None, festival_name: str |
         )
     )
     if festival is None:
-        raise ValueError(f'Active festival "{festival_name}" not found in season "{season.name}"')
+        raise ValueError(f'Active festival "{festival_name}" not found in year "{season.name}"')
     return festival
 
 

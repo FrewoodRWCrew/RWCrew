@@ -164,7 +164,7 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # first 
 cp .env.example .env                         # first time
 .venv/Scripts/python -m alembic upgrade head
 .venv/Scripts/python -m app.cli.seed --email admin@example.com --password "ChangeMe123!" --name "Your Name"
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8020
+.venv/Scripts/python -m uvicorn app.main:app --port 8020   # no --reload, see Gotchas
 ```
 
 Frontend (from `frontend/`, in a second terminal):
@@ -173,6 +173,33 @@ npm install       # first time
 cp .env.local.example .env.local   # first time
 npm run dev       # http://localhost:3000 -- redirects to /nl by default
 ```
+
+### "Start / restart localhost" = everything, PC *and* phone
+
+When the user asks to start or restart localhost (the app, the web app, "mobile + webapp", ...), always bring
+up **all four** pieces, not just the web app, and finish by giving the three addresses below:
+
+1. **Postgres**: `docker compose up -d db` (repo root) if `rwcrew_db` isn't running (`docker ps`).
+2. **Backend** on 8020: first stop every `python.exe` whose command line contains `uvicorn` (parent *and*
+   child — `Get-CimInstance Win32_Process`), then start it in its own minimised window so it outlives the
+   Claude session: `Start-Process <backend>.venvScriptspython.exe -ArgumentList "-m","uvicorn","app.main:app",
+   "--port","8020" -WorkingDirectory <backend> -WindowStyle Minimized`.
+3. **Frontend** on 3000: stop the process tree on port 3000 (`taskkill /PID <pid> /T /F`) and any
+   `cmd.exe ... npm run dev`, then `Start-Process cmd.exe -ArgumentList "/c","npm run dev" -WorkingDirectory
+   <frontend> -WindowStyle Minimized`. `frontend/.env.local` must have `NEXT_PUBLIC_API_URL=` (empty) and
+   `DEV_API_PROXY_TARGET=http://localhost:8020` (see "Phone section"), otherwise phone/Wi-Fi logins fail.
+4. **Cloudflare tunnel** (phone over HTTPS, needed for camera/GPS): stop any running `cloudflared`, then
+   `Start-Process "C:Program Files (x86)cloudflaredcloudflared.exe" -ArgumentList "tunnel","--url",
+   "http://localhost:3000","--logfile",<scratchpad>cloudflared.log -WindowStyle Minimized` and read the
+   `https://<name>.trycloudflare.com` address from the log (it changes on every start; no config edit needed).
+
+Check each one answers (`/api/health` on 8020, `/nl/login` on 3000, the Wi-Fi address and the tunnel), then
+report:
+- **PC**: http://localhost:3000
+- **Phone on the same Wi-Fi** (no camera/GPS — not HTTPS): `http://<PC's Wi-Fi IPv4>:3000/m` — look the IP up
+  each time (`Get-NetIPAddress`, interface "Wi-Fi"); it can change. Allowed by `allowedDevOrigins`
+  (`192.168.*.*`) in `next.config.ts`; the Windows firewall already allows Node.js.
+- **Phone anywhere, with camera/GPS**: `https://<name>.trycloudflare.com/m`
 
 ## Testing
 

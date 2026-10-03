@@ -500,7 +500,7 @@ def create_season(
         db.commit()
     except IntegrityError as error:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A season with this name already exists") from error
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A year with this name already exists") from error
 
     db.refresh(new_season)
     return new_season
@@ -516,7 +516,7 @@ def update_season(
     """Rename an existing season."""
     season = db.get(Season, season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     season.name = payload.name
     season.periode_open = payload.periode_open
@@ -524,7 +524,7 @@ def update_season(
         db.commit()
     except IntegrityError as error:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A season with this name already exists") from error
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A year with this name already exists") from error
 
     db.refresh(season)
     return season
@@ -539,7 +539,7 @@ def delete_season(
     """Permanently delete a season."""
     season = db.get(Season, season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     db.delete(season)
     db.commit()
@@ -551,7 +551,7 @@ def _validate_festival_lookup_ids(db: Session, payload: FestivalCreateRequest | 
     — a bad id should surface as a clear 404, not an opaque FK IntegrityError.
     """
     if db.get(Season, payload.season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
 
 @router.get("/festivals", response_model=list[FestivalResponse])
@@ -730,7 +730,7 @@ def _apply_team_responsible_payload(
     if db.get(Team, payload.team_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
     if db.get(Season, payload.season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     team_responsible.team_id = payload.team_id
     team_responsible.season_id = payload.season_id
@@ -1482,7 +1482,7 @@ def download_season_import_template(
     return Response(
         content=build_season_template_xlsx(),
         media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="season-import-template.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="year-import-template.xlsx"'},
     )
 
 
@@ -1508,7 +1508,7 @@ def export_seasons(
     return Response(
         content=export_seasons_to_xlsx(db),
         media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="masterdata-seasons-export.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="masterdata-years-export.xlsx"'},
     )
 
 

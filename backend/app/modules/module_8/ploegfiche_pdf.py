@@ -50,7 +50,7 @@ ALTSIEN_LOGO_RATIO = 352 / 416
 LABELS = {
     "nl": {
         "title": "Ploegfiche",
-        "season": "Seizoen {season}",
+        "season": "Jaartal {season}",
         "season_closed": "afgesloten",
         "team_heading": "Ploeginfo",
         "team_name": "Ploeg",
@@ -100,7 +100,7 @@ LABELS = {
     },
     "en": {
         "title": "Team sheet",
-        "season": "Season {season}",
+        "season": "Year {season}",
         "season_closed": "closed",
         "team_heading": "Team info",
         "team_name": "Team",

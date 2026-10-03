@@ -453,7 +453,7 @@ def get_dashboard(
     season) adds the Plan a kar coverage figures.
     """
     if season_id is not None and db.get(Season, season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
     return build_dashboard_stats(db, season_id)
 
 
@@ -693,7 +693,7 @@ def print_kar_planning(
     """
     season = db.get(Season, payload.season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     karren = db.execute(
         select(
@@ -1019,7 +1019,7 @@ def get_plan_kar(
     season, each with the afleverlocatie already saved for it (or None).
     """
     if db.get(Season, season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
     if db.get(Team, team_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
@@ -1057,7 +1057,7 @@ def save_plan_kar(
     missing one inserted, and a row with no location clears its record.
     """
     if db.get(Season, payload.season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
     team = db.get(Team, payload.team_id)
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
@@ -1079,7 +1079,7 @@ def save_plan_kar(
     )
     if valid_festival_ids != set(festival_ids):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the season"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the year"
         )
 
     # Every chosen location must exist and be active.
@@ -1195,7 +1195,7 @@ def get_leverdata(
 ) -> LeverdatumResponse:
     """Every active festival of the season, each with its saved dates (or None)."""
     if db.get(Season, season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     # Outer join so festivals without a saved row still get a line.
     rows = db.execute(
@@ -1230,7 +1230,7 @@ def save_leverdata(
     row with no dates clears its record.
     """
     if db.get(Season, payload.season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     # The same festival can't appear twice in one save.
     festival_ids = [row.festival_id for row in payload.rows]
@@ -1247,7 +1247,7 @@ def save_leverdata(
     )
     if valid_festival_ids != set(festival_ids):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the season"
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Every festival must be an active festival of the year"
         )
 
     # The pick-up can't be before the delivery (only checkable when both are set).
