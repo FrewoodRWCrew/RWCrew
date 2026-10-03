@@ -12,6 +12,9 @@ from sqlalchemy.orm import Session
 from app.db.models.intervention_request import InterventionRequest
 from app.db.models.intervention_status import InterventionStatus
 from app.db.models.team import Team
+from app.db.models.teamkar_member import TeamKarMember
+from app.db.models.user import User
+from app.schemas.intervention_requests import TeamKarMemberOptionResponse
 
 # The status every new request starts in, whether it was logged by staff or
 # submitted through the public form. Confirmed present in the live data
@@ -26,6 +29,18 @@ def list_teams_for_dropdown(db: Session) -> list[Team]:
     role at all).
     """
     return list(db.scalars(select(Team).order_by(Team.name)).all())
+
+
+def list_teamkar_members(db: Session) -> list[TeamKarMemberOptionResponse]:
+    """The current TeamKar members (id + name, alphabetical), for the
+    "Team kar" dropdown of the request form.
+    """
+    rows = db.execute(
+        select(User.id, User.display_name)
+        .join(TeamKarMember, TeamKarMember.user_id == User.id)
+        .order_by(User.display_name)
+    ).all()
+    return [TeamKarMemberOptionResponse(id=row.id, display_name=row.display_name) for row in rows]
 
 
 def get_default_new_status(db: Session) -> InterventionStatus:

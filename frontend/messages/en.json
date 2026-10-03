@@ -111,8 +111,13 @@
       "columnStatus": "Status",
       "columnIpAddress": "IP address",
       "columnSource": "Source",
-      "sourceWeb": "Web app",
-      "sourceMobile": "Mobile app",
+      "sourceWeb": "Website",
+      "sourcePwa": "Phone app",
+      "sourceNativeApp": "Native app (old)",
+      "columnDevice": "Device",
+      "deviceDesktop": "PC",
+      "deviceMobile": "Phone",
+      "deviceTablet": "Tablet",
       "statusSuccess": "Success",
       "statusFailed": "Failed",
       "dateFromLabel": "From",
@@ -1186,6 +1191,21 @@
       "newUserPasswordLabel": "Temporary password (only needed for a brand-new account)",
       "userSaved": "Access granted.",
       "userSaveFailed": "Failed to grant access."
+    },
+    "phone": {
+      "actionsTab": "Actions",
+      "kpiTab": "KPI overview",
+      "filterOpen": "Open",
+      "filterAll": "All",
+      "searchPlaceholder": "Search…",
+      "noResults": "No requests found.",
+      "noDeliveryDate": "No preferred delivery",
+      "changeTitle": "Change request",
+      "viewTitle": "Request",
+      "readOnlyNotice": "You can view this request but not change it.",
+      "choose": "Choose…",
+      "questionRequired": "Enter a question or remark.",
+      "teamRequired": "Choose a team or enter a name."
     }
   },
   "afleverlocatieMap": {
@@ -1983,6 +2003,60 @@
         },
         "exportButton": "Download delivery dates"
       }
+    },
+    "phone": {
+      "noActionsRights": "You have no rights on Manual kar movement.",
+      "menu": {
+        "noScreens": "You have no rights on the KarTracker screens available on the phone.",
+        "karScanTitle": "KarScan",
+        "karScanDescription": "Manual kar movement: scan the QR code on a kar.",
+        "planningDescription": "Overview of all karren with their planned delivery locations.",
+        "mapDescription": "Map of Karren, Delivery locations and Distribution points."
+      },
+      "scan": {
+        "title": "Scan the QR code on the kar",
+        "hint": "Point the camera at the QR code with the kar number.",
+        "karNotFound": "Kar {kar} was not found."
+      },
+      "kar": {
+        "title": "Kar {kar}",
+        "karLabel": "Kar",
+        "teamLabel": "Team",
+        "noTeam": "No team",
+        "statusLabel": "New status",
+        "locationLabel": "GPS location",
+        "locating": "Determining location…",
+        "accuracy": "accurate to ± {meters} m",
+        "refreshLocation": "Determine location again",
+        "gpsDenied": "Access to your location was denied. Allow location access in the settings.",
+        "gpsFailed": "Your location could not be determined. Please try again.",
+        "gpsTimeout": "No GPS signal found. Move outside or closer to a window and try again.",
+        "save": "Save movement",
+        "saving": "Saving…",
+        "saveSuccess": "Movement of kar {kar} saved.",
+        "saveError": "The movement could not be saved.",
+        "noCreateRights": "You may view movements, but not register them.",
+        "historyTitle": "Latest movements",
+        "noHistory": "No movements have been registered for this kar yet.",
+        "by": "by {name}"
+      },
+      "planning": {
+        "seasonLabel": "Season",
+        "noSeason": "No season",
+        "searchPlaceholder": "Search kar number, status, team, location…",
+        "transportType": "Transport type",
+        "geolocation": "Location",
+        "noGeolocation": "No location",
+        "noTeam": "No team",
+        "noFestivals": "Choose a season to see the delivery location per festival.",
+        "noKarren": "No karren found.",
+        "showOnMap": "Show on map",
+        "loadError": "The planning could not be loaded.",
+        "retry": "Try again"
+      },
+      "map": {
+        "noMatches": "Nothing found."
+      }
     }
   },
   "interventionRequestPublicForm": {
@@ -1997,21 +2071,30 @@
   },
   "mobileApp": {
     "title": "Mobile App",
-    "intro": "Install the RWCrew phone app on your smartphone.",
-    "iosTitle": "iPhone",
-    "iosStep1": "Install the free TestFlight app from the App Store.",
-    "iosStep2": "Tap the button below on your iPhone to join and install the app.",
-    "iosButton": "Install on iPhone",
-    "androidTitle": "Android",
-    "androidStep1": "Open the button below on your Android phone and download the app.",
-    "androidStep2": "If asked, allow installing apps from this source.",
-    "androidButton": "Download for Android",
-    "notAvailable": "Not available yet.",
-    "latestVersion": "Latest version: {version}",
-    "changelogTitle": "What's new"
+    "intro": "The RWCrew phone app runs straight from the website: no app store or download needed. Open it on your phone once and add it to your home screen; from then on it opens like any other app.",
+    "openTitle": "1. Open the phone app on your phone",
+    "openDescription": "Scan this QR code with your phone's camera, or send yourself the link below.",
+    "qrAlt": "QR code linking to the RWCrew phone app",
+    "linkLabel": "Link to the phone app",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied.",
+    "linkCopyFailed": "Couldn't copy the link. Select it and copy it manually.",
+    "notConfigured": "The phone app's address isn't configured on this environment yet (APP_PUBLIC_URL).",
+    "iosTitle": "2. Add to the home screen on iPhone",
+    "iosStep1": "Open the link in Safari.",
+    "iosStep2": "Tap the Share button (the square with an arrow).",
+    "iosStep3": "Choose \"Add to Home Screen\" and tap \"Add\".",
+    "androidTitle": "2. Add to the home screen on Android",
+    "androidStep1": "Open the link in Chrome.",
+    "androidStep2": "Tap the menu (the three dots) at the top right.",
+    "androidStep3": "Choose \"Install app\" (or \"Add to Home screen\") and confirm.",
+    "permissionsNote": "The first time you scan a QR code or save a location, the phone asks for permission to use the camera or location. Allow it, or those screens can't work."
   },
   "errors": {
     "forbidden": "You don't have access to this page.",
     "generic": "Something went wrong. Please try again later."
+  },
+  "phone": {
+    "hello": "Hello, {name}"
   }
 }

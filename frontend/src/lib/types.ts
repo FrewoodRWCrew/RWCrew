@@ -52,13 +52,18 @@ export interface ModuleStatus {
   your_role: ModuleRoleName | null;
 }
 
-/** Install links and release info for the "Mobile App" download page (module-10). */
-export interface MobileAppInfo {
-  ios_testflight_url: string | null;
-  android_download_url: string | null;
-  latest_version: string | null;
-  changelog: string[];
+/** What the phone-app install page (module-10) shows: the address of the
+ * phone section (/m) and a QR code of it. Both null when the environment has
+ * no APP_PUBLIC_URL configured. */
+export interface PwaInstallInfo {
+  install_url: string | null;
+  /** A ready-to-use "data:image/svg+xml;..." URI of the QR code. */
+  qr_code_data_uri: string | null;
 }
+
+/** Which part of the site a login comes from: the desktop website or the
+ * phone section (/m). Stored in the login history. */
+export type LoginClient = "web" | "pwa";
 
 /** One season, as managed on the Master Data screen. */
 export interface Season {
@@ -750,6 +755,17 @@ export interface MailingRecipientInput {
 
 export interface InterventionRequestsMyPermissions {
   viewable_screen_keys: string[];
+  creatable_screen_keys: string[];
+  editable_screen_keys: string[];
+  deletable_screen_keys: string[];
+}
+
+/** Everything the request form's dropdowns need, in one call (module-3's
+ * "/lookups", gated by the requests screen itself — used by the phone). */
+export interface InterventionRequestsLookups {
+  statuses: InterventionStatus[];
+  teams: InterventionRequestsTeam[];
+  teamkar_members: TeamKarMemberOption[];
 }
 
 // --- KarTracker (module-2): custom roles with per-screen permissions ---
@@ -1079,6 +1095,12 @@ export interface KarTrackerPlanKarSaveInput {
   rows: { festival_id: number; afleverlocatie_id: number | null }[];
 }
 
+/** One open season for Kar Planning's own season dropdown (module-2's "/seasons"). */
+export interface KarTrackerSeasonOption {
+  id: number;
+  name: string;
+}
+
 /** One kar in the "Manuele kar beweging" kar dropdown, with its current team and status. */
 export interface KarTrackerKarActionKarOption {
   id: number;
@@ -1309,9 +1331,13 @@ export interface LoginHistoryEntry {
   display_name: string | null;
   success: boolean;
   ip_address: string | null;
-  /** Where the attempt came from: the web app or the smartphone app. Null
-   * for attempts recorded before this was tracked. */
-  source: "web" | "mobile" | null;
+  /** Where the attempt came from: the website ("web"), the phone section
+   * ("pwa"), or the old native smartphone app ("mobile", historical rows
+   * only). Null for attempts recorded before this was tracked. */
+  source: LoginClient | "mobile" | null;
+  /** The kind of device, read from the browser's user agent. Null when
+   * unknown (e.g. attempts recorded before this was tracked). */
+  device_type: "desktop" | "mobile" | "tablet" | null;
   created_at: string;
 }
 

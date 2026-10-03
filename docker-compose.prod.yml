@@ -46,14 +46,6 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       TAGSCAN_SOURCE_DIR: /app/TagScans
-      # Phone app settings (backend/app/core/config.py): the oldest app
-      # version still accepted, and what the "Mobile App" download page
-      # (module-10) shows. All optional; empty hides that item.
-      MOBILE_MIN_APP_VERSION: ${MOBILE_MIN_APP_VERSION:-0.0.0}
-      MOBILE_ANDROID_DOWNLOAD_URL: ${MOBILE_ANDROID_DOWNLOAD_URL:-}
-      MOBILE_IOS_TESTFLIGHT_URL: ${MOBILE_IOS_TESTFLIGHT_URL:-}
-      MOBILE_LATEST_VERSION: ${MOBILE_LATEST_VERSION:-}
-      MOBILE_CHANGELOG: ${MOBILE_CHANGELOG:-}
       # Outgoing email via Resend (backend/app/core/mail.py), e.g. the
       # Intervention Requests "new request" mail. Empty RESEND_API_KEY or
       # MAIL_FROM = mails are skipped (only a log line), never an error.

@@ -16,18 +16,6 @@ ACCESS_TOKEN_COOKIE_NAME = "rwcrew_access_token"
 REFRESH_TOKEN_COOKIE_NAME = "rwcrew_refresh_token"
 
 
-def _read_bearer_token(request: Request) -> str | None:
-    """Return the token from an "Authorization: Bearer <token>" header, if any."""
-    header = request.headers.get("authorization")
-    if header is None:
-        return None
-    # The header looks like "Bearer eyJhbGci..."; anything else is ignored.
-    scheme, _, value = header.partition(" ")
-    if scheme.lower() != "bearer" or not value.strip():
-        return None
-    return value.strip()
-
-
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     """Identify the logged-in user making this request, or reject it.
 
@@ -37,12 +25,9 @@ def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     automatically requires the caller to be logged in.
     """
     # Read the access token out of the cookies the browser sent us. The
-    # cookie always wins, so the web app behaves exactly as before.
+    # cookie is the only way in: the website and the phone section (/m)
+    # are the same site, so both log in with the same cookies.
     token = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
-    if token is None:
-        # No cookie: the smartphone app has no cookie jar, so it sends the
-        # same access token in an "Authorization: Bearer <token>" header.
-        token = _read_bearer_token(request)
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not logged in")
 

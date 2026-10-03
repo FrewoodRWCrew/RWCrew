@@ -648,3 +648,12 @@ class KarTrackerDashboardResponse(BaseModel):
     plan_kar_planned: int | None
     plan_kar_expected: int | None
     festival_plan_breakdown: list[KarTrackerDashboardFestivalPlanItem] | None
+
+
+class KarTrackerSeasonOption(BaseModel):
+    """One open season for Kar Planning's own season dropdown (the phone
+    has no header season selector, and that one also needs MasterData).
+    """
+
+    id: int
+    name: str

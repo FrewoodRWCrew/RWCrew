@@ -3,6 +3,8 @@
 # automatically (e.g. rejecting a login attempt with no password) and to
 # document the API.
 
+from typing import Literal
+
 from pydantic import BaseModel, EmailStr, Field
 
 
@@ -11,6 +13,10 @@ class LoginRequest(BaseModel):
 
     email: EmailStr
     password: str
+    # Which part of the app the login form is on, for the login history:
+    # "web" (the website) or "pwa" (the phone section /m). Optional, so a
+    # client that doesn't send it counts as the website.
+    client: Literal["web", "pwa"] = "web"
 
 
 class ChangePasswordRequest(BaseModel):

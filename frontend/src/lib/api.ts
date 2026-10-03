@@ -31,6 +31,7 @@ import type {
   InterventionRequest,
   InterventionRequestInput,
   InterventionRequestsDashboardStats,
+  InterventionRequestsLookups,
   InterventionRequestsMyPermissions,
   InterventionRequestsRole,
   InterventionRequestsScreen,
@@ -54,6 +55,7 @@ import type {
   KarTrackerKarInput,
   KarTrackerKarMapResponse,
   KarTrackerKarPlanningReport,
+  KarTrackerSeasonOption,
   KarTrackerKarStatus,
   KarTrackerLeverdatum,
   KarTrackerLeverdatumSaveInput,
@@ -68,6 +70,7 @@ import type {
   KarTrackerUserSummary,
   KarTrackerZone,
   LeverdatumImportResponse,
+  LoginClient,
   LoginHistoryPage,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
@@ -210,10 +213,12 @@ async function apiFetch<TResponse>(path: string, init?: RequestInit): Promise<TR
 
 // --- Authentication -------------------------------------------------
 
-export function login(email: string, password: string): Promise<CurrentUser> {
+/** Log in. `client` tells the login history whether this came from the
+ * website or the phone section (/m). */
+export function login(email: string, password: string, client: LoginClient = "web"): Promise<CurrentUser> {
   return apiFetch<CurrentUser>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, client }),
   });
 }
 
@@ -1295,9 +1300,13 @@ export function getKarActionLookups(): Promise<KarTrackerKarActionLookups> {
   return apiFetch<KarTrackerKarActionLookups>("/api/modules/module-2/kar-actions/lookups");
 }
 
-/** The movement history, newest first — all karren, or one kar when karId is given. */
-export function listKarActions(karId?: number): Promise<KarTrackerKarAction[]> {
-  const query = karId !== undefined ? `?kar_id=${karId}` : "";
+/** The movement history, newest first — all karren, or one kar when karId
+ * is given; `limit` caps how many come back (the backend's default is 200). */
+export function listKarActions(karId?: number, limit?: number): Promise<KarTrackerKarAction[]> {
+  const params = new URLSearchParams();
+  if (karId !== undefined) params.set("kar_id", String(karId));
+  if (limit !== undefined) params.set("limit", String(limit));
+  const query = params.size > 0 ? `?${params}` : "";
   return apiFetch<KarTrackerKarAction[]>(`/api/modules/module-2/kar-actions${query}`);
 }
 
@@ -1439,6 +1448,11 @@ export function deleteKar(karId: number): Promise<void> {
 }
 
 // --- Kar Planning (module-2's "kartracker.karplanning" read-only report) ---
+
+/** The open seasons, newest first, for Kar Planning's own season dropdown (phone). */
+export function listKarTrackerSeasons(): Promise<KarTrackerSeasonOption[]> {
+  return apiFetch<KarTrackerSeasonOption[]>("/api/modules/module-2/seasons");
+}
 
 /** With a season id the report also carries one afleverlocatie column per active festival of it. */
 export function listKarPlanning(seasonId?: number | null): Promise<KarTrackerKarPlanningReport> {
@@ -1784,6 +1798,11 @@ export function setTeamKarMembers(userIds: number[]): Promise<TeamKarUser[]> {
 
 export function listInterventionRequests(): Promise<InterventionRequest[]> {
   return apiFetch<InterventionRequest[]>("/api/modules/module-3/intervention-requests");
+}
+
+/** The statuses, teams and TeamKar members for the request form, in one call. */
+export function getInterventionRequestsLookups(): Promise<InterventionRequestsLookups> {
+  return apiFetch<InterventionRequestsLookups>("/api/modules/module-3/lookups");
 }
 
 export function createInterventionRequest(payload: InterventionRequestInput): Promise<InterventionRequest> {

@@ -30,6 +30,7 @@ from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.modules.module_3.deps import (
     MODULE_KEY,
+    PermissionAction,
     get_user_role,
     require_module_access,
     require_screen_permission,
@@ -38,12 +39,18 @@ from app.modules.module_3.deps import (
 from app.modules.module_3.intervention_request_pdf import build_delivery_note_pdf
 from app.modules.module_3.intervention_requests_dashboard import build_dashboard_stats
 from app.modules.module_3.notifications import queue_new_request_mail
-from app.modules.module_3.service import generate_request_number, list_teams_for_dropdown, resolve_team_name
+from app.modules.module_3.service import (
+    generate_request_number,
+    list_teamkar_members,
+    list_teams_for_dropdown,
+    resolve_team_name,
+)
 from app.schemas.intervention_requests import (
     CreateOrGrantUserRequest,
     InterventionRequestCreateRequest,
     InterventionRequestResponse,
     InterventionRequestsDashboardResponse,
+    InterventionRequestsLookupsResponse,
     InterventionRequestsTeamResponse,
     InterventionRequestsUserSummaryResponse,
     InterventionRequestUpdateRequest,
@@ -395,12 +402,22 @@ def get_my_permissions(
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
     """Tell the frontend which Intervention Requests screens the current
-    user can view, so it knows what to show in the sidebar without
+    user can view / create on / edit / delete on, so it knows what to show
+    (sidebar links, the phone's "+" and "Opslaan" buttons) without
     duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(InterventionRequestsScreen)).all()
-    viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+
+    def keys_allowed(action: PermissionAction) -> list[str]:
+        """The keys of every screen this user may perform `action` on."""
+        return [screen.key for screen in screens if user_can(db, current_user, screen.key, action)]
+
+    return MyPermissionsResponse(
+        viewable_screen_keys=keys_allowed("view"),
+        creatable_screen_keys=keys_allowed("create"),
+        editable_screen_keys=keys_allowed("edit"),
+        deletable_screen_keys=keys_allowed("delete"),
+    )
 
 
 # --- TeamKar (module-3's fixed-group masterdata screen) -------------------
@@ -637,12 +654,28 @@ def list_teamkar_options(
     exactly like "teams" above, so a user can always pick a Team Kar member
     here regardless of whether they also have the TeamKar screen's permission.
     """
-    members = db.execute(
-        select(User.id, User.display_name)
-        .join(TeamKarMember, TeamKarMember.user_id == User.id)
-        .order_by(User.display_name)
-    ).all()
-    return [TeamKarMemberOptionResponse(id=row.id, display_name=row.display_name) for row in members]
+    return list_teamkar_members(db)
+
+
+@router.get("/lookups", response_model=InterventionRequestsLookupsResponse)
+def get_request_form_lookups(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.requests", "view")),
+) -> InterventionRequestsLookupsResponse:
+    """The statuses, teams and TeamKar members for the request form, in one
+    call (used by the phone's request form). Gated by the requests screen's
+    own permission — not the MasterData "statuses" screen — so anyone who
+    may see requests can always pick a status.
+    """
+    statuses = db.scalars(select(InterventionStatus).order_by(InterventionStatus.name)).all()
+    return InterventionRequestsLookupsResponse(
+        statuses=[InterventionStatusResponse.model_validate(item, from_attributes=True) for item in statuses],
+        teams=[
+            InterventionRequestsTeamResponse.model_validate(item, from_attributes=True)
+            for item in list_teams_for_dropdown(db)
+        ],
+        teamkar_members=list_teamkar_members(db),
+    )
 
 
 @router.get("/intervention-requests", response_model=list[InterventionRequestResponse])
@@ -654,6 +687,19 @@ def list_intervention_requests(
     return list(
         db.scalars(select(InterventionRequest).order_by(InterventionRequest.submitted_at.desc())).all()
     )
+
+
+@router.get("/intervention-requests/{request_id}", response_model=InterventionRequestResponse)
+def get_intervention_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.requests", "view")),
+) -> InterventionRequest:
+    """One intervention request (the phone's edit screen opens it by id)."""
+    existing_request = db.get(InterventionRequest, request_id)
+    if existing_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Intervention request not found")
+    return existing_request
 
 
 @router.post(

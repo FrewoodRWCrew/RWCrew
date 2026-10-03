@@ -13,7 +13,7 @@
 // a popup instead.
 // This only applies while the selector is actually shown (there are open
 // seasons to pick from), so nobody gets locked out when there are none,
-// and not to the "Mobile App" download page, which has no season.
+// and not to the "Mobile App" install page, which has no season.
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
@@ -32,7 +32,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 
-// The phone-app download page doesn't work per season.
+// The phone-app install page doesn't work per season.
 const SEASONLESS_MODULE_KEYS = new Set(["module-10"]);
 
 interface ModuleTileProps {

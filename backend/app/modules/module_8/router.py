@@ -45,6 +45,7 @@ from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
 from app.modules.module_8.dashboard import build_dashboard
 from app.modules.module_8.deps import (
     MODULE_KEY,
+    PermissionAction,
     accessible_team_ids,
     ensure_season_editable,
     get_season_or_404,
@@ -422,13 +423,23 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
-    """Tell the frontend which Altsien Select screens the current
-    user can view, so it knows what to show in the sidebar without
-    duplicating the permission-checking rules itself.
+    """Tell the frontend which Altsien Select screens the current user can
+    view / create on / edit / delete on, so it knows what to show without
+    duplicating the permission-checking rules itself. Same shape as
+    module-3's (the schema is shared).
     """
     screens = db.scalars(select(AltsienSelectScreen)).all()
-    viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+
+    def keys_allowed(action: PermissionAction) -> list[str]:
+        """The keys of every screen this user may perform `action` on."""
+        return [screen.key for screen in screens if user_can(db, current_user, screen.key, action)]
+
+    return MyPermissionsResponse(
+        viewable_screen_keys=keys_allowed("view"),
+        creatable_screen_keys=keys_allowed("create"),
+        editable_screen_keys=keys_allowed("edit"),
+        deletable_screen_keys=keys_allowed("delete"),
+    )
 
 
 

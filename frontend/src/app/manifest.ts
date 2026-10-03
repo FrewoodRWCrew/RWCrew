@@ -23,9 +23,9 @@ export default function manifest(): MetadataRoute.Manifest {
     name,
     short_name: name,
     description: "RW Crew management application",
-    // Opening the installed app lands on the module overview: the proxy
-    // redirects bare "/" to the visitor's own language (Dutch by default).
-    start_url: "/",
+    // The installed app opens the phone section ("/m", only the phone
+    // screens); the proxy adds the visitor's language (Dutch by default).
+    start_url: "/m",
     scope: "/",
     display: "standalone",
     orientation: "portrait",

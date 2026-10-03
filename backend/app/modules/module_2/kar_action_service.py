@@ -1,7 +1,7 @@
 # Shared "Manuele kar beweging" logic: reading and logging kar movements
-# (KarTracker_kar_actions). Used by KarTracker's own web screen
-# (module_2/router.py) and by the phone app's KarScan (app/mobile/
-# module_2_router.py), so both always read and write movements the same way.
+# (KarTracker_kar_actions). Used by the endpoints in module_2/router.py that
+# serve both the desktop screen and the phone section's KarScan (/m), so
+# every movement is read and written the same way.
 
 from datetime import datetime, timezone
 

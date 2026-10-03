@@ -113,11 +113,15 @@ class CreateOrGrantUserRequest(BaseModel):
 
 class MyPermissionsResponse(BaseModel):
     """Which Intervention Requests screens the calling user is allowed to
-    view — used by the frontend to decide what to show in the sidebar,
+    view, create on, edit and delete on — used by the frontend to decide
+    what to show (sidebar links, the phone's "+" and "Opslaan" buttons)
     without it having to know the full permission-checking rules itself.
     """
 
     viewable_screen_keys: list[str]
+    creatable_screen_keys: list[str]
+    editable_screen_keys: list[str]
+    deletable_screen_keys: list[str]
 
 
 class InterventionRequestsTeamResponse(BaseModel):
@@ -336,3 +340,15 @@ class PublicInterventionRequestCreateRequest(BaseModel):
     def _check_team_reference(self) -> "PublicInterventionRequestCreateRequest":
         _validate_team_reference(self.team_id, self.team_name)
         return self
+
+
+class InterventionRequestsLookupsResponse(BaseModel):
+    """Everything the request form's dropdowns need in one call: statuses,
+    teams and TeamKar members. Gated by the requests screen itself (not the
+    MasterData "statuses" screen), so anyone who may see requests can always
+    pick a status — used by the phone's request form.
+    """
+
+    statuses: list[InterventionStatusResponse]
+    teams: list[InterventionRequestsTeamResponse]
+    teamkar_members: list[TeamKarMemberOptionResponse]

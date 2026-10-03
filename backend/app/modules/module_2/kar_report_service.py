@@ -1,7 +1,7 @@
 # Shared read-only KarTracker reports: the "Kar Planning" report, the "Kar
-# Map" data and the ground plans overlaid on that map. Used by KarTracker's
-# own web screens (module_2/router.py) and by the phone app's KarTracker
-# (app/mobile/module_2_router.py), so both always show exactly the same data.
+# Map" data and the ground plans overlaid on that map. Used by the endpoints
+# in module_2/router.py that serve both the desktop screens and the phone
+# section's Kar Planning / Kar Map (/m), so both show exactly the same data.
 
 from fastapi import HTTPException, status
 from sqlalchemy import select

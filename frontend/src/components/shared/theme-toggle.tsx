@@ -10,6 +10,7 @@ import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 // A tiny helper that reports "false" while the page is still being
 // rendered on the server (or during the very first browser render before
@@ -26,7 +27,12 @@ function useHasMounted(): boolean {
   );
 }
 
-export function ThemeToggle() {
+interface ThemeToggleProps {
+  /** Extra classes, e.g. to fit the button into a coloured phone header. */
+  className?: string;
+}
+
+export function ThemeToggle({ className }: ThemeToggleProps = {}) {
   const { resolvedTheme, setTheme } = useTheme();
   const t = useTranslations("theme");
   const hasMounted = useHasMounted();
@@ -37,7 +43,7 @@ export function ThemeToggle() {
 
   if (!hasMounted) {
     return (
-      <Button variant="ghost" size="icon" disabled aria-hidden="true">
+      <Button variant="ghost" size="icon" disabled aria-hidden="true" className={className}>
         <Sun className="size-4" />
       </Button>
     );
@@ -46,7 +52,14 @@ export function ThemeToggle() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={t("toggleLabel")} title={t("toggleLabel")}>
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggleTheme}
+      aria-label={t("toggleLabel")}
+      title={t("toggleLabel")}
+      className={cn(className)}
+    >
       {isDark ? <Sun className="size-4" /> : <Moon className="size-4" />}
     </Button>
   );

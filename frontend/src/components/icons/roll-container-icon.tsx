@@ -11,8 +11,7 @@
 import { createLucideIcon } from "lucide-react";
 
 // Drawn as a straight front view: tall and narrow like the real container
-// (about twice as high as wide), no push handle, small casters. The phone
-// app draws the exact same shapes (mobile/src/components/roll-container-icon.tsx).
+// (about twice as high as wide), no push handle, small casters.
 const RollContainerIcon = createLucideIcon("roll-container", [
   // The tall cage frame, with the rounded top corners of its tubes.
   ["rect", { x: "6", y: "2", width: "12", height: "15", rx: "2", key: "rc-body" }],

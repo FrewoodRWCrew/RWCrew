@@ -9,12 +9,27 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { listLoginHistory } from "@/lib/api";
-import type { LoginHistoryPage } from "@/lib/types";
+import type { LoginHistoryEntry, LoginHistoryPage } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+
+// Translation key per "source" value: website, phone section (/m), or the old
+// native smartphone app (only on historical rows).
+const SOURCE_LABEL_KEYS = {
+  web: "sourceWeb",
+  pwa: "sourcePwa",
+  mobile: "sourceNativeApp",
+} as const satisfies Record<NonNullable<LoginHistoryEntry["source"]>, string>;
+
+// Translation key per device type, read from the browser's user agent.
+const DEVICE_LABEL_KEYS = {
+  desktop: "deviceDesktop",
+  mobile: "deviceMobile",
+  tablet: "deviceTablet",
+} as const satisfies Record<NonNullable<LoginHistoryEntry["device_type"]>, string>;
 
 interface LoginHistoryTableProps {
   initialData: LoginHistoryPage;
@@ -118,13 +133,14 @@ export function LoginHistoryTable({ initialData, pageSize }: LoginHistoryTablePr
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnUser")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnSource")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDevice")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnIpAddress")}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {data.items.length === 0 && !isLoading && (
               <TableRow>
-                <TableCell colSpan={5} className="text-center text-muted-foreground">
+                <TableCell colSpan={6} className="text-center text-muted-foreground">
                   {t("empty")}
                 </TableCell>
               </TableRow>
@@ -145,10 +161,18 @@ export function LoginHistoryTable({ initialData, pageSize }: LoginHistoryTablePr
                     {entry.success ? t("statusSuccess") : t("statusFailed")}
                   </Badge>
                 </TableCell>
-                {/* Web app vs. smartphone app; "—" for attempts from before this was tracked. */}
+                {/* Website, phone section or old native app; "—" for attempts from before this was tracked. */}
                 <TableCell>
                   {entry.source ? (
-                    <Badge variant="outline">{entry.source === "mobile" ? t("sourceMobile") : t("sourceWeb")}</Badge>
+                    <Badge variant="outline">{t(SOURCE_LABEL_KEYS[entry.source])}</Badge>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  )}
+                </TableCell>
+                {/* PC, phone or tablet; "—" when unknown. */}
+                <TableCell>
+                  {entry.device_type ? (
+                    <Badge variant="outline">{t(DEVICE_LABEL_KEYS[entry.device_type])}</Badge>
                   ) : (
                     <span className="text-muted-foreground">—</span>
                   )}

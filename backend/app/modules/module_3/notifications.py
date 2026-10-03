@@ -1,8 +1,8 @@
 # The "a new intervention request has arrived" mail, sent to every active
 # address on the module's Mailing List (Settings > Mailing List) — for
-# requests from all three entry points: the staff screen (router.py), the
-# public QR form (public_router.py) and the phone app
-# (app/mobile/module_3_router.py).
+# requests from both entry points: the staff screen (router.py, used by the
+# desktop screen and the phone section /m alike) and the public QR form
+# (public_router.py).
 #
 # Split in two on purpose: build_new_request_mail() does the database work
 # (recipients, team name, PDF) inside the request's own DB session, and

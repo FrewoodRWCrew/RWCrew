@@ -109,6 +109,7 @@ from app.schemas.kartracker import (
     KarStatusUpdateRequest,
     KarTrackerDashboardResponse,
     KarTrackerGroundplanResponse,
+    KarTrackerSeasonOption,
     KarTrackerUserSummaryResponse,
     KarUpdateRequest,
     LeverdatumImportResponse,
@@ -644,6 +645,18 @@ def delete_kar(
 
     db.delete(kar)
     db.commit()
+
+
+@router.get("/seasons", response_model=list[KarTrackerSeasonOption])
+def list_open_seasons(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.karplanning", "view")),
+) -> list[Season]:
+    """The open seasons, newest first, for Kar Planning's own season
+    dropdown on the phone. Gated by the Kar Planning screen itself, so its
+    users don't need MasterData access to pick a season.
+    """
+    return list(db.scalars(select(Season).where(Season.periode_open.is_(True)).order_by(Season.name.desc())).all())
 
 
 @router.get("/kar-planning", response_model=KarPlanningReportResponse)

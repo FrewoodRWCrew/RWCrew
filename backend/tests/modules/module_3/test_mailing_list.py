@@ -1,6 +1,6 @@
 # Tests for Intervention Requests' "Mailing List" settings screen and the
 # "new request" mail it drives (app/modules/module_3/notifications.py):
-# every new request — staff screen, public QR form or phone app — mails the
+# every new request — staff screen (desktop or phone) or public QR form — mails the
 # active addresses on the list, with the delivery-note PDF attached, and a
 # mail problem never stops the request from being saved.
 
@@ -13,7 +13,7 @@ from app.core.config import settings
 from app.core.mail import MailAttachment, OutgoingMail, send_email
 from app.db.models.intervention_requests_mailing_recipient import InterventionRequestsMailingRecipient
 from app.modules.module_3 import notifications
-from tests.mobile.helpers import bearer, create_status, create_user, give_requests_role, grant_access
+from tests.modules.module_3.helpers import create_status, create_user, give_requests_role, grant_access, login
 
 WEB = "/api/modules/module-3"
 LIST = f"{WEB}/mailing-list"
@@ -43,41 +43,40 @@ def _add_recipient(db: Session, email: str, *, is_active: bool = True) -> None:
 
 def test_mailing_list_crud(client: TestClient, db_session: Session) -> None:
     _boss(db_session)
-    headers = bearer(client, "boss@example.com")
+    login(client, "boss@example.com")
 
     # Create: the address is stored trimmed and lower-case, a blank name as none.
-    created = client.post(LIST, json={"email": " Jan@Example.COM ", "name": " "}, headers=headers)
+    created = client.post(LIST, json={"email": " Jan@Example.COM ", "name": " "})
     assert created.status_code == 201
     body = created.json()
     assert (body["email"], body["name"], body["is_active"]) == ("jan@example.com", None, True)
 
     # Update: rename and pause.
-    updated = client.put(
-        f"{LIST}/{body['id']}", json={"email": "jan@example.com", "name": "Jan", "is_active": False}, headers=headers
-    )
+    updated = client.put(f"{LIST}/{body['id']}", json={"email": "jan@example.com", "name": "Jan", "is_active": False})
     assert updated.status_code == 200
     assert (updated.json()["name"], updated.json()["is_active"]) == ("Jan", False)
 
     # List, then delete.
-    assert [row["email"] for row in client.get(LIST, headers=headers).json()] == ["jan@example.com"]
-    assert client.delete(f"{LIST}/{body['id']}", headers=headers).status_code == 204
-    assert client.get(LIST, headers=headers).json() == []
+    assert [row["email"] for row in client.get(LIST).json()] == ["jan@example.com"]
+    assert client.delete(f"{LIST}/{body['id']}").status_code == 204
+    assert client.get(LIST).json() == []
 
 
 def test_duplicate_address_is_rejected(client: TestClient, db_session: Session) -> None:
     _boss(db_session)
-    headers = bearer(client, "boss@example.com")
+    login(client, "boss@example.com")
     _add_recipient(db_session, "jan@example.com")
 
-    response = client.post(LIST, json={"email": "JAN@example.com"}, headers=headers)
+    response = client.post(LIST, json={"email": "JAN@example.com"})
 
     assert response.status_code == 409
 
 
 def test_invalid_address_is_rejected(client: TestClient, db_session: Session) -> None:
     _boss(db_session)
+    login(client, "boss@example.com")
 
-    response = client.post(LIST, json={"email": "not-an-email"}, headers=bearer(client, "boss@example.com"))
+    response = client.post(LIST, json={"email": "not-an-email"})
 
     assert response.status_code == 422
 
@@ -86,8 +85,9 @@ def test_requests_permission_does_not_open_the_mailing_list(client: TestClient, 
     user = create_user(db_session, "a@example.com")
     grant_access(db_session, user, "module-3")
     give_requests_role(db_session, user, can_view=True, can_create=True, can_edit=True)
+    login(client, "a@example.com")
 
-    response = client.get(LIST, headers=bearer(client, "a@example.com"))
+    response = client.get(LIST)
 
     assert response.status_code == 403
 
@@ -103,11 +103,11 @@ def test_staff_created_request_mails_active_recipients_with_pdf(
     _add_recipient(db_session, "b@example.com")
     _add_recipient(db_session, "a@example.com")
     _add_recipient(db_session, "paused@example.com", is_active=False)
+    login(client, "boss@example.com")
 
     response = client.post(
         f"{WEB}/intervention-requests",
         json={"team_name": "Vereniging <X>", "question": "Kar stuk", "status_id": status.id},
-        headers=bearer(client, "boss@example.com"),
     )
 
     assert response.status_code == 201
@@ -135,19 +135,20 @@ def test_public_form_request_also_mails(
     assert len(sent_mails) == 1
 
 
-def test_phone_created_request_also_mails(
+def test_request_by_a_plain_requests_role_also_mails(
     client: TestClient, db_session: Session, sent_mails: list[OutgoingMail]
 ) -> None:
+    # The phone section (/m) creates requests through this same endpoint, as
+    # a user who usually only has the requests screen's create right.
     user = create_user(db_session, "a@example.com")
     grant_access(db_session, user, "module-3")
     give_requests_role(db_session, user, can_view=True, can_create=True)
     status = create_status(db_session, "Nieuw")
     _add_recipient(db_session, "list@example.com")
+    login(client, "a@example.com")
 
     response = client.post(
-        "/api/mobile/v1/module-3/intervention-requests",
-        json={"team_name": "Ploeg", "question": "Vraag", "status_id": status.id},
-        headers=bearer(client, "a@example.com"),
+        f"{WEB}/intervention-requests", json={"team_name": "Ploeg", "question": "Vraag", "status_id": status.id}
     )
 
     assert response.status_code == 201
@@ -159,12 +160,12 @@ def test_editing_a_request_does_not_mail(
 ) -> None:
     _boss(db_session)
     status = create_status(db_session, "Nieuw")
-    headers = bearer(client, "boss@example.com")
+    login(client, "boss@example.com")
     body = {"team_name": "Ploeg", "question": "Vraag", "status_id": status.id}
-    created = client.post(f"{WEB}/intervention-requests", json=body, headers=headers).json()
+    created = client.post(f"{WEB}/intervention-requests", json=body).json()
     _add_recipient(db_session, "a@example.com")
 
-    client.put(f"{WEB}/intervention-requests/{created['id']}", json={**body, "question": "Anders"}, headers=headers)
+    client.put(f"{WEB}/intervention-requests/{created['id']}", json={**body, "question": "Anders"})
 
     assert sent_mails == []
 
