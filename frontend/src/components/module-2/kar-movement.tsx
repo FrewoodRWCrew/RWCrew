@@ -8,7 +8,7 @@
 // status/location. Below the form, a history table of logged movements.
 
 import dynamic from "next/dynamic";
-import { LocateFixed, Trash2 } from "lucide-react";
+import { LocateFixed, QrCode, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -36,6 +36,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
+import { QrScanDialog } from "@/components/module-2/qr-scan-dialog";
 
 // Leaflet touches `window` at import time, so the map only ever runs on the
 // client — same ssr:false loading as the Kar Map screen.
@@ -112,6 +113,21 @@ export function KarMovement({ lookups, initialActions, groundplans, canCreate, c
     const kar = karren.find((candidate) => String(candidate.id) === value) ?? null;
     setKarId(kar?.id ?? null);
     setStatusId(kar?.status_id ?? null);
+  }
+
+  // The QR code on a karblad holds just the kar number. A scan picks that
+  // kar (matched trimmed and ignoring case, like the old phone app) and,
+  // when no location was chosen yet, asks for the phone's GPS position.
+  const [isScanOpen, setIsScanOpen] = useState(false);
+  function handleScanned(text: string) {
+    const code = text.trim().toLowerCase();
+    const kar = karren.find((candidate) => candidate.kar_nummer.trim().toLowerCase() === code);
+    if (!kar) {
+      toast.error(t("scanUnknownKar", { code: text.trim() }));
+      return;
+    }
+    handleKarChange(String(kar.id));
+    if (position === null) handleUseMyLocation();
   }
 
   // The map's imperative handle, used to fly to a GPS fix. `flyToken`
@@ -261,23 +277,31 @@ export function KarMovement({ lookups, initialActions, groundplans, canCreate, c
             {/* The kar that was moved; its team is shown read-only and logged as-is. */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="kar-movement-kar">{t("karLabel")}</Label>
-              <Select value={karId !== null ? String(karId) : ""} onValueChange={handleKarChange}>
-                <SelectTrigger id="kar-movement-kar" className="w-full">
-                  <SelectValue>
-                    {(value: string | null) => {
-                      const kar = value ? karren.find((candidate) => String(candidate.id) === value) : undefined;
-                      return kar ? karOptionLabel(kar, t("noTeam")) : t("karPlaceholder");
-                    }}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {karren.map((kar) => (
-                    <SelectItem key={kar.id} value={String(kar.id)}>
-                      {karOptionLabel(kar, t("noTeam"))}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="flex gap-2">
+                <Select value={karId !== null ? String(karId) : ""} onValueChange={handleKarChange}>
+                  <SelectTrigger id="kar-movement-kar" className="min-w-0 flex-1">
+                    <SelectValue>
+                      {(value: string | null) => {
+                        const kar = value ? karren.find((candidate) => String(candidate.id) === value) : undefined;
+                        return kar ? karOptionLabel(kar, t("noTeam")) : t("karPlaceholder");
+                      }}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {karren.map((kar) => (
+                      <SelectItem key={kar.id} value={String(kar.id)}>
+                        {karOptionLabel(kar, t("noTeam"))}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {/* Pick the kar by scanning the QR code on its karblad. */}
+                <Button type="button" variant="outline" onClick={() => setIsScanOpen(true)}>
+                  <QrCode className="size-4" />
+                  {t("scanQr")}
+                </Button>
+              </div>
+              <QrScanDialog open={isScanOpen} onOpenChange={setIsScanOpen} onScanned={handleScanned} />
               {karren.length === 0 && <p className="text-sm text-muted-foreground">{t("noKarren")}</p>}
               {selectedKar && (
                 <p className="text-sm">
