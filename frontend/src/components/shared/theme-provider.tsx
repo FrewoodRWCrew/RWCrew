@@ -20,6 +20,14 @@ export function ThemeProvider({ children, ...props }: ComponentProps<typeof Next
       // system preference — dark stays the default until they explicitly
       // switch to light mode themselves.
       enableSystem={false}
+      // next-themes renders a small inline <script> that sets the theme class
+      // before the page paints. It only has to run from the server's HTML;
+      // when React renders it again in the browser, React 19 warns
+      // "Encountered a script tag while rendering React component". Giving
+      // the browser-side copy a non-JavaScript type silences that without
+      // changing what the server sends (next-themes already suppresses the
+      // hydration mismatch on this tag).
+      scriptProps={typeof window === "undefined" ? undefined : { type: "application/json" }}
       {...props}
     >
       {children}

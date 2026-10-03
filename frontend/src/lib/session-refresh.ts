@@ -10,7 +10,7 @@
 // Never import this from browser code — see refreshSessionInBrowser in
 // api.ts for the client-side equivalent.
 
-import { API_BASE_URL } from "./config";
+import { SERVER_API_BASE_URL } from "./config";
 
 export const ACCESS_TOKEN_COOKIE_NAME = "rwcrew_access_token";
 export const REFRESH_TOKEN_COOKIE_NAME = "rwcrew_refresh_token";
@@ -62,7 +62,7 @@ export function refreshSessionOnServer(refreshToken: string): Promise<RefreshedS
 
 async function callBackendRefresh(refreshToken: string): Promise<RefreshedSession | null> {
   try {
-    const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
+    const response = await fetch(`${SERVER_API_BASE_URL}/api/auth/refresh`, {
       method: "POST",
       headers: { Cookie: `${REFRESH_TOKEN_COOKIE_NAME}=${refreshToken}` },
       cache: "no-store",
