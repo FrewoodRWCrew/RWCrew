@@ -10,12 +10,13 @@
 # built-in Helvetica font only knows latin-1, so free text goes through
 # _pdf_text() first (the same fallback as module_2/karblad_pdf.py).
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 
 from fpdf import FPDF
 from fpdf.fonts import FontFace
 
+from app.core.timezone import belgian_now, to_belgian
 from app.schemas.altsien_select import TeamStateResponse
 
 # Altsien Select's own fuchsia accent (fuchsia-600, see
@@ -175,7 +176,10 @@ def _pdf_text(text: str | None) -> str:
 
 
 def _format_date(value: date | datetime) -> str:
-    """dd-mm-yyyy, the app's established date format."""
+    """dd-mm-yyyy, the app's established date format. A moment (date-time)
+    gives its Belgian date; a plain date is shown as-is."""
+    if isinstance(value, datetime):
+        value = to_belgian(value)
     return value.strftime("%d-%m-%Y")
 
 
@@ -480,7 +484,7 @@ def _render_placeholder(pdf: FPDF, heading: str, labels: dict) -> None:
 def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
     """The Ploegfiche PDF for one team in one season."""
     labels = LABELS.get(locale, LABELS["nl"])
-    generated_on = datetime.now(timezone.utc).astimezone().strftime("%d-%m-%Y %H:%M")
+    generated_on = belgian_now().strftime("%d-%m-%Y %H:%M")
 
     pdf = _PloegfichePDF(labels, generated_on)
     pdf.set_margins(15, 12, 15)

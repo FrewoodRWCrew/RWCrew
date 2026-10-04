@@ -14,3 +14,8 @@ admin/editor/reader roles, managed independently by that module's admin.
 
 Start with the backend README, then the frontend README, to get both
 running locally.
+
+New to the project? Read the (Dutch) developer handbook first:
+[docs/RWCrew-Ontwikkelaarshandleiding.pdf](docs/RWCrew-Ontwikkelaarshandleiding.pdf) — architecture,
+tools, how the app is built, team workflow and day-to-day administration. Its source lives in
+`docs/handleiding/`; rebuild the PDF with `python docs/handleiding/build_pdf.py`.

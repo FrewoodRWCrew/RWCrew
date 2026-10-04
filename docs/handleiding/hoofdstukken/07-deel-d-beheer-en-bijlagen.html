@@ -1,0 +1,364 @@
+<!-- Deel D: hoofdstuk 18 (beheer zonder programmeren) en de bijlagen. -->
+
+<section class="deel" id="deel-d" data-toc="Deel D · Dagelijks beheer">
+  <div class="deel-label">Deel D</div>
+  <h1>Dagelijks beheer</h1>
+  <div class="streep"></div>
+  <p>Taken die je uitvoert zonder te programmeren: gebruikers en rechten, seizoenen en stamgegevens, scanners, de
+  telefoon-app, controleren of alles draait en wat te doen bij een storing.</p>
+  <div class="deel-lezers">Doelgroep: functionele beheerders en serverbeheerders.</div>
+</section>
+
+<h1 class="hoofdstuk" id="h-beheer">Beheer zonder te programmeren</h1>
+<div class="doelgroep beheer">Beheerders</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Bijna alle beheer gebeurt in RWCrew zelf. De <strong>superbeheerder</strong> maakt gebruikers aan en beslist wie welke module mag
+openen (<em>Manage Access</em>). Elke <strong>modulebeheerder</strong> bepaalt in zijn module met rollen wat die gebruikers mogen
+(<em>Access Rights</em>). Seizoenen en andere stamgegevens beheer je in <strong>MasterData</strong>. Voor de server zijn er een paar
+eenvoudige controles: de gezondheids-URL, het tabblad Actions op GitHub, en bij twijfel de logs.
+</div>
+
+<h2 id="s-beheer-superbeheerder">De superbeheerder</h2>
+<p>De superbeheerder is een gewone gebruiker met de vlag <em>Super admin</em>. Hij ziet links een beheermenu met:</p>
+<ul>
+  <li><strong>Manage Access</strong>: gebruikers aanmaken, gegevens en vlaggen aanpassen, wachtwoorden resetten, verwijderen, en per
+  gebruiker de modules aanvinken die hij mag openen;</li>
+  <li><strong>Login History</strong>: alle inlogpogingen.</li>
+</ul>
+<p>De eerste superbeheerder wordt bij de installatie aangemaakt met het seed-script. Daarna kan elke superbeheerder anderen
+superbeheerder maken. Zorg dat er altijd <strong>minstens twee</strong> zijn. Onthoud: superbeheerder zijn geeft geen automatische
+toegang tot modules (zie <a class="ref" href="#s-moduletoegang"></a>).</p>
+
+<h2 id="s-beheer-gebruiker">Een nieuwe gebruiker toevoegen</h2>
+<ol class="stappen">
+  <li>Open <strong>Manage Access</strong> en kies "gebruiker toevoegen". Vul e-mailadres, weergavenaam, een tijdelijk wachtwoord
+  (minstens 8 tekens) en eventueel een telefoonnummer in. Vink <em>Altsien Kernlid</em> aan als de persoon de Ploeg Wizard moet
+  invullen, en <em>Super admin</em> alleen als dat echt nodig is.</li>
+  <li>Vink in het raster de <strong>modules</strong> aan die de gebruiker mag openen.</li>
+  <li>Vraag de <strong>beheerder van elke module</strong> (of doe het zelf als superbeheerder met moduletoegang) om in die module onder
+  <em>Access Rights &gt; Users</em> een <strong>rol</strong> toe te kennen. Zonder rol ziet de gebruiker de moduletegel wel, maar binnen
+  de module geen schermen.</li>
+  <li>Bezorg de gebruiker het adres (<code>https://rwcrew.eu</code>) en het tijdelijke wachtwoord via een veilig kanaal, en vraag hem het
+  wachtwoord meteen te wijzigen (gebruikersmenu rechtsboven &gt; wachtwoord wijzigen).</li>
+</ol>
+<div class="kader tip"><span class="kader-titel"></span>
+Een modulebeheerder kan ook zelf vanuit <em>Access Rights &gt; Users</em> van zijn module een gebruiker aanmaken of toegang geven.
+Die gebruiker krijgt dan toegang tot die ene module, niet tot andere.
+</div>
+
+<h2 id="s-beheer-wijzigen">Toegang intrekken, wachtwoord resetten, verwijderen</h2>
+<table class="compact">
+  <caption>Veelvoorkomende wijzigingen aan gebruikers</caption>
+  <tr><th style="width:32%">Ik wil…</th><th>Doe dit</th></tr>
+  <tr><td>iemand een module afnemen</td><td>Manage Access: het vinkje bij die module weghalen. Vanaf dan antwoordt elke pagina van die module met "geen toegang".</td></tr>
+  <tr><td>iemand minder rechten geven in een module</td><td>In die module, Access Rights &gt; Users: een andere rol kiezen, of de rechtenmatrix van zijn rol aanpassen (geldt dan voor iedereen met die rol).</td></tr>
+  <tr><td>een vergeten wachtwoord oplossen</td><td>Manage Access: een nieuw wachtwoord instellen. Alle sessies van die gebruiker worden beëindigd.</td></tr>
+  <tr><td>iemand definitief verwijderen</td><td>Manage Access: verwijderen. Zijn moduletoegang, rollen en sessies verdwijnen mee. Je kunt jezelf niet verwijderen.</td></tr>
+</table>
+
+<h2 id="s-beheer-rollen">Rollen beheren binnen een module</h2>
+<ol class="stappen">
+  <li>Open de module en ga naar <em>Access Rights &gt; Roles</em> (je hebt daarvoor zelf de juiste rechten nodig).</li>
+  <li>Maak een rol met een duidelijke naam die zegt wat iemand doet ("Logistiek", "Kernlid", "Alleen lezen").</li>
+  <li>Vink in de rechtenmatrix per scherm aan wat de rol mag: zien, aanmaken, wijzigen, verwijderen. Bewaar.</li>
+  <li>Ken de rol toe onder <em>Access Rights &gt; Users</em>.</li>
+</ol>
+<p>Tips: geef "verwijderen" spaarzaam; geef de schermen <em>Roles</em> en <em>Users</em> alleen aan modulebeheerders; en zorg dat elke
+module minstens twee mensen heeft die rollen kunnen beheren. Een overzicht van alle schermen per module staat in
+<a class="ref" href="#bijlage-schermen"></a>.</p>
+
+<h2 id="s-beheer-historiek">De inloghistoriek bekijken</h2>
+<p><em>Login History</em> toont per poging: tijdstip, e-mailadres, geslaagd of niet, IP-adres, bron (website, telefoon-app, of
+"Native app (old)" voor oude rijen) en toesteltype. Gebruik het om te zien wie de applicatie gebruikt, of om verdachte
+pogingen te herkennen (veel mislukte pogingen op één e-mailadres of van één IP-adres).</p>
+
+<h2 id="s-beheer-seizoenen">Seizoenen en stamgegevens</h2>
+<p>Stamgegevens beheer je in <strong>MasterData</strong> (module 9). De belangrijkste jaarlijkse taak is het <strong>nieuwe seizoen</strong>:</p>
+<ol class="stappen">
+  <li>MasterData &gt; <em>Years</em>: een nieuw seizoen toevoegen (bv. "2027"). Namen worden alfabetisch gesorteerd, en "vorig seizoen"
+  is het seizoen dat net vóór het huidige sorteert; gebruik dus altijd hetzelfde formaat (vier cijfers).</li>
+  <li>Zet <em>periode open</em> aan zodra ploegen hun keuzes mogen maken. Open seizoenen verschijnen in de seizoenkiezer bovenaan.</li>
+  <li>Kijk festivals, ploegen, locaties en producten na voor het nieuwe jaar. Grote aantallen gaan het snelst via
+  <em>Data Upload/Download</em>: sjabloon downloaden, invullen, uploaden. Je krijgt per rij te zien of het gelukt is.</li>
+  <li>In Altsien Select kunnen kernleden bij verschillende stappen de keuzes van vorig seizoen overnemen.</li>
+  <li>Na de inschrijvingsperiode: <em>periode open</em> uitzetten. Vanaf dan kunnen alleen gebruikers met het recht "organisatie" in
+  Altsien Select nog wijzigen.</li>
+</ol>
+<p><strong>Altsien-kernleden aan ploegen koppelen</strong>: zet de vlag <em>Altsien Kernlid</em> bij de gebruiker (Manage Access), en koppel
+hem in MasterData &gt; <em>Teams</em> aan zijn ploeg(en). Hij ziet in Altsien Select alleen die ploegen.</p>
+
+<h2 id="s-beheer-mailinglijst">De mailinglijst van Interventie Aanvragen</h2>
+<p>In Interventie Aanvragen &gt; <em>Instellingen &gt; Mailinglijst</em> beheer je wie een mail krijgt bij elke nieuwe aanvraag. Je kunt
+een adres tijdelijk <em>inactief</em> zetten zonder het te verwijderen. Op test begint het onderwerp met "[TEST]". Komen er geen mails
+aan, zie dan <a class="ref" href="#tab-storingen"></a>.</p>
+
+<h2 id="s-beheer-scanner">Een TagScan-scanner toevoegen</h2>
+<ol class="stappen">
+  <li>TagScan &gt; <em>Scanners</em>: de scanner toevoegen en een <strong>API-sleutel genereren</strong>. De sleutel wordt maar één keer
+  getoond; kopieer hem meteen.</li>
+  <li>Zet de sleutel in het configuratiebestand van de watcher op de Raspberry Pi (<code>/etc/tagscan-watcher/prod.env</code> voor
+  productie of <code>dev.env</code> voor test; zie <code>scripts/pi-watcher/README.md</code>) en herstart de watcher.</li>
+  <li>Controleer na een scan of het bestand onder <em>CSV Source Files</em> verschijnt, en druk op <strong>Scan</strong> om het in te lezen.</li>
+</ol>
+<p>Een sleutel werkt alleen op de omgeving waar hij gemaakt is. Kwijt of gelekt? Genereer een nieuwe; de oude werkt dan niet meer.
+De volledige installatie van een Pi staat in <code>docs/tagscan-raspi-setup-guide.pdf</code>.</p>
+
+<h2 id="s-beheer-telefoon">De telefoon-app laten installeren</h2>
+<p>Geef de gebruiker toegang tot module 10 (<em>Mobile App</em>). Die pagina toont het adres en een QR-code. De gebruiker scant de
+code, opent het adres in Safari (iPhone) of Chrome (Android) en kiest "Zet op beginscherm" (iPhone: deelknop) of
+"App installeren" (Android). De app opent daarna schermvullend op <code>/m</code>. Een update is niet nodig: de app is altijd de
+nieuwste versie van de website.</p>
+
+<h2 id="s-beheer-controle">Controleren of alles draait</h2>
+<table class="compact">
+  <caption>Snelle controles</caption>
+  <tr><th style="width:38%">Controle</th><th>Verwacht resultaat</th></tr>
+  <tr><td><code>https://rwcrew.eu/api/health</code> in een browser</td><td><code>{"status":"ok"}</code>: de backend draait</td></tr>
+  <tr><td><code>https://rwcrew.eu/nl/login</code></td><td>Het loginscherm: frontend en Nginx draaien</td></tr>
+  <tr><td>GitHub &gt; tabblad <em>Actions</em></td><td>De laatste deployments zijn groen</td></tr>
+  <tr><td>Op de server: <code>docker compose -f docker-compose.prod.yml ps</code></td><td>Drie containers met status "running" / "Up"</td></tr>
+  <tr><td>Op de server: <code>… logs --tail=200 backend</code></td><td>Geen herhaalde fouten (<code>Traceback</code>, <code>ERROR</code>)</td></tr>
+</table>
+<p>Vervang <code>rwcrew.eu</code> door <code>test.rwcrew.eu</code> voor de testomgeving.</p>
+
+<h2 id="s-beheer-data">Gegevens bekijken</h2>
+<p>Voor vragen als "hoeveel aanvragen kwamen er gisteren binnen?" is de applicatie zelf (KPI-schermen, exports) de eerste keuze.
+Wie meer nodig heeft en toegang kreeg, kan met pgAdmin en de read-only gebruiker de database bekijken (zie
+<a class="ref" href="#s-pgadmin"></a>). Die gebruiker kan niets wijzigen; wijzigingen aan gegevens gebeuren altijd via de applicatie.</p>
+
+<h2 id="s-beheer-storing">Wat te doen bij een storing</h2>
+<table id="tab-storingen" class="compact">
+  <caption>Eerste hulp bij storingen</caption>
+  <tr><th style="width:24%">Wat zie je</th><th style="width:36%">Eerst controleren</th><th>Mogelijke oorzaak en actie</th></tr>
+  <tr><td>Site helemaal onbereikbaar</td><td>Andere omgeving bereikbaar? <code>/api/health</code>? Hostinger-status?</td><td>Server of Nginx plat, certificaat verlopen, DNS. Serverbeheerder: <code>docker compose ps</code>, <code>sudo systemctl status nginx</code>, <code>sudo certbot certificates</code>.</td></tr>
+  <tr><td>Foutpagina na een deployment</td><td>GitHub Actions rood?</td><td>Build of migratie mislukt: foutmelding in Actions lezen; zo nodig de laatste commit terugdraaien (<a class="ref" href="#s-handmatig-terugdraaien"></a>).</td></tr>
+  <tr><td>Niemand kan inloggen</td><td>Login History: pogingen zichtbaar? Backend-logs?</td><td>Backend of database plat; of <code>JWT_SECRET</code>/<code>CORS_ALLOWED_ORIGINS</code> verkeerd na een wijziging.</td></tr>
+  <tr><td>Eén gebruiker kan niet inloggen</td><td>Login History voor zijn e-mailadres</td><td>Fout wachtwoord → resetten. Account verwijderd of inactief.</td></tr>
+  <tr><td>"Geen toegang" in een module</td><td>Manage Access: vinkje? Access Rights: rol?</td><td>Moduletoegang of rol ontbreekt, of de rol heeft geen "zien" op dat scherm.</td></tr>
+  <tr><td>Geen mails bij nieuwe aanvragen</td><td>Mailinglijst: actieve adressen? Spam? Backend-log ("skip" of fout van Resend)?</td><td><code>RESEND_API_KEY</code>/<code>MAIL_FROM</code> leeg of fout; domein niet geverifieerd bij Resend; instelling niet in <code>docker-compose.prod.yml</code>.</td></tr>
+  <tr><td>TagScan-bestanden komen niet binnen</td><td>Draait de watcher op de Pi? Netwerk? Juiste sleutel en omgeving?</td><td>Sleutel van de andere omgeving; Nginx 413 bij grote bestanden; watcher gestopt.</td></tr>
+  <tr><td>Camera of GPS werkt niet op de telefoon</td><td>Adres begint met <code>https://</code>? Toestemming in de browser?</td><td>Alleen HTTPS geeft toegang; toestemming voor de site opnieuw toestaan in de browserinstellingen.</td></tr>
+  <tr><td>Foutmelding met "500"</td><td>Backend-log op het tijdstip van de fout</td><td>Fout in de code: noteer wat je deed, maak een GitHub Issue met de logregels, en verwittig een ontwikkelaar.</td></tr>
+</table>
+<div class="kader letop"><span class="kader-titel"></span>
+Wijzig bij een storing <strong>nooit</strong> met de hand code op de server en voer geen SQL uit die gegevens wijzigt. Zo'n wijziging
+wordt bij de volgende deployment overschreven of blokkeert ze (<code>git pull --ff-only</code>), en maakt het probleem moeilijker te
+volgen. Los het op via een commit, of vraag hulp.
+</div>
+
+<!-- ============================================================ -->
+
+<section class="deel" id="deel-bijlagen" data-toc="Bijlagen">
+  <div class="deel-label">Bijlagen</div>
+  <h1>Naslag</h1>
+  <div class="streep"></div>
+  <p>De woordenlijst, een overzicht van alle schermen en hun rechtensleutels per module, en hoe je deze handleiding zelf bijwerkt.</p>
+</section>
+
+<h1 class="hoofdstuk bijlage" id="bijlage-woordenlijst">Woordenlijst</h1>
+<dl class="woordenlijst">
+  <dt>Alembic</dt><dd>Tool die databasemigraties maakt en uitvoert. Zie <a class="ref" href="#s-migraties"></a>.</dd>
+  <dt>API (Application Programming Interface)</dt><dd>De vaste set adressen waarop de backend vragen beantwoordt. Zie <a class="ref" href="#s-api-json"></a>.</dd>
+  <dt>API-sleutel</dt><dd>Een geheime tekenreeks waarmee een apparaat (hier: de Raspberry Pi) zich bij de API identificeert, zonder gebruiker of wachtwoord.</dd>
+  <dt>App Router</dt><dd>De manier waarop Next.js adressen koppelt aan mappen onder <code>src/app/</code>.</dd>
+  <dt>Background task (achtergrondtaak)</dt><dd>Werk dat FastAPI uitvoert nadat het antwoord al vertrokken is, bv. een mail versturen.</dd>
+  <dt>Backend</dt><dd>Het deel van de software dat de regels toepast en met de database praat. In RWCrew: FastAPI (Python).</dd>
+  <dt>Base UI</dt><dd>Bibliotheek met toegankelijke basisonderdelen waarop de shadcn-componenten hier gebouwd zijn.</dd>
+  <dt>Branch</dt><dd>Een aparte lijn van wijzigingen in Git. <code>main</code> = productie, <code>develop</code> = test.</dd>
+  <dt>Build (bouwen)</dt><dd>Broncode omzetten naar een uitvoerbare, geoptimaliseerde versie.</dd>
+  <dt>certbot / Let's Encrypt</dt><dd>Gratis HTTPS-certificaten en het programma dat ze aanvraagt en vernieuwt.</dd>
+  <dt>CI/CD</dt><dd>Continuous Integration / Continuous Deployment: automatisch testen en installeren bij elke wijziging. Hier: GitHub Actions.</dd>
+  <dt>Clientcomponent</dt><dd>Een React-component dat in de browser draait (bestand begint met <code>"use client"</code>).</dd>
+  <dt>Commit</dt><dd>Een bewaarde momentopname van wijzigingen in Git, met een beschrijving.</dd>
+  <dt>Container</dt><dd>Een verpakt programma met alles wat het nodig heeft, dat overal hetzelfde draait. Zie Docker.</dd>
+  <dt>Cookie</dt><dd>Een stukje tekst dat de browser bewaart en automatisch meestuurt naar dezelfde website; hier de inlogtokens.</dd>
+  <dt>CORS</dt><dd>Cross-Origin Resource Sharing: regels over welke websites een API vanuit de browser mogen aanroepen.</dd>
+  <dt>CRUD</dt><dd>Create, Read, Update, Delete: aanmaken, lezen, wijzigen, verwijderen. Een "CRUD-scherm" is een lijst met die vier acties.</dd>
+  <dt>CSV</dt><dd>Eenvoudig tekstbestand met gegevens gescheiden door komma's of puntkomma's; zo leveren de RFID-scanners hun scans aan.</dd>
+  <dt>Database</dt><dd>Het programma dat gegevens blijvend in tabellen bewaart. Hier: PostgreSQL.</dd>
+  <dt>Dependency (FastAPI)</dt><dd>Een functie die automatisch vóór een endpoint loopt, bv. om de gebruiker en zijn rechten te controleren.</dd>
+  <dt>Deployen</dt><dd>Een nieuwe versie van de software installeren en starten op een server.</dd>
+  <dt>DNS</dt><dd>Het systeem dat domeinnamen (<code>rwcrew.eu</code>) vertaalt naar IP-adressen.</dd>
+  <dt>Docker / Docker Compose</dt><dd>Tool om containers te bouwen en te draaien / om meerdere containers samen te beschrijven en te starten.</dd>
+  <dt>Endpoint</dt><dd>Eén adres + methode van de API, bv. <code>POST /api/auth/login</code>.</dd>
+  <dt><code>.env</code>-bestand</dt><dd>Bestand met instellingen en geheimen per omgeving; staat nooit in Git.</dd>
+  <dt>FastAPI</dt><dd>Python-raamwerk voor API's, gebruikt voor de backend.</dd>
+  <dt>Fixture (pytest)</dt><dd>Herbruikbare voorbereiding voor tests, bv. een lege testdatabase of een testclient.</dd>
+  <dt>Foreign key (vreemde sleutel)</dt><dd>Een kolom die naar de sleutel van een rij in een andere tabel verwijst.</dd>
+  <dt>Frontend</dt><dd>Het deel van de software dat schermen maakt. In RWCrew: Next.js.</dd>
+  <dt>Git / GitHub</dt><dd>Versiebeheersysteem / de website waar de centrale kopie van de repository staat.</dd>
+  <dt>GitHub Actions</dt><dd>De automatisatie van GitHub die bij een push de deployment uitvoert.</dd>
+  <dt>Hash</dt><dd>Een onomkeerbare "vingerafdruk" van gegevens; wachtwoorden worden alleen als hash bewaard.</dd>
+  <dt>Headless</dt><dd>Een programma (bv. een browser) dat zonder zichtbaar venster draait.</dd>
+  <dt>HTTP / HTTPS</dt><dd>Het protocol van het web / dezelfde, maar versleuteld.</dd>
+  <dt>HttpOnly</dt><dd>Eigenschap van een cookie: JavaScript in de pagina kan ze niet lezen.</dd>
+  <dt>JSON</dt><dd>Leesbaar tekstformaat voor gegevens, gebruikt tussen frontend en backend.</dd>
+  <dt>JWT (JSON Web Token)</dt><dd>Een digitaal ondertekend bewijsje met daarin wie de gebruiker is en tot wanneer het geldig is.</dd>
+  <dt>Layout (Next.js)</dt><dd>Een omhulsel rond een groep pagina's, bv. voor de inlogcontrole of het modulemenu.</dd>
+  <dt>Merge</dt><dd>Wijzigingen van de ene branch samenvoegen in een andere.</dd>
+  <dt>Migratie</dt><dd>Een genummerd script dat de structuur van de database aanpast. Zie <a class="ref" href="#s-database-basis"></a>.</dd>
+  <dt>Model (SQLAlchemy)</dt><dd>Een Python-klasse die een databasetabel beschrijft.</dd>
+  <dt>Module</dt><dd>Een afgerond deel van RWCrew met een eigen tegel, menu en rechten (TagScan, KarTracker, …).</dd>
+  <dt>Moduletoegang</dt><dd>Het ja/nee-recht om een module te openen, toegekend door de superbeheerder.</dd>
+  <dt>Namespace (vertalingen)</dt><dd>Een groep schermteksten in <code>nl.json</code>/<code>en.json</code>, meestal één per module.</dd>
+  <dt>Next.js</dt><dd>Raamwerk rond React, gebruikt voor de frontend.</dd>
+  <dt>Nginx</dt><dd>De webserver/reverse proxy vooraan op de server.</dd>
+  <dt>ORM</dt><dd>Object-Relational Mapper: vertaalt tussen Python-objecten en databasetabellen. Hier: SQLAlchemy.</dd>
+  <dt>pgAdmin</dt><dd>Programma om een PostgreSQL-database te bekijken.</dd>
+  <dt>PostgreSQL</dt><dd>De database van RWCrew.</dd>
+  <dt>Productie</dt><dd>De echte omgeving met echte gegevens: <code>rwcrew.eu</code>.</dd>
+  <dt>Proxy (<code>proxy.ts</code>)</dt><dd>Code in de frontend die vóór elke pagina loopt: taal toevoegen en de sessie vernieuwen.</dd>
+  <dt>Pull request (PR)</dt><dd>Voorstel op GitHub om een branch samen te voegen, met ruimte voor review.</dd>
+  <dt>Push / pull</dt><dd>Commits naar GitHub sturen / van GitHub ophalen.</dd>
+  <dt>PWA (Progressive Web App)</dt><dd>Een website die je als app op je telefoon kunt installeren. Zie <a class="ref" href="#h-telefoon"></a>.</dd>
+  <dt>Pydantic / schema</dt><dd>Bibliotheek die de vorm van gegevens beschrijft en controleert / zo'n beschrijving.</dd>
+  <dt>pytest</dt><dd>Het testraamwerk van de backend.</dd>
+  <dt>React</dt><dd>Bibliotheek om schermen op te bouwen uit componenten.</dd>
+  <dt>Repository (repo)</dt><dd>De map met alle broncode en haar volledige geschiedenis.</dd>
+  <dt>Resend</dt><dd>Dienst die de uitgaande mails verstuurt.</dd>
+  <dt>Reverse proxy</dt><dd>Een server vooraan die verzoeken aanneemt en doorstuurt naar het juiste programma.</dd>
+  <dt>RFID</dt><dd>Radio Frequency Identification: tags die draadloos uitgelezen worden met een scanner.</dd>
+  <dt>Rol</dt><dd>Een benoemde set rechten binnen één module, met per scherm zien/aanmaken/wijzigen/verwijderen.</dd>
+  <dt>Rotatie (token)</dt><dd>Het vervangen van het vernieuwingstoken bij elk gebruik, waarbij het oude ongeldig wordt.</dd>
+  <dt>Router (FastAPI)</dt><dd>Een groep endpoints met een gemeenschappelijk adresvoorvoegsel, bv. alles van module 3.</dd>
+  <dt>SameSite</dt><dd>Eigenschap van een cookie die bepaalt of ze meegestuurd wordt met verzoeken vanaf andere websites.</dd>
+  <dt>SAVEPOINT</dt><dd>Een tussentijds bewaarpunt in een databasetransactie; laat toe één rij van een import terug te draaien.</dd>
+  <dt>Schermsleutel</dt><dd>De vaste, technische naam van een scherm voor de rechten, bv. <code>interventionrequests.requests</code>.</dd>
+  <dt>Secret (GitHub)</dt><dd>Een versleuteld bewaarde waarde in GitHub, bv. de SSH-sleutel voor de deployment.</dd>
+  <dt>Seed-script</dt><dd>Script dat een lege database van de eerste gegevens voorziet (modules, seizoenen, eerste superbeheerder).</dd>
+  <dt>Servercomponent</dt><dd>Een React-component dat alleen op de server draait en rechtstreeks gegevens kan ophalen.</dd>
+  <dt>Sessie</dt><dd>De periode waarin een gebruiker ingelogd blijft: maximaal 6 uur na het ingeven van het wachtwoord.</dd>
+  <dt>shadcn/ui</dt><dd>Verzameling kant-en-klare UI-onderdelen die als broncode in het project staan.</dd>
+  <dt>SQL</dt><dd>De taal waarmee je een relationele database bevraagt.</dd>
+  <dt>SQLAlchemy</dt><dd>De ORM van de backend.</dd>
+  <dt>SQLite</dt><dd>Een kleine database in een bestand of in het geheugen; gebruikt voor de automatische tests.</dd>
+  <dt>SSH / SSH-tunnel</dt><dd>Beveiligde verbinding met een server / een beveiligde doorgang via die verbinding, bv. voor pgAdmin.</dd>
+  <dt>Stamgegevens</dt><dd>Gegevens die alle modules delen en weinig veranderen (seizoenen, ploegen, festivals, producten). In MasterData.</dd>
+  <dt>Statuscode</dt><dd>Getal in een HTTP-antwoord dat zegt hoe het verzoek afliep (200, 403, 500, …). Zie <a class="ref" href="#tab-statuscodes"></a>.</dd>
+  <dt>Superbeheerder (super admin)</dt><dd>Gebruiker die beslist wie welke module mag openen en gebruikers beheert.</dd>
+  <dt>Tailwind CSS</dt><dd>Opmaak via korte klassen in de HTML.</dd>
+  <dt>Test (omgeving)</dt><dd>De oefenomgeving <code>test.rwcrew.eu</code>, met de branch <code>develop</code>.</dd>
+  <dt>Toegangstoken / vernieuwingstoken</dt><dd>Kortlevend inlogbewijs (15 min.) / langer levend bewijs om een nieuw toegangstoken te halen (tot 6 u).</dd>
+  <dt>Tunnel (Cloudflare)</dt><dd>Een tijdelijk publiek HTTPS-adres dat naar je eigen pc wijst; voor telefoontests met camera en GPS.</dd>
+  <dt>TypeScript</dt><dd>JavaScript met types; de taal van de frontend.</dd>
+  <dt>Uvicorn</dt><dd>De server die de FastAPI-applicatie laat draaien.</dd>
+  <dt>Volume (Docker)</dt><dd>Opslag die buiten een container bewaard blijft, ook als de container vervangen wordt.</dd>
+  <dt>VPS</dt><dd>Virtual Private Server: een gehuurde virtuele server, hier bij Hostinger.</dd>
+  <dt>Wheel</dt><dd>Een voorgecompileerd Python-pakket; zie <a class="ref" href="#s-python-314"></a>.</dd>
+</dl>
+
+<h1 class="hoofdstuk bijlage" id="bijlage-schermen">Schermen en rechtensleutels per module</h1>
+<p>Deze lijsten komen rechtstreeks uit de <code>SCREEN_DEFINITIONS</code> in <code>backend/app/modules/module_N/screens.py</code>. Elk scherm
+verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes is wat in de matrix staat.</p>
+
+<table class="compact">
+  <caption>TagScan (module 1)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>tagscan.dashboard</code></td><td>(CSV Source Files) ontvangen CSV-bestanden, knop Scan</td></tr>
+  <tr><td><code>tagscan.tag-headerdata</code></td><td>(Tag Headerdata) één rij per ingelezen bestand, PDF</td></tr>
+  <tr><td><code>tagscan.tag-linedata</code></td><td>(Tag Linedata) één rij per gescande tag</td></tr>
+  <tr><td><code>tagscan.tag-management</code></td><td>(TagManagement) register van tags, Excel-import</td></tr>
+  <tr><td><code>tagscan.scanners</code></td><td>(Scanners) scanners en API-sleutels</td></tr>
+  <tr><td><code>tagscan.settings</code></td><td>(Settings) instellingen van de module</td></tr>
+  <tr><td><code>tagscan.roles</code>, <code>tagscan.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<table class="compact">
+  <caption>KarTracker (module 2)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>kartracker.karmanagement</code></td><td>(KarManagement) karrenregister</td></tr>
+  <tr><td><code>kartracker.karstatuses</code></td><td>(KarStatussen) mogelijke statussen van een kar</td></tr>
+  <tr><td><code>kartracker.distributiepunten</code></td><td>(Distributiepunten)</td></tr>
+  <tr><td><code>kartracker.zones</code></td><td>(Zone)</td></tr>
+  <tr><td><code>kartracker.afleverlocaties</code></td><td>(Afleverlocatie)</td></tr>
+  <tr><td><code>kartracker.leverdata</code></td><td>(Delivery Dates) lever- en ophaalmomenten</td></tr>
+  <tr><td><code>kartracker.plankar</code></td><td>(Plan a kar) afleverlocatie per ploeg/festival/seizoen</td></tr>
+  <tr><td><code>kartracker.karplanning</code></td><td>(Kar Planning) overzicht en karbladen (PDF); telefoon: Kar Planning</td></tr>
+  <tr><td><code>kartracker.karmap</code></td><td>(Kar Map) kaart; telefoon: Kar Map</td></tr>
+  <tr><td><code>kartracker.groundplan</code></td><td>(Grondplan)</td></tr>
+  <tr><td><code>kartracker.actions</code></td><td>(Manuele kar beweging) bewegingen registreren; telefoon: KarScan</td></tr>
+  <tr><td><code>kartracker.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
+  <tr><td><code>kartracker.roles</code>, <code>kartracker.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<table class="compact">
+  <caption>Interventie Aanvragen (module 3)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>interventionrequests.requests</code></td><td>(Intervention Requests) aanvragen, PDF-leveringsbon; telefoon: Akties</td></tr>
+  <tr><td><code>interventionrequests.statuses</code></td><td>(Intervention Statuses) statuslijst met kleuren</td></tr>
+  <tr><td><code>interventionrequests.teamkar</code></td><td>(TeamKar) medewerkers van de leverkar</td></tr>
+  <tr><td><code>interventionrequests.mailinglist</code></td><td>(Mailing List) ontvangers van de mail bij een nieuwe aanvraag</td></tr>
+  <tr><td><code>interventionrequests.roles</code>, <code>….users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<table class="compact">
+  <caption>Altsien Select (module 8)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>altsienselect.wizard</code></td><td>(Ploeg Wizard) de stappen per ploeg en seizoen</td></tr>
+  <tr><td><code>altsienselect.ploegfiche</code></td><td>(Ploegfiche) alle keuzes op één scherm + PDF</td></tr>
+  <tr><td><code>altsienselect.allteams</code></td><td>(All teams (organisation)) <em>zien</em> = alle ploegen; <em>wijzigen</em> = ook na het sluiten van het seizoen</td></tr>
+  <tr><td><code>altsienselect.requests</code></td><td>(Request follow-up) opvolging van speciale vragen</td></tr>
+  <tr><td><code>altsienselect.statuses</code></td><td>(Request statuses) statussen van speciale vragen (laagste volgorde = startstatus)</td></tr>
+  <tr><td><code>altsienselect.roles</code>, <code>….users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<table class="compact">
+  <caption>MasterData (module 9)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>masterdata.season</code></td><td>(Years) seizoenen, periode open/dicht</td></tr>
+  <tr><td><code>masterdata.festival</code></td><td>(Festivals)</td></tr>
+  <tr><td><code>masterdata.teams</code></td><td>(Teams) ploegen, koppeling met taken en kernleden</td></tr>
+  <tr><td><code>masterdata.team-location</code></td><td>(Team Location)</td></tr>
+  <tr><td><code>masterdata.delivery-method</code></td><td>(Delivery Method)</td></tr>
+  <tr><td><code>masterdata.team-tasks</code></td><td>(Team Tasks)</td></tr>
+  <tr><td><code>masterdata.team-responsibles</code></td><td>(Ploegverantwoordelijken) per ploeg en seizoen</td></tr>
+  <tr><td><code>masterdata.products</code></td><td>(Products)</td></tr>
+  <tr><td><code>masterdata.product-types</code></td><td>(Type)</td></tr>
+  <tr><td><code>masterdata.product-categories</code></td><td>(Categorieën)</td></tr>
+  <tr><td><code>masterdata.warehouses</code></td><td>(Magazijnen)</td></tr>
+  <tr><td><code>masterdata.product-limits</code></td><td>(Limieten)</td></tr>
+  <tr><td><code>masterdata.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
+  <tr><td><code>masterdata.roles</code>, <code>masterdata.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+<p>Modules 4 tot 7 en 10 hebben geen schermregister; daar gelden de vaste rollen admin/editor/reader (zie <a class="ref" href="#s-vaste-rollen"></a>).</p>
+
+<h1 class="hoofdstuk bijlage" id="bijlage-bijwerken">Deze handleiding bijwerken</h1>
+<p>De bron van deze handleiding staat in de repository, in <code>docs/handleiding/</code>, zodat ze samen met de code kan meegroeien.</p>
+<table class="compact">
+  <caption>Bestanden van de handleiding</caption>
+  <tr><th style="width:42%">Bestand</th><th>Inhoud</th></tr>
+  <tr><td><code>docs/handleiding/hoofdstukken/*.html</code></td><td>De tekst, per deel, in naamvolgorde samengevoegd (<code>00-voorwerk.html</code>, <code>01-inleiding.html</code>, …)</td></tr>
+  <tr><td><code>docs/handleiding/stijl.css</code></td><td>De opmaak: A4, kop- en voettekst, kaders, tabellen, diagrammen</td></tr>
+  <tr><td><code>docs/handleiding/build_pdf.py</code></td><td>Script dat nummert, de inhoudsopgave maakt en de PDF afdrukt</td></tr>
+  <tr><td><code>docs/handleiding/vendor/paged.polyfill.js</code></td><td>Paged.js 0.4.3 (MIT-licentie): zet HTML om naar pagina's</td></tr>
+  <tr><td><code>docs/RWCrew-Ontwikkelaarshandleiding.pdf</code></td><td>Het resultaat</td></tr>
+</table>
+<h2 id="s-bijwerken-stappen">Werkwijze</h2>
+<ol class="stappen">
+  <li>Pas de tekst aan in het juiste bestand onder <code>hoofdstukken/</code>. Het is gewone HTML.</li>
+  <li>Werk de versie en datum bij op het voorblad en in de versiegeschiedenis (<code>00-voorwerk.html</code>), en de voettekst in
+  <code>stijl.css</code> (<code>@bottom-left</code>).</li>
+  <li>Maak de PDF opnieuw, vanuit de hoofdmap van de repository:
+  <code>python docs/handleiding/build_pdf.py</code>. Er is alleen Python (3.10 of hoger, geen extra pakketten) en Microsoft Edge of
+  Google Chrome nodig.</li>
+  <li>Controleer de PDF (inhoudsopgave, nieuwe figuren en tabellen) en commit de bronbestanden en de PDF samen.</li>
+</ol>
+<h2 id="s-bijwerken-opmaak">Opmaakregels voor auteurs</h2>
+<ul>
+  <li><strong>Hoofdstuk</strong>: <code>&lt;h1 class="hoofdstuk" id="h-…"&gt;Titel&lt;/h1&gt;</code>, gevolgd door een doelgroeplabel
+  (<code>&lt;div class="doelgroep iedereen|beheer|ontwikkelaars"&gt;</code>) en een kader "Kort gezegd". Nummers worden automatisch toegekend.</li>
+  <li><strong>Paragraaf</strong>: <code>&lt;h2 id="s-…"&gt;</code>; subparagraaf <code>&lt;h3&gt;</code>. Alleen h1 en h2 komen in de inhoudsopgave.</li>
+  <li><strong>Kaders</strong>: <code>&lt;div class="kader kort|analogie|tip|letop|dev"&gt;&lt;span class="kader-titel"&gt;&lt;/span&gt;…&lt;/div&gt;</code>.</li>
+  <li><strong>Tabel</strong>: <code>&lt;table id="tab-…"&gt;&lt;caption&gt;Bijschrift&lt;/caption&gt;…</code>; nummer en lijst van tabellen worden automatisch gemaakt.</li>
+  <li><strong>Figuur</strong>: <code>&lt;figure class="diagram" id="fig-…"&gt;&lt;svg …&gt;…&lt;/svg&gt;&lt;figcaption&gt;…&lt;/figcaption&gt;&lt;/figure&gt;</code>.
+  Gebruik de SVG-klassen uit <code>stijl.css</code> (<code>box</code>, <code>box-blauw</code>, <code>pijl</code>, <code>t-titel</code>, …) zodat de stijl gelijk blijft.</li>
+  <li><strong>Codevoorbeeld</strong>: <code>&lt;figure class="code"&gt;&lt;span class="bestand"&gt;pad&lt;/span&gt;&lt;pre&gt;…&lt;/pre&gt;&lt;/figure&gt;</code>.</li>
+  <li><strong>Kruisverwijzing</strong>: <code>&lt;a class="ref" href="#id"&gt;&lt;/a&gt;</code> wordt automatisch "§4.2", "hoofdstuk 4", "figuur 4.1",
+  "tabel 4.1" of "bijlage A". Het script waarschuwt bij een onbekende id.</li>
+  <li>Een nieuw deel: <code>&lt;section class="deel" id="deel-…" data-toc="…"&gt;</code> zoals de bestaande delen.</li>
+</ul>
+<div class="kader tip"><span class="kader-titel"></span>
+Wil je het resultaat tijdens het schrijven snel bekijken, voer dan het script uit en open de PDF; een volledige opbouw duurt
+maar enkele seconden.
+</div>

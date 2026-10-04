@@ -1,0 +1,319 @@
+<!-- Deel A, eerste helft: hoofdstuk 3 (wat is RWCrew) en hoofdstuk 4 (architectuur). -->
+
+<section class="deel" id="deel-a" data-toc="Deel A · Opzet en architectuur">
+  <div class="deel-label">Deel A</div>
+  <h1>Opzet en architectuur</h1>
+  <div class="streep"></div>
+  <p>Wat RWCrew doet, uit welke onderdelen het bestaat en hoe die samenwerken, op welke omgevingen het draait,
+  hoe een nieuwe versie online komt en hoe inloggen, beveiliging en toegangsrechten geregeld zijn.</p>
+  <div class="deel-lezers">Doelgroep: iedereen. Technische verdieping staat in paarse kaders.</div>
+</section>
+
+<h1 class="hoofdstuk" id="h-wat-is-rwcrew">Wat is RWCrew?</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew is een webapplicatie om de logistiek en organisatie van de Altsien-ploegen op festivals te beheren.
+Na het inloggen zie je een startscherm met <strong>tegels</strong>: één per module waartoe je toegang hebt.
+Elke module is een afgerond stuk functionaliteit (RFID-tags, karren, interventie-aanvragen, ploegkeuzes,
+stamgegevens) met een eigen menu en eigen rechten. Een deel van de functies is ook beschikbaar als
+<strong>telefoon-app</strong>. De applicatie is tweetalig (Nederlands en Engels) en draait op
+<code>rwcrew.eu</code> (productie) en <code>test.rwcrew.eu</code> (test).
+</div>
+
+<h2 id="s-doel">Doel en context</h2>
+<p>Altsien-ploegen zijn ploegen van verenigingen die tijdens festivals meewerken. Daar komt veel logistiek
+bij kijken: <strong>karren</strong> (rolcontainers met materiaal) moeten op het juiste moment op de juiste
+plaats geleverd en weer opgehaald worden, materiaal wordt met <strong>RFID-tags</strong> gevolgd, tijdens
+het festival komen er <strong>interventie-aanvragen</strong> binnen (een herstelling, extra materiaal, een
+levering), en vóór het seizoen moet elke ploeg haar <strong>keuzes</strong> doorgeven (op welke festivals,
+waar leveren, wie is verantwoordelijk, speciale vragen).</p>
+<p>Vroeger liep dat via losse spreadsheets, Google Forms en mails. RWCrew brengt dat samen in één applicatie
+met één gebruikersbeheer, één set stamgegevens (ploegen, festivals, seizoenen, producten) en duidelijke
+rechten per gebruiker.</p>
+
+<h2 id="s-startscherm">Het startscherm en de modules</h2>
+<p>Na het inloggen kom je op het <strong>startscherm</strong> ("Modules Overview"): een raster met een
+gekleurde tegel per module. Je ziet alleen de tegels van modules waartoe de superbeheerder je toegang gaf.
+De module "Mobile App" verschijnt als kleine tegel rechtsboven, omdat ze geen echte module is maar een
+installatiepagina voor de telefoon-app.</p>
+<p>Bovenaan elk scherm staat een balk met de naam van de app, de <strong>seizoenkiezer</strong> (alleen de
+open seizoenen, voor wie toegang heeft tot MasterData), de taalkeuze (NL/EN), de keuze tussen licht en donker
+thema (standaard donker) en het gebruikersmenu (wachtwoord wijzigen, uitloggen). De
+<strong>superbeheerder</strong> ziet daarnaast links een beheermenu met "Manage Access" en "Login History"
+(zie <a class="ref" href="#h-beheer"></a>).</p>
+
+<table id="tab-modules">
+  <caption>De modules van RWCrew</caption>
+  <tr><th class="nowrap" style="width:11%">Sleutel</th><th style="width:20%">Naam</th><th>Waarvoor</th><th style="width:13%">Telefoon</th></tr>
+  <tr><td><code>module-1</code></td><td><strong>TagScan</strong></td><td>RFID-tags: CSV-bestanden van scanners inlezen, tag-gegevens bekijken, tags beheren, scanners en hun API-sleutels registreren.</td><td>Nee</td></tr>
+  <tr><td><code>module-2</code></td><td><strong>KarTracker</strong></td><td>Karren (rolcontainers): registratie, statussen, distributiepunten, zones, afleverlocaties, planning per festival, karbladen met QR-code, kaart, grondplan, manuele bewegingen (scannen).</td><td>Ja: KarScan, Kar Planning, Kar Map</td></tr>
+  <tr><td><code>module-3</code></td><td><strong>Interventie Aanvragen</strong> <span class="klein">(Intervention Requests)</span></td><td>Aanvragen van ploegen tijdens het festival: registreren, opvolgen met statussen, toewijzen aan TeamKar, mail met PDF-leveringsbon naar een mailinglijst. Ook een publiek formulier via QR-code, zonder inloggen.</td><td>Ja: Akties (lijst, nieuw, wijzigen), KPI</td></tr>
+  <tr><td><code>module-4</code> tot <code>module-7</code></td><td>Module 4 tot 7</td><td>Plaatshouders voor toekomstige modules: tonen nu een "binnenkort"-pagina.</td><td>Nee</td></tr>
+  <tr><td><code>module-8</code></td><td><strong>Altsien Select</strong></td><td>De "Ploeg Wizard": per ploeg en per seizoen doorloopt een Altsien-kernlid stappen (festivals, afleverlocaties, ploegverantwoordelijken, producten, speciale vragen, walkietalkies). Resultaat op de "Ploegfiche" (scherm en PDF). Opvolging van speciale vragen.</td><td>Nee</td></tr>
+  <tr><td><code>module-9</code></td><td><strong>MasterData</strong></td><td>Stamgegevens die alle modules delen: seizoenen (jaren), festivals, ploegen, ploeglocaties, leveringswijzen, ploegtaken, ploegverantwoordelijken, producten met types, categorieën, magazijnen en limieten. Bulk import/export via Excel.</td><td>Nee</td></tr>
+  <tr><td><code>module-10</code></td><td><strong>Mobile App</strong></td><td>Installatiepagina voor de telefoon-app: het adres met QR-code en de stappen voor iPhone en Android.</td><td>(is de app)</td></tr>
+</table>
+
+<h2 id="s-modules-detail">De modules in meer detail</h2>
+
+<h3 id="s-mod-tagscan">TagScan (module 1)</h3>
+<p>Draagbare RFID-scanners schrijven hun scans weg als CSV-bestanden. Een <strong>Raspberry Pi</strong> bij de
+scanners stuurt elk afgewerkt bestand via HTTPS naar RWCrew (endpoint <code>POST /api/public/tagscan-intake</code>,
+beveiligd met een API-sleutel per scanner). De bestanden komen terecht in de map "Unreaded Tags" en worden
+ingelezen wanneer een gebruiker op de knop <strong>Scan</strong> drukt. Daarna zijn ze zichtbaar als
+<em>Tag Headerdata</em> (één rij per bestand) en <em>Tag Linedata</em> (één rij per gescande tag). Onder
+<em>TagManagement</em> beheer je het register van tags (ook via Excel-import), onder <em>Scanners</em>
+registreer je scanners en maak je hun API-sleutels aan.</p>
+
+<h3 id="s-mod-kartracker">KarTracker (module 2)</h3>
+<p>KarTracker volgt de <strong>karren</strong>: genummerde rolcontainers die per seizoen aan een ploeg
+toegewezen worden en op festivals afgeleverd en opgehaald worden. Belangrijkste schermen:</p>
+<ul>
+  <li><strong>KarManagement</strong> en <strong>KarStatussen</strong>: het karrenregister en de mogelijke statussen.</li>
+  <li><strong>Distributiepunten</strong>, <strong>Zones</strong>, <strong>Afleverlocaties</strong> en <strong>Delivery Dates</strong>: de plaatsen en momenten van levering.</li>
+  <li><strong>Plan a kar</strong>: per ploeg, festival en seizoen de afleverlocatie kiezen. Dezelfde gegevens worden ook vanuit Altsien Select ingevuld.</li>
+  <li><strong>Kar Planning</strong>: het overzicht per festival, met het afdrukken van <strong>karbladen</strong>: één A4 per kar met twee QR-codes (het karnummer om te scannen, en een link naar het publieke interventieformulier voor die ploeg).</li>
+  <li><strong>Kar Map</strong> en <strong>Grondplan</strong>: de karren op een kaart (OpenStreetMap via Leaflet) en op een geüpload grondplan.</li>
+  <li><strong>Manuele kar beweging</strong>: een beweging van een kar registreren, op de pc of met de telefooncamera (KarScan).</li>
+  <li><strong>Data Upload/Download</strong>: bulkgegevens via Excel.</li>
+</ul>
+
+<h3 id="s-mod-interventie">Interventie Aanvragen (module 3)</h3>
+<p>Tijdens een festival vraagt een ploeg om hulp: een herstelling, bijkomend materiaal, een levering. Zo'n
+<strong>interventie-aanvraag</strong> krijgt een nummer (<code>IA26_0001</code>: "IA", de laatste twee cijfers
+van het jaar en een volgnummer) en wordt opgevolgd met een <strong>status</strong> (een zelf te beheren lijst
+met kleuren). Aanvragen komen op drie manieren binnen:</p>
+<ol>
+  <li>via het scherm <em>Intervention Requests</em> door een medewerker;</li>
+  <li>via de telefoon-app (tabblad "Akties");</li>
+  <li>via het <strong>publieke formulier</strong> <code>/nl/intervention-request</code>, zonder inloggen, bereikbaar via de QR-code op het karblad (ploeg, karnummer, afleverplaats en zone zijn dan al ingevuld).</li>
+</ol>
+<p>Bij elke nieuwe aanvraag krijgen alle actieve adressen op de <strong>mailinglijst</strong> (Instellingen &gt;
+Mailinglijst) een mail met de gegevens en de leveringsbon als PDF in bijlage. <em>TeamKar</em> bepaalt welke
+medewerkers aan een aanvraag gekoppeld kunnen worden als uitvoerder van de leverkar.</p>
+
+<h3 id="s-mod-altsien">Altsien Select (module 8)</h3>
+<p>Vóór het seizoen maakt elke ploeg haar keuzes. Een <strong>Altsien-kernlid</strong> (een gebruiker met de
+vlag "Altsien Kernlid", gekoppeld aan één of meer ploegen) doorloopt daarvoor per ploeg de
+<strong>Ploeg Wizard</strong>:</p>
+<table class="compact">
+  <caption>De stappen van de Ploeg Wizard</caption>
+  <tr><th style="width:6%">#</th><th style="width:26%">Stap</th><th>Wat wordt er gekozen</th><th style="width:28%">Waar opgeslagen</th></tr>
+  <tr><td>1</td><td>Festivals</td><td>Op welke festivals is de ploeg actief (minstens één)</td><td>MasterData (<code>MasterData_team_festival</code>)</td></tr>
+  <tr><td>2</td><td>Afleverlocaties</td><td>Per gekozen festival een afleverlocatie</td><td>KarTracker (Plan a kar)</td></tr>
+  <tr><td>3</td><td>Ploegverantwoordelijken</td><td>Minstens één verantwoordelijke met contactgegevens</td><td>MasterData (<code>MasterData_team_responsible</code>)</td></tr>
+  <tr><td>4</td><td>Producten</td><td>Plaatshouder tot de productenmodule bestaat</td><td>(nog niet)</td></tr>
+  <tr><td>5</td><td>Speciale vragen</td><td>Vrije vragen, die daarna met een status opgevolgd worden</td><td>Altsien Select</td></tr>
+  <tr><td>6</td><td>Walkietalkies</td><td>Plaatshouder tot de walkiemodule bestaat</td><td>(nog niet)</td></tr>
+</table>
+<p>Bij enkele stappen toont de wizard de keuzes van <strong>vorig seizoen</strong>, die je regel per regel
+kunt overnemen. Het resultaat van alle stappen staat op de <strong>Ploegfiche</strong>, die ook als PDF kan
+worden afgedrukt. Na het afsluiten van een seizoen (vlag <em>periode open</em> uit) kan niemand nog wijzigen,
+behalve wie het recht "organisatie" heeft (zie <a class="ref" href="#s-altsien-regels"></a>).</p>
+
+<h3 id="s-mod-masterdata">MasterData (module 9)</h3>
+<p>MasterData beheert de <strong>stamgegevens</strong>: de gegevens die alle andere modules delen en die
+zelden veranderen. Denk aan de seizoenen (op het scherm "Years"), festivals, ploegen en hun locatie,
+leveringswijze, taken en verantwoordelijken, en de productcatalogus. Bijna elk scherm heeft een
+<strong>Excel-import en -export</strong>: je downloadt een sjabloon, vult het in en uploadt het; elke rij wordt
+apart gecontroleerd zodat één foute rij niet de hele import tegenhoudt.</p>
+
+<h3 id="s-mod-mobile">Mobile App (module 10) en de plaatshouders (modules 4 tot 7)</h3>
+<p>Module 10 toont het adres van de telefoon-app (<code>https://rwcrew.eu/m</code>), een QR-code om dat adres
+met de telefoon te openen, en de stappen om de app op het beginscherm te zetten. Modules 4 tot 7 zijn
+voorbereide, lege plaatsen: ze hebben al een tegel, een kleur en toegangsrechten, en tonen een
+"binnenkort"-pagina tot hun inhoud ontworpen is.</p>
+
+<h2 id="s-gedeelde-begrippen">Gedeelde begrippen</h2>
+<table>
+  <caption>Begrippen uit het domein die in meerdere modules terugkomen</caption>
+  <tr><th style="width:24%">Begrip</th><th>Betekenis</th></tr>
+  <tr><td><strong>Seizoen</strong> (jaar)</td><td>Eén festivalseizoen, bv. "2026". Bijna alle keuzes en planningen gelden per seizoen. Een seizoen kan <em>open</em> of <em>gesloten</em> zijn (<code>periode_open</code>); de seizoenkiezer in de bovenbalk toont alleen open seizoenen.</td></tr>
+  <tr><td><strong>Ploeg</strong> (team)</td><td>Een groep van een vereniging die op festivals meewerkt. Staat in MasterData (<code>MasterData_team</code>).</td></tr>
+  <tr><td><strong>Festival</strong></td><td>Een evenement waarop ploegen actief zijn. Per seizoen kiest een ploeg haar festivals.</td></tr>
+  <tr><td><strong>Kar</strong></td><td>Een genummerde rolcontainer die bij een ploeg geleverd wordt.</td></tr>
+  <tr><td><strong>Altsien-kernlid</strong></td><td>Een RWCrew-gebruiker met de vlag "Altsien Kernlid", gekoppeld aan ploegen; vult de Ploeg Wizard in.</td></tr>
+  <tr><td><strong>Ploegverantwoordelijke</strong></td><td>Een contactpersoon van een ploeg per seizoen. Is <em>geen</em> RWCrew-gebruiker; enkel naam en contactgegevens.</td></tr>
+  <tr><td><strong>TeamKar</strong></td><td>De RWCrew-medewerkers die de leverkar bemannen en aan interventie-aanvragen gekoppeld worden.</td></tr>
+</table>
+
+<h2 id="s-talen-thema">Talen en weergave</h2>
+<p>De interface bestaat in het <strong>Nederlands</strong> (standaard) en het <strong>Engels</strong>. De taal
+staat in het adres: <code>/nl/...</code> of <code>/en/...</code>. Alle teksten staan in twee
+vertaalbestanden (<code>frontend/messages/nl.json</code> en <code>en.json</code>), zodat er in de code zelf
+geen schermteksten staan (zie <a class="ref" href="#s-fe-vertalingen"></a>). Mails en PDF's zijn in het Nederlands.
+De applicatie heeft een licht en een donker thema; donker is standaard. Elke module heeft een eigen
+accentkleur, zodat je altijd ziet in welke module je werkt.</p>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-architectuur">Architectuuroverzicht</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew bestaat uit drie programma's die elk in een eigen Docker-container draaien op één server (een VPS
+bij Hostinger): de <strong>frontend</strong> (Next.js, maakt de schermen), de <strong>backend</strong>
+(FastAPI, bevat alle regels en praat met de database) en de <strong>database</strong> (PostgreSQL).
+Vooraan staat <strong>Nginx</strong>, dat HTTPS afhandelt en het verkeer verdeelt. Daarnaast zijn er een
+paar externe koppelingen: <strong>Resend</strong> voor uitgaande mail, een <strong>Raspberry Pi</strong> die
+scanbestanden aanlevert, en <strong>GitHub Actions</strong> dat nieuwe versies automatisch installeert.
+Zowel de website als de telefoon-app gebruiken exact dezelfde frontend, backend en database.
+</div>
+
+<h2 id="s-groot-plaatje">Het grote plaatje</h2>
+<p><a class="ref" href="#fig-architectuur"></a> toont alle onderdelen en hoe ze met elkaar verbonden zijn. Lees de
+figuur van links naar rechts: een gebruiker typt <code>rwcrew.eu</code>, Cloudflare (DNS) vertaalt dat naar het
+IP-adres van de server, Nginx neemt het verzoek aan en stuurt het door naar de frontend of de backend.</p>
+
+<figure class="diagram" id="fig-architectuur">
+<svg viewBox="0 0 660 430" xmlns="http://www.w3.org/2000/svg">
+  <!-- gebruikers -->
+  <rect class="box-blauw" x="8" y="40" width="118" height="60" rx="7"/>
+  <text x="67" y="65" text-anchor="middle" class="t-titel">Pc-browser</text>
+  <text x="67" y="83" text-anchor="middle" class="t-mini">rwcrew.eu/nl/...</text>
+  <rect class="box-blauw" x="8" y="118" width="118" height="60" rx="7"/>
+  <text x="67" y="143" text-anchor="middle" class="t-titel">Telefoon (PWA)</text>
+  <text x="67" y="161" text-anchor="middle" class="t-mini">rwcrew.eu/m</text>
+  <rect class="box-blauw" x="8" y="196" width="118" height="60" rx="7"/>
+  <text x="67" y="221" text-anchor="middle" class="t-titel">Publiek formulier</text>
+  <text x="67" y="239" text-anchor="middle" class="t-mini">QR-code op karblad</text>
+  <rect class="box-oranje" x="8" y="300" width="118" height="60" rx="7"/>
+  <text x="67" y="325" text-anchor="middle" class="t-titel">Raspberry Pi</text>
+  <text x="67" y="343" text-anchor="middle" class="t-mini">TagScan CSV's</text>
+  <!-- server -->
+  <rect class="zone" x="160" y="18" width="380" height="400" rx="10"/>
+  <text x="172" y="36" class="t-zone">HOSTINGER VPS (UBUNTU + DOCKER)</text>
+  <rect class="box-donker" x="178" y="110" width="92" height="120" rx="7"/>
+  <text x="224" y="150" text-anchor="middle" class="t-titel t-wit">Nginx</text>
+  <text x="224" y="170" text-anchor="middle" class="t-mini" style="fill:#cfe3da">HTTPS</text>
+  <text x="224" y="184" text-anchor="middle" class="t-mini" style="fill:#cfe3da">certbot</text>
+  <text x="224" y="198" text-anchor="middle" class="t-mini" style="fill:#cfe3da">verdeelt verkeer</text>
+  <rect class="box" x="310" y="58" width="210" height="74" rx="7"/>
+  <text x="415" y="82" text-anchor="middle" class="t-titel">Frontend · Next.js</text>
+  <text x="415" y="100" text-anchor="middle" class="t-mini">container, poort 3000 (test 3100)</text>
+  <text x="415" y="116" text-anchor="middle" class="t-mini">schermen, website + telefoon-app</text>
+  <rect class="box" x="310" y="176" width="210" height="74" rx="7"/>
+  <text x="415" y="200" text-anchor="middle" class="t-titel">Backend · FastAPI</text>
+  <text x="415" y="218" text-anchor="middle" class="t-mini">container, poort 8020 (test 8120)</text>
+  <text x="415" y="234" text-anchor="middle" class="t-mini">regels, rechten, PDF's, mail</text>
+  <rect class="box-oranje" x="310" y="300" width="210" height="74" rx="7"/>
+  <text x="415" y="324" text-anchor="middle" class="t-titel">Database · PostgreSQL 16</text>
+  <text x="415" y="342" text-anchor="middle" class="t-mini">container, enkel intern bereikbaar</text>
+  <text x="415" y="358" text-anchor="middle" class="t-mini">+ volume met TagScan-bestanden</text>
+  <!-- extern -->
+  <rect class="box-paars" x="560" y="58" width="92" height="60" rx="7"/>
+  <text x="606" y="83" text-anchor="middle" class="t-titel">GitHub</text>
+  <text x="606" y="100" text-anchor="middle" class="t-mini">code + Actions</text>
+  <rect class="box-paars" x="560" y="186" width="92" height="60" rx="7"/>
+  <text x="606" y="211" text-anchor="middle" class="t-titel">Resend</text>
+  <text x="606" y="228" text-anchor="middle" class="t-mini">uitgaande mail</text>
+  <rect class="box-paars" x="560" y="300" width="92" height="60" rx="7"/>
+  <text x="606" y="325" text-anchor="middle" class="t-titel">pgAdmin</text>
+  <text x="606" y="342" text-anchor="middle" class="t-mini">via SSH-tunnel</text>
+  <!-- pijlen -->
+  <path class="pijl" d="M128,70 L176,140"/>
+  <path class="pijl" d="M128,148 L176,160"/>
+  <path class="pijl" d="M128,226 L176,190"/>
+  <path class="pijl" d="M128,330 L196,232"/>
+  <path class="pijl" d="M272,140 L308,100"/>
+  <path class="pijl" d="M272,200 L308,212"/>
+  <text x="290" y="112" text-anchor="middle" class="t-mini">/</text>
+  <text x="292" y="196" text-anchor="middle" class="t-mini">/api/</text>
+  <path class="pijl" d="M405,134 L405,174"/>
+  <text x="440" y="158" text-anchor="middle" class="t-mini">server-side</text>
+  <path class="pijl" d="M415,252 L415,298"/>
+  <text x="440" y="280" text-anchor="middle" class="t-mini">SQL</text>
+  <path class="pijl" d="M522,214 L558,214"/>
+  <path class="pijl-stippel" d="M558,96 L522,96"/>
+  <text x="540" y="88" text-anchor="middle" class="t-mini">deploy</text>
+  <path class="pijl-stippel" d="M558,330 L522,336"/>
+  <text x="67" y="392" text-anchor="middle" class="t-mini">DNS: Cloudflare</text>
+  <text x="67" y="406" text-anchor="middle" class="t-mini">rwcrew.eu → IP van de VPS</text>
+</svg>
+<figcaption>Overzicht van alle onderdelen van RWCrew en hun verbindingen (productie; test is een tweede, identieke set containers op dezelfde server).</figcaption>
+</figure>
+
+<h2 id="s-arch-frontend">De frontend: Next.js</h2>
+<p>De frontend is gebouwd met <strong>Next.js</strong>, een veelgebruikt raamwerk op basis van
+<strong>React</strong>. Next.js maakt de pagina's grotendeels <em>op de server</em> klaar (<em>server-side
+rendering</em>): als je een pagina opent, haalt de frontend eerst zelf de nodige gegevens bij de backend en
+stuurt dan een volledig opgebouwde pagina naar de browser. Daarna neemt de browser het over voor
+interactie (knoppen, formulieren, dialoogvensters); die interacties praten rechtstreeks met de backend.</p>
+<p>Dat betekent dat de backend vanuit twee plaatsen aangesproken wordt: door de <strong>frontend-server</strong>
+(bij het opbouwen van een pagina) en door de <strong>browser</strong> (bij een klik). Beide sturen dezelfde
+inlogcookies mee. Details: <a class="ref" href="#h-frontend"></a>.</p>
+
+<h2 id="s-arch-backend">De backend: FastAPI</h2>
+<p>De backend is een <strong>Python</strong>-programma gebouwd met <strong>FastAPI</strong>. Hij biedt alle
+endpoints onder <code>/api/...</code> aan en is de enige die met de database praat. Elke module heeft er een
+eigen pakket met zijn endpoints, regels, PDF-generatoren en importfuncties. De backend controleert bij
+<em>elk</em> verzoek wie de gebruiker is en of die het verzoek mag doen. Details: <a class="ref" href="#h-backend"></a>.</p>
+<table>
+  <caption>Groepen van endpoints in de backend</caption>
+  <tr><th style="width:42%">Adres</th><th>Wat</th></tr>
+  <tr><td><code>/api/auth/*</code></td><td>Inloggen, sessie vernieuwen, uitloggen, wachtwoord wijzigen, "wie ben ik"</td></tr>
+  <tr><td><code>/api/admin/*</code></td><td>Superbeheerder: gebruikers, moduletoegang, inloghistoriek</td></tr>
+  <tr><td><code>/api/modules</code></td><td>Lijst van modules (voor de tegels)</td></tr>
+  <tr><td><code>/api/modules/module-N/*</code></td><td>De endpoints van module N, met haar eigen rechten</td></tr>
+  <tr><td><code>/api/public/intervention-requests/*</code></td><td>Publiek interventieformulier (geen login, wel snelheidslimiet)</td></tr>
+  <tr><td><code>/api/public/tagscan-intake</code></td><td>Ontvangst van CSV-bestanden van de Raspberry Pi (API-sleutel)</td></tr>
+  <tr><td><code>/api/health</code></td><td>"Leeft de backend?" Voor controles.</td></tr>
+</table>
+
+<h2 id="s-arch-database">De database: PostgreSQL</h2>
+<p>Er is één PostgreSQL-database per omgeving. Alle modules gebruiken dezelfde database, maar elke tabel
+heeft een <strong>voorvoegsel</strong> dat zegt bij welk onderdeel ze hoort. Zo zie je in een databasetool
+meteen welke tabellen bij elkaar horen, en kunnen twee modules nooit per ongeluk dezelfde tabelnaam gebruiken.</p>
+<table id="tab-prefixen">
+  <caption>Voorvoegsels van de databasetabellen</caption>
+  <tr><th style="width:30%">Voorvoegsel</th><th>Onderdeel</th><th style="width:40%">Voorbeelden</th></tr>
+  <tr><td><code>Landing_</code></td><td>Startscherm, gebruikers, toegang</td><td><code>Landing_users</code>, <code>Landing_user_module_access</code>, <code>Landing_login_history</code></td></tr>
+  <tr><td><code>Tagscan_</code></td><td>TagScan (module 1)</td><td><code>Tagscan_roles</code>, tag-header- en -linedata</td></tr>
+  <tr><td><code>KarTracker_</code></td><td>KarTracker (module 2)</td><td><code>KarTracker_karren</code>, <code>KarTracker_kar_actions</code></td></tr>
+  <tr><td><code>InterventionRequests_</code></td><td>Interventie Aanvragen (module 3)</td><td><code>InterventionRequests_request</code>, <code>InterventionRequests_status</code></td></tr>
+  <tr><td><code>AltsienSelect_</code></td><td>Altsien Select (module 8)</td><td><code>AltsienSelect_step_progress</code>, <code>AltsienSelect_special_requests</code></td></tr>
+  <tr><td><code>MasterData_</code></td><td>MasterData (module 9)</td><td><code>MasterData_team</code>, <code>MasterData_season</code>, <code>MasterData_festival</code></td></tr>
+</table>
+<p>Eén uitzondering op de regel: de leverdata van KarTracker staan in de tabel <code>Festivals_leverdatum</code>.
+De volledige lijst van tabellen vind je in de map <code>backend/app/db/models/</code> (één bestand per tabel).</p>
+
+<h2 id="s-arch-extern">Externe koppelingen</h2>
+<table>
+  <caption>Diensten buiten de eigen server</caption>
+  <tr><th style="width:20%">Dienst</th><th>Rol in RWCrew</th><th style="width:28%">Configuratie</th></tr>
+  <tr><td><strong>GitHub</strong></td><td>Bewaart de broncode; GitHub Actions installeert elke nieuwe versie op de server.</td><td>Repository-secrets <code>SSH_HOST</code>, <code>SSH_USER</code>, <code>SSH_PRIVATE_KEY</code></td></tr>
+  <tr><td><strong>Hostinger</strong></td><td>Levert de VPS (virtuele server) waarop test en productie draaien.</td><td>Hostinger-account</td></tr>
+  <tr><td><strong>Cloudflare</strong></td><td>DNS van <code>rwcrew.eu</code>. Lokaal ook de "quick tunnel" om een telefoon via HTTPS met je pc te verbinden.</td><td>Cloudflare-account; <code>cloudflared</code> op de ontwikkel-pc</td></tr>
+  <tr><td><strong>Let's Encrypt</strong></td><td>Gratis HTTPS-certificaten, vernieuwd door certbot op de server.</td><td>Op de server</td></tr>
+  <tr><td><strong>Resend</strong></td><td>Verstuurt mails (nieuwe interventie-aanvraag) via een HTTP-API.</td><td><code>RESEND_API_KEY</code>, <code>MAIL_FROM</code> (domein geverifieerd via DNS)</td></tr>
+  <tr><td><strong>Raspberry Pi</strong></td><td>Staat bij de RFID-scanners en stuurt CSV-bestanden door naar TagScan.</td><td><code>scripts/pi-watcher/</code>, API-sleutel per scanner</td></tr>
+  <tr><td><strong>OpenStreetMap</strong></td><td>Kaartachtergrond voor de Kar Map (via de bibliotheek Leaflet).</td><td>Geen sleutel nodig</td></tr>
+</table>
+
+<h2 id="s-arch-website-telefoon">Website en telefoon-app: één applicatie</h2>
+<p>De telefoon-app is <strong>geen aparte applicatie</strong>. Het is een apart deel van dezelfde website,
+onder het adres <code>/m</code>, met schermen die voor een telefoon ontworpen zijn. Ze gebruikt dezelfde
+login, dezelfde endpoints en dezelfde rechten. Een nieuwe versie van de website is automatisch ook een
+nieuwe versie van de app. (Tot oktober 2026 bestond er een aparte "native" app in React Native/Expo; die
+is volledig verwijderd.) Zie <a class="ref" href="#h-telefoon"></a>.</p>
+
+<h2 id="s-ontwerpprincipes">Ontwerpprincipes</h2>
+<p>Een paar principes komen overal in de code terug. Wie ze kent, begrijpt sneller waarom iets is zoals het is:</p>
+<ol>
+  <li><strong>Alles per module.</strong> Backend-code, frontend-schermen, telefoonschermen, vertalingen en
+  databasetabellen zijn per module gegroepeerd. Wie aan module 3 werkt, hoeft niet in module 2 te zoeken.</li>
+  <li><strong>De backend beslist.</strong> Rechten worden altijd in de backend gecontroleerd. De frontend
+  verbergt alleen wat je toch niet mag gebruiken, voor het gebruiksgemak.</li>
+  <li><strong>Code is de bron van waarheid voor structuur.</strong> Welke schermen een module heeft, welke
+  stappen de wizard heeft en hoe de database eruitziet, staat in de code (en in migraties). Niets daarvan
+  wordt met de hand in de database aangemaakt.</li>
+  <li><strong>Instellingen buiten de code.</strong> Alles wat per omgeving verschilt, komt uit omgevingsvariabelen.</li>
+  <li><strong>Zo weinig mogelijk afhankelijkheden, en alleen zuivere Python-pakketten.</strong> De
+  ontwikkel-pc draait Python 3.14; pakketten die gecompileerd moeten worden, worden vermeden (zie
+  <a class="ref" href="#s-python-314"></a>).</li>
+  <li><strong>Eenvoud boven slimheid.</strong> Een tweede module met hetzelfde patroon krijgt eerst een
+  eigen kopie; pas als een patroon drie keer bestaat, wordt het eventueel veralgemeend.</li>
+  <li><strong>Leesbaar voor beginners.</strong> Elk logisch blok code heeft commentaar in gewone taal dat
+  uitlegt <em>wat</em> en vooral <em>waarom</em>.</li>
+</ol>

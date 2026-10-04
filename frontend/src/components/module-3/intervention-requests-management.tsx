@@ -30,6 +30,7 @@ import type {
 } from "@/lib/types";
 import { isStatusColorKey, STATUS_COLOR_INFO } from "@/lib/status-colors";
 import {
+  belgianDayKey,
   defaultStatusId,
   formatDateOnly,
   formatDateTime,
@@ -395,7 +396,7 @@ export function InterventionRequestsManagement({
     const groupsByKey = new Map<string, InterventionRequest[]>();
 
     for (const request of filteredRequests) {
-      const key = request.preferred_delivery_at ? request.preferred_delivery_at.slice(0, 10) : NO_PREFERENCE_KEY;
+      const key = request.preferred_delivery_at ? belgianDayKey(request.preferred_delivery_at) : NO_PREFERENCE_KEY;
       const group = groupsByKey.get(key);
       if (group) {
         group.push(request);
@@ -419,7 +420,7 @@ export function InterventionRequestsManagement({
         key === NO_PREFERENCE_KEY
           ? requestsInGroup
           : [...requestsInGroup].sort((a, b) =>
-              (a.preferred_delivery_at ?? "").localeCompare(b.preferred_delivery_at ?? ""),
+              toDateTimeLocalValue(a.preferred_delivery_at).localeCompare(toDateTimeLocalValue(b.preferred_delivery_at)),
             );
       return {
         key,

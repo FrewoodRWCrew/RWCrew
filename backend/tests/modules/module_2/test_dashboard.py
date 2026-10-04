@@ -237,3 +237,16 @@ def test_unknown_season_is_404(client: TestClient, db_session: Session) -> None:
     _login_member(client, db_session)
 
     assert client.get(DASHBOARD_URL, params={"season_id": 999}).status_code == 404
+
+
+def test_movements_are_grouped_per_belgian_day(db_session: Session) -> None:
+    # 23:30 UTC on 30 June is already 01:30 on 1 July in Belgium (summer time).
+    kar_status = _create_status(db_session, "Op terrein")
+    kar = _create_kar(db_session, "K001", status_id=kar_status.id)
+    _log_movement(db_session, kar, datetime(2026, 6, 30, 23, 30, tzinfo=timezone.utc))
+
+    stats = build_dashboard_stats(db_session, None, now=datetime(2026, 7, 1, 10, 0, tzinfo=timezone.utc))
+
+    per_day = {item.day: item.count for item in stats.movements_per_day}
+    assert per_day[date(2026, 7, 1)] == 1
+    assert per_day[date(2026, 6, 30)] == 0

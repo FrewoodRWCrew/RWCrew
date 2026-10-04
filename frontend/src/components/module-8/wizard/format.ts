@@ -1,10 +1,12 @@
 // Small display helpers shared by the Ploeg Wizard and the Ploegfiche.
 
+import { formatDateNl } from "@/lib/date-time";
+
 /** "dd-mm-yyyy" from an ISO date or date-time string — the app's
- *  established fixed date format (same as the PDFs). */
+ *  established fixed date format (same as the PDFs). A date-time gives its
+ *  Belgian calendar date; a plain date is shown as-is. */
 export function formatDate(value: string): string {
-  const [year, month, day] = value.slice(0, 10).split("-");
-  return `${day}-${month}-${year}`;
+  return formatDateNl(value);
 }
 
 /** A festival's period: one date for a one-day festival, else a range. */

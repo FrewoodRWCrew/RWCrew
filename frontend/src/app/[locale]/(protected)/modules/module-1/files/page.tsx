@@ -12,8 +12,13 @@ import { FileBrowser } from "@/components/module-1/file-browser";
 
 interface DashboardPageData {
   tree: TagscanFolderNode;
-  rootFiles: TagscanFileEntry[];
+  initialFolderPath: string;
+  initialFiles: TagscanFileEntry[];
 }
+
+// The intake folder new CSVs land in (backend: UNREADED_SUBFOLDER) — the
+// screen opens on it, since that's what people come here to look at.
+const DEFAULT_FOLDER_NAME = "Unreaded Tags";
 
 export default async function TagscanFilesPage() {
   const tErrors = await getTranslations("errors");
@@ -21,10 +26,16 @@ export default async function TagscanFilesPage() {
   let data: DashboardPageData | null = null;
   try {
     const tree = await serverApiFetch<TagscanFolderNode>("/api/modules/module-1/files/tree");
-    const rootFiles = await serverApiFetch<TagscanFileEntry[]>(
-      `/api/modules/module-1/files?path=${encodeURIComponent(tree.path)}`,
+    // Open on "Unreaded Tags" (case-insensitive); fall back to the root
+    // folder while that folder doesn't exist yet.
+    const defaultFolder = tree.children.find(
+      (child) => child.name.toLowerCase() === DEFAULT_FOLDER_NAME.toLowerCase(),
     );
-    data = { tree, rootFiles };
+    const initialFolderPath = defaultFolder?.path ?? tree.path;
+    const initialFiles = await serverApiFetch<TagscanFileEntry[]>(
+      `/api/modules/module-1/files?path=${encodeURIComponent(initialFolderPath)}`,
+    );
+    data = { tree, initialFolderPath, initialFiles };
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
       return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
@@ -32,5 +43,5 @@ export default async function TagscanFilesPage() {
     throw error;
   }
 
-  return <FileBrowser initialTree={data.tree} initialFiles={data.rootFiles} />;
+  return <FileBrowser initialTree={data.tree} initialFolderPath={data.initialFolderPath} initialFiles={data.initialFiles} />;
 }

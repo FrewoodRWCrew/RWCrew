@@ -5,6 +5,7 @@
 # the "Tag Linedata" feature — also logging every data line inside it,
 # enriched with a snapshot of its matching TagManagement tag (if any).
 
+from datetime import datetime, timezone
 from pathlib import Path
 
 from sqlalchemy import delete, select
@@ -38,8 +39,12 @@ def _readed_dir(db: Session) -> Path:
 
 
 def list_header_data(db: Session) -> list[TagHeaderData]:
-    """Every logged file, newest first, for the screen's table."""
-    return list(db.scalars(select(TagHeaderData).order_by(TagHeaderData.created_at.desc())).all())
+    """Every logged file, newest first (by "Registered on"), for the
+    screen's table — id breaks a tie between files saved at the same moment.
+    """
+    return list(
+        db.scalars(select(TagHeaderData).order_by(TagHeaderData.created_at.desc(), TagHeaderData.id.desc())).all()
+    )
 
 
 def delete_header_data(db: Session, header_id: int) -> bool:
@@ -160,6 +165,10 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
         # header row and any skipped blank line are never counted here).
         new_entry = TagHeaderData(
             filename=filename,
+            # The exact moment this file is saved — set here rather than by
+            # Postgres' now(), which is the start of the transaction and can
+            # be earlier (and identical for several files).
+            created_at=datetime.now(timezone.utc),
             line_count=len(parsed_rows),
             scanner=header_scanner,
             mode=header_mode,

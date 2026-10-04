@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createRfidTag, deleteRfidTag, updateRfidTag } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
+import { formatDate, formatDateTime, toDateTimeLocalValue } from "@/lib/date-time";
 import type { Product, RfidTag, RfidTagInput, RfidTagStatus } from "@/lib/types";
 import { TagImportDialog } from "@/components/module-1/tag-import-dialog";
 import {
@@ -75,32 +76,11 @@ const EMPTY_FORM: RfidTagInput = {
   notes_5: "",
 };
 
-/** Plain string slicing instead of toLocaleDateString()/toLocaleString():
- * those depend on the runtime's default locale and the Date object's
- * timezone conversion, both of which differ between the server (Node,
- * during SSR) and the browser (during hydration) — causing a hydration
- * mismatch. Slicing the already-ISO string is deterministic everywhere.
- */
-function formatDate(isoDate: string): string {
-  return isoDate.slice(0, 10);
-}
-
-function formatDateTime(isoDateTime: string): string {
-  return isoDateTime.slice(0, 16).replace("T", " ");
-}
-
 /** Case-insensitive substring match, used by every free-text filter cell.
  * `null`/empty field values never match a non-empty filter. */
 function textMatches(fieldValue: string | null, filterValue: string): boolean {
   if (!filterValue) return true;
   return (fieldValue ?? "").toLowerCase().includes(filterValue.toLowerCase());
-}
-
-/** ISO datetimes from the backend are longer than the "YYYY-MM-DDTHH:mm"
- * shape an <input type="datetime-local"> needs — trim to that.
- */
-function toDatetimeLocalValue(value: string | null): string {
-  return value ? value.slice(0, 16) : "";
 }
 
 function toFormValues(tag: RfidTag): RfidTagInput {
@@ -110,7 +90,7 @@ function toFormValues(tag: RfidTag): RfidTagInput {
     assigned_product_id: tag.assigned_product_id,
     assigned_serial_number: tag.assigned_serial_number ?? "",
     date_assigned: tag.date_assigned ?? "",
-    last_read_at: toDatetimeLocalValue(tag.last_read_at),
+    last_read_at: toDateTimeLocalValue(tag.last_read_at),
     last_reader_id: tag.last_reader_id ?? "",
     last_location: tag.last_location ?? "",
     manufacturer: tag.manufacturer ?? "",

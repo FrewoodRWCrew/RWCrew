@@ -1,27 +1,16 @@
 // Small date and status helpers for intervention requests, shared by the
 // desktop requests screen (intervention-requests-management.tsx) and the
 // phone's Akties list and request form (components/phone/module-3/).
-// Dates arrive as ISO strings holding the wall-clock time; they are sliced,
-// never converted, so server render, browser and phone all show the same.
+// Every moment is shown in Belgian time via the app-wide helpers in
+// lib/date-time.ts (re-exported here so existing imports keep working).
 
 import type { InterventionStatus } from "@/lib/types";
 
-/** Plain string slicing instead of toLocaleString(): that depends on the
- * runtime's default locale/timezone, which differs between the server
- * (during SSR) and the browser (during hydration) — causing a hydration
- * mismatch. Slicing the already-ISO string is deterministic everywhere
- * (see tag-linedata.tsx's identical helper).
- */
-export function formatDateTime(isoDateTime: string | null): string {
-  return isoDateTime ? isoDateTime.slice(0, 16).replace("T", " ") : "";
-}
+export { formatDateTime, formatTime, toDateTimeLocalValue } from "@/lib/date-time";
 
-/** "YYYY-MM-DDTHH:mm", the value shape <input type="datetime-local">
- * expects — just the first 16 characters of an ISO string.
- */
-export function toDateTimeLocalValue(isoDateTime: string | null): string {
-  return isoDateTime ? isoDateTime.slice(0, 16) : "";
-}
+// belgianDayKey: the Belgian calendar day ("YYYY-MM-DD") of a preferred
+// delivery — the key requests are grouped by ("" when none is set).
+export { formatDate as belgianDayKey } from "@/lib/date-time";
 
 /** The status a brand-new request should default to, so staff don't have
  * to remember to set it themselves every time — matched by name against

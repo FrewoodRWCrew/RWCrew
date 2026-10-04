@@ -1,0 +1,604 @@
+<!-- Deel A, tweede helft: hoofdstuk 5 (omgevingen), 6 (deployment) en 7 (beveiliging en toegang). -->
+
+<h1 class="hoofdstuk" id="h-omgevingen">Omgevingen: lokaal, test en productie</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew draait op drie plaatsen. <strong>Lokaal</strong> op de pc van een ontwikkelaar (database in Docker,
+backend en frontend rechtstreeks gestart). <strong>Test</strong> op <code>test.rwcrew.eu</code> en
+<strong>productie</strong> op <code>rwcrew.eu</code>, allebei op dezelfde Hostinger-server, elk in een eigen
+map, met een eigen database, eigen instellingen en eigen poorten. Test volgt de Git-branch
+<code>develop</code>, productie volgt <code>main</code>.
+</div>
+
+<h2 id="s-omg-overzicht">Overzicht</h2>
+<table id="tab-omgevingen">
+  <caption>De drie omgevingen naast elkaar</caption>
+  <tr><th style="width:22%"></th><th style="width:26%">Lokaal</th><th style="width:26%">Test</th><th>Productie</th></tr>
+  <tr><td><strong>Adres</strong></td><td><code>http://localhost:3000</code></td><td><code>https://test.rwcrew.eu</code></td><td><code>https://rwcrew.eu</code></td></tr>
+  <tr><td><strong>Telefoon-app</strong></td><td>via wifi-IP of Cloudflare-tunnel + <code>/m</code></td><td><code>https://test.rwcrew.eu/m</code></td><td><code>https://rwcrew.eu/m</code></td></tr>
+  <tr><td><strong>Git-branch</strong></td><td>eender welke</td><td><code>develop</code></td><td><code>main</code></td></tr>
+  <tr><td><strong>Waar</strong></td><td>ontwikkel-pc</td><td>VPS, <code>/opt/rwcrew/test</code></td><td>VPS, <code>/opt/rwcrew/production</code></td></tr>
+  <tr><td><strong>Backend-poort</strong></td><td>8020</td><td>8120 (alleen intern)</td><td>8020 (alleen intern)</td></tr>
+  <tr><td><strong>Frontend-poort</strong></td><td>3000</td><td>3100 (alleen intern)</td><td>3000 (alleen intern)</td></tr>
+  <tr><td><strong>Database</strong></td><td>Docker, poort 5433</td><td>container; voor pgAdmin 127.0.0.1:5442</td><td>container; voor pgAdmin 127.0.0.1:5443</td></tr>
+  <tr><td><strong>Herkenbaar aan</strong></td><td>adres localhost</td><td>banner "TEST", app-naam "RWCrew Test", mailonderwerp "[TEST]"</td><td>geen banner</td></tr>
+  <tr><td><strong>Gegevens</strong></td><td>proefgegevens</td><td>testgegevens, mogen weg</td><td>echte gegevens</td></tr>
+</table>
+
+<h2 id="s-lokaal">De lokale ontwikkelomgeving</h2>
+<p>Lokaal draaien de onderdelen iets anders dan op de server: alleen de database draait in Docker, backend en
+frontend worden rechtstreeks gestart. Zo kun je de code aanpassen en meteen het resultaat zien.
+<a class="ref" href="#fig-lokaal"></a> toont de opstelling, inclusief de manieren om een echte telefoon te laten meedoen.</p>
+
+<figure class="diagram" id="fig-lokaal">
+<svg viewBox="0 0 660 290" xmlns="http://www.w3.org/2000/svg">
+  <rect class="zone" x="150" y="14" width="500" height="262" rx="10"/>
+  <text x="162" y="32" class="t-zone">ONTWIKKEL-PC (WINDOWS)</text>
+  <rect class="box-blauw" x="170" y="42" width="130" height="50" rx="7"/>
+  <text x="235" y="63" text-anchor="middle" class="t-titel">Browser op pc</text>
+  <text x="235" y="80" text-anchor="middle" class="t-mini">localhost:3000</text>
+  <rect class="box" x="340" y="50" width="140" height="56" rx="7"/>
+  <text x="410" y="72" text-anchor="middle" class="t-titel">Frontend</text>
+  <text x="410" y="90" text-anchor="middle" class="t-mini">npm run dev · :3000</text>
+  <rect class="box" x="340" y="140" width="140" height="56" rx="7"/>
+  <text x="410" y="162" text-anchor="middle" class="t-titel">Backend</text>
+  <text x="410" y="180" text-anchor="middle" class="t-mini">uvicorn · :8020</text>
+  <rect class="box-oranje" x="510" y="140" width="125" height="56" rx="7"/>
+  <text x="572" y="162" text-anchor="middle" class="t-titel">PostgreSQL</text>
+  <text x="572" y="180" text-anchor="middle" class="t-mini">Docker · :5433</text>
+  <rect class="box-paars" x="170" y="160" width="130" height="50" rx="7"/>
+  <text x="235" y="181" text-anchor="middle" class="t-titel">cloudflared</text>
+  <text x="235" y="198" text-anchor="middle" class="t-mini">quick tunnel</text>
+  <text x="235" y="228" text-anchor="middle" class="t-mini">HTTPS → :3000</text>
+  <rect class="box-licht" x="340" y="222" width="295" height="40" rx="7"/>
+  <text x="487" y="246" text-anchor="middle" class="t-klein">/api/... wordt door de frontend doorgestuurd naar :8020</text>
+  <rect class="box-blauw" x="8" y="96" width="126" height="56" rx="7"/>
+  <text x="71" y="118" text-anchor="middle" class="t-titel">Telefoon (wifi)</text>
+  <text x="71" y="136" text-anchor="middle" class="t-mini">http://192.168.x.x:3000/m</text>
+  <rect class="box-blauw" x="8" y="170" width="126" height="62" rx="7"/>
+  <text x="71" y="190" text-anchor="middle" class="t-titel">Telefoon (overal)</text>
+  <text x="71" y="206" text-anchor="middle" class="t-mini">https://&lt;naam&gt;.</text>
+  <text x="71" y="219" text-anchor="middle" class="t-mini">trycloudflare.com/m</text>
+  <path class="pijl" d="M302,67 L338,67"/>
+  <path class="pijl" d="M410,108 L410,138"/>
+  <path class="pijl" d="M482,168 L508,168"/>
+  <path class="pijl" d="M136,124 L338,100"/>
+  <path class="pijl" d="M136,195 L168,188"/>
+  <path class="pijl" d="M302,178 L340,108"/>
+  <text x="71" y="252" text-anchor="middle" class="t-mini">camera en GPS werken</text>
+  <text x="71" y="264" text-anchor="middle" class="t-mini">alleen via HTTPS</text>
+</svg>
+<figcaption>De lokale opstelling: database in Docker, backend en frontend rechtstreeks, optioneel een tunnel voor een telefoon via HTTPS.</figcaption>
+</figure>
+
+<h3 id="s-lokaal-installatie">Eenmalige installatie</h3>
+<p>Installeer op een nieuwe ontwikkel-pc eerst deze programma's:</p>
+<table>
+  <caption>Benodigde software op een ontwikkel-pc</caption>
+  <tr><th style="width:26%">Programma</th><th style="width:20%">Versie</th><th>Waarvoor</th></tr>
+  <tr><td>Git</td><td>recent</td><td>Broncode ophalen en wijzigingen bewaren</td></tr>
+  <tr><td>Python</td><td>3.14 (zelfde als de server)</td><td>De backend</td></tr>
+  <tr><td>Node.js (met npm)</td><td>22 of hoger</td><td>De frontend</td></tr>
+  <tr><td>Docker Desktop</td><td>recent</td><td>De lokale PostgreSQL-database</td></tr>
+  <tr><td>Visual Studio Code</td><td>recent</td><td>Code-editor (aanbevolen, met de Python- en ESLint-extensies)</td></tr>
+  <tr><td>cloudflared</td><td>recent</td><td>Optioneel: telefoon via HTTPS verbinden</td></tr>
+  <tr><td>pgAdmin</td><td>recent</td><td>Optioneel: database bekijken</td></tr>
+</table>
+<p>Daarna, eenmalig:</p>
+<figure class="code"><span class="bestand">Eenmalige installatie (PowerShell of Git Bash, vanuit de map waar je de code wilt)</span><pre><span class="c"># 1. Code ophalen</span>
+git clone &lt;adres-van-de-GitHub-repository&gt; RWCrew
+cd RWCrew
+
+<span class="c"># 2. Database starten (Docker Desktop moet draaien)</span>
+docker compose up -d db
+
+<span class="c"># 3. Backend: virtuele omgeving, pakketten, instellingen, database-structuur, eerste gebruiker</span>
+cd backend
+python -m venv .venv
+.venv/Scripts/pip install -r requirements.txt
+cp .env.example .env
+.venv/Scripts/python -m alembic upgrade head
+.venv/Scripts/python -m app.cli.seed --email jij@voorbeeld.be --password "KiesEenWachtwoord!" --name "Jouw Naam"
+
+<span class="c"># 4. Frontend: pakketten en instellingen</span>
+cd ../frontend
+npm install
+cp .env.local.example .env.local</pre></figure>
+<p>Het seed-script (<code>app.cli.seed</code>) maakt de tien modules aan, een begin-set seizoenen en de eerste
+<strong>superbeheerder</strong>. Het mag gerust meerdere keren uitgevoerd worden: wat al bestaat, wordt overgeslagen.</p>
+
+<h3 id="s-lokaal-opstarten">Dagelijks opstarten</h3>
+<figure class="code"><span class="bestand">Drie onderdelen starten, elk in een eigen terminal</span><pre><span class="c"># Database (repo-root), als ze nog niet draait</span>
+docker compose up -d db
+
+<span class="c"># Backend (map backend) — bewust ZONDER --reload, zie de valkuil hieronder</span>
+.venv/Scripts/python -m uvicorn app.main:app --port 8020
+
+<span class="c"># Frontend (map frontend)</span>
+npm run dev</pre></figure>
+<p>Open daarna <code>http://localhost:3000</code>. Je wordt doorgestuurd naar <code>/nl/login</code>. De
+interactieve API-documentatie staat op <code>http://localhost:8020/docs</code>.</p>
+
+<div class="kader letop"><span class="kader-titel"></span>
+Start de backend <strong>niet</strong> met <code>--reload</code>. Op Windows laat die optie bij het stoppen een
+"weesproces" achter dat de poort blijft bezetten met de <em>oude</em> code. Het gevolg: verzoeken gaan
+willekeurig naar de oude of de nieuwe versie en fouten lijken "niet opgelost" terwijl ze dat wel zijn. Dit
+heeft in het verleden veel tijd gekost. Herstart de backend gewoon met de hand na een wijziging. Zie
+<a class="ref" href="#s-valkuil-reload"></a> voor de volledige uitleg en hoe je zo'n proces opspoort.
+</div>
+
+<h3 id="s-lokaal-telefoon">Testen op een echte telefoon</h3>
+<p>Er zijn twee manieren om de lokale versie op een telefoon te openen:</p>
+<ul>
+  <li><strong>Via wifi</strong> (eenvoudig, maar zonder camera en GPS): zorg dat telefoon en pc op hetzelfde
+  wifi-netwerk zitten, zoek het IPv4-adres van de pc op (<code>Get-NetIPAddress</code>, interface "Wi-Fi") en open
+  <code>http://&lt;dat-adres&gt;:3000/m</code>.</li>
+  <li><strong>Via een Cloudflare-tunnel</strong> (met camera en GPS, want HTTPS): start
+  <code>cloudflared tunnel --url http://localhost:3000</code> en open het getoonde adres
+  <code>https://&lt;naam&gt;.trycloudflare.com/m</code> op de telefoon. Het adres verandert bij elke start.</li>
+</ul>
+<p>Beide werken alleen als in <code>frontend/.env.local</code> deze twee regels staan (in plaats van een vast
+backend-adres), omdat de browser dan alle API-verzoeken naar het adres stuurt waarop de pagina geopend werd,
+en de frontend ze doorgeeft aan de backend:</p>
+<figure class="code"><span class="bestand">frontend/.env.local (voor telefoontests)</span><pre>NEXT_PUBLIC_API_URL=
+DEV_API_PROXY_TARGET=http://localhost:8020</pre></figure>
+<div class="kader letop"><span class="kader-titel"></span>
+Zet het tunneladres <strong>nooit</strong> in <code>NEXT_PUBLIC_API_URL</code>. Inloggen op localhost mislukt
+dan stilzwijgend: de inlogcookie wordt voor het tunneladres gezet en het loginscherm komt zonder foutmelding
+terug. Om dezelfde reden moeten het adres van de frontend en <code>NEXT_PUBLIC_API_URL</code> altijd dezelfde
+hostnaam gebruiken (<code>localhost</code> en <code>127.0.0.1</code> gelden als verschillende sites).
+</div>
+
+<h2 id="s-server">De server (Hostinger VPS)</h2>
+<p>Test en productie draaien op één <strong>VPS</strong> (<em>Virtual Private Server</em>) bij Hostinger, met
+Ubuntu Linux en Docker. Op de server staan twee volledig gescheiden kopieën van de repository:</p>
+<ul>
+  <li><code>/opt/rwcrew/test</code>: volgt <code>develop</code>, bereikbaar via <code>test.rwcrew.eu</code>;</li>
+  <li><code>/opt/rwcrew/production</code>: volgt <code>main</code>, bereikbaar via <code>rwcrew.eu</code>.</li>
+</ul>
+<p>Elke map heeft een eigen <code>.env</code>-bestand met eigen wachtwoorden en sleutels, en wordt gestart als een
+eigen <strong>docker compose-project</strong>. Daardoor hebben test en productie elk hun eigen drie containers
+(<code>db</code>, <code>backend</code>, <code>frontend</code>) en hun eigen opslag (<em>volumes</em>), en kunnen ze
+elkaar nooit hinderen. Beide gebruiken hetzelfde bestand <code>docker-compose.prod.yml</code>.</p>
+<p>De containers luisteren alleen op het interne adres <code>127.0.0.1</code> van de server; ze zijn niet
+rechtstreeks vanaf het internet bereikbaar. Alleen <strong>Nginx</strong> luistert naar buiten (poorten 80
+en 443). De configuratie staat in <code>deploy/nginx/rwcrew.conf</code>:</p>
+<table>
+  <caption>Hoe Nginx verzoeken verdeelt</caption>
+  <tr><th style="width:34%">Adres</th><th>Productie gaat naar</th><th>Test gaat naar</th></tr>
+  <tr><td><code>/api/public/tagscan-intake</code></td><td>backend :8020, max. 25 MB, snelheidslimiet</td><td>backend :8120, idem</td></tr>
+  <tr><td><code>/api/...</code></td><td>backend :8020</td><td>backend :8120</td></tr>
+  <tr><td>al de rest</td><td>frontend :3000</td><td>frontend :3100</td></tr>
+</table>
+<p>HTTPS-certificaten worden aangevraagd en automatisch vernieuwd door <strong>certbot</strong>. Certbot herschrijft
+het Nginx-bestand op de server en voegt aparte blokken voor poort 443 toe.</p>
+<div class="kader letop"><span class="kader-titel"></span>
+Nginx weigert standaard verzoeken groter dan 1 MB. Daarom zet de configuratie <code>client_max_body_size 25m</code>
+op het TagScan-adres. Na een certbot-wijziging moeten die regel en de snelheidslimiet (<code>limit_req</code>) ook in
+de 443-blokken staan, anders worden grote CSV-bestanden van de Raspberry Pi geweigerd voordat de backend ze ziet.
+</div>
+<p>De volledige installatie van de server (gebruikers, firewall, Docker, Nginx, certbot, GitHub-sleutels) staat
+stap voor stap in <code>docs/deploying-to-hostinger.pdf</code>.</p>
+
+<h2 id="s-env-variabelen">Instellingen per omgeving</h2>
+<p>Instellingen komen uit omgevingsvariabelen. Lokaal staan ze in <code>backend/.env</code> en
+<code>frontend/.env.local</code>; op de server in <code>/opt/rwcrew/&lt;omgeving&gt;/.env</code>. Voorbeelden met
+uitleg staan in <code>backend/.env.example</code>, <code>frontend/.env.local.example</code>,
+<code>.env.test.example</code> en <code>.env.production.example</code>. Geen enkel echt <code>.env</code>-bestand
+staat in Git.</p>
+<table id="tab-instellingen" class="compact">
+  <caption>Belangrijkste instellingen</caption>
+  <tr><th style="width:30%">Variabele</th><th style="width:12%">Voor</th><th>Betekenis</th></tr>
+  <tr><td><code>DATABASE_URL</code></td><td>backend</td><td>Verbinding met PostgreSQL, bv. <code>postgresql+pg8000://rwcrew:…@db:5432/rwcrew</code></td></tr>
+  <tr><td><code>JWT_SECRET</code></td><td>backend</td><td>Geheime sleutel om inlogtokens te ondertekenen. Lang en willekeurig, verschillend per omgeving.</td></tr>
+  <tr><td><code>CORS_ALLOWED_ORIGINS</code></td><td>backend</td><td>Welke websites de API vanuit een browser mogen aanroepen</td></tr>
+  <tr><td><code>RESEND_API_KEY</code>, <code>MAIL_FROM</code></td><td>backend</td><td>Uitgaande mail. Leeg = mails worden overgeslagen (alleen een logregel).</td></tr>
+  <tr><td><code>MAIL_SUBJECT_PREFIX</code></td><td>backend</td><td>Voor elk mailonderwerp, bv. <code>[TEST] </code> op test</td></tr>
+  <tr><td><code>APP_PUBLIC_URL</code></td><td>backend</td><td>Publiek adres van de app, voor links in mails en de QR-code van module 10</td></tr>
+  <tr><td><code>TAGSCAN_SOURCE_DIR</code></td><td>backend</td><td>Map voor de TagScan-bestanden (op de server een Docker-volume)</td></tr>
+  <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>frontend</td><td>Adres van de backend zoals de browser het aanroept. Wordt bij het <em>bouwen</em> ingebakken.</td></tr>
+  <tr><td><code>DEV_API_PROXY_TARGET</code></td><td>frontend</td><td>Alleen lokaal: stuurt <code>/api/...</code> door naar de backend</td></tr>
+  <tr><td><code>NEXT_PUBLIC_SITE_URL</code></td><td>frontend</td><td>Publiek adres voor QR-codes op afgedrukte karbladen</td></tr>
+  <tr><td><code>NEXT_PUBLIC_ENVIRONMENT_LABEL</code></td><td>frontend</td><td>Alleen op test: toont de banner "TEST" en noemt de telefoon-app "RWCrew Test"</td></tr>
+  <tr><td><code>BACKEND_PORT</code>, <code>FRONTEND_PORT</code>, <code>DB_HOST_PORT</code></td><td>server</td><td>Interne poorten per omgeving (zie <a class="ref" href="#tab-omgevingen"></a>)</td></tr>
+  <tr><td><code>POSTGRES_USER</code>, <code>POSTGRES_PASSWORD</code>, <code>POSTGRES_DB</code></td><td>server</td><td>Aanmaakgegevens van de database-container</td></tr>
+</table>
+<p>Instellingen in code staan in <code>backend/app/core/config.py</code> (backend) en
+<code>frontend/src/lib/config.ts</code> (frontend). Daar staat bij elke instelling ook de standaardwaarde en uitleg.
+Twee vaste waarden staan alleen in de code: het toegangstoken leeft <strong>15 minuten</strong> en een
+inlogsessie maximaal <strong>6 uur</strong>.</p>
+
+<h2 id="s-pgadmin">De database bekijken (pgAdmin)</h2>
+<p>Om een probleem op test of productie te onderzoeken, kun je de database bekijken met <strong>pgAdmin</strong>
+op je eigen pc. De database is nooit rechtstreeks via het internet bereikbaar; pgAdmin maakt daarom eerst een
+beveiligde <strong>SSH-tunnel</strong> naar de server en logt dan in met de gebruiker <code>rwcrew_readonly</code>,
+die alles kan lezen maar niets kan wijzigen.</p>
+<table class="compact">
+  <caption>Instellingen in pgAdmin</caption>
+  <tr><th style="width:30%">Instelling</th><th>Waarde</th></tr>
+  <tr><td>Host / poort</td><td><code>127.0.0.1</code> / <code>5442</code> (test) of <code>5443</code> (productie)</td></tr>
+  <tr><td>Database / gebruiker</td><td><code>rwcrew</code> / <code>rwcrew_readonly</code></td></tr>
+  <tr><td>Parameters</td><td><code>GSS encryption mode</code> = <code>disable</code> (anders crasht pgAdmin op Windows)</td></tr>
+  <tr><td>SSH-tunnel</td><td>host = IP van de VPS, poort 22, gebruiker <code>ubuntu</code>, identiteitsbestand = jouw SSH-sleutel</td></tr>
+</table>
+<p>De read-only gebruiker wordt per omgeving één keer aangemaakt met
+<code>bash deploy/scripts/create-readonly-db-user.sh</code> (vanuit de map van die omgeving). Opnieuw uitvoeren
+zet een nieuw wachtwoord.</p>
+<div class="kader tip"><span class="kader-titel"></span>
+Geef de productieserver in pgAdmin een <strong>rode achtergrondkleur</strong>. Zo weet je altijd zeker dat je naar de
+echte gegevens kijkt.
+</div>
+
+<h2 id="s-backups">Back-ups: aandachtspunt</h2>
+<p>In de repository staat <strong>geen</strong> script dat automatisch back-ups van de databases maakt. De
+gegevens staan in Docker-volumes op de VPS. Spreek als team af hoe back-ups geregeld worden en leg dat vast,
+bijvoorbeeld:</p>
+<ul>
+  <li>controleren of de automatische snapshots van Hostinger aan staan en hoe lang ze bewaard worden;</li>
+  <li>een dagelijkse <code>pg_dump</code> van de productiedatabase (via cron) naar een opslag buiten de server;</li>
+  <li>minstens één keer per seizoen een terugzetting proberen op test, zodat je weet dat de back-up werkt.</li>
+</ul>
+<p>Hetzelfde geldt voor het volume met TagScan-bestanden (<code>tagscan_data</code>).</p>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-deployment">Deployment en CI/CD</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Een nieuwe versie online zetten gebeurt automatisch. Elke <strong>push naar <code>develop</code></strong> zet die
+versie binnen enkele minuten op <code>test.rwcrew.eu</code>; elke <strong>push naar <code>main</code></strong> zet ze
+op <code>rwcrew.eu</code>. GitHub Actions logt daarvoor in op de server en voert het script
+<code>deploy/scripts/deploy.sh</code> uit: code ophalen, containers opnieuw bouwen en starten, databasemigraties
+uitvoeren. Er is dus geen aparte "release"-knop. Wat in <code>main</code> staat, staat in productie.
+</div>
+
+<h2 id="s-pipeline">Van commit tot live</h2>
+<figure class="diagram" id="fig-pipeline">
+<svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-blauw" x="8" y="30" width="120" height="58" rx="7"/>
+  <text x="68" y="54" text-anchor="middle" class="t-titel">Ontwikkelaar</text>
+  <text x="68" y="72" text-anchor="middle" class="t-mini">commit + push</text>
+  <rect class="box-paars" x="168" y="30" width="130" height="58" rx="7"/>
+  <text x="233" y="54" text-anchor="middle" class="t-titel">GitHub</text>
+  <text x="233" y="72" text-anchor="middle" class="t-mini">branch develop</text>
+  <rect class="box-paars" x="338" y="30" width="130" height="58" rx="7"/>
+  <text x="403" y="54" text-anchor="middle" class="t-titel">GitHub Actions</text>
+  <text x="403" y="72" text-anchor="middle" class="t-mini">deploy-test.yml</text>
+  <rect class="box" x="508" y="30" width="144" height="58" rx="7"/>
+  <text x="580" y="54" text-anchor="middle" class="t-titel">test.rwcrew.eu</text>
+  <text x="580" y="72" text-anchor="middle" class="t-mini">/opt/rwcrew/test</text>
+  <rect class="box-paars" x="168" y="150" width="130" height="58" rx="7"/>
+  <text x="233" y="174" text-anchor="middle" class="t-titel">GitHub</text>
+  <text x="233" y="192" text-anchor="middle" class="t-mini">branch main</text>
+  <rect class="box-paars" x="338" y="150" width="130" height="58" rx="7"/>
+  <text x="403" y="174" text-anchor="middle" class="t-titel">GitHub Actions</text>
+  <text x="403" y="192" text-anchor="middle" class="t-mini">deploy-production.yml</text>
+  <rect class="box-donker" x="508" y="150" width="144" height="58" rx="7"/>
+  <text x="580" y="174" text-anchor="middle" class="t-titel t-wit">rwcrew.eu</text>
+  <text x="580" y="192" text-anchor="middle" class="t-mini" style="fill:#cfe3da">/opt/rwcrew/production</text>
+  <path class="pijl" d="M130,59 L166,59"/>
+  <path class="pijl" d="M300,59 L336,59"/>
+  <path class="pijl" d="M470,59 L506,59"/>
+  <path class="pijl" d="M233,90 L233,148"/>
+  <text x="243" y="116" class="t-klein">merge develop → main</text>
+  <text x="243" y="130" class="t-klein">na goedkeuring op test</text>
+  <path class="pijl" d="M300,179 L336,179"/>
+  <path class="pijl" d="M470,179 L506,179"/>
+  <text x="488" y="110" text-anchor="middle" class="t-mini">SSH: deploy.sh</text>
+  <text x="488" y="232" text-anchor="middle" class="t-mini">SSH: deploy.sh</text>
+</svg>
+<figcaption>De weg van een wijziging: eerst naar test via <code>develop</code>, na controle naar productie via <code>main</code>.</figcaption>
+</figure>
+
+<h2 id="s-actions">GitHub Actions</h2>
+<p>De map <code>.github/workflows/</code> bevat twee workflows: <code>deploy-test.yml</code> (start bij een push naar
+<code>develop</code>) en <code>deploy-production.yml</code> (start bij een push naar <code>main</code>). Ze doen
+allebei één ding: met SSH inloggen op de VPS en <code>deploy.sh</code> uitvoeren in de map van die omgeving. De
+inloggegevens staan als <strong>secrets</strong> in de GitHub-repository (Settings &gt; Secrets and variables &gt;
+Actions):</p>
+<table class="compact">
+  <caption>GitHub-secrets voor de deployment</caption>
+  <tr><th style="width:30%">Secret</th><th>Inhoud</th></tr>
+  <tr><td><code>SSH_HOST</code></td><td>IP-adres of hostnaam van de VPS</td></tr>
+  <tr><td><code>SSH_USER</code></td><td>De gebruiker waarmee gedeployed wordt</td></tr>
+  <tr><td><code>SSH_PRIVATE_KEY</code></td><td>De private SSH-sleutel van die gebruiker (de publieke sleutel staat op de server)</td></tr>
+</table>
+<p>Je volgt een deployment op GitHub onder het tabblad <strong>Actions</strong>. Een groen vinkje betekent dat het
+script zonder fout liep; bij een rood kruis zie je daar de foutmelding.</p>
+
+<h2 id="s-deploy-script">Wat <code>deploy.sh</code> doet</h2>
+<figure class="code"><span class="bestand">deploy/scripts/deploy.sh (ingekort)</span><pre>set -euo pipefail                      <span class="c"># stop bij de eerste fout</span>
+cd "$DEPLOY_DIR"                       <span class="c"># /opt/rwcrew/test of /opt/rwcrew/production</span>
+git pull --ff-only                     <span class="c"># 1. nieuwste code van de gevolgde branch</span>
+docker compose -f docker-compose.prod.yml up -d --build              <span class="c"># 2. bouwen + herstarten</span>
+docker compose -f docker-compose.prod.yml exec -T backend \
+    python -m alembic upgrade head     <span class="c"># 3. databasemigraties</span>
+docker image prune -f                  <span class="c"># 4. oude images opruimen</span></pre></figure>
+<ol>
+  <li><strong>Code ophalen.</strong> <code>--ff-only</code> weigert als er op de server lokale wijzigingen staan. Wijzig
+  op de server dus nooit code met de hand.</li>
+  <li><strong>Bouwen en starten.</strong> Docker bouwt alleen de containers opnieuw waarvan iets veranderd is en
+  vervangt ze. Tijdens het herstarten is de site enkele seconden onbereikbaar.</li>
+  <li><strong>Migraties.</strong> Nieuwe databasemigraties worden uitgevoerd in de backend-container. Een migratie die
+  faalt, laat de deployment falen (rood kruis in GitHub Actions).</li>
+  <li><strong>Opruimen.</strong> Oude, ongebruikte Docker-images worden verwijderd zodat de schijf niet volloopt.</li>
+</ol>
+
+<h2 id="s-docker-images">De Docker-images</h2>
+<ul>
+  <li><strong>Backend</strong> (<code>backend/Dockerfile</code>): vertrekt van <code>python:3.14-slim</code>, installeert
+  <code>requirements.txt</code>, kopieert de code en start <code>uvicorn app.main:app</code> op poort 8020.</li>
+  <li><strong>Frontend</strong> (<code>frontend/Dockerfile</code>): bouwt in drie stappen (pakketten installeren, de app
+  bouwen met <code>npm run build</code>, een kleine eindcontainer met alleen het resultaat) op basis van
+  <code>node:22-slim</code>. Next.js staat op <code>output: "standalone"</code>, zodat de eindcontainer klein blijft.</li>
+  <li><strong>Database</strong>: het officiële image <code>postgres:16</code>, zonder aanpassingen.</li>
+</ul>
+<div class="kader dev"><span class="kader-titel"></span>
+Variabelen die met <code>NEXT_PUBLIC_</code> beginnen, worden tijdens <code>npm run build</code> in de JavaScript voor de
+browser <strong>ingebakken</strong>. Ze worden daarom als <em>build-argument</em> aan de frontend-container gegeven
+(<code>args:</code> in <code>docker-compose.prod.yml</code>) en niet als gewone omgevingsvariabele. Wijzig je zo'n
+waarde in de <code>.env</code> van de server, dan moet de frontend opnieuw <em>gebouwd</em> worden; herstarten is niet genoeg.
+</div>
+
+<h2 id="s-nieuwe-instelling">Een nieuwe instelling toevoegen</h2>
+<div class="kader letop"><span class="kader-titel"></span>
+<code>docker-compose.prod.yml</code> geeft de backend een <strong>expliciete lijst</strong> van omgevingsvariabelen
+(<code>environment:</code>). Een nieuwe instelling die alleen in de <code>.env</code> van de server staat, komt
+<strong>niet</strong> in de container terecht. Dat is de reden dat de eerste test-deployment geen mails verstuurde.
+</div>
+<p>Een nieuwe backend-instelling toevoegen gaat dus altijd in vier stappen:</p>
+<ol class="stappen">
+  <li>het veld toevoegen aan <code>Settings</code> in <code>backend/app/core/config.py</code> (met standaardwaarde en commentaar);</li>
+  <li>de variabele toevoegen aan de <code>environment:</code>-lijst van de backend in <code>docker-compose.prod.yml</code>;</li>
+  <li>de variabele met uitleg toevoegen aan <code>.env.test.example</code>, <code>.env.production.example</code> en <code>backend/.env.example</code>;</li>
+  <li>de echte waarde invullen in de <code>.env</code> op de server, in beide mappen, en de backend herstarten
+  (<code>docker compose -f docker-compose.prod.yml up -d backend</code>).</li>
+</ol>
+
+<h2 id="s-handmatig-terugdraaien">Handmatig deployen en terugdraaien</h2>
+<p>Een deployment opnieuw uitvoeren, bijvoorbeeld na het aanpassen van een <code>.env</code>, kan met de hand op de
+server, vanuit de map van de omgeving:</p>
+<figure class="code"><span class="bestand">Op de VPS</span><pre>cd /opt/rwcrew/production
+bash deploy/scripts/deploy.sh /opt/rwcrew/production
+
+<span class="c"># Containers bekijken, logs lezen</span>
+docker compose -f docker-compose.prod.yml ps
+docker compose -f docker-compose.prod.yml logs --tail=200 backend</pre></figure>
+<p>Een slechte versie <strong>terugdraaien</strong> gebeurt via Git, niet op de server: maak een
+<code>git revert</code> van de foute commit(s) en push die naar <code>main</code> (en <code>develop</code>). De normale
+deployment zet dan de vorige toestand terug. Let op: een migratie die al uitgevoerd is, wordt daarbij niet
+automatisch teruggedraaid. Bevatte de foute versie een migratie, overleg dan eerst (zie <a class="ref" href="#s-migraties"></a>).</p>
+
+<h2 id="s-release-checklist">Checklist voor een release naar productie</h2>
+<ul class="checklist">
+  <li>Alle backend-tests slagen lokaal (<code>pytest</code>) en de frontend bouwt zonder fouten (<code>npm run build</code>, <code>npm run lint</code>).</li>
+  <li>De wijziging staat op <code>develop</code> en is op <code>test.rwcrew.eu</code> door een tweede persoon gecontroleerd.</li>
+  <li>Nieuwe instellingen zijn op de productieserver ingevuld (zie <a class="ref" href="#s-nieuwe-instelling"></a>).</li>
+  <li>Bevat de release een migratie die gegevens wijzigt of verwijdert? Dan is er vlak voordien een back-up gemaakt.</li>
+  <li>Het moment is gekozen: niet tijdens een festival of een drukke periode, tenzij het een dringende oplossing is.</li>
+  <li>Na de deployment: GitHub Actions is groen, <code>https://rwcrew.eu/api/health</code> antwoordt, en de gewijzigde schermen werken.</li>
+  <li>De handleiding en <code>CLAUDE.md</code> zijn bijgewerkt als de werking veranderde.</li>
+</ul>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-beveiliging">Beveiliging en toegangsrechten</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Wie mag wat in RWCrew, wordt op twee onafhankelijke niveaus bepaald. (1) <strong>Moduletoegang</strong>: de
+superbeheerder beslist per gebruiker welke modules die mag openen. (2) <strong>Rechten binnen een module</strong>:
+de beheerder van die module bepaalt met zelfgemaakte rollen wat iemand per scherm mag zien, aanmaken, wijzigen
+of verwijderen. Je hebt beide nodig. Inloggen gebeurt met e-mail en wachtwoord; de sessie blijft maximaal
+6 uur geldig. Alle controles gebeuren in de backend.
+</div>
+
+<h2 id="s-wachtwoorden">Inloggen en wachtwoorden</h2>
+<ul>
+  <li>Wachtwoorden worden nooit bewaard, alleen een <strong>hash</strong> met PBKDF2-HMAC-SHA256, een willekeurige
+  <em>salt</em> per wachtwoord en 260.000 herhalingen. Dat maakt het raden van wachtwoorden uit een gestolen database
+  zeer traag. Code: <code>backend/app/core/security.py</code>.</li>
+  <li>Bij een fout e-mailadres en bij een fout wachtwoord geeft de backend <strong>exact dezelfde</strong> foutmelding,
+  zodat niemand kan uitzoeken welke e-mailadressen bestaan.</li>
+  <li>Elke inlogpoging, geslaagd of niet, komt in de <strong>inloghistoriek</strong> (<code>Landing_login_history</code>):
+  tijdstip, e-mailadres, IP-adres, of het via de website (<code>web</code>) of de telefoon-app (<code>pwa</code>) was, en
+  het soort toestel (pc, telefoon, tablet).</li>
+  <li>Een gebruiker kan zijn eigen wachtwoord wijzigen (huidig wachtwoord vereist). Daarbij worden al zijn andere
+  sessies (andere browsers, telefoon) beëindigd.</li>
+  <li>De superbeheerder kan in <em>Manage Access</em> het wachtwoord van een gebruiker <strong>resetten</strong> (alle sessies van
+  die gebruiker worden dan beëindigd) of een account <strong>verwijderen</strong>. Een account met <code>is_active</code> uit kan niet
+  inloggen en wordt bij elk verzoek geweigerd; daar is nog geen knop voor in de interface.</li>
+</ul>
+
+<h2 id="s-sessies">Sessies: toegangstoken en vernieuwingstoken</h2>
+<p>Na het inloggen krijgt de browser twee cookies, allebei <strong>HttpOnly</strong> (JavaScript in de pagina kan ze
+niet lezen, wat diefstal via kwaadaardige code bemoeilijkt) en <strong>SameSite=Lax</strong> (ze worden niet
+meegestuurd met verzoeken die vanaf andere websites vertrekken):</p>
+<table>
+  <caption>De twee inlogcookies</caption>
+  <tr><th style="width:30%">Cookie</th><th style="width:16%">Geldig</th><th>Doel</th></tr>
+  <tr><td><code>rwcrew_access_token</code></td><td>15 minuten</td><td>Bewijst bij elk verzoek wie je bent.</td></tr>
+  <tr><td><code>rwcrew_refresh_token</code></td><td>tot 6 uur na inloggen</td><td>Alleen om een nieuw toegangstoken te halen (<code>POST /api/auth/refresh</code>).</td></tr>
+</table>
+
+<figure class="diagram" id="fig-sessie">
+<svg viewBox="0 0 660 200" xmlns="http://www.w3.org/2000/svg">
+  <line x1="40" y1="120" x2="630" y2="120" stroke="#1d2521" stroke-width="1.4"/>
+  <text x="40" y="142" text-anchor="middle" class="t-klein">0:00</text>
+  <text x="40" y="156" text-anchor="middle" class="t-mini">wachtwoord</text>
+  <text x="120" y="142" text-anchor="middle" class="t-klein">0:15</text>
+  <text x="200" y="142" text-anchor="middle" class="t-klein">0:30</text>
+  <text x="280" y="142" text-anchor="middle" class="t-klein">0:45</text>
+  <text x="560" y="142" text-anchor="middle" class="t-klein">6:00</text>
+  <text x="560" y="156" text-anchor="middle" class="t-mini">sessie voorbij</text>
+  <rect class="box-blauw" x="40" y="88" width="78" height="22" rx="4"/>
+  <text x="79" y="103" text-anchor="middle" class="t-mini">toegang 1</text>
+  <rect class="box-blauw" x="122" y="88" width="76" height="22" rx="4"/>
+  <text x="160" y="103" text-anchor="middle" class="t-mini">toegang 2</text>
+  <rect class="box-blauw" x="202" y="88" width="76" height="22" rx="4"/>
+  <text x="240" y="103" text-anchor="middle" class="t-mini">toegang 3</text>
+  <text x="330" y="103" text-anchor="middle" class="t-klein">· · ·</text>
+  <rect class="box-blauw" x="480" y="88" width="78" height="22" rx="4"/>
+  <text x="519" y="103" text-anchor="middle" class="t-mini">laatste</text>
+  <rect class="box-oranje" x="40" y="40" width="520" height="24" rx="4"/>
+  <text x="300" y="56" text-anchor="middle" class="t-klein">vernieuwingstoken: telkens vervangen (rotatie), maar het einde blijft 6:00</text>
+  <path class="pijl-stippel" d="M120,66 L120,86"/>
+  <path class="pijl-stippel" d="M200,66 L200,86"/>
+  <path class="pijl-stippel" d="M280,66 L280,86"/>
+  <line x1="560" y1="30" x2="560" y2="122" stroke="#b45309" stroke-width="1.6" stroke-dasharray="5 3"/>
+  <text x="600" y="100" text-anchor="middle" class="t-mini">opnieuw</text>
+  <text x="600" y="112" text-anchor="middle" class="t-mini">inloggen</text>
+  <text x="330" y="186" text-anchor="middle" class="t-mini">Elke 15 minuten wordt het toegangstoken stil vernieuwd; de gebruiker merkt niets.</text>
+</svg>
+<figcaption>Levensloop van een inlogsessie: korte toegangstokens, een vernieuwingstoken dat bij elk gebruik vervangen wordt, en een harde grens van 6 uur.</figcaption>
+</figure>
+
+<p>Waarom zo? Een kortlevend toegangstoken beperkt de schade als het ooit onderschept wordt. Het
+vernieuwingstoken zorgt ervoor dat de gebruiker toch niet elk kwartier moet inloggen. De harde grens van 6 uur
+na het ingeven van het wachtwoord zorgt ervoor dat er geen sessies dagenlang open blijven staan, en dat de
+inloghistoriek echte, recente logins toont.</p>
+<p>Elke keer dat het vernieuwingstoken gebruikt wordt, wordt het <strong>vervangen</strong> door een nieuw
+(<em>rotatie</em>) en wordt het oude ongeldig gemaakt. In de database staat alleen een hash van elk
+vernieuwingstoken (<code>Landing_refresh_tokens</code>). Een oud, al gebruikt token dat nog eens opduikt, wordt
+geweigerd.</p>
+
+<div class="kader dev"><span class="kader-titel"></span>
+Het stil vernieuwen gebeurt op <strong>twee plaatsen</strong> in de frontend, en beide zijn nodig:
+<ol>
+  <li><code>frontend/src/proxy.ts</code>: bij het openen van een pagina met wel een vernieuwings- maar geen
+  toegangscookie vraagt de proxy eerst nieuwe tokens aan (via <code>lib/session-refresh.ts</code>), nog vóór de pagina
+  opgebouwd wordt. Server Components kunnen zelf geen cookies zetten, dus dit kan niet later gebeuren.</li>
+  <li><code>frontend/src/lib/api.ts</code>, functie <code>fetchWithRefresh</code>: bij een 401-antwoord op een verzoek
+  vanuit de browser wordt één keer vernieuwd en het verzoek herhaald.</li>
+</ol>
+Omdat de backend het vernieuwingstoken bij elk gebruik roteert, mag er per token maar <strong>één</strong>
+vernieuwing tegelijk lopen; een tweede gelijktijdige poging met hetzelfde token krijgt een 401. Beide plaatsen
+delen daarom één lopende vernieuwing (<em>single-flight</em>) en de proxy onthoudt het resultaat 30 seconden.
+Behoud dat als je hier iets aanpast. Elk token bevat ook een willekeurige <code>jti</code>; zonder die waarde zouden
+twee tokens die in dezelfde seconde voor dezelfde gebruiker gemaakt worden identiek zijn, en zou de rotatie
+stilzwijgend falen. Verwijder die niet.
+</div>
+
+<h2 id="s-twee-assen">Twee onafhankelijke toegangsniveaus</h2>
+<figure class="diagram" id="fig-assen">
+<svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-donker" x="10" y="20" width="200" height="66" rx="8"/>
+  <text x="110" y="46" text-anchor="middle" class="t-titel t-wit">Superbeheerder</text>
+  <text x="110" y="66" text-anchor="middle" class="t-mini" style="fill:#cfe3da">is_super_admin = true</text>
+  <rect class="box" x="10" y="150" width="200" height="80" rx="8"/>
+  <text x="110" y="174" text-anchor="middle" class="t-titel">1. Moduletoegang</text>
+  <text x="110" y="194" text-anchor="middle" class="t-mini">ja/nee per gebruiker per module</text>
+  <text x="110" y="210" text-anchor="middle" class="t-mini">Landing_user_module_access</text>
+  <path class="pijl" d="M110,88 L110,148"/>
+  <text x="118" y="122" class="t-mini">"Manage Access"</text>
+  <rect class="box-paars" x="270" y="20" width="180" height="66" rx="8"/>
+  <text x="360" y="46" text-anchor="middle" class="t-titel">Modulebeheerder</text>
+  <text x="360" y="66" text-anchor="middle" class="t-mini">rol met rechten op Roles/Users</text>
+  <rect class="box" x="270" y="150" width="180" height="80" rx="8"/>
+  <text x="360" y="174" text-anchor="middle" class="t-titel">2. Rol in de module</text>
+  <text x="360" y="194" text-anchor="middle" class="t-mini">zien/aanmaken/wijzigen/</text>
+  <text x="360" y="210" text-anchor="middle" class="t-mini">verwijderen per scherm</text>
+  <path class="pijl" d="M360,88 L360,148"/>
+  <text x="368" y="122" class="t-mini">Access Rights</text>
+  <rect class="box-licht" x="500" y="150" width="150" height="80" rx="8"/>
+  <text x="575" y="178" text-anchor="middle" class="t-titel">Toegestaan</text>
+  <text x="575" y="198" text-anchor="middle" class="t-mini">alleen als 1 én 2</text>
+  <text x="575" y="214" text-anchor="middle" class="t-mini">in orde zijn</text>
+  <path class="pijl" d="M212,190 L268,190"/>
+  <path class="pijl" d="M452,190 L498,190"/>
+  <text x="240" y="182" text-anchor="middle" class="t-mini">en</text>
+</svg>
+<figcaption>De twee toegangsniveaus. Een gebruiker heeft eerst moduletoegang nodig; pas dan telt zijn rol binnen de module.</figcaption>
+</figure>
+
+<h3 id="s-moduletoegang">Niveau 1: moduletoegang</h3>
+<p>De <strong>superbeheerder</strong> (een gebruiker met <code>is_super_admin</code>) beslist op het scherm
+<em>Manage Access</em> per gebruiker welke modules die mag openen. Dat is een eenvoudig vinkje per module, bewaard
+in <code>Landing_user_module_access</code>. Een module zonder vinkje verschijnt niet op het startscherm, en elk
+endpoint van die module antwoordt met 403.</p>
+<div class="kader letop"><span class="kader-titel"></span>
+Superbeheerder zijn geeft <strong>niet automatisch</strong> toegang tot de modules, ook niet tot de eigen
+modules. Dat is een bewuste keuze: de macht van de superbeheerder is <em>beslissen wie wat mag openen</em>, niet
+alles zien. Wil de superbeheerder zelf een module openen, dan zet die bij zichzelf het vinkje, zoals voor
+iedereen. Code: <code>backend/app/shared/access.py</code>.
+</div>
+
+<h3 id="s-rechten-per-scherm">Niveau 2: rollen met rechten per scherm</h3>
+<p>Binnen modules 1, 2, 3, 8 en 9 bepaalt een <strong>rollensysteem</strong> wat iemand mag. Elke module heeft
+daarvoor een eigen menu <em>Access Rights</em> met twee schermen:</p>
+<ul>
+  <li><strong>Roles</strong>: rollen aanmaken (vrij te kiezen namen, bv. "Kernlid", "Logistiek", "Lezer") en per rol
+  een <strong>rechtenmatrix</strong> invullen: per scherm van de module vier vinkjes, <em>view</em> (zien),
+  <em>create</em> (aanmaken), <em>edit</em> (wijzigen) en <em>delete</em> (verwijderen).</li>
+  <li><strong>Users</strong>: per gebruiker met moduletoegang één rol kiezen, en nieuwe gebruikers rechtstreeks
+  toegang geven tot deze module.</li>
+</ul>
+<table class="compact">
+  <caption>Voorbeeld van een rechtenmatrix voor de rol "Logistiek" in Interventie Aanvragen</caption>
+  <tr><th style="width:36%">Scherm</th><th>Zien</th><th>Aanmaken</th><th>Wijzigen</th><th>Verwijderen</th></tr>
+  <tr><td>Intervention Requests</td><td>✔</td><td>✔</td><td>✔</td><td>–</td></tr>
+  <tr><td>Intervention Statuses</td><td>✔</td><td>–</td><td>–</td><td>–</td></tr>
+  <tr><td>TeamKar</td><td>✔</td><td>–</td><td>–</td><td>–</td></tr>
+  <tr><td>Mailing List</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+  <tr><td>Roles / Users</td><td>–</td><td>–</td><td>–</td><td>–</td></tr>
+</table>
+<p>Belangrijke regels van dit systeem:</p>
+<ul>
+  <li><strong>Geen vinkje is geen recht.</strong> Een nieuw scherm verschijnt automatisch als lege rij in elke
+  rechtenmatrix; niemand kan er iets tot een beheerder een rol aanvinkt. Veilig standaard.</li>
+  <li><strong>Eén rol per gebruiker per module.</strong> Wil je iemand meer rechten geven, pas dan zijn rol aan of
+  maak een nieuwe rol.</li>
+  <li><strong>Schermen zijn onafhankelijk.</strong> Recht op het ene scherm zegt niets over een ander scherm. Ook de
+  schermen Roles en Users zijn apart: iemand kan gebruikers toevoegen zonder rollen te mogen aanpassen.</li>
+  <li><strong>De superbeheerder mag binnen een module alles</strong>, op voorwaarde dat hij moduletoegang heeft. Zo kan
+  hij de allereerste rol van een module aanmaken, of ingrijpen als de enige modulebeheerder vertrekt.</li>
+  <li>Een rol toekennen kan alleen aan iemand die al moduletoegang heeft.</li>
+</ul>
+<p>De volledige lijst van schermen per module staat in <a class="ref" href="#bijlage-schermen"></a>. Hoe dit in de code
+gebouwd is, staat in <a class="ref" href="#s-be-rechten"></a>.</p>
+
+<h3 id="s-vaste-rollen">Modules met vaste rollen</h3>
+<p>Modules 4 tot 7 en module 10 gebruiken nog een eenvoudiger, ouder systeem: drie vaste rollen
+(<em>admin</em>, <em>editor</em>, <em>reader</em>) in één gedeelde tabel <code>Landing_module_roles</code>. Zodra zo'n
+module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per scherm (zie <a class="ref" href="#s-recept-module"></a>).</p>
+
+<h2 id="s-altsien-regels">Extra regels in Altsien Select</h2>
+<p>Altsien Select heeft bovenop de rechten per scherm twee extra regels:</p>
+<ul>
+  <li><strong>Ploegafbakening.</strong> Een gebruiker ziet alleen de ploegen waaraan hij gekoppeld is als
+  Altsien-kernlid (<code>MasterData_team_kernlid</code>). Een rol met "zien" op het speciale scherm
+  <code>altsienselect.allteams</code> ("All teams (organisation)") ziet alle ploegen. Een andere ploeg opvragen geeft
+  404, zodat je niet eens kunt achterhalen dat ze bestaat.</li>
+  <li><strong>Seizoensslot.</strong> Zodra bij een seizoen <code>periode_open</code> uit staat, weigert de backend elke
+  wijziging (403), behalve voor wie "wijzigen" heeft op <code>altsienselect.allteams</code>.</li>
+</ul>
+
+<h2 id="s-publieke-endpoints">Endpoints zonder login</h2>
+<p>Twee groepen endpoints zijn bewust bereikbaar zonder inloggen, elk met eigen beveiliging:</p>
+<table>
+  <caption>Publieke endpoints en hun beveiliging</caption>
+  <tr><th style="width:34%">Endpoint</th><th>Waarvoor</th><th style="width:34%">Beveiliging</th></tr>
+  <tr><td><code>/api/public/intervention-requests</code></td><td>Het publieke interventieformulier (QR-code op het karblad)</td><td>Snelheidslimiet: max. 10 aanvragen per minuut per IP-adres; alle invoer wordt gecontroleerd en in mails ge-escaped</td></tr>
+  <tr><td><code>/api/public/tagscan-intake</code></td><td>CSV-bestanden van de Raspberry Pi</td><td>API-sleutel per scanner (header <code>X-API-Key</code>, gehasht bewaard), max. 20 MB per bestand, Nginx-snelheidslimiet (30 per minuut)</td></tr>
+</table>
+<p>Een API-sleutel van een scanner werkt alleen op de omgeving waar ze aangemaakt is (test of productie).</p>
+
+<h2 id="s-overige-beveiliging">Overige maatregelen</h2>
+<ul>
+  <li><strong>HTTPS</strong> op alle publieke adressen (Let's Encrypt).</li>
+  <li><strong>CORS</strong>: de backend accepteert browserverzoeken alleen vanaf de eigen website(s)
+  (<code>CORS_ALLOWED_ORIGINS</code>).</li>
+  <li><strong>Database en containers alleen intern</strong>: alleen Nginx is van buitenaf bereikbaar. Voor debuggen
+  is er een read-only databasegebruiker via een SSH-tunnel.</li>
+  <li><strong>Geheimen buiten Git</strong>: <code>.env</code>-bestanden staan in <code>.gitignore</code>. De
+  <code>JWT_SECRET</code> is per omgeving verschillend, zodat een token van test nooit op productie werkt.</li>
+  <li><strong>Mails falen veilig</strong>: een probleem bij het versturen wordt gelogd maar maakt de bewerking
+  (bv. het opslaan van een aanvraag) nooit ongedaan.</li>
+</ul>
+<div class="kader letop"><span class="kader-titel"></span>
+Wie toegang heeft tot de server, de GitHub-repository-instellingen, Hostinger, Cloudflare of Resend, heeft
+feitelijk toegang tot alles. Houd bij wie welke toegang heeft, geef ze alleen aan wie ze nodig heeft, en
+wijzig sleutels en wachtwoorden als iemand het team verlaat (zie <a class="ref" href="#s-toegangen-team"></a>).
+</div>

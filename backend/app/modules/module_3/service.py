@@ -3,12 +3,12 @@
 # here rather than duplicated in both so "how do we pick a team / a
 # request number / the default status" stays defined exactly once.
 
-from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
+from app.core.timezone import belgian_today
 from app.db.models.intervention_request import InterventionRequest
 from app.db.models.intervention_status import InterventionStatus
 from app.db.models.team import Team
@@ -68,7 +68,9 @@ def generate_request_number(db: Session) -> str:
     its number available again. PostgreSQL's transaction advisory lock
     serializes concurrent allocations for the same year.
     """
-    year_suffix = str(datetime.now(timezone.utc).year)[-2:]
+    # The Belgian calendar year, so a request made just after midnight on
+    # New Year's Day already gets the new year's number.
+    year_suffix = str(belgian_today().year)[-2:]
     prefix = f"IA{year_suffix}_"
     if db.bind is not None and db.bind.dialect.name == "postgresql":
         db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:prefix))"), {"prefix": prefix})

@@ -12,7 +12,7 @@ import { Link } from "@/i18n/navigation";
 import type { InterventionRequest, InterventionRequestsTeam, InterventionStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { formatDateOnly, weekdayKeyFor } from "@/components/module-3/request-dates";
+import { belgianDayKey, formatDateOnly, toDateTimeLocalValue, weekdayKeyFor } from "@/components/module-3/request-dates";
 import { interventionRequestsPhoneRoutes } from "@/components/phone/module-3/intervention-requests-phone-routes";
 import { RequestCard } from "@/components/phone/module-3/request-card";
 import { PhoneNotice } from "@/components/phone/shared/phone-notice";
@@ -37,10 +37,10 @@ interface DayGroup {
   requests: InterventionRequest[];
 }
 
-/** Sort order: by preferred delivery (minute precision), undated last, then by number. */
+/** Sort order: by preferred delivery (minute precision, Belgian time), undated last, then by number. */
 function compareRequests(a: InterventionRequest, b: InterventionRequest): number {
-  const aDate = a.preferred_delivery_at?.slice(0, 16);
-  const bDate = b.preferred_delivery_at?.slice(0, 16);
+  const aDate = toDateTimeLocalValue(a.preferred_delivery_at);
+  const bDate = toDateTimeLocalValue(b.preferred_delivery_at);
   if (aDate !== bDate) {
     if (!aDate) return 1;
     if (!bDate) return -1;
@@ -92,8 +92,8 @@ export function RequestsList({ requests, statuses, teams, canCreate }: RequestsL
     // Consecutive requests on the same day form one group (they are sorted).
     const result: DayGroup[] = [];
     for (const request of visible) {
-      const day = request.preferred_delivery_at?.slice(0, 10);
-      const key = day ?? NO_DATE_KEY;
+      const day = belgianDayKey(request.preferred_delivery_at);
+      const key = day || NO_DATE_KEY;
       let group = result.at(-1);
       if (!group || group.key !== key) {
         const label = day

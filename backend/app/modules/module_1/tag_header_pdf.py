@@ -10,11 +10,11 @@
 # reason pg8000/openpyxl were chosen over compiled alternatives — see
 # CLAUDE.md's Python 3.14 gotcha).
 
-from datetime import datetime
 
 from fpdf import FPDF
 from sqlalchemy.orm import Session
 
+from app.core.timezone import belgian_now, to_belgian
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 from app.modules.module_1.tag_line_data import list_lines_for_header
@@ -215,7 +215,7 @@ def build_header_summary_pdf(db: Session, header: TagHeaderData, locale: str = "
     # rather than a bordered box.
     for label_key, value in (
         ("filename", header.filename),
-        ("logged_at", header.created_at.strftime("%Y-%m-%d %H:%M")),
+        ("logged_at", to_belgian(header.created_at).strftime("%Y-%m-%d %H:%M")),
         ("total_lines", str(header.line_count)),
     ):
         pdf.set_font("Helvetica", "B", 9)
@@ -234,6 +234,6 @@ def build_header_summary_pdf(db: Session, header: TagHeaderData, locale: str = "
 
     pdf.set_font("Helvetica", "", 8)
     pdf.set_text_color(*MUTED_TEXT)
-    pdf.cell(0, 6, labels["generated_at"].format(timestamp=datetime.now().strftime("%Y-%m-%d %H:%M")))
+    pdf.cell(0, 6, labels["generated_at"].format(timestamp=belgian_now().strftime("%Y-%m-%d %H:%M")))
 
     return bytes(pdf.output())

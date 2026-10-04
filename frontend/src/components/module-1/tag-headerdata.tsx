@@ -33,19 +33,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDateTime } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
 
 interface TagHeaderDataProps {
   initialEntries: TagHeaderDataEntry[];
-}
-
-/** Plain string slicing instead of toLocaleString(): that depends on the
- * runtime's default locale/timezone, which differs between the server
- * (during SSR) and the browser (during hydration) — causing a hydration
- * mismatch. Slicing the already-ISO string is deterministic everywhere.
- */
-function formatDateTime(isoDateTime: string): string {
-  return isoDateTime.slice(0, 16).replace("T", " ");
 }
 
 function textMatches(fieldValue: string, filterValue: string): boolean {
@@ -70,7 +62,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [actionFilter, setActionFilter] = useState("");
 
   const filteredEntries = useMemo(() => {
-    return entries.filter((entry) => {
+    const visible = entries.filter((entry) => {
       if (!textMatches(entry.filename, filenameFilter)) return false;
       if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(String(entry.line_count), lineCountFilter)) return false;
@@ -81,6 +73,11 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(entry.action ?? "", actionFilter)) return false;
       return true;
     });
+    // Always newest first by "Registered on" (id breaks a tie), whatever
+    // order the list arrived in — also right after a Scan or a delete.
+    return visible.sort(
+      (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime() || b.id - a.id,
+    );
   }, [
     entries,
     filenameFilter,

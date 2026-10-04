@@ -8,7 +8,7 @@
 # registry ("Karlijst") and delivery planning endpoints get added here
 # alongside their own screen keys once that phase is designed.
 
-from datetime import date, datetime, timezone
+from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
 from sqlalchemy import select
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.core.timezone import belgian_today
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan
@@ -797,7 +798,7 @@ def print_kar_planning(
     return Response(
         content=pdf_bytes,
         media_type="application/pdf",
-        headers={"Content-Disposition": f'attachment; filename="Karbladen_{date.today().isoformat()}.pdf"'},
+        headers={"Content-Disposition": f'attachment; filename="Karbladen_{belgian_today().isoformat()}.pdf"'},
     )
 
 

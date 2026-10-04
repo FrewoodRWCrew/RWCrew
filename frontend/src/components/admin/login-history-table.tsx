@@ -9,6 +9,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { listLoginHistory } from "@/lib/api";
+import { formatDateTime } from "@/lib/date-time";
 import type { LoginHistoryEntry, LoginHistoryPage } from "@/lib/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -147,7 +148,7 @@ export function LoginHistoryTable({ initialData, pageSize }: LoginHistoryTablePr
             )}
             {data.items.map((entry) => (
               <TableRow key={entry.id}>
-                <TableCell>{new Date(entry.created_at).toLocaleString()}</TableCell>
+                <TableCell>{formatDateTime(entry.created_at)}</TableCell>
                 <TableCell>
                   <div className="flex flex-col">
                     <span className="font-medium">{entry.display_name ?? entry.email_attempted}</span>

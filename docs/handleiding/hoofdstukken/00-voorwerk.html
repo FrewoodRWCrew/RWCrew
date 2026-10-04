@@ -1,0 +1,101 @@
+<!-- Voorblad, documentbeheer, inhoudsopgave en lijsten van figuren/tabellen.
+     De inhoudsopgave en lijsten worden door build_pdf.py ingevuld op de markers. -->
+
+<div class="voorblad">
+<!-- Gedeelde pijlpunten voor alle diagrammen (url(#pijlpunt) en url(#pijlpunt-grijs)). -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="pijlpunt" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1d2521"/></marker>
+    <marker id="pijlpunt-grijs" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#5d6863"/></marker>
+  </defs>
+</svg>
+  <div class="label">RWCrew · Technische documentatie</div>
+  <h1 class="titel">Ontwikkelaarshandleiding</h1>
+  <div class="ondertitel">Opzet, architectuur, gebruikte tools en de manier waarop de applicatie ontwikkeld is, voor iedereen die RWCrew mee gaat onderhouden.</div>
+  <div class="streep"></div>
+  <ul class="inhoud-kort">
+    <li><strong>Deel A</strong>: Opzet en architectuur: hoe RWCrew in elkaar zit en waar het draait</li>
+    <li><strong>Deel B</strong>: Gebruikte tools: elke technologie, wat ze doet en waarom ze gekozen is</li>
+    <li><strong>Deel C</strong>: Hoe de applicatie ontwikkeld is: code, patronen, recepten en werkwijze</li>
+    <li><strong>Deel D</strong>: Dagelijks beheer: wat je kunt doen zonder te programmeren</li>
+  </ul>
+  <div class="onderaan">
+    <table>
+      <tr><td>Versie</td><td>1.0</td></tr>
+      <tr><td>Datum</td><td>3 oktober 2026</td></tr>
+      <tr><td>Codebasis</td><td>branch <em>develop</em>, commit 97cdc36</td></tr>
+      <tr><td>Status</td><td>Vrijgegeven</td></tr>
+    </table>
+    <div class="vertrouwelijk">Intern document</div>
+  </div>
+</div>
+
+<div class="voorwerk">
+  <h1>Documentbeheer</h1>
+
+  <h3>Over dit document</h3>
+  <p>Deze handleiding beschrijft de webapplicatie <strong>RWCrew</strong>: een beheerplatform met losse
+  modules (TagScan, KarTracker, Interventie Aanvragen, Altsien Select, MasterData en de telefoon-app) voor
+  de werking van de Altsien-ploegen. RWCrew werd tot nu toe door één persoon gebouwd. Het doel van dit
+  document is dat een team van meerdere mensen de applicatie kan begrijpen, beheren en verder ontwikkelen
+  zonder dat alle kennis in één hoofd zit.</p>
+
+  <table class="compact">
+    <caption>Documentgegevens</caption>
+    <tr><td style="width:32%"><strong>Titel</strong></td><td>RWCrew · Ontwikkelaarshandleiding</td></tr>
+    <tr><td><strong>Versie</strong></td><td>1.0</td></tr>
+    <tr><td><strong>Datum</strong></td><td>3 oktober 2026</td></tr>
+    <tr><td><strong>Oorspronkelijke ontwikkelaar</strong></td><td>Frederik Verstraeten</td></tr>
+    <tr><td><strong>Beschreven codebasis</strong></td><td>Git-repository <code>RWCrew</code>, branch <code>develop</code>, commit <code>97cdc36</code></td></tr>
+    <tr><td><strong>Bron van dit document</strong></td><td><code>docs/handleiding/</code> in dezelfde repository (zie <a class="ref" href="#bijlage-bijwerken"></a>)</td></tr>
+    <tr><td><strong>Classificatie</strong></td><td>Intern: bevat geen wachtwoorden of sleutels, wel interne adressen en werkwijzen</td></tr>
+  </table>
+
+  <h3>Versiegeschiedenis</h3>
+  <table class="compact">
+    <caption>Versiegeschiedenis</caption>
+    <tr><th style="width:12%">Versie</th><th style="width:20%">Datum</th><th style="width:22%">Auteur</th><th>Wijziging</th></tr>
+    <tr><td>1.0</td><td>3 oktober 2026</td><td>F. Verstraeten</td><td>Eerste volledige versie: architectuur, tools, ontwikkelwerkwijze en beheer.</td></tr>
+    <tr><td></td><td></td><td></td><td></td></tr>
+    <tr><td></td><td></td><td></td><td></td></tr>
+  </table>
+
+  <h3>Voor wie is deze handleiding?</h3>
+  <table class="compact">
+    <caption>Doelgroepen en aanbevolen hoofdstukken</caption>
+    <tr><th style="width:30%">Lezer</th><th>Lees zeker</th></tr>
+    <tr><td><strong>Iedereen</strong> die RWCrew mee onderhoudt</td><td>Hoofdstukken 1 tot en met 5 en de woordenlijst (<a class="ref" href="#bijlage-woordenlijst"></a>)</td></tr>
+    <tr><td><strong>Beheerders</strong> (gebruikers, rechten, server, data) zonder programmeerachtergrond</td><td>Daarnaast hoofdstukken 6 tot en met 8 en <a class="ref" href="#h-beheer"></a></td></tr>
+    <tr><td><strong>Ontwikkelaars</strong></td><td>Alles, met nadruk op Deel C (hoofdstukken 9 tot en met 17)</td></tr>
+  </table>
+
+  <h3>Gebruikte kaders</h3>
+  <p>Doorheen het document helpen vaste kaders je om snel te zien wat voor jou belangrijk is:</p>
+  <div class="kader kort"><span class="kader-titel"></span>Samenvatting bovenaan elk hoofdstuk. Wie geen technische details nodig heeft, kan na dit kader verder naar het volgende hoofdstuk.</div>
+  <div class="kader analogie"><span class="kader-titel"></span>Een vergelijking uit het dagelijkse leven die een technisch begrip uitlegt.</div>
+  <div class="kader tip"><span class="kader-titel"></span>Een handige werkwijze of snelkoppeling.</div>
+  <div class="kader letop"><span class="kader-titel"></span>Een valkuil die in het verleden al tijd of fouten gekost heeft.</div>
+  <div class="kader dev"><span class="kader-titel"></span>Technische verdieping. Niet-ontwikkelaars mogen dit kader overslaan.</div>
+  <p>Hoofdstukken krijgen onder hun titel een label: <span class="doelgroep iedereen" style="margin:0">Iedereen</span>,
+  <span class="doelgroep beheer" style="margin:0">Beheerders</span> of <span class="doelgroep ontwikkelaars" style="margin:0">Ontwikkelaars</span>.</p>
+
+  <h3>Schrijfwijze</h3>
+  <ul>
+    <li><span class="pad">backend/app/main.py</span> of <code>backend/app/main.py</code>: een bestand of map in de repository, altijd vanaf de hoofdmap van de repository.</li>
+    <li><code>npm run dev</code>: een commando dat je in een terminal typt.</li>
+    <li>Termen in het Engels (zoals <em>backend</em>, <em>endpoint</em>) worden bij het eerste gebruik uitgelegd en staan ook in de woordenlijst. We vertalen ze niet geforceerd, omdat je ze in de code en online documentatie altijd in het Engels tegenkomt.</li>
+  </ul>
+</div>
+
+<div class="voorwerk">
+  <h1>Inhoudsopgave</h1>
+  <!-- INHOUDSOPGAVE -->
+</div>
+
+<div class="voorwerk">
+  <h1>Lijst van figuren en tabellen</h1>
+  <div class="toc-lijst-titel">Figuren</div>
+  <!-- LIJST-FIGUREN -->
+  <div class="toc-lijst-titel">Tabellen</div>
+  <!-- LIJST-TABELLEN -->
+</div>

@@ -3,6 +3,7 @@
 // Tapping it opens the request.
 
 import { Link } from "@/i18n/navigation";
+import { formatTime } from "@/lib/date-time";
 import type { InterventionRequest, InterventionStatus } from "@/lib/types";
 import { interventionRequestsPhoneRoutes } from "@/components/phone/module-3/intervention-requests-phone-routes";
 import { RequestStatusPill } from "@/components/phone/module-3/request-status-pill";
@@ -14,8 +15,8 @@ interface RequestCardProps {
 }
 
 export function RequestCard({ request, status, teamLabel }: RequestCardProps) {
-  // "HH:mm" of the preferred delivery, sliced (never converted) like on the desktop.
-  const deliveryTime = request.preferred_delivery_at?.slice(11, 16);
+  // "HH:mm" of the preferred delivery, in Belgian time like on the desktop.
+  const deliveryTime = formatTime(request.preferred_delivery_at);
   const whenWhere = [deliveryTime, request.delivery_location].filter(Boolean).join(" · ");
 
   return (

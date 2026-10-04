@@ -1,0 +1,604 @@
+<!-- Deel C, eerste helft: hoofdstuk 9 (repostructuur), 10 (backend), 11 (frontend), 12 (telefoon-app). -->
+
+<section class="deel" id="deel-c" data-toc="Deel C · Hoe de applicatie ontwikkeld is">
+  <div class="deel-label">Deel C</div>
+  <h1>Hoe de applicatie ontwikkeld is</h1>
+  <div class="streep"></div>
+  <p>De code zelf: waar alles staat, hoe backend, frontend en telefoon-app opgebouwd zijn, een volledige doorloop
+  van één verzoek, recepten voor veelvoorkomende uitbreidingen, de codeerafspraken, samenwerken als team en de
+  valkuilen die al eens tijd gekost hebben.</p>
+  <div class="deel-lezers">Doelgroep: ontwikkelaars. Beheerders vinden hun taken in Deel D.</div>
+</section>
+
+<h1 class="hoofdstuk" id="h-repo">Structuur van de repository</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De repository heeft twee hoofdmappen: <code>backend/</code> (Python/FastAPI) en <code>frontend/</code> (Next.js). Daarnaast
+staan er de deploymentbestanden (<code>deploy/</code>, <code>docker-compose*.yml</code>, <code>.github/</code>), documentatie
+(<code>docs/</code>) en het Raspberry Pi-script (<code>scripts/</code>). Binnen backend en frontend is alles <strong>per
+module</strong> georganiseerd: wie aan module 3 werkt, vindt alles in mappen met "module_3" of "module-3" in de naam.
+</div>
+
+<h2 id="s-repo-hoofdmap">De hoofdmap</h2>
+<figure class="code"><span class="bestand">Hoofdmap van de repository</span><pre>RWCrew/
+├── backend/                  <span class="c">FastAPI-backend (Python)</span>
+├── frontend/                 <span class="c">Next.js-frontend (TypeScript), website + telefoon-app</span>
+├── deploy/
+│   ├── nginx/rwcrew.conf     <span class="c">Nginx-configuratie voor beide domeinen</span>
+│   └── scripts/              <span class="c">deploy.sh, create-readonly-db-user.sh</span>
+├── .github/workflows/        <span class="c">deploy-test.yml, deploy-production.yml</span>
+├── docs/                     <span class="c">documentatie (PDF's, rollenpatroon, deze handleiding)</span>
+├── scripts/pi-watcher/       <span class="c">script voor de Raspberry Pi (TagScan)</span>
+├── docker-compose.yml        <span class="c">lokaal: alleen PostgreSQL (poort 5433)</span>
+├── docker-compose.prod.yml   <span class="c">server: db + backend + frontend (test én productie)</span>
+├── .env.test.example         <span class="c">voorbeeld-instellingen voor test</span>
+├── .env.production.example   <span class="c">voorbeeld-instellingen voor productie</span>
+├── CLAUDE.md                 <span class="c">projectgeheugen: architectuur, valkuilen, afspraken</span>
+└── README.md</pre></figure>
+
+<h2 id="s-repo-backend">De backend-map</h2>
+<figure class="code"><span class="bestand">backend/</span><pre>backend/
+├── app/
+│   ├── main.py               <span class="c">startpunt: maakt de FastAPI-app, registreert alle routers</span>
+│   ├── core/                 <span class="c">config.py (instellingen), database.py, security.py, mail.py</span>
+│   ├── db/
+│   │   ├── base.py           <span class="c">importeert alle modellen (voor Alembic en tests)</span>
+│   │   └── models/           <span class="c">één bestand per databasetabel</span>
+│   ├── schemas/              <span class="c">Pydantic-schema's: vorm van invoer en uitvoer, per module</span>
+│   ├── landing/              <span class="c">auth.py (/api/auth), admin.py (/api/admin), deps.py, modules.py</span>
+│   ├── modules/
+│   │   ├── common.py         <span class="c">gedeelde fabriek voor eenvoudige modules</span>
+│   │   ├── registry.py       <span class="c">de lijst van modules (sleutel, naam, volgorde)</span>
+│   │   └── module_1 … module_10/   <span class="c">één pakket per module</span>
+│   ├── shared/               <span class="c">access.py (moduletoegang), device.py (toesteltype)</span>
+│   ├── cli/seed.py           <span class="c">eerste gegevens + eerste superbeheerder</span>
+│   └── assets/               <span class="c">lettertypes/afbeeldingen voor PDF's</span>
+├── migrations/               <span class="c">Alembic: env.py en versions/ (de migraties)</span>
+├── tests/                    <span class="c">pytest, zelfde opbouw als app/ (landing/, modules/module_N/)</span>
+├── requirements.txt          <span class="c">vastgepinde Python-pakketten</span>
+├── Dockerfile
+└── .env.example</pre></figure>
+
+<h2 id="s-repo-frontend">De frontend-map</h2>
+<figure class="code"><span class="bestand">frontend/</span><pre>frontend/
+├── src/
+│   ├── proxy.ts              <span class="c">draait vóór elke pagina: taal + stil sessie vernieuwen</span>
+│   ├── app/
+│   │   ├── layout.tsx        <span class="c">echte root: &lt;html&gt;, &lt;body&gt;, thema</span>
+│   │   ├── manifest.ts       <span class="c">PWA-manifest (installeerbare telefoon-app)</span>
+│   │   └── [locale]/         <span class="c">alles onder /nl of /en</span>
+│   │       ├── layout.tsx    <span class="c">vertalingen beschikbaar maken</span>
+│   │       ├── (auth)/login/            <span class="c">inlogpagina website</span>
+│   │       ├── (public)/intervention-request/  <span class="c">publiek formulier</span>
+│   │       ├── (protected)/             <span class="c">alles waarvoor je ingelogd moet zijn</span>
+│   │       │   ├── page.tsx             <span class="c">startscherm met tegels</span>
+│   │       │   ├── admin/access/, admin/login-history/
+│   │       │   └── modules/module-1 … module-10/
+│   │       └── m/                       <span class="c">telefoon-app</span>
+│   │           ├── login/
+│   │           └── (signed-in)/module-2/, module-3/
+│   ├── components/
+│   │   ├── ui/               <span class="c">shadcn-onderdelen (gegenereerd)</span>
+│   │   ├── shared/           <span class="c">bovenbalk, menu's, taal, thema, seizoenkiezer</span>
+│   │   ├── admin/, landing/  <span class="c">beheerschermen, tegels, loginformulier</span>
+│   │   ├── module-1 … module-10/       <span class="c">schermen per module</span>
+│   │   └── phone/shared/, phone/module-2/, phone/module-3/
+│   ├── lib/                  <span class="c">api.ts, server-api.ts, server-auth.ts, types.ts, config.ts, …</span>
+│   └── i18n/                 <span class="c">taalinstellingen (routing.ts, request.ts, navigation.ts)</span>
+├── messages/nl.json, en.json <span class="c">alle schermteksten</span>
+├── public/                   <span class="c">iconen, afbeeldingen</span>
+├── next.config.ts, package.json, Dockerfile, .env.local.example</pre></figure>
+
+<h2 id="s-waar-vind-ik">Waar vind ik…?</h2>
+<table id="tab-waar-vind-ik" class="compact">
+  <caption>Snel de juiste plaats vinden</caption>
+  <tr><th style="width:38%">Ik zoek…</th><th>Kijk in</th></tr>
+  <tr><td>de endpoints van module N</td><td><code>backend/app/modules/module_N/router.py</code></td></tr>
+  <tr><td>wie wat mag in module N</td><td><code>…/module_N/deps.py</code> en <code>…/module_N/screens.py</code></td></tr>
+  <tr><td>een databasetabel</td><td><code>backend/app/db/models/&lt;naam&gt;.py</code></td></tr>
+  <tr><td>de vorm van gegevens die een endpoint ontvangt/terugstuurt</td><td><code>backend/app/schemas/&lt;module&gt;.py</code></td></tr>
+  <tr><td>een PDF (leveringsbon, karblad, Ploegfiche)</td><td><code>…/module_N/*_pdf.py</code></td></tr>
+  <tr><td>een Excel-import</td><td><code>…/module_N/*_import.py</code></td></tr>
+  <tr><td>de stappen van de Ploeg Wizard</td><td><code>backend/app/modules/module_8/steps.py</code></td></tr>
+  <tr><td>een webscherm</td><td><code>frontend/src/app/[locale]/(protected)/modules/module-N/…/page.tsx</code> (de pagina) en <code>frontend/src/components/module-N/</code> (het scherm zelf)</td></tr>
+  <tr><td>het menu links in een module</td><td><code>frontend/src/components/module-N/*-sidebar.tsx</code></td></tr>
+  <tr><td>een telefoonscherm</td><td><code>frontend/src/app/[locale]/m/(signed-in)/module-N/</code> en <code>frontend/src/components/phone/module-N/</code></td></tr>
+  <tr><td>de functie die een endpoint aanroept vanuit de browser</td><td><code>frontend/src/lib/api.ts</code></td></tr>
+  <tr><td>de TypeScript-types van de gegevens</td><td><code>frontend/src/lib/types.ts</code></td></tr>
+  <tr><td>een schermtekst</td><td><code>frontend/messages/nl.json</code> en <code>en.json</code></td></tr>
+  <tr><td>de kleur van een module</td><td><code>frontend/src/lib/module-theme.ts</code></td></tr>
+  <tr><td>de tests van module N</td><td><code>backend/tests/modules/module_N/</code></td></tr>
+</table>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-backend">De backend in detail</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De backend is een FastAPI-applicatie. <code>main.py</code> registreert per module een <strong>router</strong> (een groep
+endpoints). Elk endpoint krijgt via <strong>dependencies</strong> een databasesessie en de ingelogde gebruiker, en
+controleert met <code>require_screen_permission</code> of die gebruiker het mag. Tabellen zijn
+<strong>SQLAlchemy-modellen</strong>, invoer en uitvoer zijn <strong>Pydantic-schema's</strong>, wijzigingen aan de
+database gaan via <strong>Alembic-migraties</strong>, en alles is gedekt door meer dan 550 <strong>pytest</strong>-tests
+die op een tijdelijke SQLite-database draaien.
+</div>
+
+<h2 id="s-be-opstart">Opstart: <code>main.py</code></h2>
+<p><code>backend/app/main.py</code> is het startpunt. Het doet vier dingen:</p>
+<ol>
+  <li>Het maakt het FastAPI-object (<code>app = FastAPI(title="RW Crew API", lifespan=lifespan)</code>).</li>
+  <li>Het voegt <strong>CORS</strong> toe, zodat de frontend vanuit de browser de API mag aanroepen en cookies mag meesturen.</li>
+  <li>Het registreert alle routers: <code>auth</code>, <code>admin</code>, <code>modules</code> en die van elke module (inclusief de
+  publieke routers van module 1 en 3).</li>
+  <li>In de <code>lifespan</code>-functie, die één keer bij het opstarten loopt, synchroniseert het de
+  <strong>schermregisters</strong> van modules 1, 2, 3, 8 en 9 met de code (zie <a class="ref" href="#s-be-rechten"></a>).</li>
+</ol>
+
+<h2 id="s-be-config">Instellingen en databaseverbinding</h2>
+<p><code>app/core/config.py</code> definieert één klasse <code>Settings</code> (pydantic-settings) met alle instellingen en hun
+standaardwaarden; die worden overschreven door omgevingsvariabelen of <code>backend/.env</code>. Gebruik in de code altijd
+<code>from app.core.config import settings</code>, nooit <code>os.environ</code>.</p>
+<p><code>app/core/database.py</code> maakt de <em>engine</em> (de verbinding met PostgreSQL) en de functie <code>get_db()</code>, die
+per verzoek een databasesessie geeft en die na afloop altijd sluit. Elk endpoint dat de database nodig heeft, vraagt die
+sessie aan met <code>db: Session = Depends(get_db)</code>.</p>
+
+<h2 id="s-backend-modellen">Modellen: tabellen als Python-klassen</h2>
+<p>Elke tabel is een klasse in een eigen bestand onder <code>app/db/models/</code>. Een ingekort voorbeeld:</p>
+<figure class="code"><span class="bestand">backend/app/db/models/intervention_request.py (ingekort)</span><pre><span class="k">class</span> InterventionRequest(Base):
+    <span class="s">"""One row per intervention request logged by an association."""</span>
+
+    __tablename__ = <span class="s">"InterventionRequests_request"</span>
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+
+    <span class="c"># "Aanvraagnummer": generated server-side as "IA&lt;yy&gt;_&lt;sequence&gt;", never from the client.</span>
+    request_number: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
+
+    <span class="c"># "Ploeg": a foreign key into MasterData_team (nullable: the public form may type a new name).</span>
+    team_id: Mapped[int | None] = mapped_column(ForeignKey(<span class="s">"MasterData_team.id"</span>), nullable=True)
+
+    question: Mapped[str] = mapped_column(Text, nullable=False)
+    status_id: Mapped[int] = mapped_column(ForeignKey(<span class="s">"InterventionRequests_status.id"</span>), nullable=False)</pre></figure>
+<ul>
+  <li><code>Mapped[int | None]</code> betekent: kolom van type int die leeg mag zijn. SQLAlchemy leidt het databasetype af.</li>
+  <li>De tabelnaam volgt het voorvoegsel van de module (zie <a class="ref" href="#tab-prefixen"></a>). Omdat de namen hoofdletters
+  bevatten, zet SQLAlchemy ze automatisch tussen aanhalingstekens; in SQL in pgAdmin moet je dat zelf doen:
+  <code>SELECT * FROM "InterventionRequests_request";</code></li>
+  <li>Een nieuw model moet ook geïmporteerd worden in <code>app/db/base.py</code>, anders zien Alembic en de tests de tabel niet.</li>
+</ul>
+
+<h2 id="s-be-schemas">Schema's: de vorm van invoer en uitvoer</h2>
+<p>Wat een endpoint ontvangt en terugstuurt, is beschreven met <strong>Pydantic</strong>-klassen in
+<code>app/schemas/&lt;module&gt;.py</code>. FastAPI controleert binnenkomende gegevens daar automatisch tegen: een verplicht veld
+dat ontbreekt of een tekst die te lang is, levert een 422-antwoord op zonder dat je daar zelf code voor schrijft.</p>
+<figure class="code"><span class="bestand">backend/app/schemas/intervention_requests.py (ingekort)</span><pre><span class="k">class</span> InterventionRequestCreateRequest(BaseModel):
+    team_id: int | None = None
+    team_name: str | None = Field(default=None, max_length=255)
+    question: str = Field(min_length=1)
+    status_id: int
+    <span class="c"># ... meer velden ...</span>
+
+    @model_validator(mode=<span class="s">"after"</span>)
+    <span class="k">def</span> _check_team_reference(self):
+        _validate_team_reference(self.team_id, self.team_name)   <span class="c"># precies één van beide</span>
+        <span class="k">return</span> self</pre></figure>
+<p>Velden die de server zelf bepaalt (het aanvraagnummer, de aanmaakdatum), staan bewust <em>niet</em> in het
+create-schema, zodat een client ze nooit kan meesturen.</p>
+
+<h2 id="s-be-modulepakket">Het pakket van een module</h2>
+<p>Elke module met echte inhoud heeft dezelfde soorten bestanden. Niet elke module heeft ze allemaal:</p>
+<table id="tab-modulepakket" class="compact">
+  <caption>Bestanden in <code>backend/app/modules/module_N/</code></caption>
+  <tr><th style="width:30%">Bestand</th><th>Rol</th></tr>
+  <tr><td><code>router.py</code></td><td>Alle endpoints van de module onder <code>/api/modules/module-N</code>: rollen en gebruikers, de eigen schermen, <code>me/permissions</code>.</td></tr>
+  <tr><td><code>deps.py</code></td><td>De rechtencontroles: <code>require_module_access</code>, <code>user_can</code>, <code>require_screen_permission</code>.</td></tr>
+  <tr><td><code>screens.py</code></td><td>De lijst van schermen (<code>SCREEN_DEFINITIONS</code>) en <code>sync_screens()</code>.</td></tr>
+  <tr><td><code>service.py</code>, <code>*_service.py</code></td><td>Bedrijfslogica die door meerdere endpoints of modules gedeeld wordt.</td></tr>
+  <tr><td><code>*_pdf.py</code></td><td>PDF-generatoren (fpdf2).</td></tr>
+  <tr><td><code>*_import.py</code></td><td>Excel-sjablonen, import en export (openpyxl).</td></tr>
+  <tr><td><code>*_dashboard.py</code>, <code>dashboard.py</code></td><td>Berekeningen voor KPI- en dashboardschermen.</td></tr>
+  <tr><td><code>public_router.py</code>, <code>device_router.py</code></td><td>Endpoints zonder login (module 3: publiek formulier; module 1: Raspberry Pi).</td></tr>
+  <tr><td><code>notifications.py</code></td><td>Mails (module 3).</td></tr>
+  <tr><td><code>steps.py</code>, <code>previous_season.py</code></td><td>Wizardstappen en "kopiëren van vorig seizoen" (module 8).</td></tr>
+</table>
+
+<h2 id="s-be-dependencies">Dependencies: wie roept aan en mag dat?</h2>
+<p>FastAPI-<em>dependencies</em> zijn kleine functies die automatisch vóór een endpoint lopen. RWCrew gebruikt ze voor alle
+controles, zodat elk endpoint in één regel aangeeft wat het nodig heeft:</p>
+<table class="compact">
+  <caption>De belangrijkste dependencies</caption>
+  <tr><th style="width:34%">Dependency</th><th style="width:30%">Waar</th><th>Doet</th></tr>
+  <tr><td><code>get_db</code></td><td><code>app/core/database.py</code></td><td>Geeft een databasesessie voor dit verzoek.</td></tr>
+  <tr><td><code>get_current_user</code></td><td><code>app/landing/deps.py</code></td><td>Leest de toegangscookie, controleert het token, laadt de gebruiker; anders 401.</td></tr>
+  <tr><td><code>require_super_admin</code></td><td><code>app/landing/deps.py</code></td><td>Zoals hierboven, plus de superbeheerder-vlag; anders 403.</td></tr>
+  <tr><td><code>require_module_access</code></td><td><code>…/module_N/deps.py</code></td><td>De gebruiker heeft moduletoegang; anders 403.</td></tr>
+  <tr><td><code>require_screen_permission(key, actie)</code></td><td><code>…/module_N/deps.py</code></td><td>Moduletoegang én de rol heeft <em>actie</em> op scherm <em>key</em>; anders 403.</td></tr>
+</table>
+<figure class="code"><span class="bestand">backend/app/modules/module_3/router.py (ingekort)</span><pre>@router.post(<span class="s">"/intervention-requests"</span>, response_model=InterventionRequestResponse, status_code=201)
+<span class="k">def</span> create_intervention_request(
+    payload: InterventionRequestCreateRequest,        <span class="c"># gecontroleerde invoer</span>
+    background_tasks: BackgroundTasks,                <span class="c"># om na het antwoord de mail te sturen</span>
+    db: Session = Depends(get_db),                    <span class="c"># databasesessie</span>
+    _user: User = Depends(require_screen_permission(<span class="s">"interventionrequests.requests"</span>, <span class="s">"create"</span>)),
+) -&gt; InterventionRequest:
+    ...</pre></figure>
+
+<h2 id="s-be-rechten">Het rechtensysteem in code</h2>
+<p>Het systeem met rollen per scherm (uitgelegd voor gebruikers in <a class="ref" href="#s-rechten-per-scherm"></a>) bestaat per
+module uit vier tabellen en drie bestanden:</p>
+<table class="compact">
+  <caption>Onderdelen van het rechtensysteem per module (voorbeeld: module 3)</caption>
+  <tr><th style="width:42%">Onderdeel</th><th>Inhoud</th></tr>
+  <tr><td><code>InterventionRequests_screens</code></td><td>Register van schermen: <code>key</code>, <code>label</code>, <code>sort_order</code></td></tr>
+  <tr><td><code>InterventionRequests_roles</code></td><td>De rollen van deze module (unieke naam)</td></tr>
+  <tr><td><code>InterventionRequests_role_permissions</code></td><td>Per rol en scherm: <code>can_view</code>, <code>can_create</code>, <code>can_edit</code>, <code>can_delete</code></td></tr>
+  <tr><td><code>InterventionRequests_user_roles</code></td><td>Welke rol een gebruiker heeft (één per gebruiker)</td></tr>
+  <tr><td><code>screens.py</code></td><td><code>SCREEN_DEFINITIONS</code> + <code>sync_screens()</code></td></tr>
+  <tr><td><code>deps.py</code></td><td><code>user_can()</code> en <code>require_screen_permission()</code></td></tr>
+  <tr><td><code>router.py</code></td><td>Endpoints voor schermen, rollen, rechtenmatrix, gebruikers en <code>me/permissions</code></td></tr>
+</table>
+<p><strong>Schermen staan in de code.</strong> <code>SCREEN_DEFINITIONS</code> in <code>screens.py</code> is de enige bron van waarheid;
+<code>sync_screens()</code> zet die lijst bij elke opstart van de backend in de tabel (nieuwe schermen erbij, labels en
+volgorde bijgewerkt). Een scherm toevoegen is dus: één regel in de lijst en de backend herstarten.</p>
+<figure class="code"><span class="bestand">backend/app/modules/module_3/screens.py (ingekort)</span><pre>SCREEN_DEFINITIONS: list[ScreenDefinition] = [
+    ScreenDefinition(key=<span class="s">"interventionrequests.requests"</span>, label=<span class="s">"Intervention Requests"</span>, sort_order=1),
+    ScreenDefinition(key=<span class="s">"interventionrequests.statuses"</span>, label=<span class="s">"Intervention Statuses"</span>, sort_order=2),
+    ScreenDefinition(key=<span class="s">"interventionrequests.teamkar"</span>, label=<span class="s">"TeamKar"</span>, sort_order=3),
+    ScreenDefinition(key=<span class="s">"interventionrequests.mailinglist"</span>, label=<span class="s">"Mailing List"</span>, sort_order=4),
+    ScreenDefinition(key=<span class="s">"interventionrequests.roles"</span>, label=<span class="s">"Roles"</span>, sort_order=5),
+    ScreenDefinition(key=<span class="s">"interventionrequests.users"</span>, label=<span class="s">"Users"</span>, sort_order=6),
+]</pre></figure>
+<p><strong>De controle zelf</strong> staat in <code>user_can(db, user, screen_key, action)</code>: superbeheerder → ja; anders de rol van
+de gebruiker opzoeken, dan de rechtenrij voor dat scherm, en de juiste vlag teruggeven. Geen rol of geen rij = nee.
+<code>require_screen_permission</code> roept eerst <code>require_module_access</code> aan, zodat ook de superbeheerder moduletoegang nodig heeft.</p>
+<p><strong>De frontend vraagt de rechten op</strong> via <code>GET /api/modules/module-N/me/permissions</code>. Het antwoord bevat
+vier lijsten schermsleutels (<code>viewable_screen_keys</code>, <code>creatable_…</code>, <code>editable_…</code>, <code>deletable_…</code>).
+Daarmee toont het menu alleen de schermen die je mag zien, en verbergt een scherm de knoppen die je niet mag gebruiken.</p>
+<div class="kader dev"><span class="kader-titel"></span>
+Dit systeem is <strong>per module gekopieerd</strong> (modules 1, 2, 3, 8 en 9 hebben elk hun eigen modellen, schema's,
+<code>deps.py</code> en endpoints), in plaats van één gedeelde fabriek. Dat was een bewuste keuze: eerst echte varianten
+bouwen en pas veralgemenen als het patroon zich bewezen heeft. Nu het vijf keer bestaat, is een gedeelde versie
+(geparametriseerd met modulesleutel en tabelvoorvoegsel, zoals <code>create_module_router</code>) een kandidaat voor
+een opkuis, maar geen verplichting. De volledige kopieerhandleiding staat in <code>docs/module-custom-roles-pattern.md</code>.
+</div>
+
+<h2 id="s-be-common">De gedeelde fabriek voor eenvoudige modules</h2>
+<p>Modules zonder eigen inhoud (4 tot 7) en module 10 gebruiken <code>create_module_router(module_key, module_label)</code> uit
+<code>app/modules/common.py</code>. Die maakt in één regel een router met drie endpoints: <code>GET /status</code> (voor de
+"binnenkort"-pagina), <code>GET /roles</code> en <code>PUT /roles/{user_id}</code> (de vaste rollen admin/editor/reader). Een
+module die echte inhoud krijgt, zet eigen endpoints naast die oproep in haar <code>router.py</code>, of stapt over op het
+volledige rechtensysteem.</p>
+
+<h2 id="s-be-services">Gedeelde logica tussen modules</h2>
+<p>Sommige gegevens worden vanuit meerdere modules gewijzigd. In plaats van die logica te dupliceren, staat ze in één
+<em>service</em> bij de module die eigenaar is van de gegevens, en roepen de andere modules die service aan:</p>
+<table class="compact">
+  <caption>Gedeelde services</caption>
+  <tr><th style="width:42%">Service</th><th>Gebruikt door</th></tr>
+  <tr><td><code>module_2/plan_kar_service.py</code> (afleverlocaties per ploeg/festival/seizoen)</td><td>KarTracker "Plan a kar" én Altsien Select stap 2</td></tr>
+  <tr><td><code>module_9/team_responsible_service.py</code> (ploegverantwoordelijken)</td><td>MasterData "Ploegverantwoordelijken" én Altsien Select stap 3</td></tr>
+  <tr><td><code>module_2/kar_action_service.py</code> (karbewegingen)</td><td>KarTracker-scherm én KarScan op de telefoon</td></tr>
+  <tr><td><code>module_3/service.py</code> (aanvraagnummer, standaardstatus, ploegen)</td><td>Ingelogde router én publieke router van module 3</td></tr>
+</table>
+
+<h2 id="s-be-pdf-excel">PDF's, Excel en QR-codes</h2>
+<ul>
+  <li><strong>PDF's</strong> worden in Python opgebouwd met <strong>fpdf2</strong>: <code>module_3/intervention_request_pdf.py</code>
+  (leveringsbon), <code>module_2/karblad_pdf.py</code> (karbladen), <code>module_1/tag_header_pdf.py</code>,
+  <code>module_8/ploegfiche_pdf.py</code>. Het endpoint stuurt de bytes terug met <code>media_type="application/pdf"</code>.</li>
+  <li><strong>QR-codes</strong> komen van <strong>segno</strong>. Op karbladen worden ze als vectorvlakjes getekend, zodat ze bij elke
+  afdrukresolutie scherp blijven.</li>
+  <li><strong>Excel</strong>-import en -export gebruiken <strong>openpyxl</strong>. Een import is <em>best-effort</em>: elke rij
+  wordt apart gecontroleerd en opgeslagen binnen een eigen SAVEPOINT (<code>db.begin_nested()</code>), zodat een foute rij alleen
+  zichzelf terugdraait. De gebruiker krijgt per rij het resultaat (aangemaakt, bijgewerkt, fout + reden).</li>
+</ul>
+
+<h2 id="s-be-mail">Uitgaande mail</h2>
+<p><code>app/core/mail.py</code> heeft één functie, <code>send_email(mail)</code>, die via <code>httpx</code> de HTTP-API van Resend
+aanroept. Ze <strong>gooit nooit een fout</strong>: problemen worden gelogd. Zonder <code>RESEND_API_KEY</code> of
+<code>MAIL_FROM</code> (lokaal, in tests) wordt de mail met een logregel overgeslagen. Ontvangerslijsten langer dan 50
+worden opgesplitst.</p>
+<p>Het patroon voor een mail na een bewerking staat in <code>module_3/notifications.py</code>: eerst binnen de databasesessie
+de mail <em>opbouwen</em> (ontvangers, gegevens, PDF), en dan alleen het trage versturen als FastAPI-<em>background task</em>
+plannen. Zo krijgt de gebruiker meteen zijn 201-antwoord en kan een mailprobleem het opslaan nooit ongedaan maken.</p>
+<div class="kader letop"><span class="kader-titel"></span>
+Elke nieuwe manier om een interventie-aanvraag aan te maken, moet ook <code>queue_new_request_mail()</code> aanroepen.
+Anders krijgt de mailinglijst die aanvragen niet. Een wijziging van een bestaande aanvraag stuurt bewust geen mail.
+</div>
+
+<h2 id="s-migraties">Databasemigraties met Alembic</h2>
+<p>Elke wijziging aan de databasestructuur gaat via een migratie in <code>backend/migrations/versions/</code>. De werkwijze:</p>
+<figure class="code"><span class="bestand">Een migratie maken en uitvoeren (map backend)</span><pre><span class="c"># 1. Pas het model aan (of voeg een nieuw model toe én importeer het in app/db/base.py)</span>
+<span class="c"># 2. Laat Alembic het verschil met de database voorstellen</span>
+.venv/Scripts/python -m alembic revision --autogenerate -m "add mailing list to intervention requests"
+
+<span class="c"># 3. LEES het gegenereerde bestand na en corrigeer waar nodig</span>
+<span class="c"># 4. Uitvoeren op je lokale database</span>
+.venv/Scripts/python -m alembic upgrade head
+
+<span class="c"># 5. Controleren dat modellen en database nu overeenkomen</span>
+.venv/Scripts/python -m alembic check
+
+<span class="c"># Eén stap terugdraaien (lokaal, om een migratie te testen)</span>
+.venv/Scripts/python -m alembic downgrade -1</pre></figure>
+<p>Regels voor migraties:</p>
+<ul>
+  <li><strong>Lees elke automatisch gegenereerde migratie na.</strong> Autogenerate ziet niet alles. Een hernoemde kolom
+  of tabel ziet het bijvoorbeeld als "verwijderen + nieuw aanmaken", wat gegevens wist. Gebruik daarvoor
+  <code>op.rename_table</code> / <code>op.alter_column</code>, zoals migratie <code>51a15c8d59d2</code> alle tabellen hernoemde
+  naar <code>Landing_…</code> zonder gegevensverlies.</li>
+  <li><strong>Schrijf altijd een werkende <code>downgrade()</code>.</strong></li>
+  <li><strong>Pas nooit een migratie aan die al op test of productie uitgevoerd is.</strong> Maak een nieuwe migratie die
+  de correctie doet.</li>
+  <li><strong>Gegevenswijzigingen</strong> (bv. een modulenaam aanpassen) mogen in een migratie met <code>op.execute(...)</code>,
+  met de omgekeerde wijziging in <code>downgrade()</code>.</li>
+  <li><strong>Eén lijn.</strong> Als twee ontwikkelaars tegelijk een migratie maken, ontstaan er twee "heads". Los dat op vóór
+  het mergen (<code>alembic heads</code> toont het; <code>alembic merge</code> of de <code>down_revision</code> van de jongste aanpassen).</li>
+  <li>Op de server voert <code>deploy.sh</code> de migraties automatisch uit.</li>
+</ul>
+
+<h2 id="s-be-tests">Automatische tests</h2>
+<p>De backend heeft meer dan 550 testfuncties in <code>backend/tests/</code>, met dezelfde mappenstructuur als <code>app/</code>.
+Ze dekken inloggen, tokenrotatie, alle toegangsregels en de endpoints van elke module. Draaien:</p>
+<figure class="code"><span class="bestand">Tests draaien (map backend)</span><pre>.venv/Scripts/python -m pytest                          <span class="c"># alles</span>
+.venv/Scripts/python -m pytest tests/modules/module_3   <span class="c"># één module</span>
+.venv/Scripts/python -m pytest -k mailing -x            <span class="c"># op naam filteren, stoppen bij eerste fout</span></pre></figure>
+<p>Hoe het werkt (<code>tests/conftest.py</code>):</p>
+<ul>
+  <li>Elke test krijgt een <strong>lege, tijdelijke SQLite-database in het geheugen</strong>; Docker of PostgreSQL is niet nodig.
+  Alle tabellen worden aangemaakt vanuit de modellen.</li>
+  <li>SQLite negeert vreemde-sleutelregels tenzij je ze aanzet; <code>conftest.py</code> voert daarom <code>PRAGMA foreign_keys=ON</code>
+  uit, zodat bv. het verwijderen van een gebruiker zich gedraagt zoals op PostgreSQL.</li>
+  <li>De fixture <code>client</code> is een <code>TestClient</code> die de echte app aanspreekt, maar met de testdatabase.</li>
+  <li>Elke modulemap heeft een <code>helpers.py</code> met hulpjes zoals <code>create_user</code>, <code>grant_access</code>,
+  <code>give_requests_role</code> en <code>login</code>.</li>
+  <li>Externe diensten worden vervangen met <code>monkeypatch</code>, bv. <code>send_email</code> door een functie die de mails in een lijst bijhoudt.</li>
+</ul>
+<figure class="code"><span class="bestand">backend/tests/modules/module_3/test_mailing_list.py (ingekort)</span><pre><span class="k">def</span> test_mailing_list_crud(client: TestClient, db_session: Session) -&gt; None:
+    _boss(db_session)                         <span class="c"># superbeheerder met toegang tot module-3</span>
+    login(client, <span class="s">"boss@example.com"</span>)
+
+    created = client.post(LIST, json={<span class="s">"email"</span>: <span class="s">" Jan@Example.COM "</span>, <span class="s">"name"</span>: <span class="s">" "</span>})
+    <span class="k">assert</span> created.status_code == 201
+    <span class="k">assert</span> created.json()[<span class="s">"email"</span>] == <span class="s">"jan@example.com"</span>   <span class="c"># bijgesneden en in kleine letters</span></pre></figure>
+<div class="kader tip"><span class="kader-titel"></span>
+Schrijf bij elke nieuwe functie of bugfix minstens één test: voor de normale werking, en voor de rechten (zonder
+moduletoegang → 403, zonder rol → 403, met de juiste rol → OK). Kopieer daarvoor een bestaand testbestand van een
+vergelijkbaar scherm.
+</div>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-frontend">De frontend in detail</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De frontend gebruikt de <strong>App Router</strong> van Next.js: de mappenstructuur onder <code>src/app/</code> bepaalt de adressen.
+<strong>Layouts</strong> wikkelen pagina's in (inlogcontrole, menu's, modulekleur); <strong>pagina's</strong> halen op de server
+de gegevens op en geven die aan een <strong>component</strong> in <code>src/components/module-N/</code>, die in de browser de interactie
+verzorgt en via <code>src/lib/api.ts</code> met de backend praat. Alle teksten komen uit <code>messages/nl.json</code> en <code>en.json</code>.
+</div>
+
+<h2 id="s-fe-router">Mappen zijn adressen</h2>
+<p>In de App Router wordt elke map onder <code>src/app/</code> een deel van het adres, en een bestand <code>page.tsx</code> maakt er een
+bereikbare pagina van. Drie speciale schrijfwijzen:</p>
+<ul>
+  <li><code>[locale]</code>: een <em>variabel</em> stuk. <code>/nl/…</code> en <code>/en/…</code> komen allebei hier terecht.</li>
+  <li><code>(protected)</code>, <code>(auth)</code>, <code>(public)</code>, <code>(signed-in)</code>, <code>(tabs)</code>: een <em>groep</em> tussen haakjes
+  verschijnt niet in het adres, maar laat toe om een gedeelde layout te geven aan een reeks pagina's.</li>
+  <li><code>[id]</code>, <code>[nummer]</code>: een variabel stuk, bv. <code>/m/module-3/request/42</code>.</li>
+</ul>
+<table class="compact">
+  <caption>Voorbeelden van map naar adres</caption>
+  <tr><th style="width:60%">Bestand</th><th>Adres</th></tr>
+  <tr><td><code>app/[locale]/(protected)/page.tsx</code></td><td><code>/nl</code></td></tr>
+  <tr><td><code>app/[locale]/(auth)/login/page.tsx</code></td><td><code>/nl/login</code></td></tr>
+  <tr><td><code>app/[locale]/(protected)/modules/module-3/intervention-requests/page.tsx</code></td><td><code>/nl/modules/module-3/intervention-requests</code></td></tr>
+  <tr><td><code>app/[locale]/(public)/intervention-request/page.tsx</code></td><td><code>/nl/intervention-request</code></td></tr>
+  <tr><td><code>app/[locale]/m/(signed-in)/module-3/request/[id]/page.tsx</code></td><td><code>/nl/m/module-3/request/42</code></td></tr>
+</table>
+
+<h2 id="s-fe-layouts">De lagen van layouts</h2>
+<p>Een pagina wordt van buiten naar binnen ingepakt door layouts. Voor een scherm van module 3 zijn dat:</p>
+<figure class="diagram" id="fig-layouts">
+<svg viewBox="0 0 660 250" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-licht" x="10" y="10" width="640" height="230" rx="10"/>
+  <text x="22" y="30" class="t-titel">app/layout.tsx</text>
+  <text x="200" y="30" class="t-klein">&lt;html&gt;, &lt;body&gt;, ThemeProvider (donker standaard), TEST-banner</text>
+  <rect class="box" x="30" y="42" width="600" height="186" rx="9"/>
+  <text x="42" y="62" class="t-titel">[locale]/layout.tsx</text>
+  <text x="220" y="62" class="t-klein">taal controleren, vertalingen beschikbaar maken</text>
+  <rect class="box-blauw" x="50" y="74" width="560" height="142" rx="8"/>
+  <text x="62" y="94" class="t-titel">(protected)/layout.tsx</text>
+  <text x="250" y="94" class="t-klein">ingelogd? anders → /login · bovenbalk · beheermenu</text>
+  <rect class="box-paars" x="70" y="106" width="520" height="98" rx="8"/>
+  <text x="82" y="126" class="t-titel">modules/module-3/layout.tsx</text>
+  <text x="300" y="126" class="t-klein">me/permissions · modulemenu · accentkleur</text>
+  <rect class="box" x="90" y="138" width="480" height="54" rx="7"/>
+  <text x="102" y="160" class="t-titel">intervention-requests/page.tsx</text>
+  <text x="102" y="178" class="t-klein">gegevens ophalen op de server → &lt;InterventionRequestsManagement /&gt;</text>
+</svg>
+<figcaption>De geneste layouts rond een scherm van module 3. Elke laag voegt één verantwoordelijkheid toe.</figcaption>
+</figure>
+<ul>
+  <li><code>app/layout.tsx</code> is de echte buitenste laag met <code>&lt;html&gt;</code> en het thema. Dit staat bewust <em>boven</em>
+  de taalmap: stond het erin, dan zou wisselen van taal het hele document opnieuw opbouwen (zie <a class="ref" href="#s-valkuil-thema"></a>).</li>
+  <li><code>[locale]/layout.tsx</code> weigert onbekende talen (404) en geeft de vertalingen door.</li>
+  <li><code>(protected)/layout.tsx</code> vraagt op de server <code>/api/auth/me</code>. Niet ingelogd → doorsturen naar de login, nog
+  voordat er iets beschermds naar de browser gaat. Het toont de bovenbalk, het beheermenu (alleen voor de superbeheerder) en
+  levert de open seizoenen aan de seizoenkiezer.</li>
+  <li>De <strong>modulelayout</strong> vraagt <code>me/permissions</code> op. Bij 403 toont ze "geen toegang"; anders het modulemenu
+  (alleen schermen met <em>view</em>) en de accentkleur.</li>
+  <li>De <strong>pagina</strong> haalt de gegevens op en geeft ze aan het eigenlijke scherm-component.</li>
+</ul>
+
+<h2 id="s-fe-server-client">Servercomponenten en clientcomponenten</h2>
+<p>Next.js kent twee soorten componenten:</p>
+<ul>
+  <li><strong>Servercomponenten</strong> (de standaard; alle layouts en pagina's) draaien alleen op de server. Ze mogen
+  <code>async</code> zijn en rechtstreeks gegevens ophalen. Ze kunnen niet reageren op klikken.</li>
+  <li><strong>Clientcomponenten</strong> beginnen met de regel <code>"use client"</code>. Ze draaien in de browser, kunnen
+  <code>useState</code> en klik-handlers gebruiken, en praten via <code>lib/api.ts</code> met de backend. Alle
+  <code>*-management.tsx</code>-schermen zijn clientcomponenten.</li>
+</ul>
+<p>Het vaste patroon: de <strong>pagina</strong> (server) haalt de begingegevens op en geeft ze als <em>props</em> door aan het
+<strong>scherm</strong> (client), dat daarna zelf wijzigingen doorstuurt en zijn lijst bijwerkt. Zo staat er bij het openen
+meteen gegevens op het scherm, zonder laadicoon.</p>
+
+<h2 id="s-fe-data">Gegevens ophalen: server en browser</h2>
+<table class="compact">
+  <caption>De drie manieren om de backend aan te spreken</caption>
+  <tr><th style="width:30%">Functie</th><th style="width:22%">Waar</th><th>Gebruik</th></tr>
+  <tr><td><code>getCurrentUserOnServer()</code></td><td><code>lib/server-auth.ts</code></td><td>In layouts: wie is ingelogd (of <code>null</code>).</td></tr>
+  <tr><td><code>serverApiFetch&lt;T&gt;(pad)</code></td><td><code>lib/server-api.ts</code></td><td>In pagina's en layouts: gegevens ophalen op de server. Stuurt de cookies van de gebruiker door; gooit <code>ServerApiError</code> met de statuscode.</td></tr>
+  <tr><td><code>apiFetch</code> en de functies in <code>api.ts</code></td><td><code>lib/api.ts</code></td><td>In clientcomponenten: één functie per endpoint (<code>createInterventionRequest</code>, <code>listMailingRecipients</code>, …). Gebruikt <code>credentials: "include"</code> en <code>fetchWithRefresh</code>; gooit <code>ApiError</code> met de melding van de backend.</td></tr>
+</table>
+<p>De types van alle gegevens staan in <code>lib/types.ts</code> en volgen de Pydantic-schema's van de backend. Verandert een
+schema in de backend, pas dan ook het type aan.</p>
+<div class="kader letop"><span class="kader-titel"></span>
+Een nieuwe <code>fetch</code> naar de backend in <code>api.ts</code> moet via <code>fetchWithRefresh</code> lopen (of via
+<code>apiFetch</code>, dat het al doet). Een kale <code>fetch</code> vernieuwt de sessie niet, en de gebruiker krijgt dan na
+15 minuten onterecht een fout.
+</div>
+
+<h2 id="s-fe-componenten">Componenten</h2>
+<ul>
+  <li><code>components/ui/</code>: de onderdelen van shadcn/ui (knop, dialoog, tabel, keuzelijst, …). Deze bestanden zijn
+  <strong>gegenereerd</strong> en blijven zoals gegenereerd; stijl pas je aan waar je ze gebruikt.</li>
+  <li><code>components/shared/</code>: bovenbalk, beheermenu, gebruikersmenu, taal- en themakiezer, seizoenkiezer en
+  <code>SeasonProvider</code>, de "binnenkort"-pagina, wachtwoord wijzigen.</li>
+  <li><code>components/module-N/</code>: de schermen van een module. Per module: een <code>*-sidebar.tsx</code> (modulemenu),
+  <code>roles-management.tsx</code> en <code>users-management.tsx</code> (Access Rights), en een <code>*-management.tsx</code> per lijstscherm.</li>
+</ul>
+<p>Een typisch lijstscherm (<code>*-management.tsx</code>) bestaat uit: een titel, een knop "Toevoegen", een tabel met
+vastgezette kop en Acties-kolom (zie <a class="ref" href="#s-conv-tabellen"></a>), een dialoog met het formulier voor toevoegen en
+wijzigen, een bevestigingsdialoog voor verwijderen, en <code>toast</code>-meldingen voor succes of fout. Knoppen verschijnen
+alleen als de gebruiker het recht heeft.</p>
+
+<h2 id="s-fe-vertalingen">Vertalingen</h2>
+<p>Alle schermteksten staan in <code>frontend/messages/nl.json</code> en <code>en.json</code>, gegroepeerd per
+<strong>namespace</strong>: <code>common</code>, <code>login</code>, <code>admin</code>, <code>errors</code>, <code>phone</code>, en één per module
+(<code>tagscan</code>, <code>karTracker</code>, <code>interventionRequests</code>, <code>altsienSelect</code>, <code>masterdata</code>,
+<code>mobileApp</code>). Telefoonteksten van een module staan onder <code>&lt;module&gt;.phone</code>.</p>
+<figure class="code"><span class="bestand">Een tekst gebruiken</span><pre><span class="c">// In een clientcomponent</span>
+<span class="k">const</span> t = useTranslations(<span class="s">"interventionRequests"</span>);
+toast.success(t(<span class="s">"requestCreated"</span>));
+
+<span class="c">// In een servercomponent</span>
+<span class="k">const</span> tErrors = <span class="k">await</span> getTranslations(<span class="s">"errors"</span>);
+<span class="k">return</span> &lt;p&gt;{tErrors(<span class="s">"forbidden"</span>)}&lt;/p&gt;;</pre></figure>
+<ul>
+  <li>Elke sleutel moet in <strong>beide</strong> bestanden staan, op dezelfde plaats. Beide bestanden hebben nu exact evenveel regels; houd dat zo.</li>
+  <li>Hergebruik een bestaande tekst als die exact past, in plaats van een tweede sleutel met dezelfde tekst te maken.</li>
+  <li>Links binnen de app maak je met <code>Link</code> en <code>redirect</code> uit <code>@/i18n/navigation</code>; die voegen de taal automatisch toe.</li>
+</ul>
+
+<h2 id="s-fe-thema">Thema en modulekleuren</h2>
+<p><code>lib/module-theme.ts</code> geeft elke module een accentkleur (Tailwind-kleur), een tegelstijl, een badgestijl en eventueel
+een pictogram. <code>getModuleAccentStyle("module-3")</code> geeft een inline stijl die binnen die module de "primary"-kleur
+(actief menu-item, standaardknoppen) vervangt door de modulekleur. Een nieuwe module krijgt hier haar kleur.</p>
+
+<h2 id="s-fe-baseui">Eigenaardigheden van shadcn op Base UI</h2>
+<p>shadcn/ui genereert in dit project onderdelen op basis van <strong>Base UI</strong>, niet van het bekendere Radix. Online
+voorbeelden zijn meestal voor Radix geschreven, en twee verschillen zijn verraderlijk:</p>
+<table class="compact">
+  <caption>Radix-gewoonten die hier niet werken</caption>
+  <tr><th style="width:30%">Radix (werkt hier niet)</th><th style="width:30%">Base UI (zo wel)</th><th>Waarom belangrijk</th></tr>
+  <tr><td><code>&lt;DialogTrigger asChild&gt;&lt;Button/&gt;&lt;/DialogTrigger&gt;</code></td><td><code>&lt;DialogTrigger render={&lt;Button/&gt;} /&gt;</code></td><td><code>asChild</code> bestaat niet en geeft een typefout.</td></tr>
+  <tr><td><code>&lt;DropdownMenuItem onSelect={…}&gt;</code></td><td><code>&lt;DropdownMenuItem onClick={…}&gt;</code></td><td><code>onSelect</code> geeft <em>geen</em> fout maar wordt nooit uitgevoerd. Heeft al debugtijd gekost.</td></tr>
+</table>
+
+<h2 id="s-fe-config">Configuratie van de frontend</h2>
+<ul>
+  <li><code>lib/config.ts</code>: <code>API_BASE_URL</code> (voor de browser), <code>SERVER_API_BASE_URL</code> (voor servercode; bij de lokale
+  proxy rechtstreeks naar de backend), <code>SITE_URL</code> en <code>ENVIRONMENT_LABEL</code>.</li>
+  <li><code>next.config.ts</code>: <code>output: "standalone"</code> (kleine Docker-image), <code>allowedDevOrigins</code>
+  (telefoon via tunnel of wifi tijdens <code>npm run dev</code>), en een <em>rewrite</em> van <code>/api/*</code> naar
+  <code>DEV_API_PROXY_TARGET</code> als die ingesteld is.</li>
+  <li><code>src/proxy.ts</code>: voegt de taal toe aan elk adres (<code>/</code> → <code>/nl</code>) en vernieuwt de sessie
+  (zie <a class="ref" href="#s-sessies"></a>).</li>
+</ul>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-telefoon">De telefoon-app (PWA)</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De telefoon-app is een <strong>Progressive Web App</strong>: een apart deel van de website onder <code>/m</code>, met alleen de
+telefoonschermen (inloggen, moduletegels, KarTracker en Interventie Aanvragen). Je installeert ze met "Zet op beginscherm".
+Er is geen App Store, geen aparte API en geen aparte release: dezelfde endpoints, dezelfde login en dezelfde rechten als de
+website. Ook de telefooncode is per module georganiseerd.
+</div>
+
+<h2 id="s-pwa-waarom">Waarom een PWA</h2>
+<p>Tot oktober 2026 bestond er een aparte native app (React Native/Expo) met een eigen login via tokens. Die is volledig
+verwijderd en vervangen door de PWA, omdat:</p>
+<ul>
+  <li>er maar <strong>één codebasis</strong> te onderhouden is, in dezelfde technologie als de website;</li>
+  <li>een deployment van de website <strong>meteen</strong> ook de app bijwerkt, zonder goedkeuring van een app store;</li>
+  <li>de app dezelfde cookies, endpoints en rechten gebruikt, dus geen dubbele beveiliging nodig heeft.</li>
+</ul>
+<p>Alleen oude rijen in de inloghistoriek verwijzen nog naar de native app (bron <code>mobile</code>, getoond als "Native app (old)").
+Die waarde wordt nooit meer geschreven.</p>
+
+<h2 id="s-pwa-manifest">Installeerbaar maken: het manifest</h2>
+<p><code>frontend/src/app/manifest.ts</code> beschrijft de app voor de telefoon: naam ("RWCrew", of "RWCrew Test" op test, zodat je beide
+naast elkaar kunt installeren), iconen (ook een <em>maskable</em> versie voor Android), donkergroene achtergrond,
+<code>display: "standalone"</code> (zonder adresbalk) en <code>start_url: "/m"</code>. Next.js serveert dat als
+<code>/manifest.webmanifest</code>.</p>
+
+<h2 id="s-pwa-structuur">Structuur</h2>
+<figure class="code"><span class="bestand">Telefoon-app: routes en componenten</span><pre>src/app/[locale]/m/
+├── layout.tsx                    <span class="c">telefoonomhulsel</span>
+├── login/page.tsx                <span class="c">inlogpagina (stuurt client = "pwa")</span>
+└── (signed-in)/
+    ├── layout.tsx                <span class="c">inlogcontrole → anders /m/login; open seizoenen</span>
+    ├── page.tsx                  <span class="c">tegels van de telefoonmodules</span>
+    ├── module-2/                 <span class="c">KarTracker</span>
+    │   ├── layout.tsx            <span class="c">rechten laden; null → PhoneForbidden</span>
+    │   ├── page.tsx, scan/, planning/, map/, kar/[nummer]/
+    └── module-3/                 <span class="c">Interventie Aanvragen</span>
+        ├── layout.tsx
+        ├── (tabs)/layout.tsx, page.tsx (Akties), kpi/
+        └── request/new/, request/[id]/
+
+src/components/phone/
+├── shared/      <span class="c">phone-header, phone-body, phone-tile-grid, phone-menu-row, phone-bottom-tabs,</span>
+│                <span class="c">phone-select, phone-season-select, phone-notice, phone-forbidden, phone-modules.ts</span>
+├── module-2/    <span class="c">kar-scan, kar-planning-list, kar-map-phone, …, kartracker-phone-rights.ts/-routes.ts</span>
+└── module-3/    <span class="c">requests-list, request-form, kpi-overview, …, intervention-requests-phone-rights.ts/-routes.ts</span></pre></figure>
+<p>Pagina's blijven <strong>dun</strong>: ze halen op de server gegevens en rechten op en tonen één component. Op de telefoon is er
+geen zijbalk of bovenbalk van de website, geen verwijderknop en geen PDF.</p>
+
+<h2 id="s-pwa-rechten">Rechten en routes per module</h2>
+<p>Elke telefoonmodule heeft twee kleine bestanden:</p>
+<ul>
+  <li><code>*-phone-rights.ts</code> leest <code>me/permissions</code> en zet dat om naar wat de telefoon nodig heeft
+  (bv. <code>canViewRequests</code>, <code>canCreateRequests</code>, <code>canEditRequests</code>). Geeft <code>null</code> als de gebruiker
+  geen moduletoegang heeft; de modulelayout toont dan <code>PhoneForbidden</code>.</li>
+  <li><code>*-phone-routes.ts</code> bevat alle adressen van de module op de telefoon, zodat geen enkel component zelf adressen
+  in elkaar knutselt.</li>
+</ul>
+<p>Endpoints die speciaal voor de telefoon bijkwamen, staan gewoon in de router van de module: module 3
+<code>GET /lookups</code> en <code>GET /intervention-requests/{id}</code>, module 2 <code>GET /seasons</code>, en <code>me/permissions</code> geeft nu
+ook de lijsten voor aanmaken, wijzigen en verwijderen.</p>
+
+<h2 id="s-pwa-gedeeld">Code die website en telefoon delen</h2>
+<p>Code die beide gebruiken, blijft in de map van de module, niet in <code>phone/</code>:
+<code>components/module-2/qr-scanner.tsx</code> (camera en QR-herkenning met <code>@zxing/browser</code>),
+<code>components/module-2/kar-map-rows.tsx</code> (pins en pop-ups van de Kar Map) en
+<code>components/module-3/request-dates.ts</code> (datumhulpjes).</p>
+
+<h2 id="s-pwa-https">Camera, GPS en HTTPS</h2>
+<p>Browsers geven de camera en GPS alleen vrij op HTTPS (of op <code>localhost</code>). Op test en productie is dat geregeld. Lokaal
+gebruik je de Cloudflare-tunnel (zie <a class="ref" href="#s-lokaal-telefoon"></a>). Via het wifi-adres
+(<code>http://192.168…</code>) werkt alles behalve camera en GPS.</p>
+
+<h2 id="s-pwa-loginhistoriek">Website of telefoon in de inloghistoriek</h2>
+<p>Het loginformulier stuurt <code>client</code> mee: <code>"web"</code> vanaf <code>/login</code>, <code>"pwa"</code> vanaf <code>/m/login</code>. Dat komt in
+<code>Landing_login_history.source</code>. Het toesteltype (desktop, mobile, tablet) wordt afgeleid uit de User-Agent door
+<code>backend/app/shared/device.py</code>; de ruwe User-Agent wordt bewaard zodat later opnieuw ingedeeld kan worden.
+Een iPad met iPadOS 13 of later doet zich voor als Mac en telt dus als "desktop".</p>

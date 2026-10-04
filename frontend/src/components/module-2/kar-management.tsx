@@ -15,6 +15,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createKar, deleteKar, updateKar } from "@/lib/api";
+import { toDateTimeLocalValue } from "@/lib/date-time";
 import type { KarTrackerKar, KarTrackerKarInput, KarTrackerKarStatus, Product, Team } from "@/lib/types";
 import {
   AlertDialog,
@@ -82,12 +83,6 @@ function toFormValues(kar: KarTrackerKar): KarFormState {
     last_longitude: kar.last_longitude,
     last_recorded_at: kar.last_recorded_at,
   };
-}
-
-// ISO datetimes from the backend are longer than the "YYYY-MM-DDTHH:mm"
-// shape an <input type="datetime-local"> needs — trim to that.
-function toDatetimeLocalValue(value: string | null): string {
-  return value ? value.slice(0, 16) : "";
 }
 
 export function KarManagement({ initialKarren, karStatuses, products, teams }: KarManagementProps) {
@@ -160,7 +155,7 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
                 <TableCell className="text-muted-foreground">{transportTypeLabelFor(kar.transport_type_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{kar.last_latitude ?? ""}</TableCell>
                 <TableCell className="text-muted-foreground">{kar.last_longitude ?? ""}</TableCell>
-                <TableCell className="text-muted-foreground">{toDatetimeLocalValue(kar.last_recorded_at)}</TableCell>
+                <TableCell className="text-muted-foreground">{toDateTimeLocalValue(kar.last_recorded_at)}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <KarFormDialog
@@ -346,7 +341,7 @@ function KarFormDialog({ kar, trigger, onSaved, karStatuses, products, teams }: 
             <Input
               id="kar-last-recorded-at"
               type="datetime-local"
-              value={toDatetimeLocalValue(form.last_recorded_at)}
+              value={toDateTimeLocalValue(form.last_recorded_at)}
               onChange={(event) => updateField("last_recorded_at", event.target.value || null)}
             />
           </div>

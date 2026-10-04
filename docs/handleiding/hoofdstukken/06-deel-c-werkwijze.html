@@ -1,0 +1,529 @@
+<!-- Deel C, tweede helft: hoofdstuk 13 (doorloop), 14 (recepten), 15 (conventies), 16 (samenwerken), 17 (valkuilen). -->
+
+<h1 class="hoofdstuk" id="h-doorloop">Eén verzoek van begin tot eind</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Dit hoofdstuk volgt één concrete handeling door het hele systeem: een medewerker maakt in Interventie Aanvragen een
+nieuwe aanvraag aan. Je ziet welke bestanden en functies achtereenvolgens aan de beurt komen, van de klik in de
+browser tot de rij in de database en de mail in de mailbox. Wie dit pad begrijpt, begrijpt hoe elk ander scherm werkt.
+</div>
+
+<h2 id="s-doorloop-overzicht">Overzicht</h2>
+<figure class="diagram" id="fig-doorloop">
+<svg viewBox="0 0 660 470" xmlns="http://www.w3.org/2000/svg">
+  <!-- kolomkoppen -->
+  <rect class="box-blauw" x="10" y="8" width="120" height="36" rx="6"/><text x="70" y="31" text-anchor="middle" class="t-titel">Browser</text>
+  <rect class="box-donker" x="150" y="8" width="100" height="36" rx="6"/><text x="200" y="31" text-anchor="middle" class="t-titel t-wit">Nginx</text>
+  <rect class="box" x="270" y="8" width="140" height="36" rx="6"/><text x="340" y="31" text-anchor="middle" class="t-titel">Backend</text>
+  <rect class="box-oranje" x="430" y="8" width="100" height="36" rx="6"/><text x="480" y="31" text-anchor="middle" class="t-titel">Database</text>
+  <rect class="box-paars" x="550" y="8" width="100" height="36" rx="6"/><text x="600" y="31" text-anchor="middle" class="t-titel">Resend</text>
+  <!-- levenslijnen -->
+  <line x1="70" y1="46" x2="70" y2="462" stroke="#a9b4af" stroke-dasharray="4 3"/>
+  <line x1="200" y1="46" x2="200" y2="462" stroke="#a9b4af" stroke-dasharray="4 3"/>
+  <line x1="340" y1="46" x2="340" y2="462" stroke="#a9b4af" stroke-dasharray="4 3"/>
+  <line x1="480" y1="46" x2="480" y2="462" stroke="#a9b4af" stroke-dasharray="4 3"/>
+  <line x1="600" y1="46" x2="600" y2="462" stroke="#a9b4af" stroke-dasharray="4 3"/>
+  <!-- stappen -->
+  <text x="76" y="68" class="t-mini">1 klik "Opslaan"</text>
+  <text x="76" y="80" class="t-mini">handleSubmit()</text>
+  <path class="pijl" d="M70,100 L198,100"/><text x="134" y="94" text-anchor="middle" class="t-mini">2 POST + cookie</text>
+  <path class="pijl" d="M200,116 L338,116"/><text x="270" y="110" text-anchor="middle" class="t-mini">3 /api/ → :8020</text>
+  <rect class="box-licht" x="280" y="128" width="120" height="70" rx="5"/>
+  <text x="340" y="144" text-anchor="middle" class="t-mini">4 dependencies:</text>
+  <text x="340" y="157" text-anchor="middle" class="t-mini">token → gebruiker</text>
+  <text x="340" y="170" text-anchor="middle" class="t-mini">moduletoegang</text>
+  <text x="340" y="183" text-anchor="middle" class="t-mini">rol: create?</text>
+  <rect class="box-licht" x="280" y="206" width="120" height="30" rx="5"/>
+  <text x="340" y="225" text-anchor="middle" class="t-mini">5 Pydantic-controle</text>
+  <path class="pijl" d="M340,250 L478,250"/><text x="410" y="244" text-anchor="middle" class="t-mini">6 INSERT + commit</text>
+  <path class="pijl" d="M478,268 L342,268"/><text x="410" y="284" text-anchor="middle" class="t-mini">rij met id</text>
+  <rect class="box-licht" x="280" y="292" width="120" height="44" rx="5"/>
+  <text x="340" y="310" text-anchor="middle" class="t-mini">7 mail opbouwen</text>
+  <text x="340" y="324" text-anchor="middle" class="t-mini">(ontvangers + PDF)</text>
+  <path class="pijl" d="M338,354 L72,354"/><text x="200" y="348" text-anchor="middle" class="t-mini">8 201 Created + JSON</text>
+  <text x="76" y="376" class="t-mini">9 toast "Aanvraag</text>
+  <text x="76" y="388" class="t-mini">aangemaakt", lijst bij</text>
+  <path class="pijl" d="M340,410 L598,410"/><text x="470" y="404" text-anchor="middle" class="t-mini">10 achtergrondtaak: send_email()</text>
+  <path class="pijl-stippel" d="M600,430 L640,452"/><text x="590" y="458" text-anchor="end" class="t-mini">mail naar de mailinglijst</text>
+</svg>
+<figcaption>Het pad van "nieuwe interventie-aanvraag opslaan" door het systeem. De mail vertrekt pas nadat de gebruiker zijn antwoord kreeg.</figcaption>
+</figure>
+
+<h2 id="s-doorloop-browser">Stap 1–2: in de browser</h2>
+<p>De medewerker vult in het scherm <em>Intervention Requests</em> het formulier in en klikt op "Opslaan". Dat scherm is het
+clientcomponent <code>components/module-3/intervention-requests-management.tsx</code>; de klik roept <code>handleSubmit()</code> aan:</p>
+<figure class="code"><span class="bestand">frontend/src/components/module-3/intervention-requests-management.tsx (ingekort)</span><pre><span class="k">async function</span> handleSubmit() {
+  ...
+  <span class="k">const</span> saved = isEditing
+    ? <span class="k">await</span> updateInterventionRequest(editing.id, payload)
+    : <span class="k">await</span> createInterventionRequest(payload);
+  toast.success(isEditing ? t(<span class="s">"requestUpdated"</span>) : t(<span class="s">"requestCreated"</span>));
+  ...                                   <span class="c">// lijst bijwerken, dialoog sluiten</span>
+  <span class="c">// bij een fout: toast.error(message) met de melding van de backend</span>
+}</pre></figure>
+<p><code>createInterventionRequest</code> staat in <code>lib/api.ts</code> en roept <code>apiFetch</code> aan met <code>POST</code> en de gegevens als
+JSON. <code>apiFetch</code> gebruikt <code>credentials: "include"</code>, zodat de browser de inlogcookies meestuurt, en loopt via
+<code>fetchWithRefresh</code>: krijgt het verzoek 401 omdat het toegangstoken net verlopen is, dan vernieuwt die functie één keer
+de sessie en herhaalt het verzoek. De gebruiker merkt daar niets van.</p>
+
+<h2 id="s-doorloop-backend">Stap 3–5: Nginx en de controles in de backend</h2>
+<p>Nginx ziet een adres dat met <code>/api/</code> begint en stuurt het door naar de backend-container. FastAPI vindt het endpoint
+<code>create_intervention_request</code> in <code>modules/module_3/router.py</code> en voert eerst de dependencies uit:</p>
+<ol>
+  <li><code>get_db</code> opent een databasesessie;</li>
+  <li><code>require_screen_permission("interventionrequests.requests", "create")</code> roept <code>require_module_access</code> aan, die op
+  zijn beurt <code>get_current_user</code> gebruikt: cookie <code>rwcrew_access_token</code> lezen, handtekening en vervaldatum controleren
+  (<code>decode_token</code>), gebruiker laden en nagaan of die actief is (anders 401);</li>
+  <li>moduletoegang voor <code>module-3</code> controleren (anders 403);</li>
+  <li><code>user_can(...)</code>: heeft de rol van deze gebruiker <em>create</em> op dat scherm (anders 403)?</li>
+</ol>
+<p>Daarna controleert FastAPI de JSON tegen het schema <code>InterventionRequestCreateRequest</code>: verplichte velden, lengtes, en de
+regel dat precies één van <code>team_id</code> of <code>team_name</code> ingevuld is. Bij een fout volgt 422, zonder dat de functie zelf loopt.</p>
+
+<h2 id="s-doorloop-opslaan">Stap 6–8: opslaan en antwoorden</h2>
+<p>Pas nu loopt de functie zelf. Ze controleert of de gekozen status, ploeg en TeamKar-medewerker bestaan (anders 404),
+laat <code>generate_request_number</code> (in <code>module_3/service.py</code>) het volgende nummer bepalen (bv. <code>IA26_0042</code>), maakt
+het <code>InterventionRequest</code>-object, en doet <code>db.add</code>, <code>db.commit</code> en <code>db.refresh</code>. SQLAlchemy vertaalt dat
+naar een <code>INSERT INTO "InterventionRequests_request" …</code>.</p>
+<p>Dan roept ze <code>queue_new_request_mail(db, new_request, background_tasks)</code> aan. Die bouwt meteen de mail op (actieve adressen
+uit de mailinglijst, ploegnaam, de leveringsbon als PDF via fpdf2) en plant alleen het versturen als achtergrondtaak. Is de
+mailinglijst leeg, dan wordt er niets gepland. Mislukt het opbouwen, dan wordt dat gelogd en blijft de aanvraag gewoon bewaard.</p>
+<p>FastAPI zet het object om naar JSON volgens <code>InterventionRequestResponse</code> en stuurt <strong>201 Created</strong> terug.</p>
+
+<h2 id="s-doorloop-na">Stap 9–10: terug in de browser, en de mail</h2>
+<p><code>apiFetch</code> geeft de JSON terug aan <code>handleSubmit</code>, dat een groene melding toont en de nieuwe aanvraag in de tabel zet.
+Ondertussen voert FastAPI, nadat het antwoord vertrokken is, de achtergrondtaak uit: <code>send_email()</code> in
+<code>core/mail.py</code> stuurt de mail naar de HTTP-API van Resend, die hem aflevert. Een fout daar komt alleen in de log van de backend.</p>
+
+<h2 id="s-doorloop-varianten">Varianten van hetzelfde pad</h2>
+<table class="compact">
+  <caption>Dezelfde handeling via andere ingangen</caption>
+  <tr><th style="width:24%">Ingang</th><th>Wat is anders</th></tr>
+  <tr><td>Telefoon-app</td><td>Het formulier is <code>components/phone/module-3/request-form.tsx</code>; daarna exact hetzelfde endpoint, dezelfde controles en dezelfde mail.</td></tr>
+  <tr><td>Publiek formulier</td><td>Endpoint in <code>module_3/public_router.py</code>, zonder login. In de plaats van de rechtencontrole komt een snelheidslimiet per IP-adres. De status wordt automatisch "Nieuw". Daarna dezelfde opslag en dezelfde mail.</td></tr>
+  <tr><td>Pagina openen</td><td>Bij het openen van het scherm haalt <code>intervention-requests/page.tsx</code> op de server met <code>serverApiFetch</code> de lijst, statussen, ploegen en TeamKar-leden op, en geeft ze aan het clientcomponent. Was het toegangstoken verlopen, dan heeft <code>proxy.ts</code> de sessie al vóór het renderen vernieuwd.</td></tr>
+</table>
+<div class="kader tip"><span class="kader-titel"></span>
+Bij een probleem volg je hetzelfde pad met de ontwikkelaarstools van de browser (<kbd>F12</kbd> &gt; Network): welk verzoek vertrok,
+met welke gegevens, welke statuscode kwam terug, en welke <code>detail</code>-melding gaf de backend? Een 403 wijst naar de rechten,
+een 422 naar de invoer, een 500 naar de backend-log (<code>docker compose … logs backend</code>).
+</div>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-recepten">Recepten: veelvoorkomende uitbreidingen</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Stap-voor-stap-lijsten voor de wijzigingen die het vaakst voorkomen. Volg ze in volgorde; ze verwijzen telkens naar een
+bestaand voorbeeld dat je kunt kopiëren. Werk altijd op een eigen branch en sluit af met tests en een controle op test
+(zie <a class="ref" href="#h-samenwerken"></a>).
+</div>
+
+<h2 id="s-recept-scherm">Een nieuw scherm in een bestaande module</h2>
+<p>Voorbeeld: een scherm "Leveranciers" in module 9 (MasterData).</p>
+<p><strong>Backend</strong></p>
+<ol class="stappen">
+  <li><strong>Model</strong>: <code>app/db/models/supplier.py</code> met <code>__tablename__ = "MasterData_supplier"</code>; importeer het in <code>app/db/base.py</code>.</li>
+  <li><strong>Migratie</strong>: <code>alembic revision --autogenerate -m "add masterdata supplier"</code>, nalezen, <code>alembic upgrade head</code> (zie <a class="ref" href="#s-migraties"></a>).</li>
+  <li><strong>Schema's</strong>: <code>SupplierResponse</code>, <code>SupplierInput</code> in <code>app/schemas/masterdata.py</code>.</li>
+  <li><strong>Scherm registreren</strong>: <code>ScreenDefinition(key="masterdata.suppliers", label="Suppliers", sort_order=…)</code> in <code>module_9/screens.py</code>.</li>
+  <li><strong>Endpoints</strong> in <code>module_9/router.py</code>: <code>GET/POST /suppliers</code>, <code>PUT/DELETE /suppliers/{id}</code>, elk met
+  <code>require_screen_permission("masterdata.suppliers", "view" | "create" | "edit" | "delete")</code>.</li>
+  <li><strong>Tests</strong> in <code>tests/modules/module_9/test_suppliers.py</code>: CRUD én rechten. Kopieer een bestaand testbestand van een vergelijkbaar scherm.</li>
+</ol>
+<p><strong>Frontend</strong></p>
+<ol class="stappen">
+  <li><strong>Types</strong> in <code>lib/types.ts</code> en <strong>API-functies</strong> in <code>lib/api.ts</code> (via <code>apiFetch</code>).</li>
+  <li><strong>Scherm</strong>: <code>components/module-9/supplier-management.tsx</code>. Kopieer een vergelijkbaar lijstscherm (bv.
+  <code>warehouse-management.tsx</code>, of gebruik <code>lookup-management.tsx</code> voor een eenvoudige opzoeklijst), met vette en
+  onderstreepte titel en kolomkoppen en de vaste tabelkop en Acties-kolom (zie <a class="ref" href="#h-conventies"></a>).</li>
+  <li><strong>Pagina</strong>: <code>app/[locale]/(protected)/modules/module-9/suppliers/page.tsx</code>: gegevens ophalen met <code>serverApiFetch</code>,
+  bij 403 de melding "forbidden" tonen, anders het scherm.</li>
+  <li><strong>Menu</strong>: een link toevoegen in <code>components/module-9/masterdata-sidebar.tsx</code>, zichtbaar als
+  <code>viewableScreenKeys</code> het scherm bevat.</li>
+  <li><strong>Teksten</strong> onder <code>masterdata.*</code> in <code>nl.json</code> én <code>en.json</code>.</li>
+</ol>
+<p>Herstart de backend. Het nieuwe scherm verschijnt als lege rij in elke rechtenmatrix van MasterData; geef je eigen rol
+de rechten om het te testen.</p>
+
+<h2 id="s-recept-kolom">Een kolom of tabel toevoegen of wijzigen</h2>
+<ol class="stappen">
+  <li>Pas het model aan (nieuw veld met type, <code>nullable</code> en eventueel <code>default</code> / <code>server_default</code>).</li>
+  <li>Een nieuwe verplichte kolom in een tabel met bestaande rijen heeft een standaardwaarde nodig (<code>server_default</code>), of
+  een migratie in drie stappen: kolom toevoegen als nullable, bestaande rijen vullen, dan verplicht maken.</li>
+  <li>Genereer en lees de migratie na; test <code>upgrade</code> én <code>downgrade</code> lokaal.</li>
+  <li>Pas schema's, frontend-types en schermen aan.</li>
+  <li>Draai alle tests.</li>
+</ol>
+
+<h2 id="s-recept-module">Een nieuwe module bouwen (bv. module 4 echt maken)</h2>
+<ol class="stappen">
+  <li><strong>Naam</strong>: voeg de naam toe aan <code>_MODULE_NAMES</code> in <code>app/modules/registry.py</code>, en maak een migratie die
+  <code>UPDATE "Landing_modules" SET name = '…' WHERE key = 'module-4'</code> uitvoert (met de omgekeerde wijziging in <code>downgrade()</code>).</li>
+  <li><strong>Rechtensysteem</strong>: volg <code>docs/module-custom-roles-pattern.md</code> stap voor stap: vier modellen
+  (<code>&lt;Naam&gt;_screens</code>, <code>_roles</code>, <code>_role_permissions</code>, <code>_user_roles</code>), migratie, schema's,
+  <code>screens.py</code>, <code>deps.py</code>, <code>router.py</code>. Kopieer van de module die het meest lijkt op wat je bouwt (module 3 is het
+  meest overzichtelijke voorbeeld).</li>
+  <li><strong>main.py</strong>: importeer de nieuwe router en <code>sync_screens</code>, en roep die in <code>lifespan</code> aan.</li>
+  <li><strong>Tests</strong>: kopieer <code>tests/modules/module_3/test_roles.py</code> en <code>helpers.py</code> en pas sleutels en namen aan.</li>
+  <li><strong>Frontend</strong>: types en API-functies; <code>components/module-4/</code> met sidebar, <code>roles-management.tsx</code>,
+  <code>users-management.tsx</code>; <code>app/[locale]/(protected)/modules/module-4/layout.tsx</code> (rechten ophalen, menu, accentkleur)
+  en de pagina's onder <code>access-rights/roles</code> en <code>access-rights/users</code>.</li>
+  <li><strong>Uitstraling</strong>: kleur en eventueel pictogram in <code>lib/module-theme.ts</code>.</li>
+  <li><strong>Teksten</strong>: een nieuwe namespace in beide vertaalbestanden.</li>
+  <li><strong>Documentatie</strong>: <code>CLAUDE.md</code>, deze handleiding (<a class="ref" href="#tab-modules"></a> en <a class="ref" href="#bijlage-schermen"></a>).</li>
+</ol>
+<p>Daarna geeft de superbeheerder zichzelf moduletoegang, maakt een eerste rol "Beheerder" met alle rechten aan en kent
+die toe aan de toekomstige modulebeheerder.</p>
+
+<h2 id="s-recept-wizardstap">Een stap toevoegen aan de Ploeg Wizard</h2>
+<ol class="stappen">
+  <li>Een <code>StepDefinition</code> toevoegen in <code>backend/app/modules/module_8/steps.py</code> (stabiele <code>key</code>, volgorde, eventueel een
+  <code>completion_check</code> die zegt wanneer de stap "klaar" mag worden gezet).</li>
+  <li>Een component in <code>frontend/src/components/module-8/wizard/steps/</code> en het registreren in de <code>index.ts</code> van die map.
+  Onbekende sleutels tonen een plaatshouder, dus er breekt niets zolang dit ontbreekt.</li>
+  <li>Titel en beschrijving onder <code>altsienSelect.steps.&lt;key&gt;</code> in beide vertaalbestanden.</li>
+  <li>Optioneel een eigen sectie in <code>module_8/ploegfiche_pdf.py</code>.</li>
+  <li>Optioneel "kopiëren van vorig seizoen": een paar <code>list_lines</code>/<code>copy_lines</code> in <code>module_8/previous_season.py</code>, geregistreerd in <code>COPYABLE_STEPS</code>.</li>
+</ol>
+<p>De voortgang wordt per stapsleutel bewaard; er is geen migratie nodig. Wanneer de productenmodule klaar is, wordt de
+stap "products" op deze manier van plaatshouder naar echte stap gebracht (en kan ze aan <code>COPYABLE_STEPS</code> toegevoegd worden).</p>
+
+<h2 id="s-recept-telefoon">Een module toevoegen aan de telefoon-app</h2>
+<ol class="stappen">
+  <li>De modulesleutel toevoegen aan <code>PHONE_MODULE_KEYS</code> in <code>components/phone/shared/phone-modules.ts</code>.</li>
+  <li><code>app/[locale]/m/(signed-in)/module-N/layout.tsx</code> maken die de rechten laadt en bij <code>null</code> <code>PhoneForbidden</code> toont.</li>
+  <li>Schermen in <code>components/phone/module-N/</code>, met een <code>*-phone-rights.ts</code> en een <code>*-phone-routes.ts</code>. Gebruik de
+  gedeelde onderdelen uit <code>phone/shared/</code>.</li>
+  <li>Teksten onder <code>&lt;moduleNamespace&gt;.phone.*</code>; bestaande teksten van het webscherm hergebruiken waar ze passen.</li>
+  <li>Testen op een echte telefoon via de tunnel (camera/GPS) en via wifi.</li>
+</ol>
+
+<h2 id="s-recept-tekst">Een schermtekst toevoegen of wijzigen</h2>
+<p>Zoek de sleutel in <code>frontend/messages/nl.json</code> (zoeken op de huidige tekst), pas hem aan in <code>nl.json</code> én
+<code>en.json</code>. Een nieuwe tekst krijgt een sleutel in de namespace van de module, op dezelfde plaats in beide bestanden.
+Een frontend-herstart is lokaal meestal niet nodig.</p>
+
+<h2 id="s-recept-instelling">Een nieuwe instelling</h2>
+<p>Zie <a class="ref" href="#s-nieuwe-instelling"></a>: <code>config.py</code>, de <code>environment:</code>-lijst in <code>docker-compose.prod.yml</code>, de
+<code>.env.*.example</code>-bestanden, en de echte waarde op de server.</p>
+
+<h2 id="s-recept-excel">Een Excel-import toevoegen</h2>
+<p>Kopieer een bestaand importbestand dat qua vorm lijkt (bv. <code>module_9/festival_import.py</code> of
+<code>module_2/kar_import.py</code>). Het patroon: een functie die het sjabloon bouwt, een functie die de geüploade werkmap rij per
+rij verwerkt in een eigen SAVEPOINT en per rij een resultaat teruggeeft, en eventueel een export. Verwijzingen naar andere
+tabellen worden in het bestand <em>bij naam</em> gegeven en bij het importeren opgezocht. Voeg endpoints toe voor sjabloon,
+import en export, en de knoppen op het scherm "Data Upload/Download" van de module.</p>
+
+<h2 id="s-recept-mail">Een nieuwe mail toevoegen</h2>
+<p>Volg het patroon van <code>module_3/notifications.py</code>: een functie die binnen de databasesessie een <code>OutgoingMail</code> opbouwt (of
+<code>None</code> als er niets te sturen valt), en een functie die het versturen als <code>BackgroundTasks</code>-taak plant. Gebruik
+<code>settings.mail_subject_prefix</code> voor het onderwerp en <code>settings.app_public_url</code> voor links; escape alle
+gebruikersinvoer in de HTML. Vervang <code>send_email</code> in de tests met <code>monkeypatch</code>.</p>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-conventies">Codeerafspraken</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew heeft een paar vaste afspraken die de code leesbaar en voorspelbaar houden: commentaar in gewone taal bij elk
+logisch blok, alles per module, vaste naamgeving met voorvoegsels, en een vaste uitstraling voor lijstschermen (vette en
+onderstreepte titels en kolomkoppen, tabellen met vaste kop en Acties-kolom). Nieuwe code volgt deze afspraken vanaf de
+eerste versie.
+</div>
+
+<h2 id="s-conv-commentaar">Commentaar in gewone taal</h2>
+<p>Elk logisch blok of statement krijgt commentaar in gewone (Engelse) taal dat uitlegt <em>wat</em> het doet en vooral
+<em>waarom</em>. Niet letterlijk elke regel, en niet alleen een docstring bovenaan. Bovenaan elk bestand staat waarom het bestaat.
+Kijk naar eender welk bestand onder <code>backend/app/</code> of <code>frontend/src/</code> voor de gewenste dichtheid. Gegenereerde
+bestanden (Alembic-migraties, <code>src/components/ui/*</code>) blijven zoals gegenereerd.</p>
+<p>De reden: het project moet begrijpelijk zijn voor wie nieuw is in de code, of zelfs nieuw in programmeren. Commentaar dat het
+<em>waarom</em> vastlegt, voorkomt dat iemand later een bewuste keuze terugdraait.</p>
+
+<h2 id="s-conv-module">Alles per module</h2>
+<p>Nieuwe code komt in de mappen van de module waartoe ze behoort: <code>backend/app/modules/module_N/</code>,
+<code>frontend/src/app/[locale]/(protected)/modules/module-N/</code>, <code>frontend/src/components/module-N/</code>,
+<code>frontend/src/components/phone/module-N/</code>, en een eigen vertaalnamespace. Alleen wat echt door meerdere modules gedeeld
+wordt, komt in <code>shared/</code>. Gedeelde logica rond gegevens van één module staat bij die module als service (zie
+<a class="ref" href="#s-be-services"></a>).</p>
+
+<h2 id="s-conv-namen">Naamgeving</h2>
+<table id="tab-naamgeving" class="compact">
+  <caption>Naamgevingsregels</caption>
+  <tr><th style="width:30%">Wat</th><th style="width:30%">Regel</th><th>Voorbeeld</th></tr>
+  <tr><td>Databasetabel</td><td><code>&lt;Module&gt;_&lt;naam&gt;</code></td><td><code>InterventionRequests_status</code>, <code>Landing_users</code></td></tr>
+  <tr><td>Modelklasse</td><td>PascalCase met modulevoorvoegsel</td><td><code>InterventionRequestsRole</code></td></tr>
+  <tr><td>Modelbestand</td><td>snake_case, één per tabel</td><td><code>intervention_requests_role.py</code></td></tr>
+  <tr><td>Modulesleutel (adres)</td><td><code>module-N</code> (verandert nooit)</td><td><code>module-3</code></td></tr>
+  <tr><td>Python-pakket</td><td><code>module_N</code></td><td><code>app/modules/module_3/</code></td></tr>
+  <tr><td>Schermsleutel</td><td><code>&lt;module&gt;.&lt;scherm&gt;</code>, kleine letters</td><td><code>interventionrequests.mailinglist</code></td></tr>
+  <tr><td>Vertaalnamespace</td><td>camelCase per module</td><td><code>interventionRequests</code>, <code>karTracker</code></td></tr>
+  <tr><td>React-componentbestand</td><td>kebab-case</td><td><code>mailing-list-management.tsx</code></td></tr>
+  <tr><td>React-component</td><td>PascalCase</td><td><code>MailingListManagement</code></td></tr>
+  <tr><td>Lijstscherm</td><td><code>&lt;ding&gt;-management.tsx</code></td><td><code>festival-management.tsx</code></td></tr>
+</table>
+<div class="kader letop"><span class="kader-titel"></span>
+Een <strong>schermsleutel</strong>, <strong>stapsleutel</strong> of <strong>modulesleutel</strong> verander je nooit meer zodra ze bestaat: ze
+staat in de database (rechten, voortgang, toegang). Een <em>label</em> (wat de gebruiker ziet) mag je vrij aanpassen.
+</div>
+
+<h2 id="s-conv-typografie">Lijstschermen: titels en kolomkoppen</h2>
+<p>Op elk lijst- of beheerscherm (<code>*-management.tsx</code>) zijn de paginatitel en alle kolomkoppen <strong>vet en
+onderstreept</strong>, voor een duidelijke scheiding tussen kop en gegevens:</p>
+<ul>
+  <li>de <code>&lt;h1&gt;</code>-titel: <code>font-bold … underline</code> (niet <code>font-semibold</code>);</li>
+  <li>elke <code>&lt;TableHead&gt;</code>: <code>font-bold underline</code> toegevoegd aan de bestaande klassen (uitlijning zoals
+  <code>text-right</code> blijft).</li>
+</ul>
+<p>Pas dat toe waar je de component gebruikt, niet in <code>ui/table.tsx</code> zelf (gegenereerd bestand).</p>
+
+<h2 id="s-conv-tabellen">Tabellen met vaste kop en Acties-kolom</h2>
+<p>Elke lijsttabel houdt bij het scrollen de <strong>kopregel</strong> en de <strong>Acties-kolom</strong> in beeld, en scrolt in beide
+richtingen binnen een kader van maximaal 65% van de schermhoogte, in plaats van de hele pagina te laten groeien. Het
+referentievoorbeeld is <code>components/module-3/intervention-requests-management.tsx</code>. Het patroon bestaat uit vier delen,
+altijd samen:</p>
+<figure class="code"><span class="bestand">Het tabelpatroon (vereenvoudigd)</span><pre>&lt;div className=<span class="s">"rounded-md border [&amp;&gt;div]:max-h-[65vh] [&amp;&gt;div]:overflow-y-auto"</span>&gt;   <span class="c">{/* 1 */}</span>
+  &lt;Table&gt;
+    &lt;TableHeader&gt;
+      &lt;TableRow&gt;
+        &lt;TableHead className=<span class="s">"sticky top-0 z-20 bg-background font-bold underline"</span>&gt;Naam&lt;/TableHead&gt;   <span class="c">{/* 2 */}</span>
+        &lt;TableHead className=<span class="s">"sticky top-0 right-0 z-30 bg-background font-bold underline"</span>&gt;Acties&lt;/TableHead&gt;  <span class="c">{/* 3 */}</span>
+      &lt;/TableRow&gt;
+    &lt;/TableHeader&gt;
+    &lt;TableBody&gt;
+      &lt;TableRow className=<span class="s">"group"</span>&gt;                                                     <span class="c">{/* 4 */}</span>
+        &lt;TableCell&gt;…&lt;/TableCell&gt;
+        &lt;TableCell className=<span class="s">"sticky right-0 z-10 bg-background group-hover:bg-muted/50"</span>&gt;…&lt;/TableCell&gt;
+      &lt;/TableRow&gt;
+    &lt;/TableBody&gt;
+  &lt;/Table&gt;
+&lt;/div&gt;</pre></figure>
+<ol>
+  <li>De omhullende <code>div</code> beperkt de hoogte en scrolt verticaal. Zet hier géén <code>overflow-x-auto</code>: de tabel heeft al een
+  eigen horizontaal scrollende container.</li>
+  <li>Elke kopcel is <code>sticky top-0 z-20 bg-background</code>. Een tweede kopregel (bv. filters) gebruikt <code>top-10</code>.</li>
+  <li>De kopcel van Acties is ook <code>right-0</code> en <code>z-30</code>, zodat de hoek boven de andere vaste cellen blijft.</li>
+  <li>Elke rij heeft <code>group</code>, en de Acties-cel volgt met <code>group-hover:bg-muted/50</code> de hoverkleur van de rij.</li>
+</ol>
+<p><code>bg-background</code> is verplicht op elke vaste cel; anders schuift de inhoud er zichtbaar onderdoor. Een tabel zonder
+Acties-kolom krijgt alleen deel 1 en 2. Het gedeelde <code>module-9/lookup-management.tsx</code> volgt het patroon al.</p>
+
+<h2 id="s-conv-backend">Afspraken in de backend</h2>
+<ul>
+  <li><strong>Rechten in elk endpoint</strong> via <code>require_screen_permission</code>; nooit vertrouwen op een verborgen knop.</li>
+  <li><strong>Velden die de server bepaalt</strong> (nummers, tijdstippen, aanmaker) staan niet in het create-schema.</li>
+  <li><strong>Instellingen</strong> altijd via <code>settings</code>, nooit hardgecodeerd.</li>
+  <li><strong>Nevenwerk faalt veilig</strong>: mails en andere bijkomende acties mogen de hoofdbewerking nooit ongedaan maken.</li>
+  <li><strong>Leesbare foutmeldingen</strong>: <code>HTTPException(status_code=…, detail="…")</code>; de frontend toont <code>detail</code> rechtstreeks.</li>
+  <li><strong>Pure Python-pakketten</strong> (zie <a class="ref" href="#s-python-314"></a>).</li>
+  <li><strong>Tests</strong> voor elke nieuwe functie en elke regel in de rechten.</li>
+</ul>
+
+<h2 id="s-conv-frontend">Afspraken in de frontend</h2>
+<ul>
+  <li><strong>Pagina's zijn dun</strong>: gegevens ophalen op de server, één component tonen. Logica en interactie in het component.</li>
+  <li><strong>Backend alleen via <code>lib/api.ts</code></strong> (browser) of <code>lib/server-api.ts</code> (server); geen losse <code>fetch</code>-aanroepen in componenten.</li>
+  <li><strong>Geen hardgecodeerde schermteksten</strong>: alles via de vertaalbestanden.</li>
+  <li><strong>Knoppen volgens de rechten</strong>: toon "Toevoegen", "Wijzigen", "Verwijderen" alleen bij het overeenkomstige recht.</li>
+  <li><strong>Base UI</strong>: <code>render={…}</code> in plaats van <code>asChild</code>, <code>onClick</code> in plaats van <code>onSelect</code>.</li>
+  <li><strong>Lijstschermen</strong>: vet en onderstreept, vaste kop en Acties-kolom.</li>
+  <li>Voor een commit: <code>npm run lint</code> en, bij grotere wijzigingen, <code>npm run build</code>.</li>
+</ul>
+
+<h2 id="s-conv-commits">Commits en branches</h2>
+<ul>
+  <li>Kleine, samenhangende commits met een beschrijvende boodschap in de gebiedende wijs: "Add mailing list to intervention
+  requests", "Fix season lock for organisation role".</li>
+  <li>Eén onderwerp per branch: <code>feature/leveranciers</code>, <code>fix/karblad-qr</code>.</li>
+  <li>Nooit geheimen committen. Controleer voor elke commit wat je toevoegt (<code>git status</code>, <code>git diff --staged</code>).</li>
+</ul>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-samenwerken">Samenwerken als team</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Tot nu toe werd rechtstreeks naar <code>develop</code> en <code>main</code> gepusht, wat meteen deployt. Met meerdere mensen is dat te
+riskant. Dit hoofdstuk beschrijft een <strong>aanbevolen werkwijze</strong>: werken op aparte branches, wijzigingen via pull requests
+laten nalezen, <code>main</code> en <code>develop</code> beschermen, een gezamenlijke "definition of done", en een duidelijk beheer van wie
+toegang heeft tot welke systemen. Het gaat om voorstellen: spreek ze in het team af en pas aan waar nodig.
+</div>
+
+<h2 id="s-team-huidig">De huidige situatie</h2>
+<p>RWCrew werd tot nu toe door één persoon ontwikkeld. Wijzigingen gingen rechtstreeks naar <code>develop</code> (en zo naar test), en
+daarna via een merge naar <code>main</code> (en zo naar productie). Er zijn geen beschermde branches, geen verplichte review en
+geen automatische tests bij een push. Dat werkte omdat er maar één persoon was die alles overzag.</p>
+
+<h2 id="s-team-branches">Aanbevolen branchmodel</h2>
+<figure class="diagram" id="fig-branches">
+<svg viewBox="0 0 660 210" xmlns="http://www.w3.org/2000/svg">
+  <text x="10" y="44" class="t-titel">main</text>
+  <line x1="80" y1="40" x2="650" y2="40" stroke="#10261f" stroke-width="3"/>
+  <text x="10" y="114" class="t-titel">develop</text>
+  <line x1="80" y1="110" x2="650" y2="110" stroke="#1f6b4f" stroke-width="3"/>
+  <text x="10" y="184" class="t-klein">feature/…</text>
+  <path d="M120,110 C150,110 150,180 180,180 L300,180 C330,180 330,110 360,110" stroke="#1d4f91" stroke-width="2.4" fill="none"/>
+  <path d="M250,110 C270,110 270,150 290,150 L400,150 C420,150 420,110 440,110" stroke="#5b3f8c" stroke-width="2.4" fill="none"/>
+  <circle cx="120" cy="110" r="5" fill="#1f6b4f"/>
+  <circle cx="360" cy="110" r="6" fill="#1f6b4f"/>
+  <circle cx="440" cy="110" r="6" fill="#1f6b4f"/>
+  <circle cx="220" cy="180" r="4" fill="#1d4f91"/><circle cx="270" cy="180" r="4" fill="#1d4f91"/>
+  <circle cx="330" cy="150" r="4" fill="#5b3f8c"/><circle cx="370" cy="150" r="4" fill="#5b3f8c"/>
+  <text x="240" y="198" text-anchor="middle" class="t-mini">feature/leveranciers</text>
+  <text x="378" y="168" class="t-mini">fix/karblad-qr</text>
+  <text x="360" y="98" text-anchor="middle" class="t-mini">PR + review</text>
+  <text x="440" y="98" text-anchor="middle" class="t-mini">PR + review</text>
+  <path d="M500,110 C520,110 520,40 540,40" stroke="#10261f" stroke-width="2.4" fill="none"/>
+  <circle cx="540" cy="40" r="6" fill="#10261f"/>
+  <text x="540" y="28" text-anchor="middle" class="t-mini">release-PR → productie</text>
+  <text x="560" y="128" text-anchor="middle" class="t-mini">elke merge → test.rwcrew.eu</text>
+</svg>
+<figcaption>Aanbevolen branchmodel: werk op korte feature-branches, merge via pull requests in <code>develop</code>, en breng <code>develop</code> via een release-PR naar <code>main</code>.</figcaption>
+</figure>
+<ol class="stappen">
+  <li>Start elke wijziging vanaf een bijgewerkte <code>develop</code>: <code>git switch develop &amp;&amp; git pull &amp;&amp; git switch -c feature/&lt;naam&gt;</code>.</li>
+  <li>Werk en commit op je branch; push hem naar GitHub (<code>git push -u origin feature/&lt;naam&gt;</code>).</li>
+  <li>Open een <strong>pull request naar <code>develop</code></strong> met een korte beschrijving: wat, waarom, hoe testen, eventuele
+  migraties of nieuwe instellingen.</li>
+  <li>Een collega leest na (zie <a class="ref" href="#s-team-review"></a>). Na goedkeuring merge je; GitHub Actions zet het op test.</li>
+  <li>Laat de gebruiker(s) die erom vroegen het op <code>test.rwcrew.eu</code> uitproberen.</li>
+  <li>Voor een release: een pull request van <code>develop</code> naar <code>main</code>, nagelezen door een tweede persoon, op een rustig moment
+  gemerged (zie <a class="ref" href="#s-release-checklist"></a>).</li>
+  <li>Een dringende oplossing in productie (<em>hotfix</em>): branch vanaf <code>main</code>, PR naar <code>main</code>, en daarna dezelfde
+  wijziging ook in <code>develop</code> mergen zodat de branches niet uit elkaar lopen.</li>
+</ol>
+
+<h2 id="s-team-bescherming">Branches beschermen op GitHub</h2>
+<p>Stel in GitHub (Settings &gt; Branches &gt; Branch protection rules, of "Rulesets") voor <code>main</code> en <code>develop</code> in:</p>
+<ul>
+  <li>wijzigingen alleen via een pull request;</li>
+  <li>minstens één goedkeuring van iemand anders dan de auteur;</li>
+  <li>geen <em>force push</em> en niet verwijderen;</li>
+  <li>zodra er een testworkflow is (zie hieronder): de tests moeten slagen voor een merge.</li>
+</ul>
+
+<h2 id="s-team-ci">Aanbevolen: automatische tests bij elke pull request</h2>
+<p>De bestaande workflows deployen alleen; ze testen niets. Een aanbevolen aanvulling is een workflow
+<code>.github/workflows/ci.yml</code> die bij elke pull request de backend-tests (<code>pytest</code>, met Python 3.14) en de
+frontend-controles (<code>npm ci</code>, <code>npm run lint</code>, <code>npm run build</code>) uitvoert. Zo vangt GitHub een gebroken test of een
+build-fout op voordat iemand mergt. De tests hebben geen database nodig (SQLite in het geheugen), dus de workflow is eenvoudig.</p>
+
+<h2 id="s-team-review">Code review</h2>
+<p>Bij het nalezen van een pull request let je op:</p>
+<ul class="checklist">
+  <li>Doet de wijziging wat de beschrijving zegt, en niet meer?</li>
+  <li>Controleert elk nieuw endpoint de rechten (<code>require_screen_permission</code>)?</li>
+  <li>Zijn er tests voor de nieuwe werking en de rechten, en slagen ze?</li>
+  <li>Is een migratie nagelezen, met een werkende <code>downgrade()</code>, en zonder gegevensverlies?</li>
+  <li>Staan nieuwe teksten in beide vertaalbestanden?</li>
+  <li>Volgen nieuwe lijstschermen de tabel- en typografieafspraken?</li>
+  <li>Is het commentaar duidelijk, vooral het <em>waarom</em>?</li>
+  <li>Zijn nieuwe instellingen toegevoegd aan <code>docker-compose.prod.yml</code> en de voorbeeldbestanden?</li>
+  <li>Zijn <code>CLAUDE.md</code> en deze handleiding bijgewerkt waar nodig?</li>
+  <li>Staan er geen geheimen, testwachtwoorden of debugcode in?</li>
+</ul>
+
+<h2 id="s-definition-of-done">Definition of done</h2>
+<p>Een wijziging is pas <strong>klaar</strong> als:</p>
+<ol>
+  <li>de code de afspraken uit <a class="ref" href="#h-conventies"></a> volgt;</li>
+  <li>alle backend-tests slagen en er nieuwe tests zijn voor de nieuwe werking;</li>
+  <li>de frontend zonder fouten bouwt en lint;</li>
+  <li>een collega de pull request heeft goedgekeurd;</li>
+  <li>de wijziging op <code>test.rwcrew.eu</code> gecontroleerd is, door de aanvrager waar mogelijk;</li>
+  <li>de documentatie (<code>CLAUDE.md</code>, deze handleiding, eventueel <code>docs/module-custom-roles-pattern.md</code>) klopt.</li>
+</ol>
+
+<h2 id="s-team-rollen">Rollen in het team</h2>
+<table class="compact">
+  <caption>Voorgestelde rollen (één persoon kan meerdere rollen hebben)</caption>
+  <tr><th style="width:24%">Rol</th><th>Verantwoordelijk voor</th></tr>
+  <tr><td><strong>Product owner</strong></td><td>Beslist wat er gebouwd wordt en in welke volgorde; aanspreekpunt voor de gebruikers.</td></tr>
+  <tr><td><strong>Ontwikkelaar</strong></td><td>Bouwt en test wijzigingen, leest pull requests van anderen na.</td></tr>
+  <tr><td><strong>Release-verantwoordelijke</strong></td><td>Beslist wanneer <code>develop</code> naar <code>main</code> gaat, volgt de checklist, controleert na de deployment.</td></tr>
+  <tr><td><strong>Serverbeheerder</strong></td><td>VPS, Nginx, certificaten, back-ups, <code>.env</code>-bestanden, toegang tot Hostinger en Cloudflare.</td></tr>
+  <tr><td><strong>Functioneel beheerder</strong></td><td>Gebruikers, moduletoegang, rollen, stamgegevens (zie <a class="ref" href="#h-beheer"></a>).</td></tr>
+</table>
+<p>Houd taken en vragen bij op één plaats, bijvoorbeeld <strong>GitHub Issues</strong> met een label per module, zodat een pull request
+naar het issue kan verwijzen ("Closes #12").</p>
+
+<h2 id="s-toegangen-team">Toegangen en geheimen beheren</h2>
+<table class="compact">
+  <caption>Systemen waarvoor toegang beheerd moet worden</caption>
+  <tr><th style="width:28%">Systeem</th><th>Geeft toegang tot</th><th style="width:28%">Wie</th></tr>
+  <tr><td>GitHub (repository-beheerder)</td><td>Code, secrets, workflows, branchbescherming</td><td>Minstens twee beheerders</td></tr>
+  <tr><td>GitHub (schrijfrechten)</td><td>Branches pushen, pull requests</td><td>Ontwikkelaars</td></tr>
+  <tr><td>SSH naar de VPS</td><td>Alles op de server, inclusief <code>.env</code> en databases</td><td>Serverbeheerder(s)</td></tr>
+  <tr><td>Hostinger-account</td><td>De server zelf, snapshots, facturatie</td><td>Serverbeheerder(s)</td></tr>
+  <tr><td>Cloudflare-account</td><td>DNS van <code>rwcrew.eu</code></td><td>Serverbeheerder(s)</td></tr>
+  <tr><td>Resend-account</td><td>Uitgaande mail, API-sleutels</td><td>Serverbeheerder(s)</td></tr>
+  <tr><td>Superbeheerder in RWCrew</td><td>Gebruikers en moduletoegang op test/productie</td><td>Functioneel beheerder(s)</td></tr>
+  <tr><td><code>rwcrew_readonly</code> (pgAdmin)</td><td>Alle gegevens lezen</td><td>Ontwikkelaars die moeten debuggen</td></tr>
+</table>
+<ul>
+  <li>Bewaar gedeelde wachtwoorden en sleutels in een <strong>wachtwoordbeheerder</strong> met een gedeelde kluis, nooit in mails, chat of Git.</li>
+  <li>Zorg dat <strong>minstens twee mensen</strong> elk kritiek account kunnen beheren, zodat het project niet stilvalt als iemand onbereikbaar is.</li>
+  <li>Gebruik persoonlijke accounts en SSH-sleutels per persoon waar mogelijk, zodat je iemand kunt uitschakelen zonder anderen te storen.</li>
+  <li><strong>Bij vertrek</strong> van een teamlid: GitHub-toegang intrekken, zijn SSH-sleutel van de server verwijderen, gedeelde wachtwoorden
+  wijzigen, en bij twijfel <code>JWT_SECRET</code> en <code>RESEND_API_KEY</code> vernieuwen (een nieuwe <code>JWT_SECRET</code> logt iedereen uit).</li>
+</ul>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-valkuilen">Bekende valkuilen</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Een verzameling problemen die tijdens de ontwikkeling echt voorgekomen zijn, met hun symptoom, oorzaak en oplossing. Herken
+je een symptoom, kijk dan eerst hier. Ontdek je een nieuwe valkuil, voeg die dan toe aan dit hoofdstuk en aan <code>CLAUDE.md</code>.
+</div>
+
+<h2 id="s-valkuil-reload">De backend reageert met oude code (<code>--reload</code> op Windows)</h2>
+<p><strong>Symptoom</strong>: endpoints geven willekeurig 404, 405 of 500, of gedragen zich alsof een oplossing nooit toegepast is,
+terwijl de tests (die altijd de actuele code gebruiken) slagen.</p>
+<p><strong>Oorzaak</strong>: <code>uvicorn --reload</code> start op Windows de eigenlijke server als apart kindproces via
+<code>multiprocessing</code>. Stop je alleen het ouderproces (het proces dat <code>Get-NetTCPConnection</code> als eigenaar van de poort
+toont), dan blijft het kind als wees de poort bezetten met de oude code. Verzoeken gaan dan willekeurig naar de oude of de nieuwe server.</p>
+<p><strong>Oplossing</strong>: start de backend zonder <code>--reload</code> en herstart met de hand. Zoek en stop achtergebleven processen:</p>
+<figure class="code"><span class="bestand">PowerShell: achtergebleven backendprocessen vinden</span><pre>Get-CimInstance Win32_Process -Filter "Name = 'python.exe'" |
+  Where-Object { $_.CommandLine -match 'uvicorn|multiprocessing' } |
+  Select-Object ProcessId, CommandLine
+
+Stop-Process -Id &lt;ProcessId&gt; -Force      <span class="c"># voor elk gevonden proces</span>
+netstat -ano | findstr :8020              <span class="c"># controle: luistert er nog iets?</span></pre></figure>
+<p>Blijft een poort "behekst", wijk dan uit naar een nieuwe poort en pas <code>frontend/.env.local(.example)</code>,
+<code>frontend/src/lib/config.ts</code>, <code>backend/README.md</code> en <code>CLAUDE.md</code> aan.</p>
+
+<h2 id="s-valkuil-thema">Taal wisselen laat de hele pagina flitsen</h2>
+<p><strong>Oorzaak</strong>: de <code>&lt;html&gt;</code>/<code>&lt;body&gt;</code>-laag en de <code>ThemeProvider</code> moeten in <code>src/app/layout.tsx</code> staan,
+<em>boven</em> <code>[locale]</code>. Staan ze in de taallayout, dan wordt bij elke taalwissel het hele document opnieuw opgebouwd.
+React 19 waarschuwt daarnaast over het inline <code>&lt;script&gt;</code> van next-themes; <code>theme-provider.tsx</code> omzeilt dat door in de
+browser <code>scriptProps</code> met <code>type: "application/json"</code> mee te geven. Laat dat staan tot next-themes het zelf oplost.</p>
+
+<h2 id="s-valkuil-tabel">Overige valkuilen</h2>
+<table id="tab-valkuilen" class="compact">
+  <caption>Symptoom, oorzaak en oplossing van bekende problemen</caption>
+  <tr><th style="width:28%">Symptoom</th><th style="width:36%">Oorzaak</th><th>Oplossing</th></tr>
+  <tr><td>Backend kan lokaal de database niet bereiken</td><td>De lokale PostgreSQL draait op poort <strong>5433</strong>, niet 5432 (5432 is bezet door het andere RWCrew.be-project).</td><td><code>DATABASE_URL</code> met poort 5433; <code>docker compose up -d db</code>.</td></tr>
+  <tr><td>Inloggen lijkt te lukken, maar je komt terug op het loginscherm</td><td>Frontend-adres en <code>NEXT_PUBLIC_API_URL</code> gebruiken een andere hostnaam (<code>localhost</code> vs <code>127.0.0.1</code>, of een tunneladres): de cookie hoort bij een andere site.</td><td>Zelfde hostnaam, of de proxy-instelling met lege <code>NEXT_PUBLIC_API_URL</code> (zie <a class="ref" href="#s-lokaal-telefoon"></a>).</td></tr>
+  <tr><td>Sporadisch uitgelogd bij meerdere tabbladen</td><td>Twee gelijktijdige vernieuwingen met hetzelfde (geroteerde) token.</td><td>Single-flight in <code>proxy.ts</code>/<code>session-refresh.ts</code> en <code>api.ts</code> behouden.</td></tr>
+  <tr><td>Rotatie van tokens faalt "willekeurig" in tests</td><td>Zonder <code>jti</code> zijn twee tokens in dezelfde seconde identiek.</td><td>De <code>jti</code> in <code>security.py</code> laten staan.</td></tr>
+  <tr><td>Verwijderen in tests laat wezen achter</td><td>SQLite negeert <code>ON DELETE CASCADE</code> zonder <code>PRAGMA foreign_keys=ON</code>.</td><td>Staat in <code>tests/conftest.py</code>; niet weghalen.</td></tr>
+  <tr><td>Menu-item doet niets</td><td><code>onSelect</code> op een Base UI-menu-item wordt nooit uitgevoerd.</td><td><code>onClick</code> gebruiken; zoek op <code>onSelect</code> in <code>src/components/</code>.</td></tr>
+  <tr><td>Typefout "asChild does not exist"</td><td>Base UI kent geen <code>asChild</code>.</td><td><code>render={&lt;Button … /&gt;}</code>.</td></tr>
+  <tr><td>Nieuwe instelling werkt lokaal, niet op de server</td><td>Ontbreekt in de <code>environment:</code>-lijst van <code>docker-compose.prod.yml</code>.</td><td>Zie <a class="ref" href="#s-nieuwe-instelling"></a>.</td></tr>
+  <tr><td>Gewijzigde <code>NEXT_PUBLIC_…</code>-waarde heeft geen effect</td><td>Wordt bij het bouwen ingebakken.</td><td>Frontend opnieuw bouwen (deploy), niet alleen herstarten.</td></tr>
+  <tr><td>Raspberry Pi krijgt "413" bij grote CSV's</td><td>Nginx-limiet van 1 MB; na certbot ontbreekt <code>client_max_body_size</code> in de 443-blokken.</td><td>Regel en <code>limit_req</code> ook in de 443-blokken zetten.</td></tr>
+  <tr><td>Half geschreven CSV-bestanden in TagScan</td><td>De scanner-app schrijft rechtstreeks naar <code>.csv</code>.</td><td>Eerst <code>naam.csv.tmp</code> schrijven en dan hernoemen; unieke bestandsnamen. Zelfde naam + zelfde inhoud = duplicaat; zelfde naam + andere inhoud = bewaard als <code>naam__&lt;hash&gt;.csv</code>.</td></tr>
+  <tr><td>API-sleutel van een scanner wordt geweigerd</td><td>Sleutel aangemaakt op een andere omgeving.</td><td>Een sleutel per omgeving aanmaken (test en productie apart).</td></tr>
+  <tr><td>Superbeheerder ziet een module niet</td><td>Superbeheerder krijgt geen automatische moduletoegang (bewust).</td><td>Zichzelf het vinkje geven in Manage Access.</td></tr>
+  <tr><td>Nieuw scherm verschijnt niet in de rechtenmatrix</td><td><code>sync_screens()</code> loopt alleen bij het opstarten.</td><td>Backend herstarten.</td></tr>
+  <tr><td>Kolom of tabel kwijt na een migratie</td><td>Autogenerate zag een hernoeming als verwijderen + aanmaken.</td><td>Migraties altijd nalezen; <code>rename_table</code> / <code>alter_column</code> gebruiken.</td></tr>
+  <tr><td>Module 10 toont "niet geconfigureerd"</td><td><code>APP_PUBLIC_URL</code> niet ingesteld.</td><td>Instelling invullen op de server (en in <code>docker-compose.prod.yml</code>).</td></tr>
+  <tr><td>iPad telt als pc in de inloghistoriek</td><td>iPadOS 13+ doet zich voor als Mac.</td><td>Bekende beperking; de bron (<code>pwa</code>) toont wel dat het de telefoon-app was.</td></tr>
+  <tr><td>Verwarring met een "RWCrew"-project in <code>c:\Fre Software\RWCrew.be</code></td><td>Ander, los project met dezelfde naam.</td><td>Negeren; het heeft niets met deze repository te maken.</td></tr>
+</table>

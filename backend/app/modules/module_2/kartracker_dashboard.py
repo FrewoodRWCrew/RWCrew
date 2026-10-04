@@ -16,6 +16,7 @@ from datetime import date, datetime, timedelta, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.timezone import BELGIAN_TZ, to_belgian
 from app.db.models.festival import Festival
 from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_action import KarTrackerKarAction
@@ -72,20 +73,22 @@ def _as_utc(moment: datetime) -> datetime:
 
 
 def _movements(db: Session, now: datetime) -> tuple[int, list[KarTrackerDashboardDailyMovementItem]]:
-    """The number of movements in the last 7 days, plus one bucket per UTC
-    day for the last 14 days (today included, oldest first, zero-filled).
+    """The number of movements in the last 7 days, plus one bucket per
+    Belgian calendar day for the last 14 days (today included, oldest first, zero-filled).
     Bucketing happens in Python so it works the same on SQLite and Postgres.
     """
-    today = now.date()
+    # Days are Belgian calendar days: the chart starts at Belgian midnight.
+    today = to_belgian(now).date()
     first_day = today - timedelta(days=MOVEMENT_CHART_DAYS - 1)
-    chart_start = datetime.combine(first_day, datetime.min.time(), tzinfo=timezone.utc)
+    chart_start = datetime.combine(first_day, datetime.min.time(), tzinfo=BELGIAN_TZ)
     tile_start = now - timedelta(days=MOVEMENT_TILE_DAYS)
 
     recorded = [
         _as_utc(moment)
         for moment in db.scalars(
             select(KarTrackerKarAction.recorded_at).where(
-                KarTrackerKarAction.recorded_at >= min(chart_start, tile_start)
+                # In UTC: SQLite (tests) drops a parameter's timezone.
+                KarTrackerKarAction.recorded_at >= min(chart_start, tile_start).astimezone(timezone.utc)
             )
         ).all()
     ]
@@ -96,7 +99,7 @@ def _movements(db: Session, now: datetime) -> tuple[int, list[KarTrackerDashboar
     # Chart: count per calendar day, then emit every day even when empty.
     counts_by_day: dict[date, int] = {}
     for moment in recorded:
-        day = moment.astimezone(timezone.utc).date()
+        day = to_belgian(moment).date()
         if first_day <= day <= today:
             counts_by_day[day] = counts_by_day.get(day, 0) + 1
     per_day = [

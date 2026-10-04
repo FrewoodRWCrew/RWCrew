@@ -1,0 +1,345 @@
+<!-- Inleiding: hoofdstuk 1 (leeswijzer) en hoofdstuk 2 (basisbegrippen). -->
+
+<section class="deel" id="deel-inleiding" data-toc="Inleiding">
+  <div class="deel-label">Inleiding</div>
+  <h1>Voor je begint</h1>
+  <div class="streep"></div>
+  <p>Waarom deze handleiding bestaat, hoe je ze leest en de basisbegrippen die je nodig hebt om de rest te volgen, ook als je zelf nooit een webapplicatie hebt gebouwd.</p>
+  <div class="deel-lezers">Doelgroep: iedereen</div>
+</section>
+
+<h1 class="hoofdstuk" id="h-leeswijzer">Hoe lees je deze handleiding</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew is door één persoon gebouwd en wordt voortaan door een team onderhouden. Deze handleiding legt
+vast wat tot nu toe vooral in één hoofd zat: hoe de applicatie in elkaar zit, met welke tools ze gemaakt
+is, hoe je ze lokaal opstart, hoe ze op de server terechtkomt en welke afspraken er in de code gelden.
+Ze is geschreven voor IT-minded lezers die niet allemaal ontwikkelaar zijn: elk technisch begrip wordt
+uitgelegd voordat het gebruikt wordt.
+</div>
+
+<h2 id="s-waarom">Waarom deze handleiding</h2>
+<p>Een applicatie die door één persoon gebouwd is, heeft een groot risico: de kennis over <em>waarom</em>
+iets zo gebouwd is, zit niet in de code maar in het hoofd van die persoon. Zolang die persoon beschikbaar
+is, is dat geen probleem. Zodra meerdere mensen de applicatie moeten beheren, wordt het dat wel. Dan
+moet iemand anders een fout kunnen oplossen, een nieuwe gebruiker kunnen toevoegen of een nieuwe module
+kunnen bouwen zonder telkens te moeten vragen hoe het zit.</p>
+<p>Deze handleiding heeft daarom drie doelen:</p>
+<ol>
+  <li><strong>Overzicht geven</strong>: in een paar uur lezen moet je begrijpen uit welke onderdelen
+  RWCrew bestaat, hoe die met elkaar praten en waar ze draaien.</li>
+  <li><strong>Keuzes verklaren</strong>: bij elke technologie en elk patroon staat waarom het gekozen is.
+  Zo kun je later een bewuste beslissing nemen om iets te veranderen, in plaats van per ongeluk een
+  zorgvuldig opgeloste valkuil opnieuw open te breken.</li>
+  <li><strong>Zelfstandig laten werken</strong>: met de recepten in <a class="ref" href="#h-recepten"></a> en de
+  beheertaken in <a class="ref" href="#h-beheer"></a> kun je de meest voorkomende taken uitvoeren zonder hulp.</li>
+</ol>
+
+<h2 id="s-opbouw">Opbouw van het document</h2>
+<p>Het document is opgedeeld in vier delen, die van algemeen naar specifiek gaan:</p>
+<table>
+  <caption>De vier delen van deze handleiding</caption>
+  <tr><th style="width:22%">Deel</th><th>Inhoud</th><th style="width:24%">Voor wie</th></tr>
+  <tr><td><strong>Inleiding</strong></td><td>Deze leeswijzer en een uitleg van de basisbegrippen van webapplicaties.</td><td>Iedereen</td></tr>
+  <tr><td><strong>A. Opzet en architectuur</strong></td><td>Wat RWCrew doet, uit welke onderdelen het bestaat, op welke omgevingen het draait, hoe een nieuwe versie online komt en hoe beveiliging en toegangsrechten werken.</td><td>Iedereen</td></tr>
+  <tr><td><strong>B. Gebruikte tools</strong></td><td>Elke technologie, bibliotheek en dienst die RWCrew gebruikt: wat ze doet en waarom ze gekozen is.</td><td>Iedereen; details voor ontwikkelaars</td></tr>
+  <tr><td><strong>C. Hoe de applicatie ontwikkeld is</strong></td><td>De code zelf: mappenstructuur, backend, frontend, telefoon-app, een volledige doorloop van één verzoek, recepten, codeerafspraken, samenwerken en valkuilen.</td><td>Ontwikkelaars</td></tr>
+  <tr><td><strong>D. Dagelijks beheer</strong></td><td>Taken die je zonder programmeren uitvoert: gebruikers en rechten, stamgegevens, servercontrole, data bekijken, wat te doen bij een storing.</td><td>Beheerders</td></tr>
+  <tr><td><strong>Bijlagen</strong></td><td>Woordenlijst, overzicht van alle schermen en rechten, en hoe je deze handleiding zelf bijwerkt.</td><td>Iedereen</td></tr>
+</table>
+
+<h2 id="s-andere-bronnen">Andere bronnen van informatie</h2>
+<p>Deze handleiding is het startpunt, maar niet de enige documentatie. De volgende bronnen bestaan al in
+de repository en blijven geldig:</p>
+<table>
+  <caption>Bestaande documentatie in de repository</caption>
+  <tr><th style="width:38%">Bestand</th><th>Wat staat erin</th></tr>
+  <tr><td><code>CLAUDE.md</code></td><td>Het "werkgeheugen" van het project: architectuur, valkuilen en afspraken in compacte vorm. Wordt automatisch gelezen door de AI-assistent Claude Code (zie <a class="ref" href="#s-tool-claude"></a>), maar is ook voor mensen de beknoptste samenvatting.</td></tr>
+  <tr><td><code>README.md</code>, <code>backend/README.md</code>, <code>frontend/README.md</code>, <code>deploy/README.md</code></td><td>Korte opstartinstructies per onderdeel.</td></tr>
+  <tr><td><code>docs/module-custom-roles-pattern.md</code></td><td>Stap-voor-stap gids om het rollen- en rechtensysteem in een module te bouwen (zie <a class="ref" href="#s-rechten-per-scherm"></a>).</td></tr>
+  <tr><td><code>docs/deploying-to-hostinger.pdf</code></td><td>De volledige installatie van de server (VPS), Docker, Nginx, HTTPS en GitHub Actions.</td></tr>
+  <tr><td><code>docs/tagscan-raspi-setup-guide.pdf</code>, <code>docs/tagscan-raspi-to-vps-beginner-guide.pdf</code></td><td>Installatie van de Raspberry Pi die TagScan-bestanden doorstuurt.</td></tr>
+  <tr><td><code>docs/RW-Crew-Codebase-Guide.pdf</code></td><td>Een oudere, Engelstalige rondleiding door de code (augustus 2026). Nuttig voor de basisprincipes, maar van vóór de server, de telefoon-app en modules 8 tot 10.</td></tr>
+  <tr><td>Commentaar in de code zelf</td><td>Elk bestand is rijkelijk becommentarieerd in gewone taal (zie <a class="ref" href="#s-conv-commentaar"></a>). Het commentaar bovenaan een bestand vertelt meestal waarom het bestaat.</td></tr>
+</table>
+
+<div class="kader letop"><span class="kader-titel"></span>
+Er bestaat op dezelfde ontwikkel-pc een <strong>ander, los project</strong> dat ook "RWCrew" heet: een
+SaaS-applicatie bij Combell (map <code>c:\Fre Software\RWCrew.be</code>) met modules als Kar Tracker,
+Kar Scanner en Walkies. Dat project heeft niets met deze repository te maken. Deze handleiding gaat
+uitsluitend over de repository <code>RWCrew</code> op GitHub, die draait op <code>rwcrew.eu</code>.
+</div>
+
+<h2 id="s-actualiteit">Actualiteit van dit document</h2>
+<p>Software verandert voortdurend; documentatie veroudert. Deze versie beschrijft de stand van de code op
+3 oktober 2026 (commit <code>97cdc36</code> op de branch <code>develop</code>). Wanneer je iets verandert
+dat in dit document beschreven staat, pas dan ook de handleiding aan. Dat is eenvoudig: de bron is HTML
+in dezelfde repository en de PDF wordt met één commando opnieuw gemaakt (zie <a class="ref" href="#bijlage-bijwerken"></a>).
+Spreek in het team af dat een wijziging pas "klaar" is als ook de documentatie klopt (zie <a class="ref" href="#s-definition-of-done"></a>).</p>
+
+<!-- ============================================================ -->
+
+<h1 class="hoofdstuk" id="h-basis">Basisbegrippen: hoe een webapplicatie werkt</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Een webapplicatie bestaat uit drie lagen: de <strong>browser</strong> van de gebruiker (wat je ziet), een
+<strong>server</strong> die de regels toepast (wie mag wat, wat wordt bewaard) en een <strong>database</strong>
+waarin alle gegevens blijven staan. De lagen praten met elkaar via vraag-en-antwoordberichten over het
+internet. Dit hoofdstuk legt die begrippen uit, samen met wat je moet weten over inloggen, beveiliging,
+broncode, Git en het online zetten van een nieuwe versie. Als je dit al kent, kun je meteen doorgaan
+naar <a class="ref" href="#h-wat-is-rwcrew"></a>.
+</div>
+
+<h2 id="s-drie-lagen">Drie lagen: browser, server, database</h2>
+<p>Bijna elke moderne zakelijke applicatie, en zeker RWCrew, volgt dezelfde basisopbouw:</p>
+<ul>
+  <li><strong>De browser</strong> (Edge, Chrome, Safari) op de pc of telefoon van de gebruiker toont schermen,
+  knoppen en formulieren. De browser zelf bewaart geen bedrijfsgegevens: hij vraagt ze op wanneer hij
+  ze nodig heeft en vergeet ze weer zodra je het venster sluit.</li>
+  <li><strong>De server</strong> is een computer die altijd aan staat, ergens in een datacenter. Op die
+  server draaien programma's die verzoeken van browsers ontvangen, controleren of de gebruiker het
+  verzoek mag doen, de juiste gegevens ophalen of wegschrijven en een antwoord terugsturen.</li>
+  <li><strong>De database</strong> is het geheugen van de applicatie: een programma dat gegevens netjes
+  in tabellen bewaart, ook als de server herstart. Alleen de server praat met de database; een browser
+  kan nooit rechtstreeks in de database kijken.</li>
+</ul>
+
+<figure class="diagram" id="fig-drie-lagen">
+<svg viewBox="0 0 660 190" xmlns="http://www.w3.org/2000/svg">
+  <rect class="box-blauw" x="10" y="40" width="170" height="100" rx="8"/>
+  <text x="95" y="72" text-anchor="middle" class="t-titel">Browser</text>
+  <text x="95" y="92" text-anchor="middle" class="t-klein">pc of telefoon</text>
+  <text x="95" y="108" text-anchor="middle" class="t-klein">toont schermen</text>
+  <text x="95" y="124" text-anchor="middle" class="t-klein">bewaart niets blijvend</text>
+  <rect class="box" x="245" y="40" width="170" height="100" rx="8"/>
+  <text x="330" y="72" text-anchor="middle" class="t-titel">Server</text>
+  <text x="330" y="92" text-anchor="middle" class="t-klein">in een datacenter</text>
+  <text x="330" y="108" text-anchor="middle" class="t-klein">past de regels toe:</text>
+  <text x="330" y="124" text-anchor="middle" class="t-klein">wie mag wat?</text>
+  <rect class="box-oranje" x="480" y="40" width="170" height="100" rx="8"/>
+  <text x="565" y="72" text-anchor="middle" class="t-titel">Database</text>
+  <text x="565" y="92" text-anchor="middle" class="t-klein">tabellen met gegevens</text>
+  <text x="565" y="108" text-anchor="middle" class="t-klein">blijft bewaard,</text>
+  <text x="565" y="124" text-anchor="middle" class="t-klein">ook na een herstart</text>
+  <path class="pijl" d="M182,78 L243,78"/>
+  <path class="pijl" d="M243,104 L182,104"/>
+  <text x="212" y="70" text-anchor="middle" class="t-mini">vraag</text>
+  <text x="212" y="120" text-anchor="middle" class="t-mini">antwoord</text>
+  <path class="pijl" d="M417,78 L478,78"/>
+  <path class="pijl" d="M478,104 L417,104"/>
+  <text x="447" y="70" text-anchor="middle" class="t-mini">SQL</text>
+  <text x="447" y="120" text-anchor="middle" class="t-mini">rijen</text>
+  <text x="212" y="170" text-anchor="middle" class="t-mini">over het internet (HTTPS)</text>
+  <text x="447" y="170" text-anchor="middle" class="t-mini">alleen binnen de server</text>
+</svg>
+<figcaption>De drie lagen van een webapplicatie. De browser praat nooit rechtstreeks met de database.</figcaption>
+</figure>
+
+<div class="kader analogie"><span class="kader-titel"></span>
+Denk aan een restaurant. De <strong>browser</strong> is de klant aan tafel met de menukaart. De
+<strong>server</strong> is de ober en de keuken: die neemt de bestelling op, controleert of het gerecht
+bestaat en of de klant het mag bestellen, en brengt het bord. De <strong>database</strong> is de
+voorraadkamer. Een klant loopt nooit zelf de voorraadkamer in.
+</div>
+
+<h2 id="s-http">Vraag en antwoord: HTTP</h2>
+<p>Browser en server praten met elkaar via <strong>HTTP</strong> (<em>HyperText Transfer Protocol</em>), de
+"taal" van het web. Elk gesprek bestaat uit precies één <strong>verzoek</strong> (<em>request</em>) van de
+browser en één <strong>antwoord</strong> (<em>response</em>) van de server. Een verzoek bevat:</p>
+<ul>
+  <li>een <strong>adres</strong> (URL), bijvoorbeeld <code>https://rwcrew.eu/api/modules/module-3/intervention-requests</code>;</li>
+  <li>een <strong>methode</strong> die zegt wat je wilt doen (zie <a class="ref" href="#tab-http-methodes"></a>);</li>
+  <li>eventueel <strong>gegevens</strong>, bijvoorbeeld de ingevulde velden van een formulier;</li>
+  <li><strong>cookies</strong>: kleine stukjes tekst die de browser automatisch meestuurt, bijvoorbeeld
+  het bewijs dat je ingelogd bent (zie <a class="ref" href="#s-inloggen-basis"></a>).</li>
+</ul>
+
+<table id="tab-http-methodes">
+  <caption>De vier HTTP-methodes die RWCrew gebruikt</caption>
+  <tr><th style="width:16%">Methode</th><th style="width:30%">Betekenis</th><th>Voorbeeld in RWCrew</th></tr>
+  <tr><td><code>GET</code></td><td>Gegevens opvragen (leest alleen)</td><td>De lijst van interventie-aanvragen ophalen</td></tr>
+  <tr><td><code>POST</code></td><td>Iets nieuws aanmaken of een actie starten</td><td>Een nieuwe aanvraag indienen, inloggen</td></tr>
+  <tr><td><code>PUT</code> / <code>PATCH</code></td><td>Iets bestaands wijzigen</td><td>De status van een aanvraag aanpassen</td></tr>
+  <tr><td><code>DELETE</code></td><td>Iets verwijderen</td><td>Een rol verwijderen</td></tr>
+</table>
+
+<p>Elk antwoord heeft een <strong>statuscode</strong>: een getal dat in één oogopslag zegt hoe het
+verzoek afgelopen is. Je ziet deze codes terug in foutmeldingen en in de ontwikkelaarstools van de
+browser, dus het loont om de belangrijkste te kennen:</p>
+
+<table id="tab-statuscodes">
+  <caption>Veelvoorkomende HTTP-statuscodes</caption>
+  <tr><th style="width:12%">Code</th><th style="width:22%">Naam</th><th>Betekenis in RWCrew</th></tr>
+  <tr><td><code>200</code></td><td>OK</td><td>Alles in orde; het antwoord bevat de gevraagde gegevens.</td></tr>
+  <tr><td><code>201</code></td><td>Created</td><td>Er is iets nieuws aangemaakt (bv. een aanvraag).</td></tr>
+  <tr><td><code>204</code></td><td>No Content</td><td>Gelukt, maar er is niets terug te sturen (bv. na verwijderen).</td></tr>
+  <tr><td><code>400</code></td><td>Bad Request</td><td>De gegevens kloppen niet (bv. een rol toekennen aan iemand zonder moduletoegang).</td></tr>
+  <tr><td><code>401</code></td><td>Unauthorized</td><td>Je bent niet (meer) ingelogd. Na 15 minuten verloopt het toegangsbewijs; de app vernieuwt het dan automatisch (zie <a class="ref" href="#s-sessies"></a>).</td></tr>
+  <tr><td><code>403</code></td><td>Forbidden</td><td>Je bent ingelogd, maar je hebt geen recht op deze module of dit scherm.</td></tr>
+  <tr><td><code>404</code></td><td>Not Found</td><td>Het gevraagde bestaat niet (of je mag niet weten dat het bestaat, zoals een ploeg van iemand anders in Altsien Select).</td></tr>
+  <tr><td><code>409</code> / <code>422</code></td><td>Conflict / Unprocessable</td><td>De invoer botst met bestaande gegevens of heeft een verkeerd formaat.</td></tr>
+  <tr><td><code>500</code></td><td>Internal Server Error</td><td>Er ging iets mis in de server zelf: een fout in de code of een onbereikbare database. Altijd onderzoeken.</td></tr>
+</table>
+
+<h2 id="s-frontend-backend">Frontend en backend</h2>
+<p>De software die op de server draait, wordt in twee grote stukken verdeeld:</p>
+<ul>
+  <li>De <strong>frontend</strong> is alles wat met <em>tonen</em> te maken heeft: de schermen, menu's,
+  tabellen en formulieren. In RWCrew is dat een programma geschreven met <strong>Next.js</strong>
+  (JavaScript/TypeScript). Het maakt de webpagina's die naar de browser gaan.</li>
+  <li>De <strong>backend</strong> is alles wat met <em>regels en gegevens</em> te maken heeft: wie mag
+  inloggen, wie mag wat zien, wat wordt er in de database bewaard, welke mail wordt verstuurd. In RWCrew
+  is dat een programma geschreven met <strong>FastAPI</strong> (Python).</li>
+</ul>
+<p>Die scheiding is bewust. De frontend mag nooit zelf beslissen of iemand iets mag. Wie technisch
+handig is, kan in zijn browser alles aanpassen wat de frontend toont, inclusief verborgen knoppen
+zichtbaar maken. Daarom controleert de <strong>backend bij elk verzoek opnieuw</strong> of de gebruiker
+het recht heeft. Een verborgen knop in de frontend is gebruiksgemak; de echte beveiliging zit altijd in
+de backend.</p>
+
+<h2 id="s-api-json">API, endpoints en JSON</h2>
+<p>De backend biedt een <strong>API</strong> aan (<em>Application Programming Interface</em>): een vaste
+lijst van adressen waarop de frontend vragen kan stellen. Elk zo'n adres, samen met zijn methode, heet
+een <strong>endpoint</strong>. Voorbeelden uit RWCrew:</p>
+<ul>
+  <li><code>POST /api/auth/login</code>: inloggen met e-mailadres en wachtwoord;</li>
+  <li><code>GET /api/auth/me</code>: "wie ben ik en welke modules mag ik openen?";</li>
+  <li><code>GET /api/modules/module-3/intervention-requests</code>: de lijst van interventie-aanvragen.</li>
+</ul>
+<p>De gegevens die heen en weer gaan, staan in <strong>JSON</strong>-formaat (<em>JavaScript Object
+Notation</em>): een eenvoudig, leesbaar tekstformaat van namen en waarden. Zo ziet het antwoord van
+<code>/api/auth/me</code> er bijvoorbeeld uit:</p>
+<figure class="code"><span class="bestand">Antwoord van GET /api/auth/me (JSON)</span><pre>{
+  <span class="s">"id"</span>: 1,
+  <span class="s">"email"</span>: <span class="s">"beheerder@voorbeeld.be"</span>,
+  <span class="s">"display_name"</span>: <span class="s">"Beheerder"</span>,
+  <span class="s">"is_super_admin"</span>: true,
+  <span class="s">"language_preference"</span>: <span class="s">"nl"</span>,
+  <span class="s">"accessible_module_keys"</span>: [<span class="s">"module-2"</span>, <span class="s">"module-3"</span>, <span class="s">"module-9"</span>]
+}</pre></figure>
+
+<div class="kader tip"><span class="kader-titel"></span>
+De backend van RWCrew documenteert zichzelf. Als de backend lokaal draait, opent
+<code>http://localhost:8020/docs</code> een interactieve pagina met <em>alle</em> endpoints, de gegevens
+die ze verwachten en die ze teruggeven. Je kunt er ook meteen verzoeken mee uitproberen.
+</div>
+
+<h2 id="s-database-basis">Database, tabellen en migraties</h2>
+<p>RWCrew gebruikt <strong>PostgreSQL</strong>, een veelgebruikte, gratis en zeer betrouwbare
+<em>relationele</em> database. "Relationeel" betekent dat gegevens in <strong>tabellen</strong> staan
+(zoals werkbladen in Excel) die naar elkaar verwijzen:</p>
+<ul>
+  <li>Een <strong>tabel</strong> bevat één soort gegevens, bv. <code>Landing_users</code> (gebruikers) of
+  <code>InterventionRequests_request</code> (aanvragen).</li>
+  <li>Een <strong>rij</strong> is één exemplaar (één gebruiker, één aanvraag); een <strong>kolom</strong>
+  is één eigenschap (e-mailadres, aanmaakdatum).</li>
+  <li>Elke rij heeft een unieke <strong>sleutel</strong> (<code>id</code>). Een kolom die naar de sleutel
+  van een andere tabel verwijst, heet een <strong>vreemde sleutel</strong> (<em>foreign key</em>). Zo
+  verwijst een aanvraag via <code>team_id</code> naar een ploeg in <code>MasterData_team</code>.</li>
+</ul>
+<p>De taal waarmee je een database bevraagt, heet <strong>SQL</strong>. In RWCrew schrijf je zelden
+rechtstreeks SQL: de bibliotheek <strong>SQLAlchemy</strong> vertaalt Python-code naar SQL (zie
+<a class="ref" href="#s-backend-modellen"></a>).</p>
+<p>Wanneer de structuur van de database verandert, bijvoorbeeld een nieuwe tabel of een extra kolom,
+gebeurt dat via een <strong>migratie</strong>: een klein script dat de wijziging beschrijft (en hoe je ze
+terugdraait). Migraties worden genummerd en in volgorde uitgevoerd, op elke omgeving. Zo heeft de
+database lokaal, op test en op productie altijd exact dezelfde structuur, zonder dat iemand met de
+hand tabellen aanmaakt. RWCrew gebruikt daarvoor de tool <strong>Alembic</strong> (zie <a class="ref" href="#s-migraties"></a>).</p>
+
+<div class="kader analogie"><span class="kader-titel"></span>
+Een migratie is als een verbouwingsplan voor een huis: "voeg een raam toe in de keuken". Elk plan bouwt
+voort op het vorige. Door alle plannen in volgorde uit te voeren, ziet elk huis (elke omgeving) er
+uiteindelijk hetzelfde uit, en de bewoners (de gegevens) blijven gewoon wonen tijdens de verbouwing.
+</div>
+
+<h2 id="s-inloggen-basis">Inloggen: wachtwoorden, cookies en tokens</h2>
+<p>HTTP heeft geen geheugen: elk verzoek staat op zichzelf. De server weet dus niet vanzelf dat het
+verzoek van daarnet en dat van nu van dezelfde persoon komen. Daarom werkt inloggen zo:</p>
+<ol class="stappen">
+  <li>Je typt je e-mailadres en wachtwoord. De backend vergelijkt het wachtwoord met de opgeslagen
+  <strong>hash</strong>: een onomkeerbare "vingerafdruk" van het wachtwoord. Het wachtwoord zelf wordt
+  nooit bewaard.</li>
+  <li>Klopt het, dan maakt de backend een <strong>token</strong>: een digitaal ondertekend bewijsje met
+  daarin "dit is gebruiker 12, geldig tot 14u15". Niemand kan dat bewijsje vervalsen zonder de geheime
+  sleutel van de server.</li>
+  <li>De backend geeft het token mee als <strong>cookie</strong>. De browser bewaart die cookie en stuurt
+  hem vanaf dan automatisch mee met elk verzoek naar dezelfde website.</li>
+  <li>Bij elk volgend verzoek leest de backend de cookie, controleert de handtekening en weet zo wie je bent.</li>
+</ol>
+<p>RWCrew gebruikt twee tokens: een kortlevend <strong>toegangstoken</strong> (15 minuten) en een
+<strong>vernieuwingstoken</strong> dat de sessie tot maximaal 6 uur na het inloggen verlengt. Hoe dat
+precies werkt en waarom, staat in <a class="ref" href="#s-sessies"></a>. Het type token heet
+<strong>JWT</strong> (<em>JSON Web Token</em>), een open standaard.</p>
+
+<h2 id="s-https-domein">Domeinnamen, HTTPS en de reverse proxy</h2>
+<p>Een <strong>domeinnaam</strong> zoals <code>rwcrew.eu</code> is een leesbare naam voor het
+IP-adres van een server. Het systeem dat namen naar adressen vertaalt, heet <strong>DNS</strong>. Voor
+RWCrew wordt DNS beheerd bij Cloudflare.</p>
+<p><strong>HTTPS</strong> is HTTP met versleuteling: niemand onderweg (bv. op een openbaar wifi-netwerk)
+kan meelezen of iets aanpassen. Daarvoor heeft de server een <strong>certificaat</strong> nodig. RWCrew
+gebruikt gratis certificaten van <strong>Let's Encrypt</strong>, die automatisch vernieuwd worden door
+het programma <strong>certbot</strong>. Moderne browsers geven sommige functies alleen vrij op HTTPS, zoals
+de <strong>camera</strong> (voor het scannen van QR-codes) en <strong>GPS</strong>. Dat speelt een rol bij de
+telefoon-app (zie <a class="ref" href="#h-telefoon"></a>).</p>
+<p>Op de server staat een <strong>reverse proxy</strong> (<strong>Nginx</strong>) als portier vooraan.
+Alle verkeer van buitenaf komt eerst bij Nginx binnen. Nginx regelt de versleuteling en stuurt elk
+verzoek door naar het juiste programma: adressen die met <code>/api/</code> beginnen naar de backend,
+al de rest naar de frontend.</p>
+
+<h2 id="s-git-basis">Broncode, Git en GitHub</h2>
+<p>De <strong>broncode</strong> is de tekst die ontwikkelaars schrijven en waaruit de applicatie gebouwd
+wordt. Ze staat in een <strong>repository</strong> ("repo"): een map met alle bestanden plus hun volledige
+geschiedenis. Die geschiedenis wordt bijgehouden door <strong>Git</strong>. De centrale kopie van de
+repository staat op <strong>GitHub</strong>.</p>
+<table>
+  <caption>Basisbegrippen van Git</caption>
+  <tr><th style="width:20%">Begrip</th><th>Uitleg</th></tr>
+  <tr><td><strong>Commit</strong></td><td>Een bewaarde momentopname van wijzigingen, met een korte beschrijving ("Mailinglijst toegevoegd aan module 3"). Elke commit heeft een unieke code zoals <code>97cdc36</code>.</td></tr>
+  <tr><td><strong>Branch</strong></td><td>Een aparte lijn van commits. Je kunt op een branch werken zonder anderen te storen. RWCrew heeft twee vaste branches: <code>main</code> (= productie) en <code>develop</code> (= test).</td></tr>
+  <tr><td><strong>Push / pull</strong></td><td>Je eigen commits naar GitHub sturen (<em>push</em>) of andermans commits ophalen (<em>pull</em>).</td></tr>
+  <tr><td><strong>Merge</strong></td><td>De commits van één branch samenvoegen in een andere, bv. <code>develop</code> in <code>main</code> om een nieuwe versie naar productie te brengen.</td></tr>
+  <tr><td><strong>Pull request (PR)</strong></td><td>Een voorstel op GitHub om een branch samen te voegen, waar collega's de wijzigingen kunnen nalezen en goedkeuren voordat ze doorgaan.</td></tr>
+  <tr><td><strong>Clone</strong></td><td>Een volledige kopie van de repository op je eigen pc maken.</td></tr>
+</table>
+
+<h2 id="s-deploy-basis">Van code naar draaiende site: bouwen, containers en deployen</h2>
+<p>Broncode kan niet zomaar op een server "staan". Ze moet eerst <strong>gebouwd</strong> worden (de
+frontend wordt omgezet naar geoptimaliseerde bestanden) en dan <strong>gestart</strong> worden met de
+juiste instellingen. Het hele proces om een nieuwe versie live te zetten, heet <strong>deployen</strong>.</p>
+<p>RWCrew gebruikt daarvoor <strong>Docker</strong>. Docker verpakt een programma samen met alles wat het
+nodig heeft (de juiste Python- of Node.js-versie, bibliotheken, instellingen) in een
+<strong>container</strong>. Een container draait overal precies hetzelfde: op een ontwikkel-pc en op de
+server. Het recept voor een container staat in een <strong>Dockerfile</strong>; welke containers samen
+een applicatie vormen, staat in een <strong>docker-compose</strong>-bestand.</p>
+<div class="kader analogie"><span class="kader-titel"></span>
+Een container is als een zeecontainer: wat erin zit maakt voor de haven (de server) niet uit, de afmetingen
+en de manier van stapelen zijn altijd hetzelfde. Daardoor maakt het niet uit of een programma Python of
+Node.js nodig heeft. De server hoeft alleen Docker te kennen.
+</div>
+<p>Het automatisch bouwen en deployen bij elke wijziging heet <strong>CI/CD</strong> (<em>Continuous
+Integration / Continuous Deployment</em>). Bij RWCrew doet <strong>GitHub Actions</strong> dat: zodra er
+een commit op <code>develop</code> of <code>main</code> binnenkomt, logt GitHub in op de server en zet het
+de nieuwe versie live (zie <a class="ref" href="#h-deployment"></a>).</p>
+
+<h2 id="s-omgevingen-basis">Omgevingen: lokaal, test en productie</h2>
+<p>Dezelfde applicatie draait op meerdere plaatsen, elk met een eigen database en eigen instellingen.
+Zo'n plaats heet een <strong>omgeving</strong>:</p>
+<ul>
+  <li><strong>Lokaal</strong> (<em>development</em>): op de pc van een ontwikkelaar, om te bouwen en te testen.
+  Gegevens zijn proefgegevens.</li>
+  <li><strong>Test</strong> (<code>test.rwcrew.eu</code>): een volledige kopie op de server, waar nieuwe
+  functies eerst door echte gebruikers uitgeprobeerd worden. Je herkent ze aan een gekleurde banner "TEST".</li>
+  <li><strong>Productie</strong> (<code>rwcrew.eu</code>): de echte applicatie met de echte gegevens.</li>
+</ul>
+<p>Instellingen die per omgeving verschillen (databasewachtwoord, geheime sleutels, mailinstellingen) staan
+niet in de code maar in een <strong>omgevingsbestand</strong> (<code>.env</code>). Die bestanden staan
+nooit in Git, omdat ze geheimen bevatten.</p>
+
+<h2 id="s-pwa-basis">Progressive Web App (PWA)</h2>
+<p>Een <strong>Progressive Web App</strong> is een website die zich op een telefoon gedraagt als een app:
+je zet ze via "Zet op beginscherm" met een eigen icoon op je telefoon, en ze opent schermvullend zonder
+adresbalk. Er is geen App Store of Play Store nodig, en een nieuwe versie van de website is meteen ook
+een nieuwe versie van de app. RWCrew gebruikt dit voor de telefoonversie onder het adres <code>/m</code>
+(zie <a class="ref" href="#h-telefoon"></a>).</p>

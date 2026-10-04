@@ -19,6 +19,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.mail import MailAttachment, OutgoingMail, send_email
+from app.core.timezone import to_belgian
 from app.db.models.intervention_request import InterventionRequest
 from app.db.models.intervention_requests_mailing_recipient import InterventionRequestsMailingRecipient
 from app.modules.module_3.intervention_request_pdf import build_delivery_note_pdf
@@ -32,7 +33,8 @@ REQUESTS_SCREEN_PATH = "/nl/modules/module-3/intervention-requests"
 
 def _format_datetime(value) -> str | None:
     """dd-mm-yyyy HH:mm, the same format as the PDF and the web screens."""
-    return value.strftime("%d-%m-%Y %H:%M") if value is not None else None
+    # Always shown in Belgian time, whatever offset the value carries.
+    return to_belgian(value).strftime("%d-%m-%Y %H:%M") if value is not None else None
 
 
 def build_new_request_mail(db: Session, request: InterventionRequest) -> OutgoingMail | None:
