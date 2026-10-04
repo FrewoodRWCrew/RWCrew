@@ -320,6 +320,11 @@ tests for core logic only).
     filenames. The backend dedupes by filename + content: same name and bytes → `duplicate`; same
     name, *different* bytes → stored as `name__<sha256-12>.csv` (never dropped).
   - A scanner's API key only works on the environment (test vs production) it was generated on.
+  - **Routing by the CSV's `Mode` column** (`TEST`/`PROD`): the Pi may post to either environment; when `Mode`
+    names the other one, `module_1/intake_forward.py` re-POSTs the file to that environment's intake (with an
+    `X-TagScan-Forwarded: 1` header, so it's never bounced back). Needs `TAGSCAN_ENVIRONMENT`,
+    `TAGSCAN_FORWARD_URL` and `TAGSCAN_FORWARD_API_KEY` (a key made on the *other* environment) in each `.env`.
+    Empty/unknown `Mode` or no `TAGSCAN_ENVIRONMENT` (local dev) = stored where it arrived.
 - Documentation style for this project: comment every logical block/statement in plain language
   (not literally every line, not just top-level docstrings) — see any file under `app/` or `src/`
   for the expected density. This applies to backend and frontend code we write; generated files

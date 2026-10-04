@@ -46,6 +46,12 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       TAGSCAN_SOURCE_DIR: /app/TagScans
+      # TagScan routing by the CSV's "Mode" column: this environment's own
+      # name, and the OTHER environment's intake URL + a scanner key made
+      # there (see backend/app/modules/module_1/intake_forward.py).
+      TAGSCAN_ENVIRONMENT: ${TAGSCAN_ENVIRONMENT:-}
+      TAGSCAN_FORWARD_URL: ${TAGSCAN_FORWARD_URL:-}
+      TAGSCAN_FORWARD_API_KEY: ${TAGSCAN_FORWARD_API_KEY:-}
       # Outgoing email via Resend (backend/app/core/mail.py), e.g. the
       # Intervention Requests "new request" mail. Empty RESEND_API_KEY or
       # MAIL_FROM = mails are skipped (only a log line), never an error.

@@ -206,3 +206,186 @@ def test_upload_rejects_a_filename_trying_to_escape_the_intake_folder(
     assert response.json()["filename"] == "evil.csv"
     assert (source_dir / "Unreaded Tags" / "evil.csv").exists()
     assert not (source_dir.parent / "evil.csv").exists()
+
+
+# --- Routing by the CSV's "Mode" column (test <-> production) ---------------
+# See app/modules/module_1/intake_forward.py. The other environment is never
+# really called: httpx.post is replaced by a fake that records the call.
+
+PROD_CSV = b"Scanner,Mode,EPC\nScan-01,PROD,ABC\n"
+TEST_CSV = b"Scanner,Mode,EPC\nScan-01,test,ABC\n"
+
+
+class _FakeResponse:
+    def __init__(self, status_code: int, body: dict) -> None:
+        self.status_code = status_code
+        self.is_success = 200 <= status_code < 300
+        self._body = body
+        self.text = str(body)
+
+    def json(self) -> dict:
+        return self._body
+
+
+@pytest.fixture()
+def routing(monkeypatch: pytest.MonkeyPatch) -> list[dict]:
+    """This backend acts as "test", forwarding to a fake production; returns
+    the list of forwarded calls.
+    """
+    monkeypatch.setattr(settings, "tagscan_environment", "test")
+    monkeypatch.setattr(settings, "tagscan_forward_url", "https://prod.example/api/public/tagscan-intake")
+    monkeypatch.setattr(settings, "tagscan_forward_api_key", "module1_7_prod-secret")
+    calls: list[dict] = []
+
+    def fake_post(url: str, **kwargs) -> _FakeResponse:
+        calls.append({"url": url, **kwargs})
+        filename = kwargs["files"]["file"][0]
+        return _FakeResponse(201, {"status": "received", "filename": filename})
+
+    monkeypatch.setattr("app.modules.module_1.intake_forward.httpx.post", fake_post)
+    return calls
+
+
+def test_csv_for_the_other_environment_is_forwarded_not_stored(
+    client: TestClient, db_session: Session, source_dir: Path, routing: list[dict]
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=PROD_CSV)
+
+    assert response.status_code == 201
+    assert response.json() == {"status": "forwarded", "filename": "scan.csv", "environment": "production"}
+    assert len(routing) == 1
+    assert routing[0]["url"] == "https://prod.example/api/public/tagscan-intake"
+    assert routing[0]["headers"] == {"X-API-Key": "module1_7_prod-secret", "X-TagScan-Forwarded": "1"}
+    assert routing[0]["files"]["file"][1] == PROD_CSV
+    assert not (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_csv_for_this_environment_is_stored_here(
+    client: TestClient, db_session: Session, source_dir: Path, routing: list[dict]
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=TEST_CSV)
+
+    assert response.json() == {"status": "received", "filename": "scan.csv"}
+    assert routing == []
+    assert (source_dir / "Unreaded Tags" / "scan.csv").read_bytes() == TEST_CSV
+
+
+@pytest.mark.parametrize(
+    "content",
+    [
+        b"Scanner,EPC\nScan-01,ABC\n",  # no Mode column (older CSV)
+        b"Scanner,Mode,EPC\nScan-01,,ABC\n",  # Mode empty
+        b"Scanner,Mode,EPC\nScan-01,staging,ABC\n",  # unknown Mode
+    ],
+)
+def test_csv_without_a_known_mode_is_stored_here(
+    client: TestClient, db_session: Session, source_dir: Path, routing: list[dict], content: bytes
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=content)
+
+    assert response.json()["status"] == "received"
+    assert routing == []
+
+
+def test_routing_is_off_when_this_environment_has_no_name(
+    client: TestClient,
+    db_session: Session,
+    source_dir: Path,
+    routing: list[dict],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "tagscan_environment", "")
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=PROD_CSV)
+
+    assert response.json()["status"] == "received"
+    assert routing == []
+
+
+def test_an_already_forwarded_file_is_always_stored(
+    client: TestClient, db_session: Session, source_dir: Path, routing: list[dict]
+) -> None:
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = client.post(
+        UPLOAD_URL,
+        headers={"X-API-Key": api_key, "X-TagScan-Forwarded": "1"},
+        files={"file": ("scan.csv", PROD_CSV, "text/csv")},
+    )
+
+    # Even though Mode names the other environment: no ping-pong.
+    assert response.json()["status"] == "received"
+    assert routing == []
+    assert (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_forwarding_without_configuration_returns_503(
+    client: TestClient,
+    db_session: Session,
+    source_dir: Path,
+    routing: list[dict],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(settings, "tagscan_forward_api_key", "")
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=PROD_CSV)
+
+    assert response.status_code == 503
+    assert routing == []
+    assert not (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_forwarding_refused_by_the_other_side_returns_502(
+    client: TestClient, db_session: Session, source_dir: Path, monkeypatch: pytest.MonkeyPatch, routing: list[dict]
+) -> None:
+    monkeypatch.setattr(
+        "app.modules.module_1.intake_forward.httpx.post",
+        lambda url, **kwargs: _FakeResponse(401, {"detail": "Invalid API key"}),
+    )
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=PROD_CSV)
+
+    # An error makes the Pi keep the file and retry later.
+    assert response.status_code == 502
+    assert not (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_forwarding_network_error_returns_502(
+    client: TestClient, db_session: Session, source_dir: Path, monkeypatch: pytest.MonkeyPatch, routing: list[dict]
+) -> None:
+    import httpx
+
+    def failing_post(url: str, **kwargs):
+        raise httpx.ConnectError("unreachable")
+
+    monkeypatch.setattr("app.modules.module_1.intake_forward.httpx.post", failing_post)
+    _scanner, api_key = _create_scanner_with_api_key(db_session)
+
+    response = _upload(client, api_key, content=PROD_CSV)
+
+    assert response.status_code == 502
+    assert not (source_dir / "Unreaded Tags" / "scan.csv").exists()
+
+
+def test_read_csv_mode_and_normalize_environment() -> None:
+    from app.modules.module_1.intake_forward import normalize_environment
+    from app.modules.module_1.tag_line_data import read_csv_mode
+
+    # A leading BOM doesn't hide the header; the first non-empty Mode wins.
+    assert read_csv_mode(b"\xef\xbb\xbfScanner,Mode\nA,\nB, Prod \n") == "Prod"
+    assert read_csv_mode(b"Scanner,EPC\nA,1\n") is None
+
+    assert normalize_environment("TEST") == "test"
+    assert normalize_environment("prod") == "production"
+    assert normalize_environment("Production") == "production"
+    assert normalize_environment("staging") is None
+    assert normalize_environment(None) is None

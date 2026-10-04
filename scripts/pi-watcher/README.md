@@ -60,6 +60,21 @@ must never be pasted into `prod.env` — they belong to different Scanner
 rows in different databases and won't authenticate against the other
 environment anyway.
 
+## One connection for both environments (routing by "Mode")
+
+A single instance pointed at either environment is also enough: each CSV's
+`Mode` column (`TEST` or `PROD`, any case; `production` works too) decides
+where it ends up. When the environment that receives the file isn't the one
+named in `Mode`, its backend passes the file on to the other environment's
+intake, which stores it in its own `Unreaded Tags`. A CSV without a
+(known) `Mode` stays in the environment that received it.
+
+This needs, in each VPS environment's `.env` (see `.env.*.example`):
+`TAGSCAN_ENVIRONMENT` (its own name), `TAGSCAN_FORWARD_URL` (the other
+environment's intake URL) and `TAGSCAN_FORWARD_API_KEY` — a scanner key
+generated on the **other** environment (e.g. a "Forwarder" scanner row
+there). If forwarding fails, the Pi gets an error and simply retries later.
+
 ## Operating
 
 ```

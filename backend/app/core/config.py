@@ -64,6 +64,19 @@ class Settings(BaseSettings):
     # scan lines, while still rejecting an obviously-wrong/corrupt upload.
     tagscan_intake_max_file_mb: int = 20
 
+    # The Raspberry Pi has only one intake connection to the VPS, but each CSV
+    # says in its "Mode" column whether it is meant for "test" or
+    # "production". tagscan_environment is THIS environment's own name; empty
+    # (local dev, tests) switches that routing off and every file is simply
+    # stored here. A file whose Mode names the other environment is passed on
+    # to tagscan_forward_url (the other environment's intake endpoint) with
+    # tagscan_forward_api_key (a scanner API key generated ON that other
+    # environment, since keys only work where they were made). See
+    # app/modules/module_1/intake_forward.py.
+    tagscan_environment: str = ""
+    tagscan_forward_url: str = ""
+    tagscan_forward_api_key: str = ""
+
     # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
     # (https://resend.com). The API key is secret and set per environment in
     # the server's .env; left empty (the default, and in local dev/tests),

@@ -26,7 +26,9 @@ from app.core.security import verify_password
 from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
 from app.modules.module_1.file_browser import get_source_root
+from app.modules.module_1.intake_forward import forward_csv, normalize_environment, should_forward
 from app.modules.module_1.tag_header_data import READED_SUBFOLDER, UNREADED_SUBFOLDER
+from app.modules.module_1.tag_line_data import read_csv_mode
 from app.schemas.tagscan import IntakeUploadResponse
 
 router = APIRouter(prefix="/api/public/tagscan-intake", tags=["Tagscan (Device Intake)"])
@@ -61,11 +63,15 @@ def authenticate_scanner(x_api_key: str = Header(...), db: Session = Depends(get
     return scanner
 
 
-@router.post("", response_model=IntakeUploadResponse, status_code=status.HTTP_201_CREATED)
+# response_model_exclude_none: "environment" only appears on a forwarded file.
+@router.post(
+    "", response_model=IntakeUploadResponse, response_model_exclude_none=True, status_code=status.HTTP_201_CREATED
+)
 def upload_csv(
     file: UploadFile = File(...),
     scanner: Scanner = Depends(authenticate_scanner),
     db: Session = Depends(get_db),
+    x_tagscan_forwarded: str | None = Header(default=None),
 ) -> IntakeUploadResponse:
     """Receive one CSV file from a device's watcher script.
 
@@ -78,6 +84,10 @@ def upload_csv(
       - the same filename but DIFFERENT bytes is NOT dropped — that would
         silently lose scan data — it is stored under a content-hash suffix
         (see _content_hash_name) and reported back under that stored name.
+
+    A file whose "Mode" column names the other environment (test vs
+    production) is not stored here but passed on to that environment's
+    intake (see intake_forward.py); the Pi only ever talks to one of them.
     """
     filename = Path(file.filename or "").name
     if not filename.lower().endswith(".csv"):
@@ -92,6 +102,14 @@ def upload_csv(
             status_code=status.HTTP_413_CONTENT_TOO_LARGE,
             detail=f"File exceeds the {settings.tagscan_intake_max_file_mb} MB limit",
         )
+
+    # Which environment the CSV says it is for; pass it on if that's the other one.
+    target_environment = normalize_environment(read_csv_mode(contents))
+    if should_forward(target_environment, already_forwarded=x_tagscan_forwarded == "1"):
+        result = forward_csv(filename, contents, target_environment)
+        scanner.api_key_last_used_at = datetime.now(timezone.utc)
+        db.commit()
+        return result
 
     root = get_source_root(db)
     unreaded_dir = root / UNREADED_SUBFOLDER
