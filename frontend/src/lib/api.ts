@@ -6,11 +6,13 @@
 import { API_BASE_URL } from "./config";
 import type {
   AltsienSelectDashboardStats,
+  AltsienSelectPreviousSeason,
   AltsienSelectRequestStatus,
   AltsienSelectRequestStatusInput,
   AltsienSelectRole,
   AltsienSelectSpecialRequest,
   AltsienSelectTeamState,
+  AltsienSelectResponsibleInput,
   AltsienSelectTeamSummary,
   AltsienSelectUserSummary,
   CurrentUser,
@@ -29,6 +31,7 @@ import type {
   InterventionRequest,
   InterventionRequestInput,
   InterventionRequestsDashboardStats,
+  InterventionRequestsLookups,
   InterventionRequestsMyPermissions,
   InterventionRequestsRole,
   InterventionRequestsScreen,
@@ -36,6 +39,8 @@ import type {
   InterventionRequestsUserSummary,
   InterventionStatus,
   InterventionStatusInput,
+  MailingRecipient,
+  MailingRecipientInput,
   KarImportResponse,
   KarStatusImportResponse,
   KarTrackerAfleverlocatie,
@@ -43,14 +48,19 @@ import type {
   KarTrackerDistributiepunt,
   KarTrackerDistributiepuntInput,
   KarTrackerGroundplan,
+  KarTrackerKarAction,
+  KarTrackerKarActionCreateInput,
+  KarTrackerKarActionLookups,
   KarTrackerKar,
   KarTrackerKarInput,
   KarTrackerKarMapResponse,
   KarTrackerKarPlanningReport,
+  KarTrackerSeasonOption,
   KarTrackerKarStatus,
   KarTrackerLeverdatum,
   KarTrackerLeverdatumSaveInput,
   KarTrackerMyPermissions,
+  KarTrackerDashboardStats,
   KarTrackerPlanKar,
   KarTrackerPlanKarAfleverlocatieOption,
   KarTrackerPlanKarOption,
@@ -59,6 +69,8 @@ import type {
   KarTrackerScreen,
   KarTrackerUserSummary,
   KarTrackerZone,
+  LeverdatumImportResponse,
+  LoginClient,
   LoginHistoryPage,
   MasterDataDashboardStats,
   MasterDataMyPermissions,
@@ -104,6 +116,8 @@ import type {
   TeamKarUser,
   TeamLocation,
   TeamLocationImportResponse,
+  TeamResponsible,
+  TeamResponsibleInput,
   TeamTask,
   TeamTaskImportResponse,
   UserSummary,
@@ -199,10 +213,12 @@ async function apiFetch<TResponse>(path: string, init?: RequestInit): Promise<TR
 
 // --- Authentication -------------------------------------------------
 
-export function login(email: string, password: string): Promise<CurrentUser> {
+/** Log in. `client` tells the login history whether this came from the
+ * website or the phone section (/m). */
+export function login(email: string, password: string, client: LoginClient = "web"): Promise<CurrentUser> {
   return apiFetch<CurrentUser>("/api/auth/login", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ email, password, client }),
   });
 }
 
@@ -346,6 +362,26 @@ export function updateTeamLocation(teamLocationId: number, location: string): Pr
 
 export function deleteTeamLocation(teamLocationId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/team-locations/${teamLocationId}`, { method: "DELETE" });
+}
+
+// --- Ploegverantwoordelijken (module-9's "masterdata.team-responsibles" screen, nested under Teams) ---
+
+export function createTeamResponsible(payload: TeamResponsibleInput): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>("/api/modules/module-9/team-responsibles", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateTeamResponsible(teamResponsibleId: number, payload: TeamResponsibleInput): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`/api/modules/module-9/team-responsibles/${teamResponsibleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteTeamResponsible(teamResponsibleId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-9/team-responsibles/${teamResponsibleId}`, { method: "DELETE" });
 }
 
 // --- Delivery Method (module-9's "masterdata.delivery-method" screen, nested under Teams) ---
@@ -1238,6 +1274,12 @@ export function listPlanKarAfleverlocaties(): Promise<KarTrackerPlanKarAfleverlo
   return apiFetch<KarTrackerPlanKarAfleverlocatieOption[]>("/api/modules/module-2/plan-kar/afleverlocaties");
 }
 
+/** KarTracker's KPI Overview figures; the season adds the Plan a kar coverage. */
+export function getKarTrackerDashboard(seasonId: number | null): Promise<KarTrackerDashboardStats> {
+  const query = seasonId === null ? "" : `?season_id=${seasonId}`;
+  return apiFetch<KarTrackerDashboardStats>(`/api/modules/module-2/dashboard${query}`);
+}
+
 /** The matrix (active festivals of the season + saved locations) for one team. */
 export function getPlanKar(seasonId: number, teamId: number): Promise<KarTrackerPlanKar> {
   return apiFetch<KarTrackerPlanKar>(`/api/modules/module-2/plan-kar?season_id=${seasonId}&team_id=${teamId}`);
@@ -1249,6 +1291,36 @@ export function savePlanKar(payload: KarTrackerPlanKarSaveInput): Promise<KarTra
     method: "PUT",
     body: JSON.stringify(payload),
   });
+}
+
+// "Manuele kar beweging": log a kar movement (kar + status + GPS location).
+
+/** The kar and status dropdowns of the movement form. */
+export function getKarActionLookups(): Promise<KarTrackerKarActionLookups> {
+  return apiFetch<KarTrackerKarActionLookups>("/api/modules/module-2/kar-actions/lookups");
+}
+
+/** The movement history, newest first — all karren, or one kar when karId
+ * is given; `limit` caps how many come back (the backend's default is 200). */
+export function listKarActions(karId?: number, limit?: number): Promise<KarTrackerKarAction[]> {
+  const params = new URLSearchParams();
+  if (karId !== undefined) params.set("kar_id", String(karId));
+  if (limit !== undefined) params.set("limit", String(limit));
+  const query = params.size > 0 ? `?${params}` : "";
+  return apiFetch<KarTrackerKarAction[]>(`/api/modules/module-2/kar-actions${query}`);
+}
+
+/** Logs one movement; the backend also makes it the kar's latest status/location. */
+export function createKarAction(payload: KarTrackerKarActionCreateInput): Promise<KarTrackerKarAction> {
+  return apiFetch<KarTrackerKarAction>("/api/modules/module-2/kar-actions", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Removes a mistakenly logged movement (the kar's latest state is left as it is). */
+export function deleteKarAction(actionId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/kar-actions/${actionId}`, { method: "DELETE" });
 }
 
 /** The "Delivery Dates" table: active festivals of the season + their saved dates. */
@@ -1376,6 +1448,11 @@ export function deleteKar(karId: number): Promise<void> {
 }
 
 // --- Kar Planning (module-2's "kartracker.karplanning" read-only report) ---
+
+/** The open seasons, newest first, for Kar Planning's own season dropdown (phone). */
+export function listKarTrackerSeasons(): Promise<KarTrackerSeasonOption[]> {
+  return apiFetch<KarTrackerSeasonOption[]>("/api/modules/module-2/seasons");
+}
 
 /** With a season id the report also carries one afleverlocatie column per active festival of it. */
 export function listKarPlanning(seasonId?: number | null): Promise<KarTrackerKarPlanningReport> {
@@ -1603,6 +1680,26 @@ export async function importAfleverlocaties(file: File): Promise<AfleverlocatieI
   return (await response.json()) as AfleverlocatieImportResponse;
 }
 
+/** Uploads an XLSX file to bulk-set festival delivery/pick-up dates (upsert per festival). */
+export async function importLeverdata(file: File): Promise<LeverdatumImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/leverdatum-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as LeverdatumImportResponse;
+}
+
 // --- Intervention Statuses (module-3's "MasterData" lookup screen) ------
 
 export function listInterventionStatuses(): Promise<InterventionStatus[]> {
@@ -1628,6 +1725,27 @@ export function updateInterventionStatus(
 
 export function deleteInterventionStatus(statusId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-3/intervention-statuses/${statusId}`, { method: "DELETE" });
+}
+
+// --- Mailing List (module-3's "Settings" screen) -------------------------
+// Who gets mailed about every new intervention request.
+
+export function createMailingRecipient(payload: MailingRecipientInput): Promise<MailingRecipient> {
+  return apiFetch<MailingRecipient>("/api/modules/module-3/mailing-list", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateMailingRecipient(recipientId: number, payload: MailingRecipientInput): Promise<MailingRecipient> {
+  return apiFetch<MailingRecipient>(`/api/modules/module-3/mailing-list/${recipientId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteMailingRecipient(recipientId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-3/mailing-list/${recipientId}`, { method: "DELETE" });
 }
 
 // --- Intervention Requests (module-3's "Actions" screen) -----------------
@@ -1682,6 +1800,11 @@ export function listInterventionRequests(): Promise<InterventionRequest[]> {
   return apiFetch<InterventionRequest[]>("/api/modules/module-3/intervention-requests");
 }
 
+/** The statuses, teams and TeamKar members for the request form, in one call. */
+export function getInterventionRequestsLookups(): Promise<InterventionRequestsLookups> {
+  return apiFetch<InterventionRequestsLookups>("/api/modules/module-3/lookups");
+}
+
 export function createInterventionRequest(payload: InterventionRequestInput): Promise<InterventionRequest> {
   return apiFetch<InterventionRequest>("/api/modules/module-3/intervention-requests", {
     method: "POST",
@@ -1724,6 +1847,18 @@ export function listAltsienSelectTeams(seasonId: number): Promise<AltsienSelectT
   return apiFetch<AltsienSelectTeamSummary[]>(`${ALTSIEN_SELECT_BASE}/teams?season_id=${seasonId}`);
 }
 
+/** KarTracker's ground plans, served read-only by Altsien Select for the
+ * map in Ploeg Wizard step 2 (its users may not have KarTracker access). */
+export function listAltsienSelectGroundplans(): Promise<KarTrackerGroundplan[]> {
+  return apiFetch<KarTrackerGroundplan[]>(`${ALTSIEN_SELECT_BASE}/groundplans`);
+}
+
+/** A ground plan image's direct URL via Altsien Select — same cookie and
+ * cache-busting approach as karTrackerGroundplanImageUrl. */
+export function altsienSelectGroundplanImageUrl(groundplanId: number, updatedAt: string): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/groundplans/${groundplanId}/image?v=${encodeURIComponent(updatedAt)}`;
+}
+
 export function getAltsienSelectWizard(teamId: number, seasonId: number): Promise<AltsienSelectTeamState> {
   return apiFetch<AltsienSelectTeamState>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}?season_id=${seasonId}`);
 }
@@ -1763,6 +1898,30 @@ export function setAltsienSelectStepComplete(
   );
 }
 
+/** Last season's values for one wizard step ("copy from last season"). */
+export function getAltsienSelectPreviousSeason(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+): Promise<AltsienSelectPreviousSeason> {
+  return apiFetch<AltsienSelectPreviousSeason>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/previous-season?season_id=${seasonId}`,
+  );
+}
+
+/** Copy the chosen lines of last season into this season. */
+export function copyAltsienSelectPreviousSeason(
+  teamId: number,
+  seasonId: number,
+  stepKey: string,
+  lineKeys: string[],
+): Promise<AltsienSelectTeamState> {
+  return apiFetch<AltsienSelectTeamState>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/steps/${encodeURIComponent(stepKey)}/copy-previous`,
+    { method: "POST", body: JSON.stringify({ season_id: seasonId, line_keys: lineKeys }) },
+  );
+}
+
 export function createAltsienSelectRequest(
   teamId: number,
   seasonId: number,
@@ -1782,6 +1941,37 @@ export function updateAltsienSelectRequest(
   return apiFetch<AltsienSelectSpecialRequest>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/requests/${requestId}`, {
     method: "PUT",
     body: JSON.stringify({ text }),
+  });
+}
+
+// The wizard's "Ploegverantwoordelijken" step — the rows are MasterData's
+// team responsibles (same as its own screen), scoped to the wizard's team.
+
+export function createAltsienSelectResponsible(
+  teamId: number,
+  seasonId: number,
+  payload: AltsienSelectResponsibleInput,
+): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles?season_id=${seasonId}`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateAltsienSelectResponsible(
+  teamId: number,
+  responsibleId: number,
+  payload: AltsienSelectResponsibleInput,
+): Promise<TeamResponsible> {
+  return apiFetch<TeamResponsible>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles/${responsibleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAltsienSelectResponsible(teamId: number, responsibleId: number): Promise<void> {
+  return apiFetch<void>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/responsibles/${responsibleId}`, {
+    method: "DELETE",
   });
 }
 

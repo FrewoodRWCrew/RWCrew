@@ -35,8 +35,10 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="interventionrequests.requests", label="Intervention Requests", sort_order=1),
     ScreenDefinition(key="interventionrequests.statuses", label="Intervention Statuses", sort_order=2),
     ScreenDefinition(key="interventionrequests.teamkar", label="TeamKar", sort_order=3),
-    ScreenDefinition(key="interventionrequests.roles", label="Roles", sort_order=4),
-    ScreenDefinition(key="interventionrequests.users", label="Users", sort_order=5),
+    # Settings: who gets mailed about every new request.
+    ScreenDefinition(key="interventionrequests.mailinglist", label="Mailing List", sort_order=4),
+    ScreenDefinition(key="interventionrequests.roles", label="Roles", sort_order=5),
+    ScreenDefinition(key="interventionrequests.users", label="Users", sort_order=6),
 ]
 
 

@@ -12,6 +12,14 @@ DEPLOY_DIR="$1"
 cd "$DEPLOY_DIR"
 
 git pull --ff-only
+
+# The version shown in the app (super admin's left menu, and /api/health):
+# the commit date in Belgian time + the short commit hash, e.g.
+# "2026.10.04" + "97cdc36". Read here because the Docker build contexts have
+# no .git folder; docker compose passes them on (see docker-compose.prod.yml).
+export APP_COMMIT="$(git rev-parse --short HEAD)"
+export APP_COMMIT_DATE="$(TZ=Europe/Brussels git log -1 --format=%cd --date=format-local:%Y.%m.%d)"
+
 docker compose -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.prod.yml exec -T backend python -m alembic upgrade head
 docker image prune -f

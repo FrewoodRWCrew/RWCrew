@@ -117,7 +117,7 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     badgeClassName: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300",
     accentColorToken: "emerald-600",
     accentForegroundColorToken: "white",
-    // The web-side download page for the smartphone app.
+    // The install page for the phone app (the PWA under /m).
     icon: Smartphone,
   },
 };

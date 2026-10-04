@@ -4,7 +4,7 @@
 # Tags" — gated by the "tagscan.tag-headerdata" permission, independently
 # of every other module_1 screen.
 
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -535,3 +535,68 @@ def test_user_without_permission_cannot_download_pdf(
     response = client.get("/api/modules/module-1/header-data/1/pdf")
 
     assert response.status_code == 403
+
+
+def test_list_header_data_breaks_a_timestamp_tie_by_newest_id(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+    same_moment = datetime(2026, 1, 1, 10, 0, 0)
+    db_session.add(TagHeaderData(filename="first.csv", line_count=1, created_at=same_moment))
+    db_session.commit()
+    db_session.add(TagHeaderData(filename="second.csv", line_count=1, created_at=same_moment))
+    db_session.commit()
+
+    response = client.get("/api/modules/module-1/header-data")
+
+    assert [e["filename"] for e in response.json()] == ["second.csv", "first.csv"]
+
+
+def test_scan_sets_registered_on_to_the_moment_of_saving(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        b"Scanner,EPC,RSSI (raw),Antenna,Count,Last Seen\nScan_01,E2AAA,78,1,92,10:36:07\n"
+    )
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+    before = datetime.now(timezone.utc).replace(tzinfo=None, microsecond=0)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    header = db_session.scalar(select(TagHeaderData))
+    assert header.created_at.replace(tzinfo=None) >= before
+
+
+def test_synchro_fills_an_empty_header_scanner_from_its_lines(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # A header logged before the header-level scanner columns existed: its
+    # own scanner is empty, but its lines carry the device name.
+    _create_scanner_device(db_session, scanner="Scan_01", location="Magazijn 5")
+    header = TagHeaderData(filename="old.csv", line_count=2)
+    db_session.add(header)
+    db_session.commit()
+    db_session.add_all(
+        [
+            TagLineData(header_data_id=header.id, line_number=2, scanner=None, epc="E2AAA", mode="IN", status="no_match"),
+            TagLineData(header_data_id=header.id, line_number=3, scanner="scan_01", epc="E2BBB", status="no_match"),
+        ]
+    )
+    db_session.commit()
+    sync_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-1/line-data/sync")
+
+    assert response.status_code == 200
+    db_session.refresh(header)
+    assert header.scanner == "scan_01"
+    assert header.scanner_name == "Scan_01"
+    assert header.scanner_location == "Magazijn 5"
+    assert header.scanner_technology == "Raspberry Pi 4"
+    assert header.mode == "IN"

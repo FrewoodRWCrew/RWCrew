@@ -23,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.timezone import to_belgian
 from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.product import Product
@@ -195,7 +196,8 @@ def export_karren_to_xlsx(db: Session) -> bytes:
                 products.get(kar.transport_type_id, ""),
                 kar.last_latitude,
                 kar.last_longitude,
-                kar.last_recorded_at.replace(tzinfo=None) if kar.last_recorded_at else None,
+                # Excel has no timezones: write the Belgian wall-clock time.
+                to_belgian(kar.last_recorded_at).replace(tzinfo=None) if kar.last_recorded_at else None,
             ]
         )
     for index, column in enumerate(TEMPLATE_COLUMNS, start=1):

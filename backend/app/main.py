@@ -17,7 +17,6 @@ from app.core.database import SessionLocal
 from app.landing.admin import router as admin_router
 from app.landing.auth import router as auth_router
 from app.landing.modules import router as modules_router
-from app.mobile.router import router as mobile_router
 from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
 from app.modules.module_10.router import router as module_10_router
@@ -87,11 +86,13 @@ app.include_router(module_7_router)
 app.include_router(module_8_router)
 app.include_router(module_9_router)
 app.include_router(module_10_router)
-# The smartphone app's whole API (/api/mobile/v1/...), kept in app/mobile/.
-app.include_router(mobile_router)
 
 
 @app.get("/api/health")
 def health_check() -> dict[str, str]:
-    """A tiny endpoint to confirm the API is running, used for basic checks."""
-    return {"status": "ok"}
+    """A tiny endpoint to confirm the API is running, used for basic checks.
+    Also returns the deployed version ("2026.10.04 · 97cdc36", "dev" locally),
+    so it can be compared with the label in the web app's left menu.
+    """
+    version = " · ".join(part for part in (settings.app_commit_date, settings.app_commit) if part) or "dev"
+    return {"status": "ok", "version": version}

@@ -30,7 +30,7 @@ class ScreenDefinition:
 # Every screen MasterData currently has. "Season", "Products", "Festivals",
 # and "Teams" are its actual pieces of master data ("Teams" itself is
 # still a placeholder page — its own real screen hasn't been built yet —
-# but "Team Location"/"Delivery Method"/"Team Tasks" ARE real, working
+# but "Team Location"/"Delivery Method"/"Team Tasks"/"Ploegverantwoordelijken" ARE real, working
 # screens nested one level under it, the same way the four Products
 # lookups are nested under "Products"); "Type"/"Warehouses"/"Product
 # categories"/"Product limits" are the four lookup lists ("selection
@@ -43,7 +43,7 @@ class ScreenDefinition:
 # Season permission, and dataupload access does not imply access to any
 # one table's own screen (or vice versa).
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
-    ScreenDefinition(key="masterdata.season", label="Seasons", sort_order=1),
+    ScreenDefinition(key="masterdata.season", label="Years", sort_order=1),
     ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
     ScreenDefinition(key="masterdata.product-types", label="Type", sort_order=3),
     ScreenDefinition(key="masterdata.warehouses", label="Magazijnen", sort_order=4),
@@ -56,6 +56,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.team-location", label="Team Location", sort_order=11),
     ScreenDefinition(key="masterdata.delivery-method", label="Delivery Method", sort_order=12),
     ScreenDefinition(key="masterdata.team-tasks", label="Team Tasks", sort_order=13),
+    ScreenDefinition(key="masterdata.team-responsibles", label="Ploegverantwoordelijken", sort_order=14),
     ScreenDefinition(key="masterdata.dataupload", label="Data Upload/Download", sort_order=15),
 ]
 

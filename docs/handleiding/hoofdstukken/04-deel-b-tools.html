@@ -1,0 +1,194 @@
+<!-- Deel B: hoofdstuk 8 (gebruikte tools). -->
+
+<section class="deel" id="deel-b" data-toc="Deel B · Gebruikte tools">
+  <div class="deel-label">Deel B</div>
+  <h1>Gebruikte tools</h1>
+  <div class="streep"></div>
+  <p>Elke technologie, bibliotheek en dienst waarmee RWCrew gebouwd is en draait: wat ze doet, waar je ze
+  tegenkomt en waarom ze gekozen is.</p>
+  <div class="deel-lezers">Doelgroep: iedereen. De tabellen zijn ook een naslagwerk voor ontwikkelaars.</div>
+</section>
+
+<h1 class="hoofdstuk" id="h-tools">Tools en technologieën</h1>
+<div class="doelgroep iedereen">Iedereen</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De frontend is geschreven in <strong>TypeScript</strong> met <strong>Next.js</strong> en <strong>React</strong>, opgemaakt
+met <strong>Tailwind CSS</strong> en kant-en-klare onderdelen van <strong>shadcn/ui</strong>. De backend is geschreven in
+<strong>Python</strong> met <strong>FastAPI</strong> en <strong>SQLAlchemy</strong>; de database is <strong>PostgreSQL</strong>.
+Alles draait in <strong>Docker</strong> op een Linux-server achter <strong>Nginx</strong>, en wordt automatisch
+gedeployed met <strong>GitHub Actions</strong>. Gekozen is telkens voor breed gebruikte, gratis, goed gedocumenteerde
+tools, zodat nieuwe teamleden er makkelijk informatie over vinden.
+</div>
+
+<h2 id="s-tools-overzicht">De technologie in één beeld</h2>
+<figure class="diagram" id="fig-stack">
+<svg viewBox="0 0 660 300" xmlns="http://www.w3.org/2000/svg">
+  <text x="10" y="22" class="t-zone">FRONTEND</text>
+  <rect class="box-blauw" x="10" y="30" width="200" height="34" rx="5"/><text x="110" y="52" text-anchor="middle" class="t-klein" style="fill:#1d2521">Next.js 16 (App Router)</text>
+  <rect class="box-blauw" x="10" y="68" width="98" height="34" rx="5"/><text x="59" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">React 19</text>
+  <rect class="box-blauw" x="112" y="68" width="98" height="34" rx="5"/><text x="161" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">TypeScript</text>
+  <rect class="box-blauw" x="10" y="106" width="98" height="34" rx="5"/><text x="59" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">Tailwind v4</text>
+  <rect class="box-blauw" x="112" y="106" width="98" height="34" rx="5"/><text x="161" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">shadcn / Base UI</text>
+  <rect class="box-blauw" x="10" y="144" width="98" height="34" rx="5"/><text x="59" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">next-intl</text>
+  <rect class="box-blauw" x="112" y="144" width="98" height="34" rx="5"/><text x="161" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">next-themes</text>
+  <rect class="box-blauw" x="10" y="182" width="64" height="34" rx="5"/><text x="42" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">Leaflet</text>
+  <rect class="box-blauw" x="78" y="182" width="64" height="34" rx="5"/><text x="110" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">Recharts</text>
+  <rect class="box-blauw" x="146" y="182" width="64" height="34" rx="5"/><text x="178" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">ZXing</text>
+  <text x="230" y="22" class="t-zone">BACKEND</text>
+  <rect class="box" x="230" y="30" width="200" height="34" rx="5"/><text x="330" y="52" text-anchor="middle" class="t-klein" style="fill:#1d2521">FastAPI + Uvicorn</text>
+  <rect class="box" x="230" y="68" width="98" height="34" rx="5"/><text x="279" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">Python 3.14</text>
+  <rect class="box" x="332" y="68" width="98" height="34" rx="5"/><text x="381" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">Pydantic</text>
+  <rect class="box" x="230" y="106" width="98" height="34" rx="5"/><text x="279" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">SQLAlchemy 2</text>
+  <rect class="box" x="332" y="106" width="98" height="34" rx="5"/><text x="381" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">Alembic</text>
+  <rect class="box" x="230" y="144" width="98" height="34" rx="5"/><text x="279" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">PyJWT</text>
+  <rect class="box" x="332" y="144" width="98" height="34" rx="5"/><text x="381" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">pg8000</text>
+  <rect class="box" x="230" y="182" width="64" height="34" rx="5"/><text x="262" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">fpdf2</text>
+  <rect class="box" x="298" y="182" width="64" height="34" rx="5"/><text x="330" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">openpyxl</text>
+  <rect class="box" x="366" y="182" width="64" height="34" rx="5"/><text x="398" y="204" text-anchor="middle" class="t-mini" style="fill:#1d2521">segno</text>
+  <text x="450" y="22" class="t-zone">DATA EN INFRASTRUCTUUR</text>
+  <rect class="box-oranje" x="450" y="30" width="200" height="34" rx="5"/><text x="550" y="52" text-anchor="middle" class="t-klein" style="fill:#1d2521">PostgreSQL 16</text>
+  <rect class="box-oranje" x="450" y="68" width="98" height="34" rx="5"/><text x="499" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">Docker</text>
+  <rect class="box-oranje" x="552" y="68" width="98" height="34" rx="5"/><text x="601" y="90" text-anchor="middle" class="t-klein" style="fill:#1d2521">Nginx</text>
+  <rect class="box-oranje" x="450" y="106" width="98" height="34" rx="5"/><text x="499" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">Hostinger VPS</text>
+  <rect class="box-oranje" x="552" y="106" width="98" height="34" rx="5"/><text x="601" y="128" text-anchor="middle" class="t-klein" style="fill:#1d2521">Let's Encrypt</text>
+  <rect class="box-oranje" x="450" y="144" width="98" height="34" rx="5"/><text x="499" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">GitHub Actions</text>
+  <rect class="box-oranje" x="552" y="144" width="98" height="34" rx="5"/><text x="601" y="166" text-anchor="middle" class="t-klein" style="fill:#1d2521">Cloudflare</text>
+  <rect class="box-oranje" x="450" y="182" width="98" height="34" rx="5"/><text x="499" y="204" text-anchor="middle" class="t-klein" style="fill:#1d2521">Resend</text>
+  <rect class="box-oranje" x="552" y="182" width="98" height="34" rx="5"/><text x="601" y="204" text-anchor="middle" class="t-klein" style="fill:#1d2521">Raspberry Pi</text>
+  <text x="10" y="248" class="t-zone">ONTWIKKELEN</text>
+  <rect class="box-paars" x="10" y="256" width="100" height="34" rx="5"/><text x="60" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">Git + GitHub</text>
+  <rect class="box-paars" x="116" y="256" width="100" height="34" rx="5"/><text x="166" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">VS Code</text>
+  <rect class="box-paars" x="222" y="256" width="100" height="34" rx="5"/><text x="272" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">pytest</text>
+  <rect class="box-paars" x="328" y="256" width="100" height="34" rx="5"/><text x="378" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">ESLint</text>
+  <rect class="box-paars" x="434" y="256" width="100" height="34" rx="5"/><text x="484" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">pgAdmin</text>
+  <rect class="box-paars" x="540" y="256" width="110" height="34" rx="5"/><text x="595" y="278" text-anchor="middle" class="t-klein" style="fill:#1d2521">Claude Code</text>
+</svg>
+<figcaption>Alle tools van RWCrew, gegroepeerd per laag.</figcaption>
+</figure>
+
+<h2 id="s-tools-frontend">Frontend</h2>
+<p>Versies volgens <code>frontend/package.json</code>. Een <code>^</code> voor een versienummer betekent dat kleinere
+updates (zelfde hoofdversie) automatisch toegelaten zijn.</p>
+<table id="tab-tools-frontend" class="compact">
+  <caption>Tools van de frontend</caption>
+  <tr><th style="width:19%">Tool</th><th style="width:10%">Versie</th><th>Wat het doet</th><th style="width:31%">Waarom gekozen</th></tr>
+  <tr><td><strong>TypeScript</strong></td><td>5</td><td>JavaScript met <em>types</em>: de editor weet welke velden een object heeft en waarschuwt bij fouten nog vóór je de app start.</td><td>Vangt een grote klasse fouten vroeg op; standaard bij Next.js.</td></tr>
+  <tr><td><strong>React</strong></td><td>19.2</td><td>Bibliotheek om schermen op te bouwen uit herbruikbare <em>componenten</em> (een knop, een tabel, een formulier).</td><td>De meest gebruikte UI-bibliotheek; enorm veel kennis en voorbeelden online.</td></tr>
+  <tr><td><strong>Next.js</strong></td><td>16.3</td><td>Raamwerk rond React: routering op basis van mappen, pagina's op de server opbouwen, productiebuild.</td><td>Pagina's tonen meteen met gegevens (geen laadflits), ingelogd-zijn wordt op de server gecontroleerd, één project voor website en telefoon-app.</td></tr>
+  <tr><td><strong>Tailwind CSS</strong></td><td>4</td><td>Opmaak via korte klassen in de HTML (<code>p-6</code>, <code>text-sm</code>, <code>bg-muted</code>) in plaats van aparte CSS-bestanden.</td><td>Snel, consistent, geen botsende stylesheets; werkt naadloos met shadcn/ui.</td></tr>
+  <tr><td><strong>shadcn/ui</strong> op <strong>Base UI</strong></td><td>4.19 / 1.7</td><td>Kant-en-klare, toegankelijke onderdelen (knoppen, dialogen, tabellen, keuzelijsten) die als broncode in <code>src/components/ui/</code> staan.</td><td>Je bezit de code zelf en kunt ze aanpassen; Base UI zorgt voor toetsenbordbediening en toegankelijkheid.</td></tr>
+  <tr><td><strong>next-intl</strong></td><td>4.14</td><td>Meertaligheid: taal in het adres (<code>/nl</code>, <code>/en</code>) en alle teksten uit <code>messages/*.json</code>.</td><td>De standaardkeuze voor vertalingen in Next.js met de App Router.</td></tr>
+  <tr><td><strong>next-themes</strong></td><td>0.4</td><td>Wisselen tussen licht en donker thema zonder flikkering.</td><td>Klein en betrouwbaar.</td></tr>
+  <tr><td><strong>lucide-react</strong></td><td>1.35</td><td>Pictogrammen.</td><td>Groot, consistent pakket; standaard bij shadcn.</td></tr>
+  <tr><td><strong>sonner</strong></td><td>2.0</td><td>Korte meldingen ("Opgeslagen", "Fout bij opslaan") rechtsonder.</td><td>Standaard meldingscomponent van shadcn.</td></tr>
+  <tr><td><strong>Leaflet</strong> + react-leaflet</td><td>1.9 / 5</td><td>Interactieve kaarten (Kar Map, afleverlocaties) op basis van OpenStreetMap.</td><td>Gratis, geen API-sleutel nodig, licht.</td></tr>
+  <tr><td><strong>Recharts</strong></td><td>3.8</td><td>Grafieken op de KPI- en dashboardschermen.</td><td>Eenvoudig te gebruiken met React; integreert met shadcn's grafiekcomponent.</td></tr>
+  <tr><td><strong>@zxing/browser</strong></td><td>0.2</td><td>QR-codes lezen met de camera (KarScan).</td><td>Werkt volledig in de browser, ook op telefoons.</td></tr>
+  <tr><td><strong>ESLint</strong></td><td>9</td><td>Controleert de code op fouten en slordigheden (<code>npm run lint</code>).</td><td>Standaard bij Next.js.</td></tr>
+</table>
+
+<h2 id="s-tools-backend">Backend</h2>
+<p>Versies volgens <code>backend/requirements.txt</code>; daar staan ze vastgepind (<code>==</code>), zodat elke installatie
+exact dezelfde versies krijgt.</p>
+<table id="tab-tools-backend" class="compact">
+  <caption>Tools van de backend</caption>
+  <tr><th style="width:19%">Tool</th><th style="width:10%">Versie</th><th>Wat het doet</th><th style="width:31%">Waarom gekozen</th></tr>
+  <tr><td><strong>Python</strong></td><td>3.14</td><td>De programmeertaal van de backend.</td><td>Leesbaar, veel gebruikt, sterk voor data en rapporten.</td></tr>
+  <tr><td><strong>FastAPI</strong></td><td>0.141</td><td>Raamwerk om API-endpoints te schrijven, met automatische controle van invoer en automatische documentatie (<code>/docs</code>).</td><td>Modern, snel, weinig code per endpoint, uitstekende documentatie.</td></tr>
+  <tr><td><strong>Uvicorn</strong></td><td>0.52</td><td>De webserver die de FastAPI-applicatie laat draaien.</td><td>De standaardserver voor FastAPI.</td></tr>
+  <tr><td><strong>Pydantic</strong> + pydantic-settings</td><td>2.13 / 2.15</td><td>Beschrijft de vorm van gegevens (<em>schema's</em>) en controleert ze; leest instellingen uit <code>.env</code>.</td><td>Ingebouwd in FastAPI; foutieve invoer wordt automatisch geweigerd met een duidelijke melding.</td></tr>
+  <tr><td><strong>SQLAlchemy</strong></td><td>2.0</td><td>Vertaalt Python-klassen naar databasetabellen en Python-code naar SQL (een <em>ORM</em>).</td><td>De standaard in Python; werkt met PostgreSQL én met SQLite voor de tests.</td></tr>
+  <tr><td><strong>Alembic</strong></td><td>1.19</td><td>Databasemigraties: genummerde scripts die de structuur van de database aanpassen.</td><td>Hoort bij SQLAlchemy; kan migraties automatisch voorstellen.</td></tr>
+  <tr><td><strong>pg8000</strong></td><td>1.31</td><td>De verbinding tussen Python en PostgreSQL (<em>driver</em>).</td><td>Puur Python, dus altijd installeerbaar op Python 3.14 (zie <a class="ref" href="#s-python-314"></a>).</td></tr>
+  <tr><td><strong>PyJWT</strong></td><td>2.13</td><td>Maakt en controleert de inlogtokens (JWT).</td><td>Klein, betrouwbaar, puur Python.</td></tr>
+  <tr><td><strong>hashlib</strong> (standaard)</td><td>–</td><td>Wachtwoord-hashing met PBKDF2.</td><td>Standaardbibliotheek; geen gecompileerd pakket zoals bcrypt nodig.</td></tr>
+  <tr><td><strong>fpdf2</strong></td><td>2.8</td><td>Maakt PDF's: leveringsbon, karbladen, tag-headers, Ploegfiche.</td><td>Puur Python, volledige controle over de opmaak.</td></tr>
+  <tr><td><strong>segno</strong></td><td>1.6</td><td>Maakt QR-codes (karbladen, installatiepagina).</td><td>Puur Python, scherpe vectoruitvoer.</td></tr>
+  <tr><td><strong>openpyxl</strong></td><td>3.1</td><td>Leest en schrijft Excel-bestanden (sjablonen, import, export).</td><td>De standaard voor <code>.xlsx</code> in Python.</td></tr>
+  <tr><td><strong>httpx</strong></td><td>0.28</td><td>HTTP-verzoeken naar andere diensten (Resend).</td><td>Was al aanwezig via FastAPI; geen extra mailpakket nodig.</td></tr>
+  <tr><td><strong>python-multipart</strong></td><td>0.0.32</td><td>Bestanden ontvangen via formulieren (CSV- en Excel-uploads).</td><td>Vereist door FastAPI voor uploads.</td></tr>
+  <tr><td><strong>pytest</strong></td><td>9.1</td><td>Automatische tests (meer dan 550 testfuncties).</td><td>De standaard in Python.</td></tr>
+</table>
+
+<h2 id="s-tools-infra">Database, infrastructuur en diensten</h2>
+<table id="tab-tools-infra" class="compact">
+  <caption>Database, hosting en externe diensten</caption>
+  <tr><th style="width:19%">Tool</th><th>Wat het doet</th><th style="width:36%">Waarom gekozen</th></tr>
+  <tr><td><strong>PostgreSQL 16</strong></td><td>De database.</td><td>Gratis, zeer betrouwbaar, de meest gebruikte open-source database voor zakelijke apps.</td></tr>
+  <tr><td><strong>Docker</strong> + Docker Compose</td><td>Verpakt backend, frontend en database in containers; lokaal alleen de database.</td><td>Elke omgeving draait identiek; test en productie naast elkaar op één server zonder te botsen.</td></tr>
+  <tr><td><strong>Hostinger VPS</strong> (Ubuntu)</td><td>De server.</td><td>Betaalbaar, volledige controle, genoeg voor beide omgevingen.</td></tr>
+  <tr><td><strong>Nginx</strong></td><td>Reverse proxy: HTTPS, verkeer verdelen, uploadlimieten, snelheidslimieten.</td><td>De standaard; licht en snel.</td></tr>
+  <tr><td><strong>Let's Encrypt</strong> + certbot</td><td>Gratis HTTPS-certificaten met automatische vernieuwing.</td><td>Gratis en automatisch.</td></tr>
+  <tr><td><strong>Cloudflare</strong></td><td>DNS van <code>rwcrew.eu</code>; lokaal de "quick tunnel" (<code>cloudflared</code>).</td><td>Gratis, snel; de tunnel geeft lokaal HTTPS voor camera en GPS op een telefoon.</td></tr>
+  <tr><td><strong>GitHub</strong> + GitHub Actions</td><td>Broncode, geschiedenis, automatische deployment.</td><td>Gratis voor dit gebruik; alles op één plaats.</td></tr>
+  <tr><td><strong>Resend</strong></td><td>Uitgaande mail via een eenvoudige HTTP-API.</td><td>Eenvoudiger en betrouwbaarder dan een eigen mailserver; goede aflevering dankzij domeinverificatie.</td></tr>
+  <tr><td><strong>Raspberry Pi</strong></td><td>Stuurt TagScan-bestanden naar de server (<code>scripts/pi-watcher/</code>).</td><td>Goedkoop, zuinig, kan naast de scanners blijven staan.</td></tr>
+</table>
+
+<h2 id="s-tools-ontwikkel">Ontwikkeltools</h2>
+<table id="tab-tools-dev" class="compact">
+  <caption>Tools voor het dagelijkse ontwikkelwerk</caption>
+  <tr><th style="width:22%">Tool</th><th>Waarvoor</th></tr>
+  <tr><td><strong>Git</strong></td><td>Versiebeheer: commits, branches, geschiedenis.</td></tr>
+  <tr><td><strong>Visual Studio Code</strong></td><td>Aanbevolen code-editor. Handige extensies: Python, Pylance, ESLint, Tailwind CSS IntelliSense, GitLens, Claude Code.</td></tr>
+  <tr><td><strong>Docker Desktop</strong></td><td>Docker op Windows, voor de lokale database.</td></tr>
+  <tr><td><strong>pgAdmin</strong></td><td>De database bekijken, lokaal of via een SSH-tunnel op de server.</td></tr>
+  <tr><td><strong>cloudflared</strong></td><td>Lokale app via HTTPS bereikbaar maken voor een telefoon.</td></tr>
+  <tr><td><strong>Browser-ontwikkelaarstools</strong> (<kbd>F12</kbd>)</td><td>Netwerkverzoeken, statuscodes en fouten bekijken; het tabblad <em>Network</em> is je beste vriend bij een probleem.</td></tr>
+  <tr><td><strong>FastAPI <code>/docs</code></strong></td><td>Interactieve documentatie van alle endpoints, lokaal op <code>http://localhost:8020/docs</code>.</td></tr>
+  <tr><td><strong>Claude Code</strong></td><td>AI-programmeerassistent waarmee RWCrew grotendeels ontwikkeld is (zie <a class="ref" href="#s-tool-claude"></a>).</td></tr>
+</table>
+
+<h2 id="s-python-314">De Python 3.14-beperking</h2>
+<p>De ontwikkel-pc en de backend-container draaien <strong>Python 3.14</strong>, een zeer recente versie. Veel
+populaire Python-pakketten bevatten stukken in C of Rust die voor elke Python-versie apart gecompileerd moeten
+worden. Voor een gloednieuwe Python-versie zijn die voorgecompileerde versies (<em>wheels</em>) er soms nog niet,
+en dan moet je zelf een C/Rust-compiler installeren.</p>
+<p>Daarom werd bij elke keuze bewust een pakket genomen dat <strong>puur Python</strong> is, of de standaardbibliotheek:</p>
+<table class="compact">
+  <caption>Bewuste keuzes door de Python 3.14-beperking</caption>
+  <tr><th style="width:34%">Gekozen</th><th>In plaats van</th></tr>
+  <tr><td><code>pg8000</code> (databasedriver)</td><td><code>psycopg2</code> of <code>asyncpg</code> (gecompileerd)</td></tr>
+  <tr><td><code>hashlib.pbkdf2_hmac</code> (standaard)</td><td><code>passlib</code> / <code>bcrypt</code></td></tr>
+  <tr><td><code>httpx</code> rechtstreeks naar Resend</td><td>een apart mailpakket</td></tr>
+  <tr><td>gewone reguliere expressies voor het toesteltype</td><td>een user-agent-bibliotheek</td></tr>
+  <tr><td><code>fpdf2</code> en <code>segno</code></td><td>PDF- of QR-pakketten met C-onderdelen</td></tr>
+</table>
+<div class="kader letop"><span class="kader-titel"></span>
+Controleer vóór je een nieuw Python-pakket toevoegt of het voor Python 3.14 installeerbaar is zonder compiler
+(<code>pip install</code> in de <code>.venv</code> moet slagen zonder foutmeldingen over "building wheel"). Twijfel je, kies
+dan een alternatief in puur Python of los het op met de standaardbibliotheek.
+</div>
+
+<h2 id="s-tool-claude">Claude Code en CLAUDE.md</h2>
+<p>RWCrew is ontwikkeld met de hulp van <strong>Claude Code</strong>, een AI-programmeerassistent van Anthropic die in
+de terminal of in VS Code werkt. Je beschrijft in gewone taal wat je wilt ("voeg een mailinglijst toe aan module 3"),
+en Claude Code leest de bestaande code, stelt wijzigingen voor, voert ze uit en draait de tests. De dichte,
+uitleggende commentaarstijl en de consequente opbouw per module zijn mee daardoor ontstaan.</p>
+<p>Het bestand <code>CLAUDE.md</code> in de hoofdmap van de repository is het <strong>projectgeheugen</strong>: Claude
+Code leest het bij elke start automatisch en volgt de afspraken die erin staan (architectuur, valkuilen,
+codeerafspraken, hoe je lokaal alles opstart). Daardoor maakt de assistent niet telkens dezelfde fouten opnieuw.
+Voor mensen is het de beknoptste samenvatting van het project.</p>
+<div class="kader tip"><span class="kader-titel"></span>
+Werk je met Claude Code (of een andere AI-assistent), houd dan deze regels aan:
+<ul>
+  <li>Laat de assistent nooit zonder controle naar <code>main</code> pushen: lees elke wijziging na zoals je die van een collega zou nalezen.</li>
+  <li>Ontdek je een nieuwe valkuil of maak je een nieuwe afspraak, zet die dan in <code>CLAUDE.md</code>. Zo profiteren mensen én de assistent ervan.</li>
+  <li>Geef nooit geheimen (wachtwoorden, API-sleutels, <code>.env</code>-inhoud) aan de assistent als dat niet nodig is.</li>
+  <li>Laat de assistent de tests draaien en de documentatie bijwerken als deel van de taak.</li>
+</ul>
+</div>
+
+<h2 id="s-tools-bijwerken">Afhankelijkheden bijwerken</h2>
+<p>Bibliotheken krijgen regelmatig updates met oplossingen voor beveiligingsproblemen. Spreek af dat iemand ze
+bijvoorbeeld één keer per kwartaal (en niet vlak voor een festival) nakijkt:</p>
+<ul>
+  <li><strong>Frontend</strong>: <code>npm outdated</code> toont wat verouderd is; <code>npm audit</code> toont gekende
+  beveiligingsproblemen. Werk bij met <code>npm install &lt;pakket&gt;@&lt;versie&gt;</code>, test lokaal (<code>npm run build</code>)
+  en commit <code>package.json</code> én <code>package-lock.json</code>.</li>
+  <li><strong>Backend</strong>: <code>.venv/Scripts/pip list --outdated</code>. Pas de versie aan in
+  <code>requirements.txt</code>, installeer, draai alle tests (<code>pytest</code>) en commit.</li>
+  <li>Grote versiesprongen (bv. Next.js 16 naar 17, of een nieuwe hoofdversie van FastAPI) apart en bewust doen: lees de
+  migratiegids van die tool, werk op een aparte branch en test grondig op test.</li>
+</ul>

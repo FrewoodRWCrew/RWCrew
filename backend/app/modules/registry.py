@@ -31,8 +31,8 @@ class ModuleDefinition:
 # module-8 (Altsien Select) likewise has its own bespoke router: the Ploeg
 # Wizard in which Altsien Kernleden make their per-team choices.
 #
-# module-10 ("Mobile App") is the web-side download page for the smartphone
-# app (install links, latest version, changelog); it contains no phone code.
+# module-10 ("Mobile App") is the install page for the phone app (the PWA
+# under /m): its address and a QR code; it contains no phone screens itself.
 _MODULE_NAMES = {
     "module-1": "TagScan",
     "module-3": "Intervention Requests",

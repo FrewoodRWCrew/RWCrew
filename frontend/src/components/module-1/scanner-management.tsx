@@ -14,6 +14,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { API_BASE_URL } from "@/lib/config";
 import { ApiError, createScanner, deleteScanner, generateScannerApiKey, revokeScannerApiKey, updateScanner } from "@/lib/api";
+import { formatDateTime } from "@/lib/date-time";
 import type { ProductType, Scanner, ScannerInput, ScannerTechnology } from "@/lib/types";
 import {
   AlertDialog,
@@ -583,7 +584,7 @@ function ScannerApiKeyDialog({ scanner, trigger, onChanged }: ScannerApiKeyDialo
               {scanner.has_api_key && (
                 <span className="text-sm text-muted-foreground">
                   {scanner.api_key_last_used_at
-                    ? t("apiKeyLastUsed", { date: new Date(scanner.api_key_last_used_at).toLocaleString() })
+                    ? t("apiKeyLastUsed", { date: formatDateTime(scanner.api_key_last_used_at) })
                     : t("apiKeyNeverUsed")}
                 </span>
               )}

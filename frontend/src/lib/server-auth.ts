@@ -6,7 +6,7 @@
 // an unauthenticated visitor away.
 
 import { cookies } from "next/headers";
-import { API_BASE_URL } from "./config";
+import { SERVER_API_BASE_URL } from "./config";
 import type { CurrentUser } from "./types";
 
 /**
@@ -17,7 +17,7 @@ export async function getCurrentUserOnServer(): Promise<CurrentUser | null> {
   // Next.js's cookies() function is asynchronous in this Next.js version.
   const cookieStore = await cookies();
 
-  const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
+  const response = await fetch(`${SERVER_API_BASE_URL}/api/auth/me`, {
     // Forward every cookie the browser sent us along to the backend, so
     // it can recognise the same login session.
     headers: { Cookie: cookieStore.toString() },

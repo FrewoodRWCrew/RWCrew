@@ -15,9 +15,10 @@
 // "selection criteria" lookup lists used by the Products form — shown
 // one level deeper, indented under "Products" within that same group.
 // "Teams" itself is currently a placeholder page (see its page.tsx)
-// while its own real screen is designed, but Team Location/Delivery
-// Method/Team Tasks ARE real, working screens nested one level under it,
-// the same way Type/Magazijn/Categorie/Limiet nest under Products.
+// while its own real screen is designed, but Ploegverantwoordelijken/Team
+// Location/Delivery Method/Team Tasks ARE real, working screens nested one
+// level under it, the same way Type/Magazijn/Categorie/Limiet nest under
+// Products.
 
 import { Database, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -37,6 +38,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const tSeason = useTranslations("masterdata.season");
   const tFestival = useTranslations("masterdata.festival");
   const tTeams = useTranslations("masterdata.teams");
+  const tTeamResponsibles = useTranslations("masterdata.teamResponsibles");
   const tTeamLocation = useTranslations("masterdata.teamLocation");
   const tDeliveryMethod = useTranslations("masterdata.deliveryMethod");
   const tTeamTasks = useTranslations("masterdata.teamTasks");
@@ -56,6 +58,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewSeason = viewableScreenKeys.includes("masterdata.season");
   const canViewFestival = viewableScreenKeys.includes("masterdata.festival");
   const canViewTeams = viewableScreenKeys.includes("masterdata.teams");
+  const canViewTeamResponsibles = viewableScreenKeys.includes("masterdata.team-responsibles");
   const canViewTeamLocation = viewableScreenKeys.includes("masterdata.team-location");
   const canViewDeliveryMethod = viewableScreenKeys.includes("masterdata.delivery-method");
   const canViewTeamTasks = viewableScreenKeys.includes("masterdata.team-tasks");
@@ -92,6 +95,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
       {(canViewSeason ||
         canViewFestival ||
         canViewTeams ||
+        canViewTeamResponsibles ||
         canViewProducts ||
         canViewDataUpload) && (
         <>
@@ -115,6 +119,15 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
           {canViewTeams && (
             <Link href="/modules/module-9/teams" className={linkClassName("/modules/module-9/teams", 1)}>
               {tTeams("title")}
+            </Link>
+          )}
+
+          {canViewTeamResponsibles && (
+            <Link
+              href="/modules/module-9/teams/responsibles"
+              className={linkClassName("/modules/module-9/teams/responsibles", 2)}
+            >
+              {tTeamResponsibles("title")}
             </Link>
           )}
 

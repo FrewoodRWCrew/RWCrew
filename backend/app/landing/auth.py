@@ -24,6 +24,7 @@ from app.db.models.user import User
 from app.landing.deps import ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, get_current_user
 from app.schemas.auth import ChangePasswordRequest, CurrentUserResponse, LoginRequest
 from app.shared.access import get_accessible_module_keys
+from app.shared.device import classify_device
 
 # Every route in this file will automatically start with "/api/auth".
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -84,21 +85,27 @@ def revoke_all_refresh_tokens(db: Session, user_id: int) -> None:
     db.execute(update(RefreshToken).where(RefreshToken.user_id == user_id).values(revoked=True))
 
 
-def _record_login_attempt(
-    db: Session, request: Request, email: str, user: User | None, success: bool, source: str = "web"
-) -> None:
+# Longest User-Agent kept in the login history (the column's size).
+_USER_AGENT_MAX_LENGTH = 512
+
+
+def _record_login_attempt(db: Session, request: Request, payload: LoginRequest, user: User | None, success: bool) -> None:
     """Remember one login attempt (successful or not) for the admin
     "Login History" screen, so there's a record of who is using the tool
-    and when — including attempts that failed. `source` says whether it came
-    from the web app ("web") or the smartphone app ("mobile").
+    and when — including attempts that failed. It also records which part of
+    the app it came from (the website or the phone section, see
+    LoginRequest.client) and the kind of device (PC, phone or tablet).
     """
+    user_agent = request.headers.get("user-agent")
     db.add(
         LoginHistory(
             user_id=user.id if user is not None else None,
-            email_attempted=email,
+            email_attempted=payload.email,
             success=success,
             ip_address=request.client.host if request.client is not None else None,
-            source=source,
+            source=payload.client,
+            device_type=classify_device(user_agent),
+            user_agent=user_agent[:_USER_AGENT_MAX_LENGTH] if user_agent else None,
         )
     )
 
@@ -139,7 +146,7 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     user = db.scalar(select(User).where(User.email == payload.email))
 
     if user is None or not user.is_active or not verify_password(payload.password, user.hashed_password):
-        _record_login_attempt(db, request, payload.email, user, success=False)
+        _record_login_attempt(db, request, payload, user, success=False)
         db.commit()
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
@@ -149,7 +156,7 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     session_end = datetime.now(timezone.utc) + timedelta(hours=settings.session_max_hours)
     access_token = create_access_token(user.id, session_end)
     refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
-    _record_login_attempt(db, request, payload.email, user, success=True)
+    _record_login_attempt(db, request, payload, user, success=True)
     db.commit()
 
     _set_auth_cookies(response, access_token, refresh_token, session_end)

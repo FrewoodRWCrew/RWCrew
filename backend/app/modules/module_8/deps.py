@@ -167,7 +167,7 @@ def get_season_or_404(db: Session, season_id: int) -> Season:
     """Load a season, or answer 404."""
     season = db.get(Season, season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
     return season
 
 
@@ -181,4 +181,4 @@ def season_is_editable_for(db: Session, user: User, season: Season) -> bool:
 def ensure_season_editable(db: Session, user: User, season: Season) -> None:
     """Refuse a change once the season's period is closed (see above)."""
     if not season_is_editable_for(db, user, season):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This season is closed for changes")
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="This year is closed for changes")

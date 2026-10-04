@@ -15,6 +15,7 @@ from app.db.models.altsien_select_user_role import AltsienSelectUserRole  # noqa
 from app.db.models.delivery_method import DeliveryMethod  # noqa: F401
 from app.db.models.festival import Festival  # noqa: F401
 from app.db.models.intervention_request import InterventionRequest  # noqa: F401
+from app.db.models.intervention_requests_mailing_recipient import InterventionRequestsMailingRecipient  # noqa: F401
 from app.db.models.intervention_requests_role import InterventionRequestsRole  # noqa: F401
 from app.db.models.intervention_requests_role_permission import InterventionRequestsRolePermission  # noqa: F401
 from app.db.models.intervention_requests_screen import InterventionRequestsScreen  # noqa: F401
@@ -24,6 +25,7 @@ from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie  # 
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt  # noqa: F401
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan  # noqa: F401
 from app.db.models.kartracker_kar import KarTrackerKar  # noqa: F401
+from app.db.models.kartracker_kar_action import KarTrackerKarAction  # noqa: F401
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie  # noqa: F401
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus  # noqa: F401
 from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum  # noqa: F401
@@ -58,6 +60,7 @@ from app.db.models.team import Team  # noqa: F401
 from app.db.models.team_festival import TeamFestival  # noqa: F401
 from app.db.models.team_kernlid import TeamKernlid  # noqa: F401
 from app.db.models.team_location import TeamLocation  # noqa: F401
+from app.db.models.team_responsible import TeamResponsible  # noqa: F401
 from app.db.models.team_task import TeamTask  # noqa: F401
 from app.db.models.team_team_task import TeamTeamTask  # noqa: F401
 from app.db.models.teamkar_member import TeamKarMember  # noqa: F401

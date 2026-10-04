@@ -11,12 +11,13 @@ from collections import defaultdict, deque
 from threading import Lock
 from time import monotonic
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.db.models.intervention_request import InterventionRequest
 from app.db.models.team import Team
+from app.modules.module_3.notifications import queue_new_request_mail
 from app.modules.module_3.service import (
     generate_request_number,
     get_default_new_status,
@@ -90,6 +91,7 @@ def list_public_teams(db: Session = Depends(get_db)) -> list[Team]:
 def create_public_intervention_request(
     payload: PublicInterventionRequestCreateRequest,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
 ) -> InterventionRequest:
     """Create a brand-new intervention request from the public form.
@@ -114,4 +116,6 @@ def create_public_intervention_request(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+    # Let the mailing list know (sent after this response has gone out).
+    queue_new_request_mail(db, new_request, background_tasks)
     return new_request

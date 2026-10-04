@@ -16,6 +16,12 @@ server is already set up:
   its own `.env` (see `.env.production.example` / `.env.test.example`) and
   its own `docker compose` project, so containers/volumes never collide.
 - Nginx config for both subdomains: `deploy/nginx/rwcrew.conf`.
+- **Which version runs where**: `deploy.sh` reads the commit date (Belgian time)
+  and short hash from git and bakes them into the images. The super admin sees
+  e.g. `v2026.10.04 · 97cdc36` at the bottom of the landing page's left menu, and
+  `https://test.rwcrew.eu/api/health` / `https://rwcrew.eu/api/health` return
+  the backend's own `version`. The same label means the same code; a deploy done
+  without `deploy.sh` shows `dev`.
 
 ## Database access for debugging (pgAdmin)
 

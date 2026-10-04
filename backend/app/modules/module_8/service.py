@@ -12,7 +12,9 @@ from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
+from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
@@ -20,7 +22,9 @@ from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
 from app.db.models.user import User
 from app.modules.module_8.deps import season_is_editable_for
+from app.modules.module_8.previous_season import COPYABLE_STEPS
 from app.modules.module_8.steps import STEP_DEFINITIONS, selected_festival_ids
+from app.modules.module_9.team_responsible_service import list_team_responsibles
 from app.schemas.altsien_select import (
     AfleverlocatieOptionResponse,
     FestivalChoiceResponse,
@@ -28,6 +32,8 @@ from app.schemas.altsien_select import (
     StepProgressResponse,
     StepResponse,
     TeamInfoResponse,
+    TeamResponsibleResponse,
+    TeamKarResponse,
     TeamStateResponse,
     TeamSummaryResponse,
 )
@@ -36,7 +42,13 @@ from app.schemas.altsien_select import (
 def list_steps() -> list[StepResponse]:
     """The wizard's steps, in order."""
     return [
-        StepResponse(key=step.key, label=step.label, sort_order=step.sort_order, placeholder=step.placeholder)
+        StepResponse(
+            key=step.key,
+            label=step.label,
+            sort_order=step.sort_order,
+            placeholder=step.placeholder,
+            copy_from_previous=step.key in COPYABLE_STEPS,
+        )
         for step in sorted(STEP_DEFINITIONS, key=lambda step: step.sort_order)
     ]
 
@@ -202,13 +214,34 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         for row in festival_rows
     ]
 
-    # The delivery locations offered in step 2.
+    # The delivery locations offered in step 2, with their coordinates for
+    # the step's map of chosen locations.
     afleverlocaties = [
-        AfleverlocatieOptionResponse(id=row.id, name=row.name, description=row.description)
+        AfleverlocatieOptionResponse(
+            id=row.id, name=row.name, description=row.description, latitude=row.latitude, longitude=row.longitude
+        )
         for row in db.execute(
-            select(KarTrackerAfleverlocatie.id, KarTrackerAfleverlocatie.name, KarTrackerAfleverlocatie.description)
+            select(
+                KarTrackerAfleverlocatie.id,
+                KarTrackerAfleverlocatie.name,
+                KarTrackerAfleverlocatie.description,
+                KarTrackerAfleverlocatie.latitude,
+                KarTrackerAfleverlocatie.longitude,
+            )
             .where(KarTrackerAfleverlocatie.active.is_(True))
             .order_by(KarTrackerAfleverlocatie.name)
+        ).all()
+    ]
+
+    # The karren KarManagement currently assigned to the team, with their
+    # transport type (a product name), sorted by kar number.
+    karren = [
+        TeamKarResponse(id=row.id, kar_nummer=row.kar_nummer, transport_type=row.transport_type)
+        for row in db.execute(
+            select(KarTrackerKar.id, KarTrackerKar.kar_nummer, Product.name.label("transport_type"))
+            .outerjoin(Product, Product.id == KarTrackerKar.transport_type_id)
+            .where(KarTrackerKar.team_id == team.id)
+            .order_by(KarTrackerKar.kar_nummer)
         ).all()
     ]
 
@@ -237,11 +270,16 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         season_open=season.periode_open,
         can_edit=can_edit,
         team=_build_team_info(db, team),
+        karren=karren,
         steps=list_steps(),
         progress=progress,
         festivals=festivals,
         afleverlocaties=afleverlocaties,
         requests=build_request_responses(db, user, list(requests), can_edit),
+        responsibles=[
+            TeamResponsibleResponse.model_validate(row, from_attributes=True)
+            for row in list_team_responsibles(db, season.id, team.id)
+        ],
     )
 
 

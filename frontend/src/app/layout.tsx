@@ -5,7 +5,7 @@
 // inside the language-specific layout instead, switching languages would
 // unnecessarily remount the whole document (theme included) every time.
 
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { getLocale, getTranslations } from "next-intl/server";
 import { Toaster } from "@/components/ui/sonner";
 import { SplashScreen } from "@/components/shared/splash-screen";
@@ -16,6 +16,22 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "RW Crew",
   description: "RW Crew management application",
+  // iPhones ignore most of the web app manifest (src/app/manifest.ts), so
+  // they get their own settings for "Add to Home Screen": open full screen
+  // and use this name under the icon. The icon itself is app/apple-icon.png.
+  appleWebApp: {
+    capable: true,
+    title: ENVIRONMENT_LABEL ? "RWCrew Test" : "RWCrew",
+    // "black" (not "black-translucent") so pages don't slide under the clock
+    // and battery icons at the top of the screen.
+    statusBarStyle: "black",
+  },
+};
+
+// Colours the phone's status bar / browser toolbar in the RW logo's green,
+// matching the installed app's theme colour in manifest.ts.
+export const viewport: Viewport = {
+  themeColor: "#10261F",
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

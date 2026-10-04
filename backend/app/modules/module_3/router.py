@@ -9,7 +9,7 @@
 
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Response, status
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.intervention_request import InterventionRequest
+from app.db.models.intervention_requests_mailing_recipient import InterventionRequestsMailingRecipient
 from app.db.models.intervention_requests_role import InterventionRequestsRole
 from app.db.models.intervention_requests_role_permission import InterventionRequestsRolePermission
 from app.db.models.intervention_requests_screen import InterventionRequestsScreen
@@ -29,6 +30,7 @@ from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.modules.module_3.deps import (
     MODULE_KEY,
+    PermissionAction,
     get_user_role,
     require_module_access,
     require_screen_permission,
@@ -36,18 +38,27 @@ from app.modules.module_3.deps import (
 )
 from app.modules.module_3.intervention_request_pdf import build_delivery_note_pdf
 from app.modules.module_3.intervention_requests_dashboard import build_dashboard_stats
-from app.modules.module_3.service import generate_request_number, list_teams_for_dropdown
+from app.modules.module_3.notifications import queue_new_request_mail
+from app.modules.module_3.service import (
+    generate_request_number,
+    list_teamkar_members,
+    list_teams_for_dropdown,
+    resolve_team_name,
+)
 from app.schemas.intervention_requests import (
     CreateOrGrantUserRequest,
     InterventionRequestCreateRequest,
     InterventionRequestResponse,
     InterventionRequestsDashboardResponse,
+    InterventionRequestsLookupsResponse,
     InterventionRequestsTeamResponse,
     InterventionRequestsUserSummaryResponse,
     InterventionRequestUpdateRequest,
     InterventionStatusCreateRequest,
     InterventionStatusResponse,
     InterventionStatusUpdateRequest,
+    MailingRecipientRequest,
+    MailingRecipientResponse,
     MyPermissionsResponse,
     RoleCreateRequest,
     RoleResponse,
@@ -391,12 +402,22 @@ def get_my_permissions(
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
     """Tell the frontend which Intervention Requests screens the current
-    user can view, so it knows what to show in the sidebar without
+    user can view / create on / edit / delete on, so it knows what to show
+    (sidebar links, the phone's "+" and "Opslaan" buttons) without
     duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(InterventionRequestsScreen)).all()
-    viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+
+    def keys_allowed(action: PermissionAction) -> list[str]:
+        """The keys of every screen this user may perform `action` on."""
+        return [screen.key for screen in screens if user_can(db, current_user, screen.key, action)]
+
+    return MyPermissionsResponse(
+        viewable_screen_keys=keys_allowed("view"),
+        creatable_screen_keys=keys_allowed("create"),
+        editable_screen_keys=keys_allowed("edit"),
+        deletable_screen_keys=keys_allowed("delete"),
+    )
 
 
 # --- TeamKar (module-3's fixed-group masterdata screen) -------------------
@@ -528,6 +549,83 @@ def delete_intervention_status(
     db.commit()
 
 
+# --- Mailing List (module-3's "Settings" screen) ------------------------
+# Who gets mailed about every new intervention request — see
+# notifications.py.
+
+
+def _ensure_unique_email(db: Session, email: str, exclude_id: int | None = None) -> None:
+    """Refuse (409) an address that's already on the list — checked up front
+    for a clear message instead of relying on the DB's unique-index error.
+    """
+    query = select(InterventionRequestsMailingRecipient.id).where(InterventionRequestsMailingRecipient.email == email)
+    if exclude_id is not None:
+        query = query.where(InterventionRequestsMailingRecipient.id != exclude_id)
+    if db.scalar(query) is not None:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This email address is already on the list")
+
+
+@router.get("/mailing-list", response_model=list[MailingRecipientResponse])
+def list_mailing_recipients(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "view")),
+) -> list[InterventionRequestsMailingRecipient]:
+    """Every address on the mailing list, alphabetically."""
+    return list(
+        db.scalars(select(InterventionRequestsMailingRecipient).order_by(InterventionRequestsMailingRecipient.email)).all()
+    )
+
+
+@router.post("/mailing-list", response_model=MailingRecipientResponse, status_code=status.HTTP_201_CREATED)
+def create_mailing_recipient(
+    payload: MailingRecipientRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "create")),
+) -> InterventionRequestsMailingRecipient:
+    """Add an address to the mailing list."""
+    _ensure_unique_email(db, payload.email)
+    new_recipient = InterventionRequestsMailingRecipient(**payload.model_dump())
+    db.add(new_recipient)
+    db.commit()
+    db.refresh(new_recipient)
+    return new_recipient
+
+
+@router.put("/mailing-list/{recipient_id}", response_model=MailingRecipientResponse)
+def update_mailing_recipient(
+    recipient_id: int,
+    payload: MailingRecipientRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "edit")),
+) -> InterventionRequestsMailingRecipient:
+    """Change an address, its name, or pause/resume it."""
+    existing_recipient = db.get(InterventionRequestsMailingRecipient, recipient_id)
+    if existing_recipient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
+
+    _ensure_unique_email(db, payload.email, exclude_id=recipient_id)
+    for field, value in payload.model_dump().items():
+        setattr(existing_recipient, field, value)
+    db.commit()
+    db.refresh(existing_recipient)
+    return existing_recipient
+
+
+@router.delete("/mailing-list/{recipient_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_mailing_recipient(
+    recipient_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.mailinglist", "delete")),
+) -> None:
+    """Remove an address from the mailing list."""
+    existing_recipient = db.get(InterventionRequestsMailingRecipient, recipient_id)
+    if existing_recipient is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
+
+    db.delete(existing_recipient)
+    db.commit()
+
+
 # --- Intervention Requests (module-3's "Actions" screen) -----------------
 
 
@@ -556,12 +654,28 @@ def list_teamkar_options(
     exactly like "teams" above, so a user can always pick a Team Kar member
     here regardless of whether they also have the TeamKar screen's permission.
     """
-    members = db.execute(
-        select(User.id, User.display_name)
-        .join(TeamKarMember, TeamKarMember.user_id == User.id)
-        .order_by(User.display_name)
-    ).all()
-    return [TeamKarMemberOptionResponse(id=row.id, display_name=row.display_name) for row in members]
+    return list_teamkar_members(db)
+
+
+@router.get("/lookups", response_model=InterventionRequestsLookupsResponse)
+def get_request_form_lookups(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.requests", "view")),
+) -> InterventionRequestsLookupsResponse:
+    """The statuses, teams and TeamKar members for the request form, in one
+    call (used by the phone's request form). Gated by the requests screen's
+    own permission — not the MasterData "statuses" screen — so anyone who
+    may see requests can always pick a status.
+    """
+    statuses = db.scalars(select(InterventionStatus).order_by(InterventionStatus.name)).all()
+    return InterventionRequestsLookupsResponse(
+        statuses=[InterventionStatusResponse.model_validate(item, from_attributes=True) for item in statuses],
+        teams=[
+            InterventionRequestsTeamResponse.model_validate(item, from_attributes=True)
+            for item in list_teams_for_dropdown(db)
+        ],
+        teamkar_members=list_teamkar_members(db),
+    )
 
 
 @router.get("/intervention-requests", response_model=list[InterventionRequestResponse])
@@ -575,11 +689,25 @@ def list_intervention_requests(
     )
 
 
+@router.get("/intervention-requests/{request_id}", response_model=InterventionRequestResponse)
+def get_intervention_request(
+    request_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("interventionrequests.requests", "view")),
+) -> InterventionRequest:
+    """One intervention request (the phone's edit screen opens it by id)."""
+    existing_request = db.get(InterventionRequest, request_id)
+    if existing_request is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Intervention request not found")
+    return existing_request
+
+
 @router.post(
     "/intervention-requests", response_model=InterventionRequestResponse, status_code=status.HTTP_201_CREATED
 )
 def create_intervention_request(
     payload: InterventionRequestCreateRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("interventionrequests.requests", "create")),
 ) -> InterventionRequest:
@@ -602,6 +730,8 @@ def create_intervention_request(
     db.add(new_request)
     db.commit()
     db.refresh(new_request)
+    # Let the mailing list know (sent after this response has gone out).
+    queue_new_request_mail(db, new_request, background_tasks)
     return new_request
 
 
@@ -665,8 +795,7 @@ def download_intervention_request_pdf(
     if existing_request is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Intervention request not found")
 
-    team = db.get(Team, existing_request.team_id) if existing_request.team_id is not None else None
-    team_name = team.name if team else (existing_request.team_name or "")
+    team_name = resolve_team_name(db, existing_request)
     pdf_bytes = build_delivery_note_pdf(existing_request, team_name=team_name, locale=locale)
     return Response(
         content=pdf_bytes,

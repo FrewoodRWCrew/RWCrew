@@ -7,19 +7,27 @@
 // backend to mark it done (which checks the step's rule, e.g. every chosen
 // festival needs a delivery location) and moves on to the next step. When
 // the season is closed the wizard is read-only and only shows the choices.
+// Steps that offer it get a "copy from last season" panel above them (see
+// copy-previous-season.tsx).
 
 import { useCallback, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check, FileText, Lock, RotateCcw, Save } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
-import { ApiError, getAltsienSelectWizard, setAltsienSelectStepComplete } from "@/lib/api";
+import {
+  ApiError,
+  copyAltsienSelectPreviousSeason,
+  getAltsienSelectWizard,
+  setAltsienSelectStepComplete,
+} from "@/lib/api";
 import type { AltsienSelectStep, AltsienSelectTeamState, Season } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AltsienSeasonSelect, useAltsienSeasonId } from "@/components/module-8/altsien-season-select";
 import { useKeyedLoad } from "@/components/module-8/use-keyed-load";
+import { CopyPreviousSeason } from "@/components/module-8/wizard/copy-previous-season";
 import { formatDate } from "@/components/module-8/wizard/format";
 import type { StepSaver } from "@/components/module-8/wizard/step-types";
 import { WizardStep } from "@/components/module-8/wizard/steps";
@@ -94,6 +102,9 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
     () => (steps.find((step) => !doneByKey.has(step.key)) ?? steps[0])?.key ?? "",
   );
   const [isBusy, setIsBusy] = useState(false);
+  // Bumped after a copy from last season, so the step remounts and its
+  // draft starts from the copied values.
+  const [copyVersion, setCopyVersion] = useState(0);
   // The current step's saver for pending choices (see step-types.ts).
   const saverRef = useRef<StepSaver | null>(null);
   const registerSave = useCallback((saver: StepSaver | null) => {
@@ -157,6 +168,25 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
       onStateChange(await setAltsienSelectStepComplete(teamId, seasonId, currentStep.key, false));
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t("completeFailed"));
+    } finally {
+      setIsBusy(false);
+    }
+  }
+
+  // Copy last season's chosen lines into this step. Pending choices are
+  // stored first, so the copy never overwrites (or gets overwritten by) a draft.
+  async function handleCopyPrevious(lineKeys: string[]): Promise<boolean> {
+    if (!currentStep) return false;
+    setIsBusy(true);
+    try {
+      if (!(await saveCurrent())) return false;
+      onStateChange(await copyAltsienSelectPreviousSeason(teamId, seasonId, currentStep.key, lineKeys));
+      setCopyVersion((version) => version + 1);
+      toast.success(t("previousSeason.copied"));
+      return true;
+    } catch (error) {
+      toast.error(error instanceof ApiError ? error.message : t("previousSeason.copyFailed"));
+      return false;
     } finally {
       setIsBusy(false);
     }
@@ -236,9 +266,20 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
           <CardDescription>{stepText(currentStep).description}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          {/* Keyed by step, so each step starts with a fresh draft. */}
+          {currentStep.copy_from_previous && !readOnly && (
+            <CopyPreviousSeason
+              key={currentStep.key}
+              teamId={teamId}
+              seasonId={seasonId}
+              stepKey={currentStep.key}
+              disabled={isBusy}
+              onCopy={handleCopyPrevious}
+            />
+          )}
+
+          {/* Keyed by step (and copy), so each step starts with a fresh draft. */}
           <WizardStep
-            key={currentStep.key}
+            key={`${currentStep.key}:${copyVersion}`}
             stepKey={currentStep.key}
             state={state}
             teamId={teamId}

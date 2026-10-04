@@ -227,6 +227,7 @@ def list_login_history(
                 success=row.success,
                 ip_address=row.ip_address,
                 source=row.source,
+                device_type=row.device_type,
                 created_at=row.created_at,
             )
             for row in rows

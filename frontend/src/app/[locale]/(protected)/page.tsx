@@ -11,7 +11,7 @@ import type { ModuleInfo } from "@/lib/types";
 import { ModuleTile } from "@/components/landing/module-tile";
 import { getModuleTranslationKey } from "@/lib/module-theme";
 
-// The phone-app download page (module-10) — not a real module, so it gets
+// The phone-app install page (module-10) — not a real module, so it gets
 // its own small tile instead of a spot in the grid.
 const MOBILE_MODULE_KEY = "module-10";
 
@@ -37,7 +37,7 @@ export default async function LandingPage() {
       return translationKey ? { ...module, name: tRoot(translationKey) } : module;
     });
 
-  // The "Mobile App" download page isn't a real module, so it's pulled out
+  // The "Mobile App" install page isn't a real module, so it's pulled out
   // of the grid and shown as a smaller shortcut tile in the top-right
   // corner, just below the user menu in the header.
   const mobileModule = accessibleModules.find((module) => module.key === MOBILE_MODULE_KEY);

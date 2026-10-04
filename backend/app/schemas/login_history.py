@@ -16,8 +16,12 @@ class LoginHistoryEntry(BaseModel):
     display_name: str | None
     success: bool
     ip_address: str | None
-    # "web" or "mobile"; None for attempts recorded before this was tracked.
+    # "web" (website), "pwa" (phone section /m) or, on older rows only,
+    # "mobile" (the former native app); None for attempts recorded before
+    # this was tracked.
     source: str | None
+    # "desktop", "mobile" or "tablet"; None when unknown.
+    device_type: str | None
     created_at: datetime
 
 

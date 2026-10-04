@@ -22,6 +22,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { formatDateTime } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
 
 interface TagLineDataProps {
@@ -30,16 +31,6 @@ interface TagLineDataProps {
 
 const STATUS_VALUES: TagLineStatus[] = ["converted", "no_match", "cancelled"];
 const ALL_VALUE = "all";
-
-/** Plain string slicing instead of toLocaleString(): that depends on the
- * runtime's default locale/timezone, which differs between the server
- * (during SSR) and the browser (during hydration) — causing a hydration
- * mismatch. Slicing the already-ISO string is deterministic everywhere
- * (see tag-headerdata.tsx's identical helper).
- */
-function formatDateTime(isoDateTime: string): string {
-  return isoDateTime.slice(0, 16).replace("T", " ");
-}
 
 /** Every column a user can click to sort by — matches the corresponding
  * TagLineDataEntry field name directly, so the comparator can index into

@@ -20,6 +20,8 @@ import { cn } from "@/lib/utils";
 
 interface FileBrowserProps {
   initialTree: TagscanFolderNode;
+  // The folder selected on open, whose files are initialFiles.
+  initialFolderPath: string;
   initialFiles: TagscanFileEntry[];
 }
 
@@ -29,11 +31,11 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileBrowser({ initialTree, initialFiles }: FileBrowserProps) {
+export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: FileBrowserProps) {
   const t = useTranslations("tagscan.dashboard");
 
   const [tree, setTree] = useState(initialTree);
-  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(initialTree.path);
+  const [selectedFolderPath, setSelectedFolderPath] = useState<string>(initialFolderPath);
   const [files, setFiles] = useState<TagscanFileEntry[]>(initialFiles);
   const [filesError, setFilesError] = useState<string | null>(null);
 

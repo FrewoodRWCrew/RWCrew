@@ -7,6 +7,8 @@
 #   3. add its title/description to the "altsienSelect.steps" translations;
 #   4. optionally give it its own section in ploegfiche_pdf.py (otherwise it
 #      is listed only in the progress overview).
+#   5. optionally offer "copy from last season" for it: add a list/copy pair
+#      to COPYABLE_STEPS in previous_season.py.
 # Progress is stored per step key in AltsienSelect_step_progress, so no
 # database migration is needed for a new step.
 
@@ -18,6 +20,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.team_festival import TeamFestival
+from app.db.models.team_responsible import TeamResponsible
 
 # A completion check gets (db, season_id, team_id) and returns None when
 # the step may be marked as done, or an error message explaining why not.
@@ -79,16 +82,36 @@ def _check_afleverlocaties(db: Session, season_id: int, team_id: int) -> str | N
     return None
 
 
+def _check_ploegverantwoordelijken(db: Session, season_id: int, team_id: int) -> str | None:
+    """Step 3 is done once the team has at least one responsible person
+    (stored in MasterData's MasterData_team_responsible) for this season.
+    """
+    responsible_count = db.scalar(
+        select(func.count())
+        .select_from(TeamResponsible)
+        .where(TeamResponsible.season_id == season_id, TeamResponsible.team_id == team_id)
+    )
+    if not responsible_count:
+        return "Add at least one team lead first"
+    return None
+
+
 STEP_DEFINITIONS: list[StepDefinition] = [
     StepDefinition(key="festivals", label="Festivals", sort_order=1, completion_check=_check_festivals),
     StepDefinition(
         key="afleverlocaties", label="Delivery locations", sort_order=2, completion_check=_check_afleverlocaties
     ),
+    StepDefinition(
+        key="ploegverantwoordelijken",
+        label="Team leads",
+        sort_order=3,
+        completion_check=_check_ploegverantwoordelijken,
+    ),
     # Placeholder until the products module exists.
-    StepDefinition(key="products", label="Products", sort_order=3, placeholder=True),
-    StepDefinition(key="special_requests", label="Special requests", sort_order=4),
+    StepDefinition(key="products", label="Products", sort_order=4, placeholder=True),
+    StepDefinition(key="special_requests", label="Special requests", sort_order=5),
     # Placeholder until the walkie-talkie module exists.
-    StepDefinition(key="walkies", label="Walkie-talkies", sort_order=5, placeholder=True),
+    StepDefinition(key="walkies", label="Walkie-talkies", sort_order=6, placeholder=True),
 ]
 
 # Quick lookup by key.

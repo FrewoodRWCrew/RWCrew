@@ -4,7 +4,7 @@
 from datetime import date
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 class ScreenResponse(BaseModel):
@@ -152,6 +152,55 @@ class TeamLocationUpdateRequest(BaseModel):
     """What's sent to rename an existing team location."""
 
     location: str = Field(min_length=1, max_length=255)
+
+
+class TeamResponsibleResponse(BaseModel):
+    """One responsible person of a team in a season ("Ploegverantwoordelijke")."""
+
+    id: int
+    season_id: int
+    team_id: int
+    name: str
+    email: str
+    phone: str
+    comments: str | None
+
+
+class TeamResponsibleCreateRequest(BaseModel):
+    """What's sent to add a responsible person to a team for a season.
+    Everything is required except the comments.
+    """
+
+    # Trim before validating, so "   " counts as empty instead of passing
+    # min_length and being stored as "" once the service trims it.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    season_id: int
+    team_id: int
+    name: str = Field(min_length=1, max_length=255)
+    email: EmailStr = Field(max_length=255)
+    phone: str = Field(min_length=1, max_length=50)
+    comments: str | None = Field(default=None, max_length=5000)
+
+
+class TeamResponsibleUpdateRequest(TeamResponsibleCreateRequest):
+    """What's sent to change a responsible person — same fields as creating one."""
+
+
+class TeamResponsibleOptionItem(BaseModel):
+    """One team or season in the Ploegverantwoordelijken screen's dropdowns."""
+
+    id: int
+    name: str
+
+
+class TeamResponsibleOptionsResponse(BaseModel):
+    """The dropdown choices for the Ploegverantwoordelijken screen, so it
+    works without also needing view rights on the Teams/Season screens.
+    """
+
+    teams: list[TeamResponsibleOptionItem]
+    seasons: list[TeamResponsibleOptionItem]
 
 
 class DeliveryMethodResponse(BaseModel):

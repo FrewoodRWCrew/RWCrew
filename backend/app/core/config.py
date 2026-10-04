@@ -64,24 +64,25 @@ class Settings(BaseSettings):
     # scan lines, while still rejecting an obviously-wrong/corrupt upload.
     tagscan_intake_max_file_mb: int = 20
 
-    # The oldest version of the smartphone app (see mobile/ and
-    # app/mobile/) this environment still accepts. Phone requests send their
-    # version in an "X-App-Version" header; anything older gets a "426
-    # Upgrade Required". "0.0.0" (the default) means every version is
-    # accepted. Only raise this when a breaking API change ships.
-    mobile_min_app_version: str = "0.0.0"
-
-    # What the web-side "Mobile App" download page (module-10) shows. They
-    # are settings (set per environment in the server's .env) so publishing a
-    # new phone build never needs a web redeploy of code, only a config edit.
-    # The iOS link is the TestFlight public link; the Android link is a direct
-    # APK/store URL. An empty value simply hides that platform's button.
-    mobile_ios_testflight_url: str = ""
-    mobile_android_download_url: str = ""
-    # The newest published phone app version and a short plain-text changelog
-    # (one change per line).
-    mobile_latest_version: str = ""
-    mobile_changelog: str = ""
+    # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
+    # (https://resend.com). The API key is secret and set per environment in
+    # the server's .env; left empty (the default, and in local dev/tests),
+    # every mail is simply skipped with a log line instead of failing.
+    resend_api_key: str = ""
+    # The sender shown on every mail, e.g. "RWCrew <noreply@rwcrew.eu>". Its
+    # domain must be verified in the Resend account.
+    mail_from: str = ""
+    # Put in front of every subject, e.g. "[TEST] " on test.rwcrew.eu, so a
+    # mail from the test environment can't be mistaken for a real one.
+    mail_subject_prefix: str = ""
+    # The public address of the web app (e.g. "https://rwcrew.eu"), used to
+    # put a clickable "open in RWCrew" link in mails and for the phone app's
+    # install link and QR code (module-10). Empty = no link / no QR code.
+    app_public_url: str = ""
+    # The deployed version: commit date (Belgian time, "2026.10.04") and short
+    # commit hash, exported by deploy/scripts/deploy.sh. Empty locally.
+    app_commit: str = ""
+    app_commit_date: str = ""
 
 
 # Create one shared Settings object that the rest of the app can import

@@ -88,7 +88,7 @@ def _resolve_season_id(db: Session, season_name: str | None) -> int:
         raise ValueError("season_name is required")
     season = db.scalar(select(Season).where(Season.name.ilike(season_name)))
     if season is None:
-        raise ValueError(f'Season "{season_name}" not found')
+        raise ValueError(f'Year "{season_name}" not found')
     return season.id
 
 

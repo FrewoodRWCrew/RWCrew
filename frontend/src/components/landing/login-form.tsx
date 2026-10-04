@@ -10,12 +10,22 @@ import { useState, type FormEvent } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, login } from "@/lib/api";
+import type { LoginClient } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export function LoginForm() {
+interface LoginFormProps {
+  /** Where to go after logging in: the landing page by default, the phone
+   *  section's tiles ("/m") when used on the phone's login page. */
+  redirectTo?: string;
+  /** Which part of the site this form is on, recorded in the login history:
+   *  the website ("web", default) or the phone section ("pwa"). */
+  client?: LoginClient;
+}
+
+export function LoginForm({ redirectTo = "/", client = "web" }: LoginFormProps) {
   const t = useTranslations("login");
   const tCommon = useTranslations("common");
   const router = useRouter();
@@ -36,11 +46,11 @@ export function LoginForm() {
     setIsSubmitting(true);
 
     try {
-      await login(email, password);
+      await login(email, password, client);
       // A successful login already set our auth cookies. Send the
-      // visitor to the landing page, and refresh so the server-rendered
-      // layout picks up the new, now-logged-in session.
-      router.push("/");
+      // visitor on (the landing page by default), and refresh so the
+      // server-rendered layout picks up the new, now-logged-in session.
+      router.push(redirectTo);
       router.refresh();
     } catch (error) {
       if (error instanceof ApiError && error.status === 401) {

@@ -14,6 +14,7 @@ from pathlib import Path
 
 from fpdf import FPDF
 
+from app.core.timezone import to_belgian
 from app.db.models.intervention_request import InterventionRequest
 
 # The event this delivery note is printed for — fixed text rather than
@@ -107,9 +108,9 @@ class _DeliveryNotePDF(FPDF):
 def _format_datetime(value) -> str:
     """dd-mm-yyyy HH:mm — this app's established deterministic date format
     (see formatDateTime in intervention-requests-management.tsx), not a
-    raw str(datetime) dump.
+    raw str(datetime) dump — always in Belgian time.
     """
-    return value.strftime("%d-%m-%Y %H:%M") if value is not None else None
+    return to_belgian(value).strftime("%d-%m-%Y %H:%M") if value is not None else None
 
 
 def _render_field(pdf: FPDF, label: str, value: str | None, labels: dict[str, str]) -> None:

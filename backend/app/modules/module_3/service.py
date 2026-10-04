@@ -3,15 +3,18 @@
 # here rather than duplicated in both so "how do we pick a team / a
 # request number / the default status" stays defined exactly once.
 
-from datetime import datetime, timezone
 
 from fastapi import HTTPException, status
 from sqlalchemy import desc, select, text
 from sqlalchemy.orm import Session
 
+from app.core.timezone import belgian_today
 from app.db.models.intervention_request import InterventionRequest
 from app.db.models.intervention_status import InterventionStatus
 from app.db.models.team import Team
+from app.db.models.teamkar_member import TeamKarMember
+from app.db.models.user import User
+from app.schemas.intervention_requests import TeamKarMemberOptionResponse
 
 # The status every new request starts in, whether it was logged by staff or
 # submitted through the public form. Confirmed present in the live data
@@ -26,6 +29,18 @@ def list_teams_for_dropdown(db: Session) -> list[Team]:
     role at all).
     """
     return list(db.scalars(select(Team).order_by(Team.name)).all())
+
+
+def list_teamkar_members(db: Session) -> list[TeamKarMemberOptionResponse]:
+    """The current TeamKar members (id + name, alphabetical), for the
+    "Team kar" dropdown of the request form.
+    """
+    rows = db.execute(
+        select(User.id, User.display_name)
+        .join(TeamKarMember, TeamKarMember.user_id == User.id)
+        .order_by(User.display_name)
+    ).all()
+    return [TeamKarMemberOptionResponse(id=row.id, display_name=row.display_name) for row in rows]
 
 
 def get_default_new_status(db: Session) -> InterventionStatus:
@@ -53,7 +68,9 @@ def generate_request_number(db: Session) -> str:
     its number available again. PostgreSQL's transaction advisory lock
     serializes concurrent allocations for the same year.
     """
-    year_suffix = str(datetime.now(timezone.utc).year)[-2:]
+    # The Belgian calendar year, so a request made just after midnight on
+    # New Year's Day already gets the new year's number.
+    year_suffix = str(belgian_today().year)[-2:]
     prefix = f"IA{year_suffix}_"
     if db.bind is not None and db.bind.dialect.name == "postgresql":
         db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:prefix))"), {"prefix": prefix})
@@ -73,3 +90,12 @@ def generate_request_number(db: Session) -> str:
 
     next_sequence = (max(existing_sequences) if existing_sequences else 0) + 1
     return f"{prefix}{next_sequence:04d}"
+
+
+def resolve_team_name(db: Session, request: InterventionRequest) -> str:
+    """The "Ploeg" name to show for a request: the linked MasterData team's
+    name, or the free-text name typed on the public form, or "" if neither.
+    Shared by the PDF download and the new-request mail.
+    """
+    team = db.get(Team, request.team_id) if request.team_id is not None else None
+    return team.name if team else (request.team_name or "")

@@ -17,11 +17,11 @@
 // no "updated" outcome here.
 
 import { useState } from "react";
-import { FileSpreadsheet, ListChecks, MapPin, Route, type LucideIcon } from "lucide-react";
+import { CalendarDays, FileSpreadsheet, ListChecks, MapPin, Route, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
-import { ApiError, importAfleverlocaties, importDistributiepunten, importKarStatuses, importKarren, importZones } from "@/lib/api";
+import { ApiError, importAfleverlocaties, importDistributiepunten, importKarStatuses, importKarren, importLeverdata, importZones } from "@/lib/api";
 import { getModuleTheme } from "@/lib/module-theme";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -46,12 +46,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface ImportRowResult {
   row_number: number;
   key: string | null;
-  outcome: "created" | "error";
+  // "updated"/"skipped" only come from the Leverdata import, which upserts.
+  outcome: "created" | "updated" | "skipped" | "error";
   detail: string | null;
 }
 
-const OUTCOME_BADGE_VARIANT: Record<ImportRowResult["outcome"], "default" | "destructive"> = {
+const OUTCOME_BADGE_VARIANT: Record<ImportRowResult["outcome"], "default" | "secondary" | "outline" | "destructive"> = {
   created: "default",
+  updated: "secondary",
+  skipped: "outline",
   error: "destructive",
 };
 
@@ -80,6 +83,7 @@ export function KarDataUploadDownload({ canUpload }: KarDataUploadDownloadProps)
         <DistributiepuntDataTile canUpload={canUpload} />
         <ZoneDataTile canUpload={canUpload} />
         <AfleverlocatieDataTile canUpload={canUpload} />
+        <LeverdataDataTile canUpload={canUpload} />
       </div>
     </div>
   );
@@ -259,6 +263,44 @@ function AfleverlocatieDataTile({ canUpload }: { canUpload: boolean }) {
   );
 }
 
+function LeverdataDataTile({ canUpload }: { canUpload: boolean }) {
+  const t = useTranslations("karTracker.dataUploadDownload");
+  const tLeverdata = useTranslations("karTracker.dataUploadDownload.leverdata");
+
+  return (
+    <DataTopicTile
+      icon={CalendarDays}
+      tileTitle={tLeverdata("tileTitle")}
+      dialogTitle={tLeverdata("tileTitle")}
+      dialogDescription={tLeverdata("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-2/leverdatum-import/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-2/leverdata/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      // This import upserts, so its summary also counts updated and skipped rows.
+      importSummary={(created, errors, updated, skipped) =>
+        tLeverdata("importSummary", { created, updated, skipped, errors })
+      }
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tLeverdata("importColumnFestival")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => tLeverdata(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tLeverdata("exportButton")}
+      onUpload={async (file) => {
+        const response = await importLeverdata(file);
+        return response.results.map((row) => ({ ...row, key: row.festival_name }));
+      }}
+    />
+  );
+}
+
 interface DataTopicTileProps {
   icon: LucideIcon;
   tileTitle: string;
@@ -275,7 +317,8 @@ interface DataTopicTileProps {
   chooseFileLabel: string;
   uploadButton: string;
   importFailed: string;
-  importSummary: (created: number, errors: number) => string;
+  /** updated/skipped are only non-zero for an upserting import (Leverdata); other tiles ignore them. */
+  importSummary: (created: number, errors: number, updated: number, skipped: number) => string;
   importColumnRow: string;
   importColumnKey: string;
   importColumnOutcome: string;
@@ -363,6 +406,8 @@ function DataTopicTile({
 
   const createdCount = results?.filter((row) => row.outcome === "created").length ?? 0;
   const errorCount = results?.filter((row) => row.outcome === "error").length ?? 0;
+  const updatedCount = results?.filter((row) => row.outcome === "updated").length ?? 0;
+  const skippedCount = results?.filter((row) => row.outcome === "skipped").length ?? 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -415,7 +460,7 @@ function DataTopicTile({
 
         {results && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">{importSummary(createdCount, errorCount)}</p>
+            <p className="text-sm text-muted-foreground">{importSummary(createdCount, errorCount, updatedCount, skippedCount)}</p>
             <div className="rounded-md border [&>div]:max-h-72 [&>div]:overflow-y-auto">
               <Table>
                 <TableHeader>

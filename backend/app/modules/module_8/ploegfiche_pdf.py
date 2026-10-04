@@ -1,20 +1,22 @@
 # Builds the printable "Ploegfiche" PDF of Altsien Select: everything that
 # was chosen in the Ploeg Wizard for one team in one season, laid out as a
 # friendly one-stop overview for the organisation — Altsien logo header,
-# team info, a progress overview of every wizard step, the festivals with
-# their delivery locations, and the special requests with their status.
+# team info, the karren assigned to the team, a progress overview of every wizard step, the festivals with
+# their delivery locations, the team leads (Ploegverantwoordelijken), and the
+# special requests with their status.
 #
 # Uses fpdf2 (pure Python, see CLAUDE.md's Python 3.14 gotcha), the same
 # library and conventions as module_3/intervention_request_pdf.py. The
 # built-in Helvetica font only knows latin-1, so free text goes through
 # _pdf_text() first (the same fallback as module_2/karblad_pdf.py).
 
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 from pathlib import Path
 
 from fpdf import FPDF
 from fpdf.fonts import FontFace
 
+from app.core.timezone import belgian_now, to_belgian
 from app.schemas.altsien_select import TeamStateResponse
 
 # Altsien Select's own fuchsia accent (fuchsia-600, see
@@ -49,7 +51,7 @@ ALTSIEN_LOGO_RATIO = 352 / 416
 LABELS = {
     "nl": {
         "title": "Ploegfiche",
-        "season": "Seizoen {season}",
+        "season": "Jaartal {season}",
         "season_closed": "afgesloten",
         "team_heading": "Ploeginfo",
         "team_name": "Ploeg",
@@ -57,6 +59,12 @@ LABELS = {
         "delivery_method": "Leveringswijze",
         "kernleden": "Altsien Kernleden",
         "description": "Omschrijving",
+        "karren_heading": "Karren",
+        "kar_nummer": "Karnummer",
+        "transport_type": "Transporttype",
+        "kar_code": "Kar cijfercode",
+        "kar_code_placeholder": "Later in te vullen",
+        "no_karren": "Er zijn geen karren aan deze ploeg toegewezen.",
         "progress_heading": "Voortgang wizard",
         "step_done": "Afgerond op {date}{by}",
         "step_done_by": " door {name}",
@@ -67,6 +75,12 @@ LABELS = {
         "afleverlocatie": "Afleverlocatie",
         "no_festivals": "Er zijn nog geen festivals gekozen.",
         "no_location": "Nog niet gekozen",
+        "responsibles_heading": "Ploegverantwoordelijken",
+        "responsible_name": "Naam",
+        "responsible_email": "E-mail",
+        "responsible_phone": "Telefoon",
+        "responsible_comments": "Opmerkingen",
+        "no_responsibles": "Er zijn nog geen ploegverantwoordelijken opgegeven.",
         "requests_heading": "Speciale aanvragen",
         "request": "Aanvraag",
         "status": "Status",
@@ -79,6 +93,7 @@ LABELS = {
         "steps": {
             "festivals": "Festivals",
             "afleverlocaties": "Afleverlocaties",
+            "ploegverantwoordelijken": "Ploegverantwoordelijken",
             "products": "Producten",
             "special_requests": "Speciale aanvragen",
             "walkies": "Walkie-talkies",
@@ -86,7 +101,7 @@ LABELS = {
     },
     "en": {
         "title": "Team sheet",
-        "season": "Season {season}",
+        "season": "Year {season}",
         "season_closed": "closed",
         "team_heading": "Team info",
         "team_name": "Team",
@@ -94,6 +109,12 @@ LABELS = {
         "delivery_method": "Delivery method",
         "kernleden": "Altsien core members",
         "description": "Description",
+        "karren_heading": "Carts",
+        "kar_nummer": "Cart number",
+        "transport_type": "Transport type",
+        "kar_code": "Cart code",
+        "kar_code_placeholder": "To be filled in later",
+        "no_karren": "No carts are assigned to this team.",
         "progress_heading": "Wizard progress",
         "step_done": "Completed on {date}{by}",
         "step_done_by": " by {name}",
@@ -104,6 +125,12 @@ LABELS = {
         "afleverlocatie": "Delivery location",
         "no_festivals": "No festivals have been selected yet.",
         "no_location": "Not chosen yet",
+        "responsibles_heading": "Team leads",
+        "responsible_name": "Name",
+        "responsible_email": "Email",
+        "responsible_phone": "Telephone",
+        "responsible_comments": "Comments",
+        "no_responsibles": "No team leads have been added yet.",
         "requests_heading": "Special requests",
         "request": "Request",
         "status": "Status",
@@ -116,6 +143,7 @@ LABELS = {
         "steps": {
             "festivals": "Festivals",
             "afleverlocaties": "Delivery locations",
+            "ploegverantwoordelijken": "Team leads",
             "products": "Products",
             "special_requests": "Special requests",
             "walkies": "Walkie-talkies",
@@ -148,7 +176,10 @@ def _pdf_text(text: str | None) -> str:
 
 
 def _format_date(value: date | datetime) -> str:
-    """dd-mm-yyyy, the app's established date format."""
+    """dd-mm-yyyy, the app's established date format. A moment (date-time)
+    gives its Belgian date; a plain date is shown as-is."""
+    if isinstance(value, datetime):
+        value = to_belgian(value)
     return value.strftime("%d-%m-%Y")
 
 
@@ -298,6 +329,38 @@ def _table_heading_style() -> FontFace:
     return FontFace(emphasis="BOLD", color=TEXT_DARK, fill_color=(233, 235, 238))
 
 
+def _render_karren(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
+    """Zebra table of the karren assigned to the team; the cijfercode column
+    is a placeholder until KarManagement stores it.
+    """
+    _section_heading(pdf, labels["karren_heading"])
+    if not state.karren:
+        _muted_line(pdf, labels["no_karren"])
+        return
+
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.2)
+    with pdf.table(
+        col_widths=(50, 70, 60),
+        headings_style=_table_heading_style(),
+        cell_fill_color=ZEBRA_FILL,
+        cell_fill_mode="ROWS",
+        borders_layout="HORIZONTAL_LINES",
+        line_height=6.5,
+        padding=2,
+        text_align="LEFT",
+    ) as table:
+        table.row([labels["kar_nummer"], labels["transport_type"], labels["kar_code"]])
+        for kar in state.karren:
+            row = table.row()
+            row.cell(_pdf_text(kar.kar_nummer), style=FontFace(emphasis="BOLD"))
+            row.cell(_pdf_text(kar.transport_type or "-"))
+            row.cell(_pdf_text(labels["kar_code_placeholder"]), style=FontFace(emphasis="ITALICS", color=MUTED_TEXT))
+    pdf.ln(2)
+
+
 def _render_festivals(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
     """Zebra table of the selected festivals and their delivery location."""
     _section_heading(pdf, labels["festivals_heading"])
@@ -338,6 +401,44 @@ def _render_festivals(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None
                 period += f" - {_format_date(festival.end_date)}"
             row.cell(period)
             row.cell(_pdf_text(location), style=location_style)
+    pdf.ln(2)
+
+
+def _render_responsibles(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
+    """Zebra table of the team's responsible people and their contact details."""
+    _section_heading(pdf, labels["responsibles_heading"])
+    if not state.responsibles:
+        _muted_line(pdf, labels["no_responsibles"])
+        return
+
+    pdf.set_font("Helvetica", "", 10)
+    pdf.set_text_color(*TEXT_DARK)
+    pdf.set_draw_color(*BORDER_COLOR)
+    pdf.set_line_width(0.2)
+    with pdf.table(
+        col_widths=(40, 50, 35, 55),
+        headings_style=_table_heading_style(),
+        cell_fill_color=ZEBRA_FILL,
+        cell_fill_mode="ROWS",
+        borders_layout="HORIZONTAL_LINES",
+        line_height=6.5,
+        padding=2,
+        text_align="LEFT",
+    ) as table:
+        table.row(
+            [
+                labels["responsible_name"],
+                labels["responsible_email"],
+                labels["responsible_phone"],
+                labels["responsible_comments"],
+            ]
+        )
+        for responsible in state.responsibles:
+            row = table.row()
+            row.cell(_pdf_text(responsible.name), style=FontFace(emphasis="BOLD"))
+            row.cell(_pdf_text(responsible.email))
+            row.cell(_pdf_text(responsible.phone))
+            row.cell(_pdf_text(responsible.comments or "-"))
     pdf.ln(2)
 
 
@@ -383,7 +484,7 @@ def _render_placeholder(pdf: FPDF, heading: str, labels: dict) -> None:
 def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
     """The Ploegfiche PDF for one team in one season."""
     labels = LABELS.get(locale, LABELS["nl"])
-    generated_on = datetime.now(timezone.utc).astimezone().strftime("%d-%m-%Y %H:%M")
+    generated_on = belgian_now().strftime("%d-%m-%Y %H:%M")
 
     pdf = _PloegfichePDF(labels, generated_on)
     pdf.set_margins(15, 12, 15)
@@ -393,12 +494,14 @@ def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
 
     _render_header(pdf, state, labels)
     _render_team_info(pdf, state, labels)
+    _render_karren(pdf, state, labels)
     _render_progress(pdf, state, labels)
 
     # One section per wizard step, in wizard order. A step without its own
     # renderer here (e.g. one added later) only appears in the progress list.
     step_renderers = {
         "festivals": lambda: _render_festivals(pdf, state, labels),
+        "ploegverantwoordelijken": lambda: _render_responsibles(pdf, state, labels),
         "products": lambda: _render_placeholder(pdf, labels["steps"]["products"], labels),
         "special_requests": lambda: _render_requests(pdf, state, labels),
         "walkies": lambda: _render_placeholder(pdf, labels["steps"]["walkies"], labels),

@@ -6,7 +6,7 @@
 
 from datetime import date, datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 from app.schemas.intervention_requests import (  # noqa: F401  (re-exported for the router)
     CreateOrGrantUserRequest,
@@ -21,6 +21,7 @@ from app.schemas.intervention_requests import (  # noqa: F401  (re-exported for 
     SetUserRoleRequest,
     StatusColor,
 )
+from app.schemas.masterdata import TeamResponsibleResponse
 
 
 # --- Wizard steps ---------------------------------------------------------
@@ -33,6 +34,8 @@ class StepResponse(BaseModel):
     label: str
     sort_order: int
     placeholder: bool
+    # Whether the step offers "copy from last season" (see previous_season.py).
+    copy_from_previous: bool = False
 
 
 class StepProgressResponse(BaseModel):
@@ -66,6 +69,16 @@ class TeamInfoResponse(BaseModel):
     kernleden: list[str]
 
 
+class TeamKarResponse(BaseModel):
+    """One kar from KarManagement (module-2) currently assigned to the team.
+    The kar's cijfercode is not stored yet; it is a placeholder on screen.
+    """
+
+    id: int
+    kar_nummer: str
+    transport_type: str | None
+
+
 class FestivalChoiceResponse(BaseModel):
     """One active festival of the season, whether the team is active there,
     and (if so) the delivery location chosen for it.
@@ -82,11 +95,15 @@ class FestivalChoiceResponse(BaseModel):
 
 
 class AfleverlocatieOptionResponse(BaseModel):
-    """One delivery location offered in step 2's dropdowns."""
+    """One delivery location offered in step 2's dropdowns, with its
+    coordinates so the chosen locations can be pinned on the step's map.
+    """
 
     id: int
     name: str
     description: str | None
+    latitude: float | None
+    longitude: float | None
 
 
 # --- Special requests -----------------------------------------------------
@@ -116,7 +133,26 @@ class SpecialRequestResponse(BaseModel):
 class SpecialRequestWriteRequest(BaseModel):
     """What the wizard sends to add or change a request."""
 
+    # Trim before validating, so "   " counts as empty instead of passing
+    # min_length and being stored as "" once the service trims it.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
     text: str = Field(min_length=1, max_length=5000)
+
+
+class ResponsibleWriteRequest(BaseModel):
+    """What the wizard sends to add or change a responsible person — the
+    team and season come from the URL. Everything but comments is required.
+    """
+
+    # Trim before validating, so "   " counts as empty instead of passing
+    # min_length and being stored as "" once the service trims it.
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    name: str = Field(min_length=1, max_length=255)
+    email: EmailStr = Field(max_length=255)
+    phone: str = Field(min_length=1, max_length=50)
+    comments: str | None = Field(default=None, max_length=5000)
 
 
 class SpecialRequestFollowUpRequest(BaseModel):
@@ -140,11 +176,15 @@ class TeamStateResponse(BaseModel):
     # Whether the calling user may still change these choices.
     can_edit: bool
     team: TeamInfoResponse
+    # The karren KarManagement assigned to the team (not season-scoped).
+    karren: list[TeamKarResponse]
     steps: list[StepResponse]
     progress: list[StepProgressResponse]
     festivals: list[FestivalChoiceResponse]
     afleverlocaties: list[AfleverlocatieOptionResponse]
     requests: list[SpecialRequestResponse]
+    # The team's responsible people ("Ploegverantwoordelijken") this season.
+    responsibles: list[TeamResponsibleResponse]
 
 
 class SaveFestivalsRequest(BaseModel):
@@ -166,6 +206,38 @@ class SaveAfleverlocatiesRequest(BaseModel):
 
     season_id: int
     rows: list[AfleverlocatieChoice]
+
+
+# --- Copy from last season ------------------------------------------------
+
+
+class PreviousSeasonLineResponse(BaseModel):
+    """One of last season's values for a step (see previous_season.py)."""
+
+    key: str
+    label: str
+    detail: str | None
+    target: str | None
+    current_detail: str | None
+    already_present: bool
+    unavailable_reason: str | None
+
+
+class PreviousSeasonResponse(BaseModel):
+    """Last season's values for one step of one team; no season (and no
+    lines) when there is no earlier season.
+    """
+
+    previous_season_id: int | None
+    previous_season_name: str | None
+    lines: list[PreviousSeasonLineResponse]
+
+
+class CopyPreviousRequest(BaseModel):
+    """Which of last season's lines to copy into this season."""
+
+    season_id: int
+    line_keys: list[str]
 
 
 # --- Request statuses (master data) ---------------------------------------

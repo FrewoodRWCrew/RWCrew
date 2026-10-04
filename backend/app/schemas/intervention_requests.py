@@ -113,11 +113,15 @@ class CreateOrGrantUserRequest(BaseModel):
 
 class MyPermissionsResponse(BaseModel):
     """Which Intervention Requests screens the calling user is allowed to
-    view — used by the frontend to decide what to show in the sidebar,
+    view, create on, edit and delete on — used by the frontend to decide
+    what to show (sidebar links, the phone's "+" and "Opslaan" buttons)
     without it having to know the full permission-checking rules itself.
     """
 
     viewable_screen_keys: list[str]
+    creatable_screen_keys: list[str]
+    editable_screen_keys: list[str]
+    deletable_screen_keys: list[str]
 
 
 class InterventionRequestsTeamResponse(BaseModel):
@@ -222,6 +226,33 @@ class InterventionStatusUpdateRequest(BaseModel):
     color: StatusColor = "gray"
 
 
+class MailingRecipientResponse(BaseModel):
+    """One row of the "Mailing List" settings screen."""
+
+    id: int
+    email: str
+    name: str | None
+    is_active: bool
+
+
+class MailingRecipientRequest(BaseModel):
+    """What's sent to add or change a mailing-list row. The address is
+    stored trimmed and lower-case, so "Jan@X.be" and "jan@x.be" count as
+    the same (unique) address.
+    """
+
+    email: EmailStr
+    name: str | None = Field(default=None, max_length=255)
+    is_active: bool = True
+
+    @model_validator(mode="after")
+    def _normalise(self) -> "MailingRecipientRequest":
+        # Lower-case the address and turn a blank name into "no name".
+        self.email = self.email.strip().lower()
+        self.name = self.name.strip() if self.name and self.name.strip() else None
+        return self
+
+
 def _validate_team_reference(team_id: int | None, team_name: str | None) -> None:
     """"Ploeg" is either a real MasterData team (team_id) or, when the
     caller (customer or staff) typed a name that isn't in that list yet, a
@@ -309,3 +340,15 @@ class PublicInterventionRequestCreateRequest(BaseModel):
     def _check_team_reference(self) -> "PublicInterventionRequestCreateRequest":
         _validate_team_reference(self.team_id, self.team_name)
         return self
+
+
+class InterventionRequestsLookupsResponse(BaseModel):
+    """Everything the request form's dropdowns need in one call: statuses,
+    teams and TeamKar members. Gated by the requests screen itself (not the
+    MasterData "statuses" screen), so anyone who may see requests can always
+    pick a status — used by the phone's request form.
+    """
+
+    statuses: list[InterventionStatusResponse]
+    teams: list[InterventionRequestsTeamResponse]
+    teamkar_members: list[TeamKarMemberOptionResponse]

@@ -8,7 +8,7 @@
 // recognises the same logged-in session.
 
 import { cookies } from "next/headers";
-import { API_BASE_URL } from "./config";
+import { SERVER_API_BASE_URL } from "./config";
 
 export class ServerApiError extends Error {
   constructor(
@@ -23,7 +23,7 @@ export class ServerApiError extends Error {
 export async function serverApiFetch<TResponse>(path: string): Promise<TResponse> {
   const cookieStore = await cookies();
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+  const response = await fetch(`${SERVER_API_BASE_URL}${path}`, {
     headers: { Cookie: cookieStore.toString() },
     // Data like module access can change at any time from the admin
     // screen, so we always ask the backend fresh rather than caching.

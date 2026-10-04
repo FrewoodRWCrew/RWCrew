@@ -6,11 +6,12 @@
 // matching the module's tile colour, then the unconditional "KPI
 // overview" landing link, then an "Actions" group (the main Intervention
 // Requests screen) and a "MasterData" group (the Intervention Statuses
-// lookup screen), and an "Access Rights" group (Roles/Users) — all now
+// lookup screen), a "Settings" group (the new-request Mailing List), and
+// an "Access Rights" group (Roles/Users) — all now
 // gated by the current user's Intervention Requests role, the same way
 // TagScan's/MasterData's own sidebar are (see module_3/deps.py).
 
-import { Database, ShieldCheck, Zap } from "lucide-react";
+import { Database, Settings, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -26,6 +27,7 @@ export function InterventionRequestsSidebar({ viewableScreenKeys }: Intervention
   const tRequests = useTranslations("interventionRequests.requests");
   const tStatus = useTranslations("interventionRequests.status");
   const tTeamKar = useTranslations("interventionRequests.teamkar");
+  const tMailingList = useTranslations("interventionRequests.mailingList");
   const tRoles = useTranslations("interventionRequests.roles");
   const tUsers = useTranslations("interventionRequests.users");
   const pathname = usePathname();
@@ -36,6 +38,7 @@ export function InterventionRequestsSidebar({ viewableScreenKeys }: Intervention
   const canViewRequests = viewableScreenKeys.includes("interventionrequests.requests");
   const canViewStatuses = viewableScreenKeys.includes("interventionrequests.statuses");
   const canViewTeamKar = viewableScreenKeys.includes("interventionrequests.teamkar");
+  const canViewMailingList = viewableScreenKeys.includes("interventionrequests.mailinglist");
   const canViewRoles = viewableScreenKeys.includes("interventionrequests.roles");
   const canViewUsers = viewableScreenKeys.includes("interventionrequests.users");
 
@@ -93,6 +96,21 @@ export function InterventionRequestsSidebar({ viewableScreenKeys }: Intervention
               {tTeamKar("title")}
             </Link>
           )}
+        </>
+      )}
+
+      {canViewMailingList && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <Settings className="size-4" />
+            {t("settingsGroup")}
+          </div>
+          <Link
+            href="/modules/module-3/settings/mailing-list"
+            className={linkClassName("/modules/module-3/settings/mailing-list", 1)}
+          >
+            {tMailingList("title")}
+          </Link>
         </>
       )}
 

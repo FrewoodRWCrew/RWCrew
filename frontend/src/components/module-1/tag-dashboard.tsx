@@ -71,7 +71,7 @@ const STATUS_COLORS: Record<RfidTagStatus, { light: string; dark: string }> = {
 };
 
 /** "2026-01-05" -> "01-05" — deterministic, no locale/timezone dependence
- * (see tag-management.tsx's formatDate for why toLocaleDateString() is
+ * (see lib/date-time.ts for why toLocaleDateString() is
  * avoided: it causes a server/client hydration mismatch).
  */
 function formatWeekLabel(weekStart: string): string {

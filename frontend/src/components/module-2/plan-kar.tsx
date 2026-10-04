@@ -4,14 +4,16 @@
 // appears with one row per active festival of the season selected in the
 // header and a dropdown of the active delivery locations per row. Rows are
 // pre-filled with whatever was saved before; Save upserts one record per
-// row (season + festival + team) on the backend.
+// row (season + festival + team) on the backend. Below it, a map pins the
+// currently chosen (also not-yet-saved) locations over the ground plans.
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ApiError, getPlanKar, savePlanKar } from "@/lib/api";
+import { ApiError, getPlanKar, karTrackerGroundplanImageUrl, savePlanKar } from "@/lib/api";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 import type {
+  KarTrackerGroundplan,
   KarTrackerPlanKarAfleverlocatieOption,
   KarTrackerPlanKarOption,
   KarTrackerPlanKarRow,
@@ -20,10 +22,13 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { AfleverlocatieMap, groupChosenAfleverlocaties } from "@/components/shared/afleverlocatie-map";
+import type { GroundplanOverlay } from "@/components/module-2/kar-map-leaflet";
 
 interface PlanKarProps {
   teams: KarTrackerPlanKarOption[];
   afleverlocaties: KarTrackerPlanKarAfleverlocatieOption[];
+  groundplans: KarTrackerGroundplan[];
 }
 
 // A delivery location is shown as its name with its description next to it
@@ -46,7 +51,7 @@ interface LoadedPlan {
   failed: boolean;
 }
 
-export function PlanKar({ teams, afleverlocaties }: PlanKarProps) {
+export function PlanKar({ teams, afleverlocaties, groundplans }: PlanKarProps) {
   const t = useTranslations("karTracker.planKar");
   const { selectedSeason } = useSelectedSeason();
   const [teamId, setTeamId] = useState<number | null>(null);
@@ -132,6 +137,41 @@ export function PlanKar({ teams, afleverlocaties }: PlanKarProps) {
   }
 
   const hasMatrix = wantedKey !== null && plan?.key === wantedKey && !plan.failed;
+
+  // One Leaflet ImageOverlay per ground plan, placed by its own corners.
+  const groundplanOverlays = useMemo<GroundplanOverlay[]>(
+    () =>
+      groundplans.map((groundplan) => ({
+        key: groundplan.id,
+        url: karTrackerGroundplanImageUrl(groundplan.id, groundplan.updated_at),
+        bounds: [
+          [groundplan.sw_latitude, groundplan.sw_longitude],
+          [groundplan.ne_latitude, groundplan.ne_longitude],
+        ],
+      })),
+    [groundplans],
+  );
+
+  // The distinct locations currently picked in the matrix (saved or not),
+  // each with the festivals it was picked for — what the map pins.
+  const chosenLocations = useMemo(
+    () =>
+      hasMatrix
+        ? groupChosenAfleverlocaties(
+            plan.rows.map((row) => ({
+              festivalName: row.festival_name,
+              afleverlocatieId: plan.selections[row.festival_id] ?? null,
+            })),
+            (id) => afleverlocaties.find((location) => location.id === id),
+          )
+        : [],
+    [hasMatrix, plan, afleverlocaties],
+  );
+  // Re-frame the map when the team or the set of chosen locations changes.
+  const mapFitKey = `${wantedKey}|${chosenLocations
+    .map((location) => location.id)
+    .sort((a, b) => a - b)
+    .join(",")}`;
 
   return (
     <div className="flex flex-col gap-4">
@@ -238,6 +278,8 @@ export function PlanKar({ teams, afleverlocaties }: PlanKarProps) {
               {t("save")}
             </Button>
           </div>
+
+          <AfleverlocatieMap locations={chosenLocations} groundplanOverlays={groundplanOverlays} fitKey={mapFitKey} />
         </>
       )}
     </div>

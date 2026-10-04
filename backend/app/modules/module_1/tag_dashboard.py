@@ -17,6 +17,7 @@ from datetime import date, datetime, timedelta
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.core.timezone import belgian_today, to_belgian
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
 from app.modules.module_1.file_browser import get_source_root
@@ -35,6 +36,12 @@ WEEKS_OF_HISTORY = 12
 def _week_start(day: date) -> date:
     """The Monday of the ISO week containing "day"."""
     return day - timedelta(days=day.weekday())
+
+
+def _belgian_date(value: date | datetime) -> date:
+    """The Belgian calendar date of a registration moment (a plain date is
+    returned unchanged)."""
+    return to_belgian(value).date() if isinstance(value, datetime) else value
 
 
 def _count_unreaded_files(db: Session) -> int:
@@ -57,13 +64,14 @@ def build_dashboard_stats(db: Session) -> TagDashboardResponse:
     unassigned_tags = total_tags - assigned_tags
     lost_or_damaged_tags = sum(1 for row in rows if row.status in ("lost", "damaged"))
 
-    today = date.today()
+    # "This month" and the weekly buckets below use Belgian dates.
+    today = belgian_today()
     registered_this_month = sum(
         1
         for row in rows
         if row.date_registered is not None
-        and row.date_registered.year == today.year
-        and row.date_registered.month == today.month
+        and _belgian_date(row.date_registered).year == today.year
+        and _belgian_date(row.date_registered).month == today.month
     )
 
     status_counts = {status: 0 for status in STATUS_ORDER}
@@ -80,7 +88,7 @@ def build_dashboard_stats(db: Session) -> TagDashboardResponse:
     for row in rows:
         if row.date_registered is None:
             continue
-        registered_date = row.date_registered.date() if isinstance(row.date_registered, datetime) else row.date_registered
+        registered_date = _belgian_date(row.date_registered)
         bucket = _week_start(registered_date)
         if bucket in counts_by_week_start:
             counts_by_week_start[bucket] += 1

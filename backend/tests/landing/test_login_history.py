@@ -12,6 +12,25 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password
 from app.db.models.login_history import LoginHistory
 from app.db.models.user import User
+from app.shared.device import classify_device
+
+# Real User-Agent strings of the browsers people use.
+DESKTOP_CHROME = (
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+)
+IPHONE_SAFARI = (
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) "
+    "Version/18.0 Mobile/15E148 Safari/604.1"
+)
+ANDROID_PHONE_CHROME = (
+    "Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Mobile Safari/537.36"
+)
+ANDROID_TABLET_CHROME = (
+    "Mozilla/5.0 (Linux; Android 14; SM-X710) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0 Safari/537.36"
+)
+IPAD_SAFARI = (
+    "Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/604.1"
+)
 
 
 def _create_user(db_session: Session, *, email: str, password: str = "password123", is_super_admin: bool = False) -> User:
@@ -69,6 +88,76 @@ def test_unknown_email_is_recorded_with_no_user(client: TestClient, db_session: 
     assert rows[0].email_attempted == "nobody@example.com"
 
 
+def test_website_login_from_a_pc_is_recorded_as_web_and_desktop(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="user@example.com")
+
+    client.post(
+        "/api/auth/login",
+        json={"email": "user@example.com", "password": "password123"},
+        headers={"User-Agent": DESKTOP_CHROME},
+    )
+
+    row = db_session.scalars(select(LoginHistory)).one()
+    assert (row.source, row.device_type, row.user_agent) == ("web", "desktop", DESKTOP_CHROME)
+
+
+def test_phone_section_login_is_recorded_as_pwa_and_mobile(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="user@example.com")
+
+    client.post(
+        "/api/auth/login",
+        json={"email": "user@example.com", "password": "password123", "client": "pwa"},
+        headers={"User-Agent": IPHONE_SAFARI},
+    )
+
+    row = db_session.scalars(select(LoginHistory)).one()
+    assert (row.source, row.device_type) == ("pwa", "mobile")
+
+
+def test_failed_attempt_also_records_source_and_device(client: TestClient, db_session: Session) -> None:
+    response = client.post(
+        "/api/auth/login",
+        json={"email": "nobody@example.com", "password": "anything", "client": "pwa"},
+        headers={"User-Agent": ANDROID_PHONE_CHROME},
+    )
+    assert response.status_code == 401
+
+    row = db_session.scalars(select(LoginHistory)).one()
+    assert (row.success, row.source, row.device_type) == (False, "pwa", "mobile")
+
+
+def test_an_unknown_client_value_is_rejected(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="user@example.com")
+
+    response = client.post(
+        "/api/auth/login", json={"email": "user@example.com", "password": "password123", "client": "native"}
+    )
+
+    assert response.status_code == 422
+
+
+def test_a_very_long_user_agent_is_cut_to_the_column_size(client: TestClient, db_session: Session) -> None:
+    _create_user(db_session, email="user@example.com")
+
+    client.post(
+        "/api/auth/login",
+        json={"email": "user@example.com", "password": "password123"},
+        headers={"User-Agent": DESKTOP_CHROME + "x" * 1000},
+    )
+
+    assert len(db_session.scalars(select(LoginHistory)).one().user_agent) == 512
+
+
+def test_classify_device() -> None:
+    assert classify_device(DESKTOP_CHROME) == "desktop"
+    assert classify_device(IPHONE_SAFARI) == "mobile"
+    assert classify_device(ANDROID_PHONE_CHROME) == "mobile"
+    assert classify_device(ANDROID_TABLET_CHROME) == "tablet"
+    assert classify_device(IPAD_SAFARI) == "tablet"
+    assert classify_device("") is None
+    assert classify_device(None) is None
+
+
 def test_non_super_admin_cannot_list_login_history(client: TestClient, db_session: Session) -> None:
     _create_user(db_session, email="regular@example.com")
     _login(client, "regular@example.com")
@@ -98,8 +187,9 @@ def test_super_admin_sees_login_history_newest_first(client: TestClient, db_sess
     assert body["items"][0]["display_name"] == "admin@example.com"
     assert body["items"][0]["source"] == "web"
     assert body["items"][1]["success"] is False
-    # Seeded rows without a source (like pre-existing history) come back as null.
+    # Seeded rows without a source or device (like pre-existing history) come back as null.
     assert body["items"][1]["source"] is None
+    assert body["items"][1]["device_type"] is None
     assert body["items"][1]["display_name"] == "member@example.com"
 
 

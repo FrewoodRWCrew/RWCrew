@@ -26,6 +26,7 @@ from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
+from app.db.models.team_responsible import TeamResponsible
 from app.db.models.team_task import TeamTask
 from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
@@ -79,6 +80,10 @@ from app.modules.module_9.team_location_import import (
     build_team_location_template_xlsx,
     export_team_locations_to_xlsx,
     import_team_locations_from_xlsx,
+)
+from app.modules.module_9.team_responsible_service import (
+    apply_team_responsible_fields,
+    reopen_step_if_no_responsibles,
 )
 from app.modules.module_9.team_task_import import (
     build_team_task_template_xlsx,
@@ -136,6 +141,11 @@ from app.schemas.masterdata import (
     TeamLocationImportResponse,
     TeamLocationResponse,
     TeamLocationUpdateRequest,
+    TeamResponsibleCreateRequest,
+    TeamResponsibleOptionItem,
+    TeamResponsibleOptionsResponse,
+    TeamResponsibleResponse,
+    TeamResponsibleUpdateRequest,
     TeamResponse,
     TeamTaskCreateRequest,
     TeamTaskImportResponse,
@@ -490,7 +500,7 @@ def create_season(
         db.commit()
     except IntegrityError as error:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A season with this name already exists") from error
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A year with this name already exists") from error
 
     db.refresh(new_season)
     return new_season
@@ -506,7 +516,7 @@ def update_season(
     """Rename an existing season."""
     season = db.get(Season, season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     season.name = payload.name
     season.periode_open = payload.periode_open
@@ -514,7 +524,7 @@ def update_season(
         db.commit()
     except IntegrityError as error:
         db.rollback()
-        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A season with this name already exists") from error
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="A year with this name already exists") from error
 
     db.refresh(season)
     return season
@@ -529,7 +539,7 @@ def delete_season(
     """Permanently delete a season."""
     season = db.get(Season, season_id)
     if season is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     db.delete(season)
     db.commit()
@@ -541,7 +551,7 @@ def _validate_festival_lookup_ids(db: Session, payload: FestivalCreateRequest | 
     — a bad id should surface as a clear 404, not an opaque FK IntegrityError.
     """
     if db.get(Season, payload.season_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Season not found")
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
 
 @router.get("/festivals", response_model=list[FestivalResponse])
@@ -670,6 +680,120 @@ def delete_team_location(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team location not found")
 
     db.delete(team_location)
+    db.commit()
+
+
+@router.get("/team-responsibles", response_model=list[TeamResponsibleResponse])
+def list_team_responsibles(
+    season_id: int | None = None,
+    team_id: int | None = None,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-responsibles", "view")),
+) -> list[TeamResponsible]:
+    """List the responsible people ("Ploegverantwoordelijken"), optionally
+    narrowed to one season and/or one team, sorted by team then name.
+    """
+    query = select(TeamResponsible).join(Team, Team.id == TeamResponsible.team_id)
+    if season_id is not None:
+        query = query.where(TeamResponsible.season_id == season_id)
+    if team_id is not None:
+        query = query.where(TeamResponsible.team_id == team_id)
+    return list(db.scalars(query.order_by(Team.name, TeamResponsible.name)).all())
+
+
+# Declared before the "/{team_responsible_id}" routes so "options" is never
+# mistaken for an id.
+@router.get("/team-responsibles/options", response_model=TeamResponsibleOptionsResponse)
+def list_team_responsible_options(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-responsibles", "view")),
+) -> TeamResponsibleOptionsResponse:
+    """Every team and season, for the screen's dropdowns — served here so a
+    user only needs this screen's own permission, not Teams/Season's too.
+    """
+    teams = db.scalars(select(Team).order_by(Team.name)).all()
+    seasons = db.scalars(select(Season).order_by(Season.name)).all()
+    return TeamResponsibleOptionsResponse(
+        teams=[TeamResponsibleOptionItem(id=team.id, name=team.name) for team in teams],
+        seasons=[TeamResponsibleOptionItem(id=season.id, name=season.name) for season in seasons],
+    )
+
+
+def _apply_team_responsible_payload(
+    db: Session,
+    team_responsible: TeamResponsible,
+    payload: TeamResponsibleCreateRequest | TeamResponsibleUpdateRequest,
+) -> None:
+    """Check the chosen team/season exist (a clear 404 instead of an FK
+    error), then copy every field from the payload onto the row.
+    """
+    if db.get(Team, payload.team_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
+    if db.get(Season, payload.season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+
+    team_responsible.team_id = payload.team_id
+    team_responsible.season_id = payload.season_id
+    apply_team_responsible_fields(
+        team_responsible,
+        name=payload.name,
+        email=str(payload.email),
+        phone=payload.phone,
+        comments=payload.comments,
+    )
+
+
+@router.post("/team-responsibles", response_model=TeamResponsibleResponse, status_code=status.HTTP_201_CREATED)
+def create_team_responsible(
+    payload: TeamResponsibleCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-responsibles", "create")),
+) -> TeamResponsible:
+    """Add a responsible person to a team for a season."""
+    new_team_responsible = TeamResponsible()
+    _apply_team_responsible_payload(db, new_team_responsible, payload)
+    db.add(new_team_responsible)
+    db.commit()
+    db.refresh(new_team_responsible)
+    return new_team_responsible
+
+
+@router.put("/team-responsibles/{team_responsible_id}", response_model=TeamResponsibleResponse)
+def update_team_responsible(
+    team_responsible_id: int,
+    payload: TeamResponsibleUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-responsibles", "edit")),
+) -> TeamResponsible:
+    """Change every field of an existing responsible person."""
+    team_responsible = db.get(TeamResponsible, team_responsible_id)
+    if team_responsible is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team responsible not found")
+
+    # Where the person was before, in case this moves them to another team/season.
+    old_season_id, old_team_id = team_responsible.season_id, team_responsible.team_id
+    _apply_team_responsible_payload(db, team_responsible, payload)
+    if (old_season_id, old_team_id) != (team_responsible.season_id, team_responsible.team_id):
+        reopen_step_if_no_responsibles(db, old_season_id, old_team_id)
+    db.commit()
+    db.refresh(team_responsible)
+    return team_responsible
+
+
+@router.delete("/team-responsibles/{team_responsible_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_team_responsible(
+    team_responsible_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.team-responsibles", "delete")),
+) -> None:
+    """Permanently delete a responsible person."""
+    team_responsible = db.get(TeamResponsible, team_responsible_id)
+    if team_responsible is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team responsible not found")
+
+    db.delete(team_responsible)
+    # The last one gone means Altsien Select's wizard step no longer holds.
+    reopen_step_if_no_responsibles(db, team_responsible.season_id, team_responsible.team_id)
     db.commit()
 
 
@@ -1358,7 +1482,7 @@ def download_season_import_template(
     return Response(
         content=build_season_template_xlsx(),
         media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="season-import-template.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="year-import-template.xlsx"'},
     )
 
 
@@ -1384,7 +1508,7 @@ def export_seasons(
     return Response(
         content=export_seasons_to_xlsx(db),
         media_type=XLSX_MEDIA_TYPE,
-        headers={"Content-Disposition": 'attachment; filename="masterdata-seasons-export.xlsx"'},
+        headers={"Content-Disposition": 'attachment; filename="masterdata-years-export.xlsx"'},
     )
 
 

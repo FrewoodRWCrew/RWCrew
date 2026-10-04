@@ -19,14 +19,15 @@ Kar Scanner/Walkies modules.
 ```
 backend/
   app/core/      Settings (.env), DB session, password hashing, JWT create/decode
-  app/db/models/ SQLAlchemy models: User, Module, UserModuleAccess, ModuleRole, RefreshToken
+  app/db/models/ SQLAlchemy models (one file per table): landing ones (User, Module, UserModuleAccess,
+                 ModuleRole, RefreshToken, LoginHistory) plus every module's own tables
   app/landing/   Auth endpoints (/api/auth/*) + super-admin endpoints (/api/admin/*)
-  app/modules/   One package per module (module_1 .. module_9). module_2 .. module_9 are thin
-                 wrappers around the shared app/modules/common.py factory; module_1 (TagScan) has
-                 its own bespoke custom-roles-with-per-screen-permissions system instead — see
-                 docs/module-custom-roles-pattern.md if another module needs the same thing
-  app/shared/    Small cross-module helpers (e.g. computing a user's accessible module keys)
-  app/cli/seed.py   Seeds the 9 modules + the first super-admin user
+  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 8 and 9 have their own
+                 routers with the custom-roles-with-per-screen-permissions system (see
+                 docs/module-custom-roles-pattern.md); modules 4-7 (placeholders) and 10 (phone-app
+                 install page) use the shared app/modules/common.py factory
+  app/shared/    Small cross-module helpers (accessible module keys, device type from a User-Agent)
+  app/cli/seed.py   Seeds the modules + the first super-admin user
   migrations/    Alembic
   tests/         pytest, mirrors app/ structure, runs against in-memory SQLite (see Gotchas)
 frontend/
@@ -46,15 +47,17 @@ frontend/
                                   Kernlid walks through steps), "Ploegfiche" (all choices on
                                   one screen + PDF), request follow-up, request statuses,
                                   Access Rights — see "Altsien Select (module-8)" below
-    modules/module-2..9/         One route folder per module, thin wrapper around
-                                  ModulePlaceholderPage until real content is designed
+    modules/module-4..7/         Placeholder modules: thin wrapper around ModulePlaceholderPage
+                                  until real content is designed
+    modules/module-10/            "Mobile App": install page for the phone app (QR code + steps),
+                                  see "Phone section (PWA)" below
+  src/app/[locale]/m/          Phone section of the PWA (only the phone screens) — see "Phone section (PWA)"
+  src/components/phone/        Phone screens: shared/ + one folder per module
   src/lib/api.ts               Browser-side API client (fetch with credentials: "include")
   src/lib/server-auth.ts, server-api.ts   Server-Component-side fetchers (forward cookies() manually)
   src/lib/module-theme.ts      Per-module accent colours (tileClassName = solid landing-tile fill,
                                 badgeClassName = soft pill used on the module's own page)
   messages/nl.json (default), en.json    next-intl translations
-mobile/              Smartphone app (iOS + Android, React Native + Expo) — 100% separate from the
-                      web app, see "Mobile app (`mobile/`)" below
 docker-compose.yml   Local Postgres for dev only (port 5433, see Gotchas)
 ```
 
@@ -77,71 +80,88 @@ tables, `backend/app/modules/module_8/screens.py`).
   completion check), a component in `frontend/src/components/module-8/wizard/steps/` registered in its
   `index.ts` (unknown keys fall back to a placeholder), translations under `altsienSelect.steps.<key>`,
   and optionally a section in `module_8/ploegfiche_pdf.py`. Progress is keyed by string: no migration.
+- **Copy from last season**: steps listed in `COPYABLE_STEPS` (`module_8/previous_season.py`) get a panel
+  above them with last season's values line by line (checkbox each, select all, "Copy"). "Last season" is the
+  season whose name sorts right before the current one; festivals are matched by name ignoring case, 4-digit
+  years and punctuation. Copying only adds/updates, never removes and never marks the step done. Offered now on
+  delivery locations, team leads and special requests; add products there once that step is real.
 - Products and walkie-talkies are placeholder steps until their own modules exist.
+- **Ploegverantwoordelijken** (team leads, per team + season, not RWCrew users) live in MasterData's
+  `MasterData_team_responsible`, managed on module-9's `masterdata.team-responsibles` screen (Teams >
+  Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both
+  write through `module_9/team_responsible_service.py`. No module-8 copy of the data.
 
-## Mobile app (`mobile/`)
+## Outgoing email (Resend)
 
-A React Native + Expo (TypeScript) phone app that uses camera/GPS and talks to this same backend, so the
-database and the user/module/role rights stay managed here. Rules — follow them for any change:
+- `backend/app/core/mail.py` `send_email()` posts to Resend's HTTP API with `httpx` (no extra package). It
+  never raises: errors are logged. With `RESEND_API_KEY`/`MAIL_FROM` empty (local dev, tests) it just logs a skip.
+- Settings per environment in the server's `.env`: `RESEND_API_KEY`, `MAIL_FROM` (its domain must be verified
+  in Resend via DNS), `APP_PUBLIC_URL` (link in mails), and `MAIL_SUBJECT_PREFIX` (e.g. `[TEST] ` on test).
+  **Gotcha:** `docker-compose.prod.yml` passes the backend an explicit `environment:` list, so any new
+  backend setting must be added there too (and to `.env.test/production.example`) — a value only in the
+  server's `.env` never reaches the container. This is why the first test deploy sent no mail.
+- **Intervention Requests (module-3) new-request mail**: every new request — staff screen, public QR form
+  *and* phone app — mails the active addresses of `InterventionRequests_mailing_recipient` with the
+  delivery-note PDF attached (`module_3/notifications.py` `queue_new_request_mail`, sent as a FastAPI
+  background task after the 201). The list is managed on "Instellingen > Mailinglijst"
+  (screen key `interventionrequests.mailinglist`). A new create path must call `queue_new_request_mail` too;
+  edits never mail.
 
-- **All app code lives in `mobile/`** (own `package.json`, lockfile, tsconfig, eslint, README). Nothing
-  under `frontend/` or `backend/` imports from `mobile/`, and `mobile/` never imports from `frontend/`.
-  Never share source code between web and phone; the only shared knowledge is the API contract
-  (OpenAPI snapshot of `/api/mobile/v1` in `mobile/openapi/`, generated types in `mobile/src/api/generated/`).
-- **The phone never touches the DB.** It calls the FastAPI backend; module access and module roles are
-  enforced by the same `require_module_*` deps as the web app.
-- **Backend code for the phone lives in `backend/app/mobile/`** (routers, schemas, version gate, bearer-token
-  endpoints; tests in `backend/tests/mobile/`). Web code never imports it. Edits to shared files are limited to
-  tiny hooks: bearer-token support in `landing/deps.py` (cookie path stays first and unchanged), router
-  registration in `main.py`, `module-10` in `modules/registry.py`, settings entries.
-- **What the phone does today**: after login a landing page (`mobile/src/app/(app)/index.tsx`, same idea as the
-  web "Overzicht Modules": one coloured tile per module from `GET /api/mobile/v1/modules`), and one module,
-  **Interventie Aanvragen (module-3): only "KPI overzicht" + "Akties"** (list, create, edit requests; each button
-  follows the user's web role). **MasterData (statuses, TeamKar) and Access Rights (roles, users) are never
-  replicated on the phone**, and neither are deleting a request or its PDF — a backend test
-  (`test_openapi_contract.py`) fails if the phone contract ever gains a DELETE, `/pdf` or admin path.
-- **Adding a phone module**: add its key to `backend/app/mobile/registry.py` (`PHONE_MODULE_KEYS`), a router
-  `backend/app/mobile/module_<n>_router.py` that reuses that module's own `require_screen_permission` deps, its
-  tile in `mobile/src/lib/module-theme.ts`, and its routes under `mobile/src/app/(app)/module-<n>/`.
-- **The API contract is the only link**: after changing anything under `backend/app/mobile/`, run
-  `.venv/Scripts/python -m app.cli.export_mobile_openapi` (from `backend/`) then `npm run gen:api` (in `mobile/`).
-  `backend/tests/mobile/test_openapi_contract.py` fails when `mobile/openapi/mobile-v1.json` is stale.
-- **Phone dev loop** (Expo Go on a real phone): backend must listen on the LAN
-  (`uvicorn app.main:app --port 8020 --host 0.0.0.0`, restart it after backend changes — no `--reload`, see
-  Gotchas), `mobile/.env.development.local` sets `API_URL=http://<PC LAN IP>:8020` (git-ignored; template
-  `.env.example`). **Never use `mobile/.env.local` for this**: Expo loads it in every mode, so an `eas update` run
-  from this PC would bake the LAN address into the test/production update. `app.config.ts` also refuses a
-  non-https `API_URL` for production, EAS builds and production-mode bundles. Three environments result:
-  localhost (Expo Go + `.env.development.local`), test (`eas.json` profile `test` → test.rwcrew.eu), production
-  (profile `production` → rwcrew.eu),
-  then `npx expo start` in `mobile/`. Expo Go needs the same Expo account on phone and PC (`npx expo login`, or
-  `EXPO_TOKEN` for Google-created accounts). Checks: `npx tsc --noEmit`, `npx expo-doctor`.
-- **Mobile gotchas**: (1) `mobile/.npmrc` sets `legacy-peer-deps=true` because expo-router pulls a web-only
-  `react-dom@19.3` whose peer wants React 19.3 while RN 0.86 pins 19.2.3 — re-check on every Expo SDK upgrade.
-  (2) Typed routes are switched off in `mobile/app.config.ts` (the SDK 57 generator lists `src/lib` etc. as routes
-  and then rejects dynamic paths); the generated `mobile/.expo/types/router.d.ts` is git-ignored — delete it if
-  it ever comes back. (3) On Windows PowerShell 5.1, `Set-Content -Encoding utf8` writes a BOM that breaks
-  `package.json`; edit JSON with the Edit tool. (4) Follow `mobile/AGENTS.md`: Expo SDK 57 APIs differ from
-  older docs, check https://docs.expo.dev/versions/v57.0.0/ before using one.
-- **`module-10` ("Mobile App")** is the web-side download page (install links, latest version/changelog),
-  a normal module granted through "Manage Access". It contains no phone app code.
-- **Independent releases, same repo, same branches** (`develop` = test, `main` = production):
-  - Web deploy workflows (`deploy-test.yml`, `deploy-production.yml`) ignore `mobile/**`; mobile workflows
-    (`.github/workflows/mobile-*.yml`) only run on `mobile/**` paths or `mobile-v*` tags
-    (`working-directory: mobile`).
-  - Tags: `mobile-v1.4.0-test.N` (test build) and `mobile-v1.4.0` (production). Web releases never use the
-    `mobile-` prefix.
-- **Two app variants**, installable side by side, selected by `APP_VARIANT` in `mobile/app.config.ts`:
-  test = "RWCrew Test", `eu.rwcrew.app.test`, API of `test.rwcrew.eu`; production = "RWCrew",
-  `eu.rwcrew.app`, API of `rwcrew.eu`. Separate EAS build profiles and Update channels (`test`, `production`).
-  Each environment has its own JWT secret/DB, so tokens never work across variants.
-- **Distribution**: iOS via TestFlight (or Apple Business Manager Custom Apps) — an IPA can't be downloaded
-  directly; Android via Play internal track (APK/AAB attached to the GitHub Release as fallback).
-- Backend `min_supported_app_version` (per environment) makes the API answer 426 to outdated app builds; bump
-  it only for breaking API changes.
-- Order of work when touching shared files: workflow `paths-ignore` first, then `backend/app/mobile/` +
-  tests, then the bearer hook, then `module-10`, then the app. Run the full backend suite before and after.
-  Verify on `develop` (test) before merging to `main`.
+## Phone section (PWA, `/m`)
+
+The phone version of the app is a Progressive Web App served by the same Next.js frontend: `src/app/manifest.ts`
+makes the site installable ("Add to Home Screen"), and the installed app opens `/m`, a separate section that
+shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map) and
+Interventie Aanvragen (Akties list/create/edit, KPI overzicht). No desktop sidebar/topbar, no delete, no PDFs.
+This is the only phone app: there is no native (App Store / Play Store) app, no separate phone API, no Bearer
+tokens and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed
+until October 2026 and was removed entirely; only old login-history rows still mention it, see below.)
+
+- **Organised per module, like the web app**: routes in `frontend/src/app/[locale]/m/` (`login/` outside,
+  everything else under `(signed-in)/`, whose layout does the login check), one folder per module
+  (`(signed-in)/module-2/`, `(signed-in)/module-3/`); screens in `src/components/phone/module-N/`; cross-module
+  pieces (header, body, tiles, menu row, bottom tabs, native select, notices) in `src/components/phone/shared/`.
+  Pages stay thin (server-fetch data + rights, render one component).
+- **Same API and rights as the web**: the phone uses the normal `/api/modules/...` endpoints with the cookie
+  login. Each module has a `*-phone-rights.ts` (reads `me/permissions`, `null` = no module access → the module
+  layout shows `PhoneForbidden`) and a `*-phone-routes.ts` (all its phone URLs). Endpoints added for the phone,
+  in the modules' own routers: module-3 `GET /lookups` and `GET /intervention-requests/{id}`, module-3 (and
+  module-8, same schema) `me/permissions` now also return create/edit/delete keys, module-2 `GET /seasons`.
+- **Shared desktop/phone code stays in the module's own folder**: `components/module-2/qr-scanner.tsx` (camera,
+  `@zxing/browser`), `components/module-2/kar-map-rows.tsx` (pins/popups of the Kar Map),
+  `components/module-3/request-dates.ts` (date helpers).
+- **Translations per module**: `phone.*` for the shell, `<moduleNamespace>.phone.*` for a module's screens
+  (`karTracker.phone`, `interventionRequests.phone`); existing desktop keys are reused where the text matches.
+- **Camera and GPS need HTTPS** (or localhost). To use localhost *and* a real phone at the same time: put
+  `NEXT_PUBLIC_API_URL=` (empty) and `DEV_API_PROXY_TARGET=http://localhost:8020` in `frontend/.env.local`,
+  restart `npm run dev`, run `cloudflared tunnel --url http://localhost:3000` and open the printed
+  `https://<name>.trycloudflare.com` + `/m` on the phone; `http://localhost:3000` keeps working on the PC. Browser
+  calls are then relative (`/api/...`, forwarded by `next.config.ts`), so the cookies always belong to the address
+  the page was opened on; server code uses `SERVER_API_BASE_URL` (`lib/config.ts`) = the proxy target. A new tunnel
+  address needs no config change. **Never put the tunnel URL in `NEXT_PUBLIC_API_URL`**: logging in on
+  localhost then silently fails (cookie set for the tunnel's site, login screen comes back with no message).
+- **Adding a phone module**: (1) add its key to `components/phone/shared/phone-modules.ts`; (2) create
+  `(signed-in)/module-N/layout.tsx` that loads its rights and shows `PhoneForbidden` on `null`; (3) put its
+  screens in `components/phone/module-N/` with a rights + routes file; (4) add texts under
+  `<moduleNamespace>.phone.*`.
+- **Install page (module-10, "Mobile App")**: a normal module granted through "Manage Access", shown as the
+  small tile at the top right of the landing page. It shows the `/m` address with a QR code and the "Add to
+  Home Screen" steps for iPhone and Android. Both come from `GET /api/modules/module-10/install-info`
+  (`backend/app/modules/module_10/router.py`), built from the environment's `APP_PUBLIC_URL` (QR code by
+  `segno`); without that setting the page says "not configured".
+- **Login history knows website vs phone and PC vs phone**: the login form sends `client` (`"web"`, or
+  `"pwa"` from `/m/login`), stored as `Landing_login_history.source`; `device_type` (desktop/mobile/tablet)
+  comes from the User-Agent via `backend/app/shared/device.py`, and the raw `user_agent` is kept so it can be
+  re-classified later. `source = "mobile"` only exists on old rows from the removed native app (shown as
+  "Native app (old)"); never write it again. iPads on iPadOS 13+ present themselves as a Mac → "desktop".
+
+## Version label (which code runs where)
+
+`deploy/scripts/deploy.sh` exports `APP_COMMIT` (short hash) and `APP_COMMIT_DATE` (commit date in Belgian
+time, `2026.10.04`) from git. `docker-compose.prod.yml` passes them to the frontend build
+(`NEXT_PUBLIC_APP_COMMIT*`) and the backend environment. The frontend shows `v<date> · <hash>` at the bottom of the
+super admin's left menu (`AdminSidebar`, `APP_VERSION_LABEL` in `lib/config.ts`), and `/api/health` returns the
+backend's `version`. Locally `next.config.ts` reads the same values from git; without git the label is `dev`.
 
 ## Running locally
 
@@ -152,7 +172,7 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt   # first 
 cp .env.example .env                         # first time
 .venv/Scripts/python -m alembic upgrade head
 .venv/Scripts/python -m app.cli.seed --email admin@example.com --password "ChangeMe123!" --name "Your Name"
-.venv/Scripts/python -m uvicorn app.main:app --reload --port 8020
+.venv/Scripts/python -m uvicorn app.main:app --port 8020   # no --reload, see Gotchas
 ```
 
 Frontend (from `frontend/`, in a second terminal):
@@ -162,11 +182,38 @@ cp .env.local.example .env.local   # first time
 npm run dev       # http://localhost:3000 -- redirects to /nl by default
 ```
 
+### "Start / restart localhost" = everything, PC *and* phone
+
+When the user asks to start or restart localhost (the app, the web app, "mobile + webapp", ...), always bring
+up **all four** pieces, not just the web app, and finish by giving the three addresses below:
+
+1. **Postgres**: `docker compose up -d db` (repo root) if `rwcrew_db` isn't running (`docker ps`).
+2. **Backend** on 8020: first stop every `python.exe` whose command line contains `uvicorn` (parent *and*
+   child — `Get-CimInstance Win32_Process`), then start it in its own minimised window so it outlives the
+   Claude session: `Start-Process <backend>.venvScriptspython.exe -ArgumentList "-m","uvicorn","app.main:app",
+   "--port","8020" -WorkingDirectory <backend> -WindowStyle Minimized`.
+3. **Frontend** on 3000: stop the process tree on port 3000 (`taskkill /PID <pid> /T /F`) and any
+   `cmd.exe ... npm run dev`, then `Start-Process cmd.exe -ArgumentList "/c","npm run dev" -WorkingDirectory
+   <frontend> -WindowStyle Minimized`. `frontend/.env.local` must have `NEXT_PUBLIC_API_URL=` (empty) and
+   `DEV_API_PROXY_TARGET=http://localhost:8020` (see "Phone section"), otherwise phone/Wi-Fi logins fail.
+4. **Cloudflare tunnel** (phone over HTTPS, needed for camera/GPS): stop any running `cloudflared`, then
+   `Start-Process "C:Program Files (x86)cloudflaredcloudflared.exe" -ArgumentList "tunnel","--url",
+   "http://localhost:3000","--logfile",<scratchpad>cloudflared.log -WindowStyle Minimized` and read the
+   `https://<name>.trycloudflare.com` address from the log (it changes on every start; no config edit needed).
+
+Check each one answers (`/api/health` on 8020, `/nl/login` on 3000, the Wi-Fi address and the tunnel), then
+report:
+- **PC**: http://localhost:3000
+- **Phone on the same Wi-Fi** (no camera/GPS — not HTTPS): `http://<PC's Wi-Fi IPv4>:3000/m` — look the IP up
+  each time (`Get-NetIPAddress`, interface "Wi-Fi"); it can change. Allowed by `allowedDevOrigins`
+  (`192.168.*.*`) in `next.config.ts`; the Windows firewall already allows Node.js.
+- **Phone anywhere, with camera/GPS**: `https://<name>.trycloudflare.com/m`
+
 ## Testing
 
 Backend: `cd backend && .venv/Scripts/python -m pytest` — runs against a temporary in-memory
-SQLite database (see Gotchas), no Docker required. Currently 34 tests covering auth, token
-rotation/reuse-detection, and every access-rights rule.
+SQLite database (see Gotchas), no Docker required. Covers auth, token rotation/reuse-detection,
+every access-rights rule and each module's endpoints.
 
 No frontend automated test suite yet (per the project's stated testing scope: basic backend
 tests for core logic only).
@@ -251,6 +298,9 @@ tests for core logic only).
   `[locale]` layout, switching languages remounts the whole document (next-themes' injected
   FOUC-prevention script trips a React "script tag" console warning, and you get an unnecessary
   full-shell flash) since the `[locale]` param changes on every language switch.
+  Even in the right place, React 19 warns about next-themes' inline `<script>` whenever it renders on the
+  client; `theme-provider.tsx` passes `scriptProps` with `type: "application/json"` in the browser only
+  (the server HTML keeps the real script) — keep that until next-themes fixes it upstream.
 - **Python 3.14 is the only Python on this machine.** Backend dependencies were deliberately
   picked to have prebuilt wheels for it without a C/Rust toolchain: `pg8000` (pure-Python
   Postgres driver, not `psycopg2`/`asyncpg`) and stdlib `hashlib.pbkdf2_hmac` for password hashing

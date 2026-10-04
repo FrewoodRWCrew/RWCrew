@@ -10,7 +10,7 @@
 // being hidden outright.
 
 import dynamic from "next/dynamic";
-import { useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { KarTrackerGroundplan, KarTrackerKarMapResponse } from "@/lib/types";
 import { karTrackerGroundplanImageUrl } from "@/lib/api";
@@ -21,6 +21,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
+import { LAYER_COLORS, textMatches, useKarMapRows, type LayerKey, type MapRow } from "@/components/module-2/kar-map-rows";
 
 // Leaflet touches `window` at import time, so the actual map component can
 // only ever run on the client — loaded with ssr:false to keep it out of
@@ -28,38 +29,6 @@ import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/compon
 const KarMapLeaflet = dynamic(() => import("@/components/module-2/kar-map-leaflet").then((mod) => mod.KarMapLeaflet), {
   ssr: false,
 });
-
-type LayerKey = "kar" | "afleverlocatie" | "distributiepunt";
-
-interface MapRow {
-  layer: LayerKey;
-  key: string;
-  name: string;
-  details: string;
-  // Labeled content shown in the map pin's popup — kept separate from
-  // `details` since each layer shows different fields there than in the
-  // side table's terse "Details" column.
-  popup: ReactNode;
-  latitude: number | null;
-  longitude: number | null;
-}
-
-// Karren reuse this module's own purple accent; the other two layers get
-// their own distinct colors so all three read apart at a glance.
-const LAYER_COLORS: Record<LayerKey, string> = {
-  kar: "var(--color-purple-600)",
-  afleverlocatie: "var(--color-emerald-600)",
-  distributiepunt: "var(--color-amber-600)",
-};
-
-// Fallback map center when there isn't a single located row to average —
-// no organization-wide "home base" coordinate exists elsewhere in the app.
-const FALLBACK_CENTER: [number, number] = [50.85, 4.35];
-
-function textMatches(fieldValue: string, filterValue: string): boolean {
-  if (!filterValue) return true;
-  return fieldValue.toLowerCase().includes(filterValue.toLowerCase());
-}
 
 interface KarMapProps {
   initialData: KarTrackerKarMapResponse;
@@ -99,68 +68,8 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
     [groundplans],
   );
 
-  const rows = useMemo<MapRow[]>(() => {
-    const karRows: MapRow[] = initialData.karren.map((kar) => ({
-      layer: "kar",
-      key: `kar-${kar.id}`,
-      name: kar.kar_nummer,
-      details: `${kar.status_name} • ${kar.team_name ?? t("noTeam")}`,
-      // Kar pins show kar number / status / ploeg as clearly labeled lines.
-      popup: (
-        <div className="flex flex-col gap-0.5 text-sm">
-          <span>
-            <span className="font-semibold">{t("popupKarNummer")}:</span> {kar.kar_nummer}
-          </span>
-          <span>
-            <span className="font-semibold">{t("popupStatus")}:</span> {kar.status_name}
-          </span>
-          <span>
-            <span className="font-semibold">{t("popupPloeg")}:</span> {kar.team_name ?? t("noTeam")}
-          </span>
-        </div>
-      ),
-      latitude: kar.latitude,
-      longitude: kar.longitude,
-    }));
-    const afleverlocatieRows: MapRow[] = initialData.afleverlocaties.map((afleverlocatie) => ({
-      layer: "afleverlocatie",
-      key: `afleverlocatie-${afleverlocatie.id}`,
-      name: afleverlocatie.name,
-      details: `${afleverlocatie.zone_name} • ${afleverlocatie.distributiepunt_name}`,
-      // Afleverlocatie pins show omschrijving / naam / zone as labeled lines.
-      popup: (
-        <div className="flex flex-col gap-0.5 text-sm">
-          <span>
-            <span className="font-semibold">{t("popupOmschrijving")}:</span> {afleverlocatie.description ?? t("noDescription")}
-          </span>
-          <span>
-            <span className="font-semibold">{t("popupNaam")}:</span> {afleverlocatie.name}
-          </span>
-          <span>
-            <span className="font-semibold">{t("popupZone")}:</span> {afleverlocatie.zone_name}
-          </span>
-        </div>
-      ),
-      latitude: afleverlocatie.latitude,
-      longitude: afleverlocatie.longitude,
-    }));
-    const distributiepuntRows: MapRow[] = initialData.distributiepunten.map((distributiepunt) => ({
-      layer: "distributiepunt",
-      key: `distributiepunt-${distributiepunt.id}`,
-      name: distributiepunt.name,
-      details: distributiepunt.terrein_positie ?? t("noTerreinPositie"),
-      // Distributiepunt pins keep the original generic name + details popup.
-      popup: (
-        <div className="flex flex-col gap-0.5 text-sm">
-          <span className="font-semibold">{distributiepunt.name}</span>
-          <span className="text-muted-foreground">{distributiepunt.terrein_positie ?? t("noTerreinPositie")}</span>
-        </div>
-      ),
-      latitude: distributiepunt.latitude,
-      longitude: distributiepunt.longitude,
-    }));
-    return [...karRows, ...afleverlocatieRows, ...distributiepuntRows];
-  }, [initialData, t]);
+  // One row per Kar / Afleverlocatie / Distributiepunt (shared with the phone map).
+  const rows = useKarMapRows(initialData);
 
   const layerVisibility: Record<LayerKey, boolean> = {
     kar: showKarren,
@@ -287,7 +196,6 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
       <div className="h-[65vh] w-full overflow-hidden rounded-md border">
         <KarMapLeaflet
           pins={pins}
-          center={FALLBACK_CENTER}
           onReady={setMapHandle}
           showGroundplan={showGroundplan}
           groundplanOverlays={groundplanOverlays}

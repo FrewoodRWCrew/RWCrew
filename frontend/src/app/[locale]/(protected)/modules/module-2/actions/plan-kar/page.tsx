@@ -3,11 +3,16 @@
 // PlanKar for the actual UI. The team and location dropdown lists are
 // fetched here; the matrix itself is loaded client-side once a team is
 // chosen (it depends on the season picked in the header, which only the
-// browser knows).
+// browser knows). The ground plans are fetched here too, for the map of
+// chosen locations below the matrix.
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
-import type { KarTrackerPlanKarAfleverlocatieOption, KarTrackerPlanKarOption } from "@/lib/types";
+import type {
+  KarTrackerGroundplan,
+  KarTrackerPlanKarAfleverlocatieOption,
+  KarTrackerPlanKarOption,
+} from "@/lib/types";
 import { PlanKar } from "@/components/module-2/plan-kar";
 
 export default async function PlanKarPage() {
@@ -15,10 +20,12 @@ export default async function PlanKarPage() {
 
   let teams: KarTrackerPlanKarOption[];
   let afleverlocaties: KarTrackerPlanKarAfleverlocatieOption[];
+  let groundplans: KarTrackerGroundplan[];
   try {
-    [teams, afleverlocaties] = await Promise.all([
+    [teams, afleverlocaties, groundplans] = await Promise.all([
       serverApiFetch<KarTrackerPlanKarOption[]>("/api/modules/module-2/plan-kar/teams"),
       serverApiFetch<KarTrackerPlanKarAfleverlocatieOption[]>("/api/modules/module-2/plan-kar/afleverlocaties"),
+      serverApiFetch<KarTrackerGroundplan[]>("/api/modules/module-2/groundplans"),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
@@ -27,5 +34,5 @@ export default async function PlanKarPage() {
     throw error;
   }
 
-  return <PlanKar teams={teams} afleverlocaties={afleverlocaties} />;
+  return <PlanKar teams={teams} afleverlocaties={afleverlocaties} groundplans={groundplans} />;
 }

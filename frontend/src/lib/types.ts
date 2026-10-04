@@ -52,13 +52,18 @@ export interface ModuleStatus {
   your_role: ModuleRoleName | null;
 }
 
-/** Install links and release info for the "Mobile App" download page (module-10). */
-export interface MobileAppInfo {
-  ios_testflight_url: string | null;
-  android_download_url: string | null;
-  latest_version: string | null;
-  changelog: string[];
+/** What the phone-app install page (module-10) shows: the address of the
+ * phone section (/m) and a QR code of it. Both null when the environment has
+ * no APP_PUBLIC_URL configured. */
+export interface PwaInstallInfo {
+  install_url: string | null;
+  /** A ready-to-use "data:image/svg+xml;..." URI of the QR code. */
+  qr_code_data_uri: string | null;
 }
+
+/** Which part of the site a login comes from: the desktop website or the
+ * phone section (/m). Stored in the login history. */
+export type LoginClient = "web" | "pwa";
 
 /** One season, as managed on the Master Data screen. */
 export interface Season {
@@ -71,6 +76,36 @@ export interface Season {
 export interface SeasonInput {
   name: string;
   periode_open: boolean;
+}
+
+/** One responsible person of a team in a season ("Ploegverantwoordelijke") — not an RWCrew user. */
+export interface TeamResponsible {
+  id: number;
+  season_id: number;
+  team_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string | null;
+}
+
+/** The fields sent to create or fully update a responsible person. */
+export interface TeamResponsibleInput {
+  season_id: number;
+  team_id: number;
+  name: string;
+  email: string;
+  phone: string;
+  comments: string | null;
+}
+
+/** What the Altsien Select wizard sends for a responsible person (team and season come from the URL). */
+export type AltsienSelectResponsibleInput = Omit<TeamResponsibleInput, "team_id" | "season_id">;
+
+/** The team/season dropdown choices for the Ploegverantwoordelijken screen. */
+export interface TeamResponsibleOptions {
+  teams: { id: number; name: string }[];
+  seasons: { id: number; name: string }[];
 }
 
 /** One team location, as managed on MasterData's Team Location screen (nested under Teams). */
@@ -702,8 +737,35 @@ export interface InterventionRequestsUserSummary {
 }
 
 /** Which Intervention Requests screens the current user is allowed to view. */
+/** One address on Intervention Requests' "Mailing List" settings screen:
+ * everyone active here is mailed about every new intervention request. */
+export interface MailingRecipient {
+  id: number;
+  email: string;
+  name: string | null;
+  is_active: boolean;
+}
+
+/** The fields sent to add or fully update a mailing-list address. */
+export interface MailingRecipientInput {
+  email: string;
+  name: string | null;
+  is_active: boolean;
+}
+
 export interface InterventionRequestsMyPermissions {
   viewable_screen_keys: string[];
+  creatable_screen_keys: string[];
+  editable_screen_keys: string[];
+  deletable_screen_keys: string[];
+}
+
+/** Everything the request form's dropdowns need, in one call (module-3's
+ * "/lookups", gated by the requests screen itself — used by the phone). */
+export interface InterventionRequestsLookups {
+  statuses: InterventionStatus[];
+  teams: InterventionRequestsTeam[];
+  teamkar_members: TeamKarMemberOption[];
 }
 
 // --- KarTracker (module-2): custom roles with per-screen permissions ---
@@ -753,6 +815,7 @@ export interface KarTrackerMyPermissions {
   viewable_screen_keys: string[];
   creatable_screen_keys: string[];
   editable_screen_keys: string[];
+  deletable_screen_keys: string[];
 }
 
 /** One status a kar can be in, as managed on the KarStatussen screen. */
@@ -989,6 +1052,9 @@ export interface KarTrackerPlanKarOption {
 /** A "Plan a kar" delivery-location dropdown entry: name plus description, shown next to it. */
 export interface KarTrackerPlanKarAfleverlocatieOption extends KarTrackerPlanKarOption {
   description: string | null;
+  /** Where it is, for the map of chosen locations (null = not located yet). */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** One "Plan a kar" matrix row: a festival plus its saved delivery location, if any. */
@@ -1005,11 +1071,72 @@ export interface KarTrackerPlanKar {
   rows: KarTrackerPlanKarRow[];
 }
 
+/** KarTracker's landing dashboard ("KPI Overview"). The plan_kar fields are null without a season. */
+export interface KarTrackerDashboardStats {
+  total_karren: number;
+  karren_with_team: number;
+  karren_without_team: number;
+  movements_last_7_days: number;
+  status_breakdown: { status_name: string; count: number }[];
+  team_breakdown: { team_name: string; count: number }[];
+  /** One entry per UTC day (ISO date), oldest first, last 14 days. */
+  movements_per_day: { day: string; count: number }[];
+  season_id: number | null;
+  active_teams: number | null;
+  plan_kar_planned: number | null;
+  plan_kar_expected: number | null;
+  festival_plan_breakdown: { festival_name: string; planned_teams: number }[] | null;
+}
+
 /** What the "Plan a kar" Save button sends. A null afleverlocatie_id clears that festival's assignment. */
 export interface KarTrackerPlanKarSaveInput {
   season_id: number;
   team_id: number;
   rows: { festival_id: number; afleverlocatie_id: number | null }[];
+}
+
+/** One open season for Kar Planning's own season dropdown (module-2's "/seasons"). */
+export interface KarTrackerSeasonOption {
+  id: number;
+  name: string;
+}
+
+/** One kar in the "Manuele kar beweging" kar dropdown, with its current team and status. */
+export interface KarTrackerKarActionKarOption {
+  id: number;
+  kar_nummer: string;
+  team_id: number | null;
+  team_name: string | null;
+  status_id: number;
+}
+
+/** Everything the "Manuele kar beweging" form's dropdowns need. */
+export interface KarTrackerKarActionLookups {
+  karren: KarTrackerKarActionKarOption[];
+  statuses: KarTrackerPlanKarOption[];
+}
+
+/** What the "Manuele kar beweging" Save button sends. Team and timestamp are set by the backend. */
+export interface KarTrackerKarActionCreateInput {
+  kar_id: number;
+  status_id: number;
+  latitude: number;
+  longitude: number;
+}
+
+/** One logged kar movement (table "KarTracker_kar_actions"). recorded_at is an ISO UTC timestamp. */
+export interface KarTrackerKarAction {
+  id: number;
+  kar_id: number;
+  kar_nummer: string;
+  status_id: number;
+  status_name: string;
+  team_id: number | null;
+  team_name: string | null;
+  latitude: number;
+  longitude: number;
+  recorded_at: string;
+  user_name: string | null;
 }
 
 /** One "Delivery Dates" row: a festival plus its saved delivery/pick-up dates (ISO YYYY-MM-DD), if any. */
@@ -1047,6 +1174,20 @@ export interface AfleverlocatieImportRowResult {
 /** The full outcome of a bulk afleverlocatie import — one result per row, in order. */
 export interface AfleverlocatieImportResponse {
   results: AfleverlocatieImportRowResult[];
+}
+
+/** One row's outcome of a Leverdata import. Unlike the other KarTracker
+ * imports this one upserts per festival, and rows without dates are skipped. */
+export interface LeverdatumImportRowResult {
+  row_number: number;
+  festival_name: string | null;
+  outcome: "created" | "updated" | "skipped" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a Leverdata import — one result per row, in order. */
+export interface LeverdatumImportResponse {
+  results: LeverdatumImportRowResult[];
 }
 
 // --- MasterData Data Upload/Download: one row-result pair per table, all
@@ -1190,9 +1331,13 @@ export interface LoginHistoryEntry {
   display_name: string | null;
   success: boolean;
   ip_address: string | null;
-  /** Where the attempt came from: the web app or the smartphone app. Null
-   * for attempts recorded before this was tracked. */
-  source: "web" | "mobile" | null;
+  /** Where the attempt came from: the website ("web"), the phone section
+   * ("pwa"), or the old native smartphone app ("mobile", historical rows
+   * only). Null for attempts recorded before this was tracked. */
+  source: LoginClient | "mobile" | null;
+  /** The kind of device, read from the browser's user agent. Null when
+   * unknown (e.g. attempts recorded before this was tracked). */
+  device_type: "desktop" | "mobile" | "tablet" | null;
   created_at: string;
 }
 
@@ -1220,6 +1365,32 @@ export interface AltsienSelectStep {
   sort_order: number;
   /** True while the step's real content lives in a module that doesn't exist yet. */
   placeholder: boolean;
+  /** Whether the step offers "copy from last season". */
+  copy_from_previous: boolean;
+}
+
+/** Why one of last season's lines can't be copied. */
+export type AltsienSelectPreviousLineReason = "not_in_season" | "festival_not_selected" | "location_inactive";
+
+/** One of last season's values for a wizard step. */
+export interface AltsienSelectPreviousLine {
+  /** Sent back to say which lines to copy. */
+  key: string;
+  label: string;
+  detail: string | null;
+  /** Where it lands this season, when that differs from the label. */
+  target: string | null;
+  /** The value there now, when it differs from last season's. */
+  current_detail: string | null;
+  already_present: boolean;
+  unavailable_reason: AltsienSelectPreviousLineReason | null;
+}
+
+/** Last season's values for one step (no season when there is none). */
+export interface AltsienSelectPreviousSeason {
+  previous_season_id: number | null;
+  previous_season_name: string | null;
+  lines: AltsienSelectPreviousLine[];
 }
 
 /** A completed wizard step, with who/when. */
@@ -1247,6 +1418,13 @@ export interface AltsienSelectTeamInfo {
   kernleden: string[];
 }
 
+/** One kar from KarManagement (module-2) assigned to the team; its cijfercode is not stored yet. */
+export interface AltsienSelectTeamKar {
+  id: number;
+  kar_nummer: string;
+  transport_type: string | null;
+}
+
 /** One festival of the season, whether the team is active there, and its delivery location. */
 export interface AltsienSelectFestivalChoice {
   festival_id: number;
@@ -1264,6 +1442,9 @@ export interface AltsienSelectAfleverlocatieOption {
   id: number;
   name: string;
   description: string | null;
+  /** Where it is, for step 2's map of chosen locations (null = not located yet). */
+  latitude: number | null;
+  longitude: number | null;
 }
 
 /** One special request, with its status details. */
@@ -1292,11 +1473,14 @@ export interface AltsienSelectTeamState {
   season_open: boolean;
   can_edit: boolean;
   team: AltsienSelectTeamInfo;
+  karren: AltsienSelectTeamKar[];
   steps: AltsienSelectStep[];
   progress: AltsienSelectStepProgress[];
   festivals: AltsienSelectFestivalChoice[];
   afleverlocaties: AltsienSelectAfleverlocatieOption[];
   requests: AltsienSelectSpecialRequest[];
+  /** The team's responsible people ("Ploegverantwoordelijken") this season. */
+  responsibles: TeamResponsible[];
 }
 
 /** One special-request status (Altsien Select's MasterData). */

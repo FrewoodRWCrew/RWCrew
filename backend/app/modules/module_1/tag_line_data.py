@@ -291,7 +291,28 @@ def sync_line_data(db: Session) -> int:
             setattr(line, field, value)
         updated_count += 1
 
+    # Each header's first non-empty scanner/mode/action among its own lines
+    # (in CSV order) — the same rule a new scan uses. Fills in headers logged
+    # before the header-level columns existed, whose own value is empty.
+    # Cancelled lines count too: they still say which device wrote the file.
+    first_values_by_header: dict[int, dict[str, str]] = {}
+    all_line_values = db.execute(
+        select(TagLineData.header_data_id, TagLineData.scanner, TagLineData.mode, TagLineData.action).order_by(
+            TagLineData.header_data_id, TagLineData.line_number
+        )
+    ).all()
+    for row in all_line_values:
+        first_values = first_values_by_header.setdefault(row.header_data_id, {})
+        for field in ("scanner", "mode", "action"):
+            value = getattr(row, field)
+            if value and field not in first_values:
+                first_values[field] = value
+
     for header in db.scalars(select(TagHeaderData)).all():
+        first_values = first_values_by_header.get(header.id, {})
+        for field in ("scanner", "mode", "action"):
+            if not getattr(header, field) and first_values.get(field):
+                setattr(header, field, first_values[field])
         header_match = match_scanner(header.scanner, header.scanner_id, scanners_by_name, scanners_by_id)
         if any(getattr(header, field) != value for field, value in header_match.items()):
             for field, value in header_match.items():

@@ -40,10 +40,20 @@ class LoginHistory(Base):
     # The client IP address the attempt came from, if available.
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
-    # Where the attempt came from: "web" (browser login) or "mobile" (the
-    # smartphone app's login). Null for rows recorded before this column
-    # existed, since those can't be told apart any more.
+    # Which part of the app the attempt came from: "web" (the website's login
+    # page) or "pwa" (the phone section /m). "mobile" only appears on older
+    # rows, written by the former native smartphone app. Null for rows
+    # recorded before this column existed, since those can't be told apart.
     source: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
+    # The kind of device, read from the User-Agent header: "desktop", "mobile"
+    # or "tablet" (see app/shared/device.py). Null when unknown, e.g. for rows
+    # recorded before this column existed.
+    device_type: Mapped[str | None] = mapped_column(String(16), nullable=True)
+
+    # The raw User-Agent header (cut to 512 characters), kept so device_type
+    # can be re-derived later should the detection rules improve.
+    user_agent: Mapped[str | None] = mapped_column(String(512), nullable=True)
 
     # When this attempt happened, for sorting/filtering on the admin screen.
     created_at: Mapped[datetime] = mapped_column(
