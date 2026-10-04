@@ -91,6 +91,24 @@ tables, `backend/app/modules/module_8/screens.py`).
   Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both
   write through `module_9/team_responsible_service.py`. No module-8 copy of the data.
 
+## TagScan action processing (module-1)
+
+Every scanned CSV line (`Tagscan_line_data`) and file (`Tagscan_header_data`) has a `process_status`
+(`new`/`loaded`/`cancelled`) + `process_comment` + `processed_at`, separate from the line's EPC-match `status`.
+Lines start `new` at scan time; the file's status is derived from its lines
+(`line_processing.refresh_header_process_status`: any `new` → `new`, all cancelled → `cancelled`, else `loaded`).
+
+- `backend/app/modules/module_1/line_processing.py` `PROCESSABLE_ACTIONS` maps a lowercased CSV `Action` to its
+  handler. Today only `assignment` (create the `RfidTag` when the EPC isn't registered; already registered →
+  `loaded` + comment). **Adding an action** = one `_process_<action>()` returning `(outcome, comment)` + a dict entry;
+  lines with an action without a handler simply stay `new`.
+- Waiting lines (`new` + action with a handler) show as an orange banner above every TagScan screen
+  (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
+  `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines
+  without navigating dispatch `PENDING_ACTIONS_CHANGED_EVENT` so the banner re-counts.
+- Rows on Tag Headerdata/Tag Linedata are coloured by `process_status` (`components/module-1/process-status.ts`:
+  orange new, green loaded, red cancelled). Lines that existed before this feature were backfilled as `loaded`.
+
 ## Outgoing email (Resend)
 
 - `backend/app/core/mail.py` `send_email()` posts to Resend's HTTP API with `httpx` (no extra package). It

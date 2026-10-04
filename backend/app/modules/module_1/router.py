@@ -49,13 +49,23 @@ from app.modules.module_1.tag_dashboard import build_dashboard_stats
 from app.modules.module_1.tag_header_data import delete_header_data, list_header_data, scan_unreaded_tags
 from app.modules.module_1.tag_header_pdf import build_header_summary_pdf
 from app.modules.module_1.tag_import import build_template_xlsx, import_tags_from_xlsx
+from app.modules.module_1.line_processing import (
+    cancel_line_processing,
+    count_pending_lines,
+    list_pending_lines,
+    process_pending_lines,
+)
 from app.modules.module_1.tag_line_data import list_line_data, sync_line_data
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
     FileEntryResponse,
     FolderNode,
+    LineProcessCancelRequest,
+    LineProcessRequest,
+    LineProcessResponse,
     MyPermissionsResponse,
+    PendingActionsCountResponse,
     RfidTagCreateRequest,
     RfidTagImportResponse,
     RfidTagResponse,
@@ -268,6 +278,9 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         scanner_location=line.scanner_location,
         scanner_technology=line.scanner_technology,
         status=line.status,
+        process_status=line.process_status,
+        process_comment=line.process_comment,
+        processed_at=line.processed_at,
         created_at=line.created_at,
     )
 
@@ -296,6 +309,64 @@ def sync_tag_line_data(
         updated_count=updated_count,
         entries=[_build_line_data_response(line, filename) for line, filename in list_line_data(db)],
     )
+
+
+@router.get("/line-data/pending/count", response_model=PendingActionsCountResponse)
+def count_pending_tag_actions(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> PendingActionsCountResponse:
+    """How many scanned lines are still waiting for their action (e.g.
+    "Assignment") to be carried out — plain module access only, since the
+    banner showing it appears on every TagScan screen.
+    """
+    return PendingActionsCountResponse(count=count_pending_lines(db))
+
+
+@router.get("/line-data/pending", response_model=list[TagLineDataResponse])
+def list_pending_tag_actions(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "view")),
+) -> list[TagLineDataResponse]:
+    """Every line still waiting to be processed, for the banner's dialog."""
+    return [_build_line_data_response(line, filename) for line, filename in list_pending_lines(db)]
+
+
+@router.post("/line-data/pending/process", response_model=LineProcessResponse)
+def process_pending_tag_actions(
+    payload: LineProcessRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> LineProcessResponse:
+    """Carry out every waiting line's action (or only payload.line_ids) —
+    best-effort, one result per line, see line_processing.py. Processing
+    an "Assignment" creates tags, so creating tags must be allowed too.
+    """
+    if not user_can(db, current_user, "tagscan.tag-management", "create"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to create tags"
+        )
+
+    results = process_pending_lines(db, payload.line_ids)
+    return LineProcessResponse(results=results, remaining_count=count_pending_lines(db))
+
+
+@router.post("/line-data/{line_id}/process-cancel", response_model=TagLineDataResponse)
+def cancel_tag_line_processing(
+    line_id: int,
+    payload: LineProcessCancelRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> TagLineDataResponse:
+    """Mark one line's action as cancelled (never to be carried out), with
+    the user's reason as its comment.
+    """
+    line = cancel_line_processing(db, line_id, payload.comment)
+    if line is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line not found")
+
+    header = db.get(TagHeaderData, line.header_data_id)
+    return _build_line_data_response(line, header.filename)
 
 
 @router.post("/line-data/{line_id}/cancel", response_model=TagLineDataResponse)

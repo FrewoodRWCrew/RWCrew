@@ -60,3 +60,13 @@ class TagHeaderData(Base):
     # Free text, null when the CSV has no such column or it is empty.
     mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
     action: Mapped[str | None] = mapped_column(String(255), nullable=True)
+
+    # The file's overall processing status ("new"/"loaded"/"cancelled"),
+    # derived from its lines' own process_status every time one of them is
+    # processed or cancelled — see app/modules/module_1/line_processing.py.
+    # process_comment is a short summary of what happened to its lines.
+    process_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="new", server_default="new", index=True
+    )
+    process_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

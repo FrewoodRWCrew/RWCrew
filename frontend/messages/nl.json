@@ -206,7 +206,12 @@
       "deleteConfirmTitle": "Deze registratie verwijderen?",
       "deleteConfirmDescription": "Dit verwijdert permanent de registratie en alle gescande regels voor \"{filename}\". Dit kan niet ongedaan worden gemaakt en raakt het fysieke bestand niet aan.",
       "entryDeleted": "Registratie verwijderd.",
-      "deleteFailed": "Verwijderen van de registratie is mislukt."
+      "deleteFailed": "Verwijderen van de registratie is mislukt.",
+      "columnProcessStatus": "Verwerking",
+      "columnProcessComment": "Commentaar",
+      "filterProcessStatus": "Verwerkingsstatus",
+      "filterProcessComment": "Zoek Commentaar",
+      "allProcessStatuses": "Alle"
     },
     "tagLinedata": {
       "title": "Tag Regelgegevens",
@@ -235,7 +240,7 @@
       "columnSerialNumber": "Serienummer",
       "columnManufacturer": "Fabrikant",
       "columnBatchNumber": "Batchnummer",
-      "columnStatus": "Status",
+      "columnStatus": "Matchstatus",
       "columnActions": "Acties",
       "filterHeaderFilename": "Zoek Bestandsnaam",
       "filterLineNumber": "Zoek Regel #",
@@ -264,7 +269,12 @@
       },
       "cancelButton": "Annuleren",
       "lineCancelled": "Regel geannuleerd.",
-      "cancelFailed": "Annuleren van de regel is mislukt."
+      "cancelFailed": "Annuleren van de regel is mislukt.",
+      "columnProcessStatus": "Verwerking",
+      "columnProcessComment": "Commentaar",
+      "filterProcessStatus": "Verwerkingsstatus",
+      "filterProcessComment": "Zoek Commentaar",
+      "allProcessStatuses": "Alle"
     },
     "tagManagement": {
       "title": "TagBeheer",
@@ -492,6 +502,47 @@
       "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
       "userSaved": "Toegang gegeven.",
       "userSaveFailed": "Geven van toegang is mislukt."
+    },
+    "processStatus": {
+      "new": "Nieuw",
+      "loaded": "Geladen",
+      "cancelled": "Geannuleerd"
+    },
+    "pendingActions": {
+      "bannerText": "{count, plural, one {# gescande lijn wacht} other {# gescande lijnen wachten}} op verwerking (bv. Assignment → tags aanmaken).",
+      "bannerOpen": "Bekijken",
+      "dialogTitle": "Wachtende acties",
+      "dialogDescription": "Gescande lijnen waarvan de actie nog niet uitgevoerd is. \"Alles verwerken\" maakt voor Assignment-lijnen de tags aan die nog niet bestaan; annuleer een lijn om ze over te slaan (reden verplicht).",
+      "waitingTitle": "Wachtend ({count})",
+      "loading": "Laden...",
+      "nothingWaiting": "Er wacht niets.",
+      "loadFailed": "Kon de wachtende lijnen niet laden.",
+      "columnFile": "Bestand",
+      "columnLine": "Lijn #",
+      "columnEpc": "EPC",
+      "columnAction": "Actie",
+      "columnScanner": "Scanner",
+      "columnComment": "Commentaar",
+      "columnActions": "Acties",
+      "columnOutcome": "Resultaat",
+      "columnDetail": "Detail",
+      "cancelButton": "Annuleren",
+      "cancelReason": "Reden van annulatie",
+      "confirmCancel": "Bevestigen",
+      "back": "Terug",
+      "commentRequired": "Geef een reden op.",
+      "lineCancelled": "Lijn geannuleerd.",
+      "cancelFailed": "Kon de lijn niet annuleren.",
+      "processAllButton": "Alles verwerken ({count})",
+      "processing": "Bezig met verwerken...",
+      "processFailed": "Kon de wachtende lijnen niet verwerken.",
+      "resultsTitle": "Resultaat",
+      "resultsSummary": "{created} tag(s) aangemaakt, {exists} bestonden al, {errors} fout(en).",
+      "outcome": {
+        "created": "Aangemaakt",
+        "exists": "Bestond al",
+        "error": "Fout"
+      }
     }
   },
   "masterdata": {

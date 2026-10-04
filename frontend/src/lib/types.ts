@@ -431,6 +431,11 @@ export interface TagDashboardStats {
   top_products: TagTopProductItem[];
 }
 
+/** Whether a scanned line's action (e.g. "Assignment" → create the tag) has
+ * been carried out — "new" = waiting, "loaded" = done, "cancelled" = skipped.
+ */
+export type TagProcessStatus = "new" | "loaded" | "cancelled";
+
 /** One CSV file logged by the "Tag Headerdata" screen's scan. */
 export interface TagHeaderDataEntry {
   id: number;
@@ -447,6 +452,10 @@ export interface TagHeaderDataEntry {
   // The file's "Mode" and "Action" CSV values (first non-empty per file).
   mode: string | null;
   action: string | null;
+  // The file's overall processing status, derived from its lines' own.
+  process_status: TagProcessStatus;
+  process_comment: string | null;
+  processed_at: string | null;
 }
 
 /** What happened to one file found in "Unreaded Tags" during a scan. */
@@ -494,6 +503,10 @@ export interface TagLineDataEntry {
   scanner_location: string | null;
   scanner_technology: string | null;
   status: TagLineStatus;
+  // Whether this line's action has been carried out, and why (or why not).
+  process_status: TagProcessStatus;
+  process_comment: string | null;
+  processed_at: string | null;
   created_at: string;
 }
 
@@ -501,6 +514,28 @@ export interface TagLineDataEntry {
 export interface TagLineDataSyncResult {
   updated_count: number;
   entries: TagLineDataEntry[];
+}
+
+/** How many scanned lines are still waiting for their action. */
+export interface TagPendingActionsCount {
+  count: number;
+}
+
+/** What happened to one line when the waiting actions were processed. */
+export interface TagLineProcessRowResult {
+  line_id: number;
+  header_filename: string;
+  line_number: number;
+  epc: string;
+  action: string | null;
+  outcome: "created" | "exists" | "error";
+  detail: string | null;
+}
+
+/** The outcome of processing the waiting actions. */
+export interface TagLineProcessResult {
+  results: TagLineProcessRowResult[];
+  remaining_count: number;
 }
 
 // --- MasterData (module-9): custom roles with per-screen permissions ------

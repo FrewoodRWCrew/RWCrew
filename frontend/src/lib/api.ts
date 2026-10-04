@@ -101,6 +101,8 @@ import type {
   TagHeaderDataScanResult,
   TagLineDataEntry,
   TagLineDataSyncResult,
+  TagLineProcessResult,
+  TagPendingActionsCount,
   TagscanFileContent,
   TagscanFileEntry,
   TagscanFolderNode,
@@ -717,6 +719,32 @@ export function cancelTagLineData(lineId: number): Promise<TagLineDataEntry> {
 
 export function syncTagLineData(): Promise<TagLineDataSyncResult> {
   return apiFetch<TagLineDataSyncResult>("/api/modules/module-1/line-data/sync", { method: "POST" });
+}
+
+// --- Waiting actions (banner on every TagScan screen) -------------------
+
+export function getPendingTagActionsCount(): Promise<TagPendingActionsCount> {
+  return apiFetch<TagPendingActionsCount>("/api/modules/module-1/line-data/pending/count");
+}
+
+export function listPendingTagActions(): Promise<TagLineDataEntry[]> {
+  return apiFetch<TagLineDataEntry[]>("/api/modules/module-1/line-data/pending");
+}
+
+/** Carry out every waiting line's action, or only those in lineIds. */
+export function processPendingTagActions(lineIds?: number[]): Promise<TagLineProcessResult> {
+  return apiFetch<TagLineProcessResult>("/api/modules/module-1/line-data/pending/process", {
+    method: "POST",
+    body: JSON.stringify({ line_ids: lineIds ?? null }),
+  });
+}
+
+/** Cancel one waiting line's action, with the reason as its comment. */
+export function cancelTagLineProcessing(lineId: number, comment: string): Promise<TagLineDataEntry> {
+  return apiFetch<TagLineDataEntry>(`/api/modules/module-1/line-data/${lineId}/process-cancel`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
 }
 
 // --- RFID tags (module-1's "tagscan.tag-management" screen) -------------

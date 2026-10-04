@@ -352,6 +352,11 @@ class TagDashboardResponse(BaseModel):
     top_products: list[TagTopProductItem]
 
 
+# Whether a scanned line's action has been carried out in the rest of the
+# app — see app/modules/module_1/line_processing.py.
+TagProcessStatus = Literal["new", "loaded", "cancelled"]
+
+
 class TagHeaderDataResponse(BaseModel):
     """One CSV file logged by the "Tag Headerdata" screen's scan."""
 
@@ -370,6 +375,10 @@ class TagHeaderDataResponse(BaseModel):
     # The file's "Mode" and "Action" CSV values (first non-empty per file).
     mode: str | None
     action: str | None
+    # The file's overall processing status, derived from its lines' own.
+    process_status: TagProcessStatus
+    process_comment: str | None
+    processed_at: datetime | None
 
 
 class TagHeaderDataScanFileResult(BaseModel):
@@ -425,6 +434,10 @@ class TagLineDataResponse(BaseModel):
     scanner_location: str | None
     scanner_technology: str | None
     status: TagLineStatus
+    # Whether this line's action has been carried out, and why (or why not).
+    process_status: TagProcessStatus
+    process_comment: str | None
+    processed_at: datetime | None
     created_at: datetime
 
 
@@ -436,3 +449,52 @@ class TagLineDataSyncResponse(BaseModel):
 
     updated_count: int
     entries: list[TagLineDataResponse]
+
+
+class PendingActionsCountResponse(BaseModel):
+    """How many scanned lines are still waiting for their action to be
+    carried out — drives the coloured banner on every TagScan screen.
+    """
+
+    count: int
+
+
+class LineProcessRequest(BaseModel):
+    """Which waiting lines to process; null means every waiting line."""
+
+    line_ids: list[int] | None = None
+
+
+class LineProcessRowResult(BaseModel):
+    """What happened to one line during processing."""
+
+    line_id: int
+    header_filename: str
+    line_number: int
+    epc: str
+    action: str | None
+    outcome: Literal["created", "exists", "error"]
+    detail: str | None = None
+
+
+class LineProcessResponse(BaseModel):
+    """One result per processed line, plus how many are still waiting."""
+
+    results: list[LineProcessRowResult]
+    remaining_count: int
+
+
+class LineProcessCancelRequest(BaseModel):
+    """Why a waiting line is being cancelled — required, so the line's
+    comment always explains why it was never loaded.
+    """
+
+    comment: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("comment")
+    @classmethod
+    def strip_comment(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("A comment is required")
+        return stripped

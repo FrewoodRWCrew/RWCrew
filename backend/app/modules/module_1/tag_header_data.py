@@ -96,6 +96,9 @@ def _build_line_rows(
             last_seen=row["last_seen"],
             mode=row["mode"] or header_mode,
             action=row["action"] or header_action,
+            # Every freshly scanned line waits for its action to be carried
+            # out — see line_processing.py.
+            process_status="new",
             **match_tag(row["epc"], tags_by_epc, product_names_by_id),
             **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id),
         )
@@ -173,6 +176,10 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
             scanner=header_scanner,
             mode=header_mode,
             action=header_action,
+            # Waiting for its lines' actions — except a file with no data
+            # lines at all, which has nothing left to do.
+            process_status="new" if parsed_rows else "loaded",
+            process_comment=None if parsed_rows else "No lines",
             **header_match,
         )
         db.add(new_entry)
