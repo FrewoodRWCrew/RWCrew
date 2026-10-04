@@ -101,6 +101,10 @@ import type {
   TagHeaderDataScanResult,
   TagLineDataEntry,
   TagLineDataSyncResult,
+  TagLineProcessFile,
+  TagLineProcessResult,
+  TagscanProductOption,
+  TagPendingActionsCount,
   TagscanFileContent,
   TagscanFileEntry,
   TagscanFolderNode,
@@ -719,6 +723,37 @@ export function syncTagLineData(): Promise<TagLineDataSyncResult> {
   return apiFetch<TagLineDataSyncResult>("/api/modules/module-1/line-data/sync", { method: "POST" });
 }
 
+// --- Waiting actions (banner on every TagScan screen) -------------------
+
+export function getPendingTagActionsCount(): Promise<TagPendingActionsCount> {
+  return apiFetch<TagPendingActionsCount>("/api/modules/module-1/line-data/pending/count");
+}
+
+export function listPendingTagActions(): Promise<TagLineDataEntry[]> {
+  return apiFetch<TagLineDataEntry[]>("/api/modules/module-1/line-data/pending");
+}
+
+/** Carry out the waiting lines of the given files, each with its product. */
+export function processPendingTagActions(files: TagLineProcessFile[]): Promise<TagLineProcessResult> {
+  return apiFetch<TagLineProcessResult>("/api/modules/module-1/line-data/pending/process", {
+    method: "POST",
+    body: JSON.stringify({ files }),
+  });
+}
+
+/** Every product, for the processing dialog's product dropdown. */
+export function listTagscanProducts(): Promise<TagscanProductOption[]> {
+  return apiFetch<TagscanProductOption[]>("/api/modules/module-1/products");
+}
+
+/** Cancel one waiting line's action, with the reason as its comment. */
+export function cancelTagLineProcessing(lineId: number, comment: string): Promise<TagLineDataEntry> {
+  return apiFetch<TagLineDataEntry>(`/api/modules/module-1/line-data/${lineId}/process-cancel`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+}
+
 // --- RFID tags (module-1's "tagscan.tag-management" screen) -------------
 
 export function listRfidTags(): Promise<RfidTag[]> {
@@ -784,10 +819,18 @@ export function getTagscanSettings(): Promise<TagscanSettings> {
   return apiFetch<TagscanSettings>("/api/modules/module-1/settings");
 }
 
-export function updateTagscanSettings(payload: TagscanSettings): Promise<TagscanSettings> {
+export function updateTagscanSettings(payload: { receive_folder_path: string }): Promise<TagscanSettings> {
   return apiFetch<TagscanSettings>("/api/modules/module-1/settings", {
     method: "PUT",
     body: JSON.stringify({ receive_folder_path: payload.receive_folder_path }),
+  });
+}
+
+/** Switch the automatic background Scan on/off and set its interval (seconds). */
+export function updateTagscanAutoScan(payload: { enabled: boolean; interval_seconds: number }): Promise<TagscanSettings> {
+  return apiFetch<TagscanSettings>("/api/modules/module-1/settings/auto-scan", {
+    method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
 

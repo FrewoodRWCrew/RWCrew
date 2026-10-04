@@ -77,6 +77,12 @@ class Settings(BaseSettings):
     tagscan_forward_url: str = ""
     tagscan_forward_api_key: str = ""
 
+    # Whether this backend process runs TagScan's automatic background Scan
+    # at all (see app/modules/module_1/auto_scan.py). On/off and the
+    # interval are user settings on TagScan's Settings screen; this is only
+    # an emergency/ops switch to keep the job from starting in a process.
+    tagscan_auto_scan_worker: bool = True
+
     # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
     # (https://resend.com). The API key is secret and set per environment in
     # the server's .env; left empty (the default, and in local dev/tests),

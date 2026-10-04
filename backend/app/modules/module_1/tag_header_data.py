@@ -73,6 +73,7 @@ def _build_line_rows(
     scanners_by_id: dict[int, Scanner],
     header_mode: str | None = None,
     header_action: str | None = None,
+    header_csv_comment: str | None = None,
 ) -> list[TagLineData]:
     """Turn one file's parsed CSV rows into TagLineData rows, matching
     each one's EPC against the (pre-loaded, scan-wide) set of registered
@@ -96,6 +97,10 @@ def _build_line_rows(
             last_seen=row["last_seen"],
             mode=row["mode"] or header_mode,
             action=row["action"] or header_action,
+            csv_comment=row["csv_comment"] or header_csv_comment,
+            # Every freshly scanned line waits for its action to be carried
+            # out — see line_processing.py.
+            process_status="new",
             **match_tag(row["epc"], tags_by_epc, product_names_by_id),
             **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id),
         )
@@ -158,6 +163,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
         # the first non-empty value among its parsed rows.
         header_mode = next((row["mode"] for row in parsed_rows if row["mode"]), None)
         header_action = next((row["action"] for row in parsed_rows if row["action"]), None)
+        header_csv_comment = next((row["csv_comment"] for row in parsed_rows if row["csv_comment"]), None)
 
         # The number of data lines actually logged below — NOT a raw
         # physical line count, so this always matches how many rows show
@@ -173,6 +179,11 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
             scanner=header_scanner,
             mode=header_mode,
             action=header_action,
+            csv_comment=header_csv_comment,
+            # Waiting for its lines' actions — except a file with no data
+            # lines at all, which has nothing left to do.
+            process_status="new" if parsed_rows else "loaded",
+            process_comment=None if parsed_rows else "No lines",
             **header_match,
         )
         db.add(new_entry)
@@ -208,6 +219,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
                 scanners_by_id,
                 header_mode=header_mode,
                 header_action=header_action,
+                header_csv_comment=header_csv_comment,
             )
         )
         db.commit()

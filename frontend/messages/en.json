@@ -49,7 +49,11 @@
   "landing": {
     "title": "Modules Overview",
     "subtitle": "Choose a module below to get started.",
-    "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access."
+    "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access.",
+    "pendingWork": {
+      "tagscan": "TagScan: {count, plural, one {# line is} other {# lines are}} waiting to be processed",
+      "open": "Review"
+    }
   },
   "sidebar": {
     "manageAccess": "Manage Access",
@@ -206,7 +210,12 @@
       "deleteConfirmTitle": "Delete this record?",
       "deleteConfirmDescription": "This will permanently remove the logged record and all its scanned lines for \"{filename}\". This cannot be undone, and does not touch the physical file.",
       "entryDeleted": "Record deleted.",
-      "deleteFailed": "Failed to delete the record."
+      "deleteFailed": "Failed to delete the record.",
+      "columnProcessStatus": "Processing",
+      "columnProcessComment": "Comment",
+      "filterProcessStatus": "Processing status",
+      "filterProcessComment": "Search Comment",
+      "allProcessStatuses": "All"
     },
     "tagLinedata": {
       "title": "Tag Linedata",
@@ -235,7 +244,7 @@
       "columnSerialNumber": "Serial Number",
       "columnManufacturer": "Manufacturer",
       "columnBatchNumber": "Batch Number",
-      "columnStatus": "Status",
+      "columnStatus": "Match Status",
       "columnActions": "Actions",
       "filterHeaderFilename": "Search Filename",
       "filterLineNumber": "Search Line #",
@@ -264,7 +273,12 @@
       },
       "cancelButton": "Cancel",
       "lineCancelled": "Line cancelled.",
-      "cancelFailed": "Failed to cancel the line."
+      "cancelFailed": "Failed to cancel the line.",
+      "columnProcessStatus": "Processing",
+      "columnProcessComment": "Comment",
+      "filterProcessStatus": "Processing status",
+      "filterProcessComment": "Search Comment",
+      "allProcessStatuses": "All"
     },
     "tagManagement": {
       "title": "TagManagement",
@@ -442,7 +456,16 @@
       "uploadUrlHint": "Paste this into the device's watcher configuration alongside its API key.",
       "copy": "Copy",
       "copied": "Copied to clipboard.",
-      "copyFailed": "Failed to copy."
+      "copyFailed": "Failed to copy.",
+      "autoScanTitle": "Automatic scan",
+      "autoScanDescription": "Scans the \"Unreaded Tags\" folder in the background, exactly like the Scan button on Tag Headerdata, so new CSV files are processed without anyone clicking.",
+      "autoScanEnabledLabel": "Scan automatically",
+      "autoScanIntervalLabel": "Interval (seconds)",
+      "autoScanIntervalInvalid": "Enter a whole number of seconds between {min} and {max}.",
+      "autoScanSaved": "Automatic scan settings saved.",
+      "autoScanSaveFailed": "Failed to save the automatic scan settings.",
+      "lastAutoScan": "Last automatic scan: {when} — {summary}",
+      "autoScanNeverRun": "The automatic scan has not run yet."
     },
     "roles": {
       "title": "Roles",
@@ -492,6 +515,56 @@
       "newUserPasswordLabel": "Temporary password (only needed for a brand-new account)",
       "userSaved": "Access granted.",
       "userSaveFailed": "Failed to grant access."
+    },
+    "processStatus": {
+      "new": "New",
+      "loaded": "Loaded",
+      "cancelled": "Canceled"
+    },
+    "pendingActions": {
+      "bannerText": "{count, plural, one {# scanned line is} other {# scanned lines are}} waiting to be processed (e.g. Assignment → create tags).",
+      "bannerOpen": "Review",
+      "dialogTitle": "Actions waiting",
+      "dialogDescription": "Scanned lines whose action has not been carried out yet, per file. Choose the product for each file (required): Assignment lines create the missing tags with that product, or fill it in on a registered tag that has none. Cancel a line to skip it (a reason is required).",
+      "waitingTitle": "Waiting ({count})",
+      "loading": "Loading...",
+      "nothingWaiting": "Nothing is waiting.",
+      "loadFailed": "Failed to load the waiting lines.",
+      "columnFile": "File",
+      "columnLine": "Line #",
+      "columnEpc": "EPC",
+      "columnAction": "Action",
+      "columnScanner": "Scanner",
+      "columnComment": "Comment",
+      "columnActions": "Actions",
+      "columnOutcome": "Outcome",
+      "columnDetail": "Detail",
+      "cancelButton": "Cancel",
+      "cancelReason": "Reason for cancelling",
+      "confirmCancel": "Confirm",
+      "back": "Back",
+      "commentRequired": "Please enter a reason.",
+      "lineCancelled": "Line cancelled.",
+      "cancelFailed": "Failed to cancel the line.",
+      "processAllButton": "Process all ({count})",
+      "processing": "Processing...",
+      "processFailed": "Failed to process the waiting lines.",
+      "resultsTitle": "Result",
+      "resultsSummary": "{created} tag(s) created, {assigned} product(s) assigned, {exists} already assigned, {errors} error(s).",
+      "outcome": {
+        "created": "Created",
+        "assigned": "Product assigned",
+        "exists": "Already assigned",
+        "error": "Error"
+      },
+      "columnProduct": "Product",
+      "chooseProduct": "Choose a product",
+      "productRequired": "Choose a product first.",
+      "processFileButton": "Process file",
+      "productMissingHint": "Choose a product for every file.",
+      "fileLineCount": "{count, plural, one {# line} other {# lines}}",
+      "columnCsvComment": "Product / comments (CSV)",
+      "csvCommentLabel": "CSV product / comments"
     }
   },
   "masterdata": {

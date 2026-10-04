@@ -9,6 +9,7 @@ import { ServerApiError, serverApiFetch } from "@/lib/server-api";
 import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { TagscanMyPermissions } from "@/lib/types";
 import { TagscanSidebar } from "@/components/module-1/tagscan-sidebar";
+import { PendingActionsBanner } from "@/components/module-1/pending-actions-banner";
 
 interface TagscanLayoutProps {
   children: React.ReactNode;
@@ -42,7 +43,12 @@ export default async function TagscanLayout({ children }: TagscanLayoutProps) {
     // module's own accent colour — see getModuleAccentStyle().
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-1")}>
       <TagscanSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
-      <div className="min-w-0 flex-1 p-6">{children}</div>
+      <div className="min-w-0 flex-1 p-6">
+        {/* "Actions waiting" message above every TagScan screen; only
+            clickable for users who may see the waiting lines. */}
+        <PendingActionsBanner canOpen={permissions.viewable_screen_keys.includes("tagscan.tag-linedata")} />
+        {children}
+      </div>
     </div>
   );
 }

@@ -169,6 +169,38 @@ COLUMN_LAST_SEEN = "Last Seen"
 COLUMN_MODE = "Mode"
 COLUMN_ACTION = "Action"
 
+# Every column above — anything else is a candidate for the free-text
+# "product / comments" column, see comment_column().
+KNOWN_COLUMNS = {
+    COLUMN_SCANNER,
+    COLUMN_EPC,
+    COLUMN_RSSI,
+    COLUMN_ANTENNA,
+    COLUMN_COUNT,
+    COLUMN_LAST_SEEN,
+    COLUMN_MODE,
+    COLUMN_ACTION,
+}
+# Header names (lowercased) recognised as the "product / comments" column.
+COMMENT_COLUMN_NAMES = {"comment", "comments", "product", "products", "remark", "remarks", "opmerking", "opmerkingen"}
+
+
+def comment_column(fieldnames: list[str] | None) -> str | None:
+    """Which CSV column holds the free-text "product / comments" value: one
+    whose name is in COMMENT_COLUMN_NAMES (any case), otherwise the LAST
+    column when it isn't one of the known scanner columns (the scanner app
+    writes it at the end). None when the CSV has no such column.
+    """
+    if not fieldnames:
+        return None
+    for name in fieldnames:
+        if name and name.strip().lower() in COMMENT_COLUMN_NAMES:
+            return name
+    last = fieldnames[-1]
+    if last and last.strip() not in KNOWN_COLUMNS:
+        return last
+    return None
+
 
 def _parse_int(value: str | None) -> int | None:
     """Best-effort int parsing — a blank or non-numeric cell becomes None
@@ -217,7 +249,9 @@ def parse_csv_rows(file: Path) -> list[dict]:
         # start=2: the header row is physical line 1, so the first data
         # row is line 2 — line_number can then point straight back to the
         # exact row in the source file.
-        for line_number, row in enumerate(csv.DictReader(handle), start=2):
+        reader = csv.DictReader(handle)
+        csv_comment_column = comment_column(reader.fieldnames)
+        for line_number, row in enumerate(reader, start=2):
             epc = (row.get(COLUMN_EPC) or "").strip()
             if not epc:
                 continue
@@ -232,6 +266,9 @@ def parse_csv_rows(file: Path) -> list[dict]:
                     "last_seen": (row.get(COLUMN_LAST_SEEN) or "").strip() or None,
                     "mode": (row.get(COLUMN_MODE) or "").strip() or None,
                     "action": (row.get(COLUMN_ACTION) or "").strip() or None,
+                    "csv_comment": (
+                        (row.get(csv_comment_column) or "").strip() or None if csv_comment_column else None
+                    ),
                 }
             )
     return rows

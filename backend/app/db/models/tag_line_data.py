@@ -55,6 +55,10 @@ class TagLineData(Base):
     mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
     action: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # The CSV's free-text "product / comments" column: the row's own cell,
+    # or the file's value (TagHeaderData.csv_comment) when that cell is empty.
+    csv_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Which registered tag this EPC matched, if any — null means "no_match".
     rfid_tag_id: Mapped[int | None] = mapped_column(ForeignKey("Tagscan_rfid_tag.id"), nullable=True)
 
@@ -75,5 +79,18 @@ class TagLineData(Base):
     scanner_technology: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False)
+
+    # Whether this line's action (e.g. "Assignment" → create the tag) has
+    # been carried out in the rest of the app: "new" (waiting), "loaded"
+    # (done) or "cancelled" (deliberately skipped). Independent of status
+    # above, which only says whether the EPC matched a registered tag.
+    # process_comment says why (e.g. "Tag already exists"), set by the
+    # processing step or by the user who cancelled it — see
+    # app/modules/module_1/line_processing.py.
+    process_status: Mapped[str] = mapped_column(
+        String(20), nullable=False, default="new", server_default="new", index=True
+    )
+    process_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+    processed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

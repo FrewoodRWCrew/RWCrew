@@ -10,6 +10,10 @@
 // is never silently dropped: every scan's full per-file outcome is kept
 // on screen in the "Scan Log" panel below the table, not just flashed as
 // a toast, so a duplicate/error is still visible after the fact.
+//
+// Each row is coloured by the file's processing status (orange = its lines'
+// actions are still waiting, green = loaded, red = cancelled) — see
+// process-status.ts.
 
 import { useMemo, useState } from "react";
 import { FileText, Trash2 } from "lucide-react";
@@ -18,6 +22,11 @@ import { toast } from "sonner";
 import { ApiError, deleteTagHeaderData, scanTagHeaderData } from "@/lib/api";
 import { API_BASE_URL } from "@/lib/config";
 import type { TagHeaderDataEntry, TagHeaderDataScanFileResult } from "@/lib/types";
+import {
+  PROCESS_STATUS_BADGE_CLASS,
+  PROCESS_STATUS_ROW_CLASS,
+  PROCESS_STATUS_VALUES,
+} from "@/components/module-1/process-status";
 import { Link } from "@/i18n/navigation";
 import {
   AlertDialog,
@@ -30,15 +39,20 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/date-time";
 import { cn } from "@/lib/utils";
+import { PENDING_ACTIONS_CHANGED_EVENT } from "@/components/module-1/pending-actions-banner";
 
 interface TagHeaderDataProps {
   initialEntries: TagHeaderDataEntry[];
 }
+
+const ALL_VALUE = "all";
 
 function textMatches(fieldValue: string, filterValue: string): boolean {
   if (!filterValue) return true;
@@ -47,9 +61,19 @@ function textMatches(fieldValue: string, filterValue: string): boolean {
 
 export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const t = useTranslations("tagscan.tagHeaderdata");
+  const tProcess = useTranslations("tagscan.processStatus");
   const locale = useLocale();
 
   const [entries, setEntries] = useState(initialEntries);
+
+  // The waiting-actions dialog (banner above every TagScan screen) calls
+  // router.refresh() after processing/cancelling, which brings fresh
+  // initialEntries from the server — take them over when they change.
+  const [previousInitialEntries, setPreviousInitialEntries] = useState(initialEntries);
+  if (initialEntries !== previousInitialEntries) {
+    setPreviousInitialEntries(initialEntries);
+    setEntries(initialEntries);
+  }
   const [isScanning, setIsScanning] = useState(false);
   const [scanLog, setScanLog] = useState<TagHeaderDataScanFileResult[] | null>(null);
   const [filenameFilter, setFilenameFilter] = useState("");
@@ -60,6 +84,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
+  const [processStatusFilter, setProcessStatusFilter] = useState(ALL_VALUE);
+  const [processCommentFilter, setProcessCommentFilter] = useState("");
 
   const filteredEntries = useMemo(() => {
     const visible = entries.filter((entry) => {
@@ -71,6 +97,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(entry.scanner_technology ?? "", scannerTechnologyFilter)) return false;
       if (!textMatches(entry.mode ?? "", modeFilter)) return false;
       if (!textMatches(entry.action ?? "", actionFilter)) return false;
+      if (processStatusFilter !== ALL_VALUE && entry.process_status !== processStatusFilter) return false;
+      if (!textMatches(entry.process_comment ?? "", processCommentFilter)) return false;
       return true;
     });
     // Always newest first by "Registered on" (id breaks a tie), whatever
@@ -88,6 +116,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
     scannerTechnologyFilter,
     modeFilter,
     actionFilter,
+    processStatusFilter,
+    processCommentFilter,
   ]);
 
   function handleDeleted(deletedId: number) {
@@ -100,6 +130,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       const result = await scanTagHeaderData();
       setEntries(result.entries);
       setScanLog(result.results);
+      // New lines may be waiting now: let the banner re-count.
+      window.dispatchEvent(new Event(PENDING_ACTIONS_CHANGED_EVENT));
 
       const logged = result.results.filter((r) => r.outcome === "logged").length;
       const skipped = result.results.filter((r) => r.outcome === "skipped_duplicate").length;
@@ -157,6 +189,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProcessStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnFilename")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCreatedAt")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("columnLineCount")}</TableHead>
@@ -165,12 +198,35 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerTechnology")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnMode")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAction")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProcessComment")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("columnActions")}
               </TableHead>
             </TableRow>
             {/* The filter row: each input sits directly under the column it filters. */}
             <TableRow>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Select
+                  value={processStatusFilter}
+                  onValueChange={(value) => setProcessStatusFilter(value ?? ALL_VALUE)}
+                >
+                  <SelectTrigger aria-label={t("filterProcessStatus")} className="h-8 w-full min-w-28 font-normal">
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== ALL_VALUE ? tProcess(value) : t("allProcessStatuses")
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_VALUE}>{t("allProcessStatuses")}</SelectItem>
+                    {PROCESS_STATUS_VALUES.map((statusValue) => (
+                      <SelectItem key={statusValue} value={statusValue}>
+                        {tProcess(statusValue)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
                   aria-label={t("filterFilename")}
@@ -243,27 +299,43 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   onChange={(event) => setActionFilter(event.target.value)}
                 />
               </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterProcessComment")}
+                  placeholder={t("filterProcessComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={processCommentFilter}
+                  onChange={(event) => setProcessCommentFilter(event.target.value)}
+                />
+              </TableHead>
               <TableHead className="sticky top-10 right-0 z-30 bg-background" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredEntries.map((entry) => (
-              <TableRow key={entry.id} className="group">
+              // Whole-row colour by processing status; the cells inherit it.
+              <TableRow key={entry.id} className={cn("group", PROCESS_STATUS_ROW_CLASS[entry.process_status])}>
+                <TableCell>
+                  <Badge variant="outline" className={PROCESS_STATUS_BADGE_CLASS[entry.process_status]}>
+                    {tProcess(entry.process_status)}
+                  </Badge>
+                </TableCell>
                 <TableCell className="font-medium">
                   <Link
                     href={`/modules/module-1/tag-linedata?filename=${encodeURIComponent(entry.filename)}`}
-                    className="text-primary underline-offset-4 hover:underline"
+                    className="underline underline-offset-4"
                   >
                     {entry.filename}
                   </Link>
                 </TableCell>
-                <TableCell className="text-muted-foreground">{formatDateTime(entry.created_at)}</TableCell>
-                <TableCell className="text-right text-muted-foreground">{entry.line_count}</TableCell>
-                <TableCell className="text-muted-foreground">{entry.scanner_name}</TableCell>
-                <TableCell className="text-muted-foreground">{entry.scanner_location}</TableCell>
-                <TableCell className="text-muted-foreground">{entry.scanner_technology}</TableCell>
-                <TableCell className="text-muted-foreground">{entry.mode}</TableCell>
-                <TableCell className="text-muted-foreground">{entry.action}</TableCell>
+                <TableCell>{formatDateTime(entry.created_at)}</TableCell>
+                <TableCell className="text-right">{entry.line_count}</TableCell>
+                <TableCell>{entry.scanner_name}</TableCell>
+                <TableCell>{entry.scanner_location}</TableCell>
+                <TableCell>{entry.scanner_technology}</TableCell>
+                <TableCell>{entry.mode}</TableCell>
+                <TableCell>{entry.action}</TableCell>
+                <TableCell>{entry.process_comment}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
                     <a

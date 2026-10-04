@@ -270,6 +270,12 @@ class TagscanSettingsResponse(BaseModel):
     # Whether receive_folder_path is a DB-saved override, or just the
     # .env-configured default shown because nothing's been saved yet.
     is_override: bool
+    # The automatic background Scan of "Unreaded Tags" (see
+    # module_1/auto_scan.py) and its last run.
+    auto_scan_enabled: bool
+    auto_scan_interval_seconds: int
+    last_auto_scan_at: datetime | None
+    last_auto_scan_summary: str | None
 
 
 class TagscanSettingsUpdateRequest(BaseModel):
@@ -281,6 +287,15 @@ class TagscanSettingsUpdateRequest(BaseModel):
     @classmethod
     def _strip_path(cls, value: str) -> str:
         return value.strip()
+
+
+class TagscanAutoScanUpdateRequest(BaseModel):
+    """What's sent to switch the automatic background Scan on/off and set
+    how often it runs (10 seconds to 1 day).
+    """
+
+    enabled: bool
+    interval_seconds: int = Field(ge=10, le=86400)
 
 
 class IntakeUploadResponse(BaseModel):
@@ -352,6 +367,11 @@ class TagDashboardResponse(BaseModel):
     top_products: list[TagTopProductItem]
 
 
+# Whether a scanned line's action has been carried out in the rest of the
+# app — see app/modules/module_1/line_processing.py.
+TagProcessStatus = Literal["new", "loaded", "cancelled"]
+
+
 class TagHeaderDataResponse(BaseModel):
     """One CSV file logged by the "Tag Headerdata" screen's scan."""
 
@@ -370,6 +390,12 @@ class TagHeaderDataResponse(BaseModel):
     # The file's "Mode" and "Action" CSV values (first non-empty per file).
     mode: str | None
     action: str | None
+    # The CSV's free-text "product / comments" column (first non-empty).
+    csv_comment: str | None
+    # The file's overall processing status, derived from its lines' own.
+    process_status: TagProcessStatus
+    process_comment: str | None
+    processed_at: datetime | None
 
 
 class TagHeaderDataScanFileResult(BaseModel):
@@ -413,6 +439,8 @@ class TagLineDataResponse(BaseModel):
     # The line's own "Mode"/"Action" CSV value, or its file's header value.
     mode: str | None
     action: str | None
+    # The CSV's "product / comments" cell, or its file's value.
+    csv_comment: str | None
     rfid_tag_id: int | None
     assigned_product_name: str | None
     assigned_serial_number: str | None
@@ -425,6 +453,10 @@ class TagLineDataResponse(BaseModel):
     scanner_location: str | None
     scanner_technology: str | None
     status: TagLineStatus
+    # Whether this line's action has been carried out, and why (or why not).
+    process_status: TagProcessStatus
+    process_comment: str | None
+    processed_at: datetime | None
     created_at: datetime
 
 
@@ -436,3 +468,68 @@ class TagLineDataSyncResponse(BaseModel):
 
     updated_count: int
     entries: list[TagLineDataResponse]
+
+
+class PendingActionsCountResponse(BaseModel):
+    """How many scanned lines are still waiting for their action to be
+    carried out — drives the coloured banner on every TagScan screen.
+    """
+
+    count: int
+
+
+class LineProcessFile(BaseModel):
+    """One file to process, with the product all its Assignment lines get —
+    required, since a tag must always be assigned to a product.
+    """
+
+    header_data_id: int
+    product_id: int
+
+
+class LineProcessRequest(BaseModel):
+    """Which files' waiting lines to process, each with its product."""
+
+    files: list[LineProcessFile] = Field(min_length=1)
+
+
+class TagscanProductOption(BaseModel):
+    """One product for the processing dialog's dropdown."""
+
+    id: int
+    name: str
+
+
+class LineProcessRowResult(BaseModel):
+    """What happened to one line during processing."""
+
+    line_id: int
+    header_filename: str
+    line_number: int
+    epc: str
+    action: str | None
+    outcome: Literal["created", "assigned", "exists", "error"]
+    detail: str | None = None
+
+
+class LineProcessResponse(BaseModel):
+    """One result per processed line, plus how many are still waiting."""
+
+    results: list[LineProcessRowResult]
+    remaining_count: int
+
+
+class LineProcessCancelRequest(BaseModel):
+    """Why a waiting line is being cancelled — required, so the line's
+    comment always explains why it was never loaded.
+    """
+
+    comment: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("comment")
+    @classmethod
+    def strip_comment(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("A comment is required")
+        return stripped

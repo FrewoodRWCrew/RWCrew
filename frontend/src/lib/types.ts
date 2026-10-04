@@ -370,6 +370,11 @@ export interface TagscanSettings {
   /** Whether receive_folder_path is a DB-saved override, or just the
    * backend's .env-configured default shown because nothing's been saved yet. */
   is_override: boolean;
+  /** The automatic background Scan of "Unreaded Tags", and its last run. */
+  auto_scan_enabled: boolean;
+  auto_scan_interval_seconds: number;
+  last_auto_scan_at: string | null;
+  last_auto_scan_summary: string | null;
 }
 
 /** The fields sent to create or fully update a scanner device. Unlike
@@ -431,6 +436,11 @@ export interface TagDashboardStats {
   top_products: TagTopProductItem[];
 }
 
+/** Whether a scanned line's action (e.g. "Assignment" → create the tag) has
+ * been carried out — "new" = waiting, "loaded" = done, "cancelled" = skipped.
+ */
+export type TagProcessStatus = "new" | "loaded" | "cancelled";
+
 /** One CSV file logged by the "Tag Headerdata" screen's scan. */
 export interface TagHeaderDataEntry {
   id: number;
@@ -447,6 +457,12 @@ export interface TagHeaderDataEntry {
   // The file's "Mode" and "Action" CSV values (first non-empty per file).
   mode: string | null;
   action: string | null;
+  // The CSV's free-text "product / comments" column (first non-empty).
+  csv_comment: string | null;
+  // The file's overall processing status, derived from its lines' own.
+  process_status: TagProcessStatus;
+  process_comment: string | null;
+  processed_at: string | null;
 }
 
 /** What happened to one file found in "Unreaded Tags" during a scan. */
@@ -482,6 +498,8 @@ export interface TagLineDataEntry {
   // The line's own "Mode"/"Action" CSV value, or its file's header value.
   mode: string | null;
   action: string | null;
+  // The CSV's "product / comments" cell, or its file's value.
+  csv_comment: string | null;
   rfid_tag_id: number | null;
   assigned_product_name: string | null;
   assigned_serial_number: string | null;
@@ -494,6 +512,10 @@ export interface TagLineDataEntry {
   scanner_location: string | null;
   scanner_technology: string | null;
   status: TagLineStatus;
+  // Whether this line's action has been carried out, and why (or why not).
+  process_status: TagProcessStatus;
+  process_comment: string | null;
+  processed_at: string | null;
   created_at: string;
 }
 
@@ -501,6 +523,40 @@ export interface TagLineDataEntry {
 export interface TagLineDataSyncResult {
   updated_count: number;
   entries: TagLineDataEntry[];
+}
+
+/** How many scanned lines are still waiting for their action. */
+export interface TagPendingActionsCount {
+  count: number;
+}
+
+/** What happened to one line when the waiting actions were processed. */
+export interface TagLineProcessRowResult {
+  line_id: number;
+  header_filename: string;
+  line_number: number;
+  epc: string;
+  action: string | null;
+  outcome: "created" | "assigned" | "exists" | "error";
+  detail: string | null;
+}
+
+/** One file to process, with the product all its Assignment lines get. */
+export interface TagLineProcessFile {
+  header_data_id: number;
+  product_id: number;
+}
+
+/** One product for the processing dialog's dropdown. */
+export interface TagscanProductOption {
+  id: number;
+  name: string;
+}
+
+/** The outcome of processing the waiting actions. */
+export interface TagLineProcessResult {
+  results: TagLineProcessRowResult[];
+  remaining_count: number;
 }
 
 // --- MasterData (module-9): custom roles with per-screen permissions ------

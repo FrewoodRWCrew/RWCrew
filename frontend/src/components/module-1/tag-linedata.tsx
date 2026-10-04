@@ -10,6 +10,12 @@
 // Cancel action below (relies on the backend to 403 if the user lacks
 // edit permission — same pattern as every other action button in this
 // codebase, e.g. tag-management.tsx's Edit/Delete).
+//
+// Separately, every line has a processing status (has its action, e.g.
+// "Assignment", been carried out?) with a comment saying why — rows are
+// coloured by THAT status (orange = new, green = loaded, red = cancelled),
+// see process-status.ts. Processing itself happens in the waiting-actions
+// dialog opened from the banner at the top of every TagScan screen.
 
 import { Fragment, useMemo, useState } from "react";
 import { ArrowDown, ArrowUp, ArrowUpDown, Layers } from "lucide-react";
@@ -18,6 +24,12 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { ApiError, cancelTagLineData, syncTagLineData } from "@/lib/api";
 import type { TagLineDataEntry, TagLineStatus } from "@/lib/types";
+import {
+  PROCESS_STATUS_BADGE_CLASS,
+  PROCESS_STATUS_ROW_CLASS,
+  PROCESS_STATUS_VALUES,
+} from "@/components/module-1/process-status";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -55,7 +67,9 @@ type SortableColumn =
   | "assigned_serial_number"
   | "manufacturer"
   | "batch_number"
-  | "status";
+  | "status"
+  | "process_status"
+  | "process_comment";
 
 type SortDirection = "asc" | "desc";
 
@@ -120,9 +134,19 @@ function SortableHeader({ label, column, activeColumn, direction, onSort, disabl
 
 export function TagLineData({ initialEntries }: TagLineDataProps) {
   const t = useTranslations("tagscan.tagLinedata");
+  const tProcess = useTranslations("tagscan.processStatus");
   const searchParams = useSearchParams();
 
   const [entries, setEntries] = useState(initialEntries);
+
+  // The waiting-actions dialog (banner above every TagScan screen) calls
+  // router.refresh() after processing/cancelling, which brings fresh
+  // initialEntries from the server — take them over when they change.
+  const [previousInitialEntries, setPreviousInitialEntries] = useState(initialEntries);
+  if (initialEntries !== previousInitialEntries) {
+    setPreviousInitialEntries(initialEntries);
+    setEntries(initialEntries);
+  }
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [groupByProduct, setGroupByProduct] = useState(false);
@@ -148,6 +172,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [manufacturerFilter, setManufacturerFilter] = useState("");
   const [batchNumberFilter, setBatchNumberFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
+  const [processStatusFilter, setProcessStatusFilter] = useState(ALL_VALUE);
+  const [processCommentFilter, setProcessCommentFilter] = useState("");
 
   // No column sorted by default: entries arrive from the backend already
   // ordered newest-scanned-file-first with lines in CSV order, which is
@@ -185,6 +211,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.manufacturer, manufacturerFilter)) return false;
       if (!textMatches(entry.batch_number, batchNumberFilter)) return false;
       if (statusFilter !== ALL_VALUE && entry.status !== statusFilter) return false;
+      if (processStatusFilter !== ALL_VALUE && entry.process_status !== processStatusFilter) return false;
+      if (!textMatches(entry.process_comment, processCommentFilter)) return false;
       return true;
     });
   }, [
@@ -208,6 +236,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     manufacturerFilter,
     batchNumberFilter,
     statusFilter,
+    processStatusFilter,
+    processCommentFilter,
   ]);
 
   const sortedEntries = useMemo(() => {
@@ -293,19 +323,17 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   }
 
   function renderEntryRow(entry: TagLineDataEntry) {
-    // Whole-row status colour, overriding every cell's default
-    // text-muted-foreground below — green/red/yellow so the outcome of a
-    // line is readable at a glance without reading the status column
-    // itself. Dark-mode variants keep contrast against the dark theme
-    // this app defaults to (see next-themes note in CLAUDE.md Gotchas).
-    const statusRowClassName = cn(
-      "group",
-      entry.status === "converted" && "text-green-600 dark:text-green-400",
-      entry.status === "no_match" && "text-red-600 dark:text-red-400",
-      entry.status === "cancelled" && "text-yellow-600 dark:text-yellow-400",
-    );
+    // Whole-row colour by processing status (orange/green/red, see
+    // process-status.ts), so waiting lines stand out at a glance; the
+    // EPC-match status stays readable as text in its own column.
     return (
-      <TableRow key={entry.id} className={statusRowClassName}>
+      <TableRow key={entry.id} className={cn("group", PROCESS_STATUS_ROW_CLASS[entry.process_status])}>
+        <TableCell>
+          <Badge variant="outline" className={PROCESS_STATUS_BADGE_CLASS[entry.process_status]}>
+            {tProcess(entry.process_status)}
+          </Badge>
+        </TableCell>
+        <TableCell>{entry.process_comment}</TableCell>
         <TableCell>{t(`status.${entry.status}`)}</TableCell>
         <TableCell className="font-medium">{entry.epc}</TableCell>
         <TableCell>{entry.assigned_product_name}</TableCell>
@@ -376,6 +404,24 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <Table>
           <TableHeader>
             <TableRow>
+              <SortableHeader
+                label={t("columnProcessStatus")}
+                column="process_status"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnProcessComment")}
+                column="process_comment"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
               <SortableHeader
                 label={t("columnStatus")}
                 column="status"
@@ -553,6 +599,37 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             </TableRow>
             {/* The filter row: each control sits directly under the column it filters. */}
             <TableRow>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Select
+                  value={processStatusFilter}
+                  onValueChange={(value) => setProcessStatusFilter(value ?? ALL_VALUE)}
+                >
+                  <SelectTrigger aria-label={t("filterProcessStatus")} className="h-8 w-full min-w-28 font-normal">
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== ALL_VALUE ? tProcess(value) : t("allProcessStatuses")
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_VALUE}>{t("allProcessStatuses")}</SelectItem>
+                    {PROCESS_STATUS_VALUES.map((statusValue) => (
+                      <SelectItem key={statusValue} value={statusValue}>
+                        {tProcess(statusValue)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterProcessComment")}
+                  placeholder={t("filterProcessComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={processCommentFilter}
+                  onChange={(event) => setProcessCommentFilter(event.target.value)}
+                />
+              </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}>
                   <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full font-normal">
@@ -746,7 +823,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={20} className="font-semibold">
+                        <TableCell colSpan={22} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

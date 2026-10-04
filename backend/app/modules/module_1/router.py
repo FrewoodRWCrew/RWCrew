@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -37,6 +37,7 @@ from app.modules.module_1.deps import (
     require_screen_permission,
     user_can,
 )
+from app.modules.module_1.auto_scan import DEFAULT_ENABLED, DEFAULT_INTERVAL_SECONDS, SCAN_LOCK
 from app.modules.module_1.file_browser import (
     SETTINGS_ROW_ID,
     build_folder_tree,
@@ -49,13 +50,23 @@ from app.modules.module_1.tag_dashboard import build_dashboard_stats
 from app.modules.module_1.tag_header_data import delete_header_data, list_header_data, scan_unreaded_tags
 from app.modules.module_1.tag_header_pdf import build_header_summary_pdf
 from app.modules.module_1.tag_import import build_template_xlsx, import_tags_from_xlsx
+from app.modules.module_1.line_processing import (
+    cancel_line_processing,
+    count_pending_lines,
+    list_pending_lines,
+    process_pending_lines,
+)
 from app.modules.module_1.tag_line_data import list_line_data, sync_line_data
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
     FileEntryResponse,
     FolderNode,
+    LineProcessCancelRequest,
+    LineProcessRequest,
+    LineProcessResponse,
     MyPermissionsResponse,
+    PendingActionsCountResponse,
     RfidTagCreateRequest,
     RfidTagImportResponse,
     RfidTagResponse,
@@ -76,6 +87,8 @@ from app.schemas.tagscan import (
     TagHeaderDataScanResponse,
     TagLineDataResponse,
     TagLineDataSyncResponse,
+    TagscanAutoScanUpdateRequest,
+    TagscanProductOption,
     TagscanSettingsResponse,
     TagscanSettingsUpdateRequest,
     TagscanUserSummaryResponse,
@@ -222,7 +235,9 @@ def scan_tag_header_data(
     again. One bad file is reported, not fatal to the rest of the scan —
     see app/modules/module_1/tag_header_data.py.
     """
-    results, entries = scan_unreaded_tags(db)
+    # Never at the same time as the automatic background Scan.
+    with SCAN_LOCK:
+        results, entries = scan_unreaded_tags(db)
     return TagHeaderDataScanResponse(
         results=results,
         entries=[TagHeaderDataResponse.model_validate(entry, from_attributes=True) for entry in entries],
@@ -258,6 +273,7 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         last_seen=line.last_seen,
         mode=line.mode,
         action=line.action,
+        csv_comment=line.csv_comment,
         rfid_tag_id=line.rfid_tag_id,
         assigned_product_name=line.assigned_product_name,
         assigned_serial_number=line.assigned_serial_number,
@@ -268,6 +284,9 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         scanner_location=line.scanner_location,
         scanner_technology=line.scanner_technology,
         status=line.status,
+        process_status=line.process_status,
+        process_comment=line.process_comment,
+        processed_at=line.processed_at,
         created_at=line.created_at,
     )
 
@@ -296,6 +315,85 @@ def sync_tag_line_data(
         updated_count=updated_count,
         entries=[_build_line_data_response(line, filename) for line, filename in list_line_data(db)],
     )
+
+
+@router.get("/line-data/pending/count", response_model=PendingActionsCountResponse)
+def count_pending_tag_actions(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> PendingActionsCountResponse:
+    """How many scanned lines are still waiting for their action (e.g.
+    "Assignment") to be carried out — plain module access only, since the
+    banner showing it appears on every TagScan screen.
+    """
+    return PendingActionsCountResponse(count=count_pending_lines(db))
+
+
+@router.get("/line-data/pending", response_model=list[TagLineDataResponse])
+def list_pending_tag_actions(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "view")),
+) -> list[TagLineDataResponse]:
+    """Every line still waiting to be processed, for the banner's dialog."""
+    return [_build_line_data_response(line, filename) for line, filename in list_pending_lines(db)]
+
+
+@router.post("/line-data/pending/process", response_model=LineProcessResponse)
+def process_pending_tag_actions(
+    payload: LineProcessRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> LineProcessResponse:
+    """Carry out the waiting lines of the given files, each file with its
+    chosen product — best-effort, one result per line, see
+    line_processing.py. Processing an "Assignment" creates tags, so
+    creating tags must be allowed too.
+    """
+    if not user_can(db, current_user, "tagscan.tag-management", "create"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to create tags"
+        )
+
+    # Every chosen product must exist — a clear 404 instead of tags
+    # pointing at nothing.
+    product_by_header: dict[int, Product] = {}
+    for item in payload.files:
+        product = db.get(Product, item.product_id)
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        product_by_header[item.header_data_id] = product
+
+    results = process_pending_lines(db, product_by_header)
+    return LineProcessResponse(results=results, remaining_count=count_pending_lines(db))
+
+
+@router.get("/products", response_model=list[TagscanProductOption])
+def list_tagscan_products(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "view")),
+) -> list[Product]:
+    """Every product, by name — the processing dialog's product dropdown,
+    served by TagScan itself so it doesn't need MasterData rights.
+    """
+    return list(db.scalars(select(Product).order_by(Product.name)).all())
+
+
+@router.post("/line-data/{line_id}/process-cancel", response_model=TagLineDataResponse)
+def cancel_tag_line_processing(
+    line_id: int,
+    payload: LineProcessCancelRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
+) -> TagLineDataResponse:
+    """Mark one line's action as cancelled (never to be carried out), with
+    the user's reason as its comment.
+    """
+    line = cancel_line_processing(db, line_id, payload.comment)
+    if line is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line not found")
+
+    header = db.get(TagHeaderData, line.header_data_id)
+    return _build_line_data_response(line, header.filename)
 
 
 @router.post("/line-data/{line_id}/cancel", response_model=TagLineDataResponse)
@@ -398,10 +496,29 @@ def delete_tag(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
 ) -> None:
-    """Permanently delete a tag."""
+    """Permanently delete a tag. Scanned lines matched to it are unlinked
+    first (otherwise their rfid_tag_id foreign key blocks the delete): they
+    become "no_match" with an empty tag snapshot — exactly what Synchro
+    would make of them once the tag is gone. Cancelled lines keep their
+    status and snapshot (a manual override), only the link is cleared.
+    """
     tag = db.get(RfidTag, tag_id)
     if tag is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+
+    db.execute(
+        update(TagLineData)
+        .where(TagLineData.rfid_tag_id == tag_id, TagLineData.status != "cancelled")
+        .values(
+            status="no_match",
+            rfid_tag_id=None,
+            assigned_product_name=None,
+            assigned_serial_number=None,
+            manufacturer=None,
+            batch_number=None,
+        )
+    )
+    db.execute(update(TagLineData).where(TagLineData.rfid_tag_id == tag_id).values(rfid_tag_id=None))
 
     db.delete(tag)
     db.commit()
@@ -551,10 +668,17 @@ def revoke_scanner_api_key(
 
 
 def _resolve_settings_response(db: Session) -> TagscanSettingsResponse:
-    override = db.get(TagscanSettings, SETTINGS_ROW_ID)
-    if override is not None and override.receive_folder_path:
-        return TagscanSettingsResponse(receive_folder_path=override.receive_folder_path, is_override=True)
-    return TagscanSettingsResponse(receive_folder_path=settings.tagscan_source_dir, is_override=False)
+    row = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    # The automatic Scan's settings — the defaults while no row exists yet.
+    auto_scan = {
+        "auto_scan_enabled": row.auto_scan_enabled if row is not None else DEFAULT_ENABLED,
+        "auto_scan_interval_seconds": row.auto_scan_interval_seconds if row is not None else DEFAULT_INTERVAL_SECONDS,
+        "last_auto_scan_at": row.last_auto_scan_at if row is not None else None,
+        "last_auto_scan_summary": row.last_auto_scan_summary if row is not None else None,
+    }
+    if row is not None and row.receive_folder_path:
+        return TagscanSettingsResponse(receive_folder_path=row.receive_folder_path, is_override=True, **auto_scan)
+    return TagscanSettingsResponse(receive_folder_path=settings.tagscan_source_dir, is_override=False, **auto_scan)
 
 
 @router.get("/settings", response_model=TagscanSettingsResponse)
@@ -591,6 +715,28 @@ def update_settings(
         db.add(override)
     else:
         override.receive_folder_path = payload.receive_folder_path
+    db.commit()
+
+    return _resolve_settings_response(db)
+
+
+@router.put("/settings/auto-scan", response_model=TagscanSettingsResponse)
+def update_auto_scan_settings(
+    payload: TagscanAutoScanUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.settings", "edit")),
+) -> TagscanSettingsResponse:
+    """Switch the automatic background Scan on/off and set its interval —
+    picked up by the running job within seconds (see auto_scan.py). Kept
+    apart from the folder-path save so neither form overwrites the other.
+    """
+    row = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    if row is None:
+        # receive_folder_path stays NULL = keep using the .env default.
+        row = TagscanSettings(id=SETTINGS_ROW_ID)
+        db.add(row)
+    row.auto_scan_enabled = payload.enabled
+    row.auto_scan_interval_seconds = payload.interval_seconds
     db.commit()
 
     return _resolve_settings_response(db)

@@ -7,13 +7,25 @@
 import { getTranslations } from "next-intl/server";
 import { getCurrentUserOnServer } from "@/lib/server-auth";
 import { serverApiFetch } from "@/lib/server-api";
-import type { ModuleInfo } from "@/lib/types";
+import type { ModuleInfo, TagPendingActionsCount } from "@/lib/types";
 import { ModuleTile } from "@/components/landing/module-tile";
+import { PendingWorkNotice, type PendingWorkItem } from "@/components/landing/pending-work-notice";
 import { getModuleTranslationKey } from "@/lib/module-theme";
 
 // The phone-app install page (module-10) — not a real module, so it gets
 // its own small tile instead of a spot in the grid.
 const MOBILE_MODULE_KEY = "module-10";
+
+const TAGSCAN_MODULE_KEY = "module-1";
+
+/** How many TagScan lines are waiting to be processed, or null when the
+ * count can't be fetched — a failing count must never break this page.
+ */
+function fetchTagscanPendingCount(): Promise<number | null> {
+  return serverApiFetch<TagPendingActionsCount>("/api/modules/module-1/line-data/pending/count")
+    .then((result) => result.count)
+    .catch(() => null);
+}
 
 export default async function LandingPage() {
   const t = await getTranslations("landing");
@@ -29,6 +41,18 @@ export default async function LandingPage() {
   const [user, modules] = await Promise.all([getCurrentUserOnServer(), serverApiFetch<ModuleInfo[]>("/api/modules")]);
 
   const accessibleModuleKeys = new Set(user?.accessible_module_keys ?? []);
+
+  // Waiting work, only asked for modules this user can open.
+  const tagscanPendingCount = accessibleModuleKeys.has(TAGSCAN_MODULE_KEY) ? await fetchTagscanPendingCount() : null;
+  const pendingWorkItems: PendingWorkItem[] = [];
+  if (tagscanPendingCount) {
+    pendingWorkItems.push({
+      key: TAGSCAN_MODULE_KEY,
+      text: t("pendingWork.tagscan", { count: tagscanPendingCount }),
+      // Opens TagScan with its waiting-actions dialog already open.
+      href: "/modules/module-1?pending=open",
+    });
+  }
   const accessibleModules = modules
     .filter((module) => accessibleModuleKeys.has(module.key))
     .sort((a, b) => a.sort_order - b.sort_order)
@@ -46,7 +70,9 @@ export default async function LandingPage() {
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
+        <div className="flex min-w-0 flex-col gap-2">
+          {/* Gentle hint about waiting work, just above the title. */}
+          <PendingWorkNotice items={pendingWorkItems} openLabel={t("pendingWork.open")} />
           <h1 className="text-2xl font-semibold tracking-tight">{t("title")}</h1>
           <p className="text-muted-foreground">{t("subtitle")}</p>
         </div>
