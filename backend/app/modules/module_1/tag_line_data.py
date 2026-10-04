@@ -6,6 +6,7 @@
 # resulting rows for that screen's table.
 
 import csv
+import io
 from pathlib import Path
 from typing import TypedDict
 
@@ -182,6 +183,21 @@ def _parse_int(value: str | None) -> int | None:
         return int(stripped)
     except ValueError:
         return None
+
+
+def read_csv_mode(contents: bytes) -> str | None:
+    """The first non-empty "Mode" value in a CSV's raw bytes, or None when
+    the column is missing or empty everywhere (e.g. an older CSV). Used by
+    the device intake to decide which environment a file belongs to,
+    before the file is ever written to disk.
+    """
+    # utf-8-sig for the same leading-BOM reason as parse_csv_rows below.
+    text = contents.decode("utf-8-sig", errors="replace")
+    for row in csv.DictReader(io.StringIO(text, newline="")):
+        mode = (row.get(COLUMN_MODE) or "").strip()
+        if mode:
+            return mode
+    return None
 
 
 def parse_csv_rows(file: Path) -> list[dict]:

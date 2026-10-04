@@ -289,8 +289,11 @@ class IntakeUploadResponse(BaseModel):
     retried upload after a dropped response is always safe.
     """
 
-    status: Literal["received", "duplicate"]
+    status: Literal["received", "duplicate", "forwarded"]
     filename: str
+    # Only set when the file was passed on to the other environment ("test"
+    # or "production", from the CSV's Mode column) — see intake_forward.py.
+    environment: str | None = None
 
 
 class RfidTagImportRowResult(BaseModel):
