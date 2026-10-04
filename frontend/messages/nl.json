@@ -512,7 +512,7 @@
       "bannerText": "{count, plural, one {# gescande lijn wacht} other {# gescande lijnen wachten}} op verwerking (bv. Assignment → tags aanmaken).",
       "bannerOpen": "Bekijken",
       "dialogTitle": "Wachtende acties",
-      "dialogDescription": "Gescande lijnen waarvan de actie nog niet uitgevoerd is. \"Alles verwerken\" maakt voor Assignment-lijnen de tags aan die nog niet bestaan; annuleer een lijn om ze over te slaan (reden verplicht).",
+      "dialogDescription": "Gescande lijnen waarvan de actie nog niet uitgevoerd is, per bestand. Kies per bestand het product (verplicht): Assignment-lijnen maken de ontbrekende tags aan met dat product, of vullen het in bij een bestaande tag zonder product. Annuleer een lijn om ze over te slaan (reden verplicht).",
       "waitingTitle": "Wachtend ({count})",
       "loading": "Laden...",
       "nothingWaiting": "Er wacht niets.",
@@ -537,12 +537,19 @@
       "processing": "Bezig met verwerken...",
       "processFailed": "Kon de wachtende lijnen niet verwerken.",
       "resultsTitle": "Resultaat",
-      "resultsSummary": "{created} tag(s) aangemaakt, {exists} bestonden al, {errors} fout(en).",
+      "resultsSummary": "{created} tag(s) aangemaakt, {assigned} product(en) toegewezen, {exists} al toegewezen, {errors} fout(en).",
       "outcome": {
         "created": "Aangemaakt",
-        "exists": "Bestond al",
+        "assigned": "Product toegewezen",
+        "exists": "Al toegewezen",
         "error": "Fout"
-      }
+      },
+      "columnProduct": "Product",
+      "chooseProduct": "Kies een product",
+      "productRequired": "Kies eerst een product.",
+      "processFileButton": "Bestand verwerken",
+      "productMissingHint": "Kies een product voor elk bestand.",
+      "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}"
     }
   },
   "masterdata": {

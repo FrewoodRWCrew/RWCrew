@@ -101,7 +101,9 @@ import type {
   TagHeaderDataScanResult,
   TagLineDataEntry,
   TagLineDataSyncResult,
+  TagLineProcessFile,
   TagLineProcessResult,
+  TagscanProductOption,
   TagPendingActionsCount,
   TagscanFileContent,
   TagscanFileEntry,
@@ -731,12 +733,17 @@ export function listPendingTagActions(): Promise<TagLineDataEntry[]> {
   return apiFetch<TagLineDataEntry[]>("/api/modules/module-1/line-data/pending");
 }
 
-/** Carry out every waiting line's action, or only those in lineIds. */
-export function processPendingTagActions(lineIds?: number[]): Promise<TagLineProcessResult> {
+/** Carry out the waiting lines of the given files, each with its product. */
+export function processPendingTagActions(files: TagLineProcessFile[]): Promise<TagLineProcessResult> {
   return apiFetch<TagLineProcessResult>("/api/modules/module-1/line-data/pending/process", {
     method: "POST",
-    body: JSON.stringify({ line_ids: lineIds ?? null }),
+    body: JSON.stringify({ files }),
   });
+}
+
+/** Every product, for the processing dialog's product dropdown. */
+export function listTagscanProducts(): Promise<TagscanProductOption[]> {
+  return apiFetch<TagscanProductOption[]>("/api/modules/module-1/products");
 }
 
 /** Cancel one waiting line's action, with the reason as its comment. */

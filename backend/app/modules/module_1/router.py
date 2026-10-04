@@ -86,6 +86,7 @@ from app.schemas.tagscan import (
     TagHeaderDataScanResponse,
     TagLineDataResponse,
     TagLineDataSyncResponse,
+    TagscanProductOption,
     TagscanSettingsResponse,
     TagscanSettingsUpdateRequest,
     TagscanUserSummaryResponse,
@@ -338,17 +339,38 @@ def process_pending_tag_actions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_screen_permission("tagscan.tag-linedata", "edit")),
 ) -> LineProcessResponse:
-    """Carry out every waiting line's action (or only payload.line_ids) —
-    best-effort, one result per line, see line_processing.py. Processing
-    an "Assignment" creates tags, so creating tags must be allowed too.
+    """Carry out the waiting lines of the given files, each file with its
+    chosen product — best-effort, one result per line, see
+    line_processing.py. Processing an "Assignment" creates tags, so
+    creating tags must be allowed too.
     """
     if not user_can(db, current_user, "tagscan.tag-management", "create"):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN, detail="You are not allowed to create tags"
         )
 
-    results = process_pending_lines(db, payload.line_ids)
+    # Every chosen product must exist — a clear 404 instead of tags
+    # pointing at nothing.
+    product_by_header: dict[int, Product] = {}
+    for item in payload.files:
+        product = db.get(Product, item.product_id)
+        if product is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+        product_by_header[item.header_data_id] = product
+
+    results = process_pending_lines(db, product_by_header)
     return LineProcessResponse(results=results, remaining_count=count_pending_lines(db))
+
+
+@router.get("/products", response_model=list[TagscanProductOption])
+def list_tagscan_products(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-linedata", "view")),
+) -> list[Product]:
+    """Every product, by name — the processing dialog's product dropdown,
+    served by TagScan itself so it doesn't need MasterData rights.
+    """
+    return list(db.scalars(select(Product).order_by(Product.name)).all())
 
 
 @router.post("/line-data/{line_id}/process-cancel", response_model=TagLineDataResponse)

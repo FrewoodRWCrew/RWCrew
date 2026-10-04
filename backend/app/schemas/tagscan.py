@@ -459,10 +459,26 @@ class PendingActionsCountResponse(BaseModel):
     count: int
 
 
-class LineProcessRequest(BaseModel):
-    """Which waiting lines to process; null means every waiting line."""
+class LineProcessFile(BaseModel):
+    """One file to process, with the product all its Assignment lines get —
+    required, since a tag must always be assigned to a product.
+    """
 
-    line_ids: list[int] | None = None
+    header_data_id: int
+    product_id: int
+
+
+class LineProcessRequest(BaseModel):
+    """Which files' waiting lines to process, each with its product."""
+
+    files: list[LineProcessFile] = Field(min_length=1)
+
+
+class TagscanProductOption(BaseModel):
+    """One product for the processing dialog's dropdown."""
+
+    id: int
+    name: str
 
 
 class LineProcessRowResult(BaseModel):
@@ -473,7 +489,7 @@ class LineProcessRowResult(BaseModel):
     line_number: int
     epc: str
     action: str | None
-    outcome: Literal["created", "exists", "error"]
+    outcome: Literal["created", "assigned", "exists", "error"]
     detail: str | None = None
 
 

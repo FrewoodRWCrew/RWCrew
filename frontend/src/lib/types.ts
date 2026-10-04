@@ -528,8 +528,20 @@ export interface TagLineProcessRowResult {
   line_number: number;
   epc: string;
   action: string | null;
-  outcome: "created" | "exists" | "error";
+  outcome: "created" | "assigned" | "exists" | "error";
   detail: string | null;
+}
+
+/** One file to process, with the product all its Assignment lines get. */
+export interface TagLineProcessFile {
+  header_data_id: number;
+  product_id: number;
+}
+
+/** One product for the processing dialog's dropdown. */
+export interface TagscanProductOption {
+  id: number;
+  name: string;
 }
 
 /** The outcome of processing the waiting actions. */

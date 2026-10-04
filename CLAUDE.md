@@ -99,9 +99,11 @@ Lines start `new` at scan time; the file's status is derived from its lines
 (`line_processing.refresh_header_process_status`: any `new` → `new`, all cancelled → `cancelled`, else `loaded`).
 
 - `backend/app/modules/module_1/line_processing.py` `PROCESSABLE_ACTIONS` maps a lowercased CSV `Action` to its
-  handler. Today only `assignment` (create the `RfidTag` when the EPC isn't registered; already registered →
-  `loaded` + comment). **Adding an action** = one `_process_<action>()` returning `(outcome, comment)` + a dict entry;
-  lines with an action without a handler simply stay `new`.
+  handler. Today only `assignment`: a **product is mandatory, chosen per file** in the dialog
+  (`POST /line-data/pending/process` takes `files: [{header_data_id, product_id}]`); it creates the `RfidTag` with
+  that product, fills the product in on a registered tag without one, and never changes a tag that already has a
+  product. **Adding an action** = one `_process_<action>(db, line, context)` returning `(outcome, comment)` + a dict
+  entry (extend `ProcessContext` for extra user input); lines with an action without a handler simply stay `new`.
 - Waiting lines (`new` + action with a handler) show as an orange banner above every TagScan screen
   (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
   `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines
