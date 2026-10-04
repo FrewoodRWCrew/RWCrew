@@ -9,7 +9,7 @@ from pathlib import Path
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -491,10 +491,29 @@ def delete_tag(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
 ) -> None:
-    """Permanently delete a tag."""
+    """Permanently delete a tag. Scanned lines matched to it are unlinked
+    first (otherwise their rfid_tag_id foreign key blocks the delete): they
+    become "no_match" with an empty tag snapshot — exactly what Synchro
+    would make of them once the tag is gone. Cancelled lines keep their
+    status and snapshot (a manual override), only the link is cleared.
+    """
     tag = db.get(RfidTag, tag_id)
     if tag is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+
+    db.execute(
+        update(TagLineData)
+        .where(TagLineData.rfid_tag_id == tag_id, TagLineData.status != "cancelled")
+        .values(
+            status="no_match",
+            rfid_tag_id=None,
+            assigned_product_name=None,
+            assigned_serial_number=None,
+            manufacturer=None,
+            batch_number=None,
+        )
+    )
+    db.execute(update(TagLineData).where(TagLineData.rfid_tag_id == tag_id).values(rfid_tag_id=None))
 
     db.delete(tag)
     db.commit()

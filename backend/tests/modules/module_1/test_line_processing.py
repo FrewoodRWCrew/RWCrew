@@ -258,3 +258,35 @@ def test_process_needs_tag_create_permission_too(client: TestClient, db_session:
     )
 
     assert response.status_code == 403
+
+
+def test_deleting_a_tag_matched_by_scanned_lines_unlinks_them(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # Regression: a tag referenced by Tag Linedata rows used to fail with a
+    # 500 (foreign key). Now its lines are unlinked first.
+    product = _create_product(db_session)
+    _write_csv(scan_dirs, "scan.csv", [("E2AAA", "Assignment"), ("E2AAA", "Assignment")])
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post(f"{BASE}/header-data/scan")
+    client.post(
+        f"{BASE}/line-data/pending/process",
+        json={"files": [{"header_data_id": _header_id(db_session, "scan.csv"), "product_id": product.id}]},
+    )
+    lines = db_session.scalars(select(TagLineData).order_by(TagLineData.line_number)).all()
+    client.post(f"{BASE}/line-data/{lines[1].id}/cancel")
+    tag_id = db_session.scalar(select(RfidTag.id).where(RfidTag.epc_uid == "E2AAA"))
+
+    response = client.delete(f"{BASE}/tags/{tag_id}")
+
+    assert response.status_code == 204
+    db_session.expire_all()
+    lines = db_session.scalars(select(TagLineData).order_by(TagLineData.line_number)).all()
+    assert all(line.rfid_tag_id is None for line in lines)
+    # A normal line becomes "no_match" with an empty snapshot...
+    assert (lines[0].status, lines[0].assigned_product_name) == ("no_match", None)
+    # ...a cancelled one keeps its manual status and snapshot.
+    assert (lines[1].status, lines[1].assigned_product_name) == ("cancelled", "KBC Lint")
+    # Its processing history is untouched.
+    assert lines[0].process_status == "loaded"
