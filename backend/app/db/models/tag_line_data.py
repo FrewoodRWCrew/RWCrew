@@ -55,6 +55,10 @@ class TagLineData(Base):
     mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
     action: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # The CSV's free-text "product / comments" column: the row's own cell,
+    # or the file's value (TagHeaderData.csv_comment) when that cell is empty.
+    csv_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Which registered tag this EPC matched, if any — null means "no_match".
     rfid_tag_id: Mapped[int | None] = mapped_column(ForeignKey("Tagscan_rfid_tag.id"), nullable=True)
 

@@ -549,7 +549,9 @@
       "productRequired": "Choose a product first.",
       "processFileButton": "Process file",
       "productMissingHint": "Choose a product for every file.",
-      "fileLineCount": "{count, plural, one {# line} other {# lines}}"
+      "fileLineCount": "{count, plural, one {# line} other {# lines}}",
+      "columnCsvComment": "Product / comments (CSV)",
+      "csvCommentLabel": "CSV product / comments"
     }
   },
   "masterdata": {

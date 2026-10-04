@@ -375,6 +375,8 @@ class TagHeaderDataResponse(BaseModel):
     # The file's "Mode" and "Action" CSV values (first non-empty per file).
     mode: str | None
     action: str | None
+    # The CSV's free-text "product / comments" column (first non-empty).
+    csv_comment: str | None
     # The file's overall processing status, derived from its lines' own.
     process_status: TagProcessStatus
     process_comment: str | None
@@ -422,6 +424,8 @@ class TagLineDataResponse(BaseModel):
     # The line's own "Mode"/"Action" CSV value, or its file's header value.
     mode: str | None
     action: str | None
+    # The CSV's "product / comments" cell, or its file's value.
+    csv_comment: str | None
     rfid_tag_id: int | None
     assigned_product_name: str | None
     assigned_serial_number: str | None

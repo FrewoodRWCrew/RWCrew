@@ -269,6 +269,7 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         last_seen=line.last_seen,
         mode=line.mode,
         action=line.action,
+        csv_comment=line.csv_comment,
         rfid_tag_id=line.rfid_tag_id,
         assigned_product_name=line.assigned_product_name,
         assigned_serial_number=line.assigned_serial_number,

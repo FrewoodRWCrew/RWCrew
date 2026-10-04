@@ -290,3 +290,40 @@ def test_deleting_a_tag_matched_by_scanned_lines_unlinks_them(
     assert (lines[1].status, lines[1].assigned_product_name) == ("cancelled", "KBC Lint")
     # Its processing history is untouched.
     assert lines[0].process_status == "loaded"
+
+
+def test_scan_stores_the_csv_product_comment_column(client: TestClient, db_session: Session, scan_dirs: Path) -> None:
+    # A column named "Comment" (any case): the first row's empty cell falls
+    # back to the file's first non-empty value.
+    (scan_dirs / "Unreaded Tags" / "named.csv").write_bytes(
+        (
+            REAL_HEADER.strip()
+            + ",Mode,Action,comment\n"
+            + "Scan_01,E2AAA,78,1,92,10:36:07,PROD,Assignment,\n"
+            + "Scan_01,E2BBB,78,1,92,10:36:07,PROD,Assignment,Spare kar wheels\n"
+        ).encode()
+    )
+    # No recognised name: the last, non-standard column is used.
+    (scan_dirs / "Unreaded Tags" / "unnamed.csv").write_bytes(
+        (
+            REAL_HEADER.strip()
+            + ",Mode,Action,Info\n"
+            + "Scan_01,E2CCC,78,1,92,10:36:07,PROD,Assignment,Walkie-talkie\n"
+        ).encode()
+    )
+    # Older CSV whose last column is a standard one: no comment.
+    (scan_dirs / "Unreaded Tags" / "old.csv").write_bytes((REAL_HEADER + "Scan_01,E2DDD,78,1,92,10:36:07\n").encode())
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post(f"{BASE}/header-data/scan")
+
+    lines = _lines_by_epc(db_session)
+    assert lines["E2AAA"].csv_comment == "Spare kar wheels"
+    assert lines["E2BBB"].csv_comment == "Spare kar wheels"
+    assert lines["E2CCC"].csv_comment == "Walkie-talkie"
+    assert lines["E2DDD"].csv_comment is None
+    headers = {header.filename: header for header in db_session.scalars(select(TagHeaderData)).all()}
+    assert headers["named.csv"].csv_comment == "Spare kar wheels"
+    pending = {row["epc"]: row for row in client.get(f"{BASE}/line-data/pending").json()}
+    assert pending["E2CCC"]["csv_comment"] == "Walkie-talkie"

@@ -549,7 +549,9 @@
       "productRequired": "Kies eerst een product.",
       "processFileButton": "Bestand verwerken",
       "productMissingHint": "Kies een product voor elk bestand.",
-      "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}"
+      "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}",
+      "columnCsvComment": "Product / opmerkingen (CSV)",
+      "csvCommentLabel": "CSV product / opmerkingen"
     }
   },
   "masterdata": {

@@ -61,6 +61,12 @@ class TagHeaderData(Base):
     mode: Mapped[str | None] = mapped_column(String(255), nullable=True)
     action: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # The CSV's free-text "product / comments" column (first non-empty value
+    # in the file, same rule as mode/action) — tells the person processing
+    # the file which product its tags belong to. See tag_line_data.py's
+    # comment_column() for how that column is recognised.
+    csv_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # The file's overall processing status ("new"/"loaded"/"cancelled"),
     # derived from its lines' own process_status every time one of them is
     # processed or cancelled — see app/modules/module_1/line_processing.py.

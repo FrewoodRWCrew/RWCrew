@@ -452,6 +452,8 @@ export interface TagHeaderDataEntry {
   // The file's "Mode" and "Action" CSV values (first non-empty per file).
   mode: string | null;
   action: string | null;
+  // The CSV's free-text "product / comments" column (first non-empty).
+  csv_comment: string | null;
   // The file's overall processing status, derived from its lines' own.
   process_status: TagProcessStatus;
   process_comment: string | null;
@@ -491,6 +493,8 @@ export interface TagLineDataEntry {
   // The line's own "Mode"/"Action" CSV value, or its file's header value.
   mode: string | null;
   action: string | null;
+  // The CSV's "product / comments" cell, or its file's value.
+  csv_comment: string | null;
   rfid_tag_id: number | null;
   assigned_product_name: string | null;
   assigned_serial_number: string | null;

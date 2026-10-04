@@ -49,6 +49,8 @@ interface PendingActionsDialogProps {
 interface FileGroup {
   headerId: number;
   filename: string;
+  /** The CSV's "product / comments" value(s) — hints which product to pick. */
+  csvComments: string[];
   lines: TagLineDataEntry[];
 }
 
@@ -101,10 +103,13 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
     for (const line of lines) {
       let group = groups.get(line.header_data_id);
       if (!group) {
-        group = { headerId: line.header_data_id, filename: line.header_filename, lines: [] };
+        group = { headerId: line.header_data_id, filename: line.header_filename, csvComments: [], lines: [] };
         groups.set(line.header_data_id, group);
       }
       group.lines.push(line);
+      if (line.csv_comment && !group.csvComments.includes(line.csv_comment)) {
+        group.csvComments.push(line.csv_comment);
+      }
     }
     return [...groups.values()];
   }, [lines]);
@@ -241,7 +246,7 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLine")}</TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEpc")}</TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAction")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScanner")}</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCsvComment")}</TableHead>
                     <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnComment")}</TableHead>
                     <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                       {t("columnActions")}
@@ -262,6 +267,12 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                               <span className="text-muted-foreground">
                                 {t("fileLineCount", { count: group.lines.length })}
                               </span>
+                              {/* What the scanner operator noted for this file. */}
+                              {group.csvComments.length > 0 && (
+                                <span className="rounded-md border border-orange-500/40 bg-orange-500/10 px-2 py-0.5 text-sm font-medium text-orange-700 dark:text-orange-300">
+                                  {t("csvCommentLabel")}: {group.csvComments.join(" / ")}
+                                </span>
+                              )}
                               <div className="ml-auto flex items-center gap-2">
                                 <span className="text-sm font-medium">{t("columnProduct")} *</span>
                                 <Select
@@ -308,7 +319,7 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                             <TableCell>{line.line_number}</TableCell>
                             <TableCell className="font-medium">{line.epc}</TableCell>
                             <TableCell>{line.action}</TableCell>
-                            <TableCell>{line.scanner_name ?? line.scanner}</TableCell>
+                            <TableCell>{line.csv_comment}</TableCell>
                             {/* A previous failed run leaves its error here. */}
                             <TableCell>{line.process_comment}</TableCell>
                             <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
