@@ -11,10 +11,14 @@
 // since a scan on the same page doesn't navigate — and every
 // RECOUNT_INTERVAL_MS, since the automatic background Scan (Settings) adds
 // lines without any page action at all.
+//
+// Arriving with ?pending=open (the landing page's "work waiting" hint)
+// opens the dialog straight away.
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { getPendingTagActionsCount } from "@/lib/api";
 import { PendingActionsDialog } from "@/components/module-1/pending-actions-dialog";
@@ -35,9 +39,11 @@ interface PendingActionsBannerProps {
 export function PendingActionsBanner({ canOpen }: PendingActionsBannerProps) {
   const t = useTranslations("tagscan.pendingActions");
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   const [count, setCount] = useState(0);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  // Read once on arrival: open right away when sent here to review.
+  const [isDialogOpen, setIsDialogOpen] = useState(() => canOpen && searchParams.get("pending") === "open");
   // Bumped on every open, so the dialog remounts with a clean slate.
   const [dialogKey, setDialogKey] = useState(0);
 

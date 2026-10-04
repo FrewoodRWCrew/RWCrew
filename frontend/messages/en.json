@@ -49,7 +49,11 @@
   "landing": {
     "title": "Modules Overview",
     "subtitle": "Choose a module below to get started.",
-    "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access."
+    "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access.",
+    "pendingWork": {
+      "tagscan": "TagScan: {count, plural, one {# line is} other {# lines are}} waiting to be processed",
+      "open": "Review"
+    }
   },
   "sidebar": {
     "manageAccess": "Manage Access",

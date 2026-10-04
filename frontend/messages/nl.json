@@ -49,7 +49,11 @@
   "landing": {
     "title": "Overzicht Modules",
     "subtitle": "Kies hieronder een module om te starten.",
-    "noAccess": "Je hebt nog geen toegang tot een module. Vraag de beheerder om je toegang te geven."
+    "noAccess": "Je hebt nog geen toegang tot een module. Vraag de beheerder om je toegang te geven.",
+    "pendingWork": {
+      "tagscan": "TagScan: {count, plural, one {# lijn wacht} other {# lijnen wachten}} op verwerking",
+      "open": "Bekijken"
+    }
   },
   "sidebar": {
     "manageAccess": "Toegangsbeheer",
