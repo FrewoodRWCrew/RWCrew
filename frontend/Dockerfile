@@ -28,6 +28,12 @@ ENV NEXT_PUBLIC_SITE_URL=${NEXT_PUBLIC_SITE_URL}
 # the real production site — see src/lib/config.ts / src/app/layout.tsx.
 ARG NEXT_PUBLIC_ENVIRONMENT_LABEL
 ENV NEXT_PUBLIC_ENVIRONMENT_LABEL=${NEXT_PUBLIC_ENVIRONMENT_LABEL}
+# The deployed version (commit date + short hash) shown in the left menu —
+# read from git by deploy/scripts/deploy.sh, since .git isn't in this context.
+ARG NEXT_PUBLIC_APP_COMMIT
+ENV NEXT_PUBLIC_APP_COMMIT=${NEXT_PUBLIC_APP_COMMIT}
+ARG NEXT_PUBLIC_APP_COMMIT_DATE
+ENV NEXT_PUBLIC_APP_COMMIT_DATE=${NEXT_PUBLIC_APP_COMMIT_DATE}
 RUN npm run build
 
 # Final, minimal runtime image: only the standalone server output (see

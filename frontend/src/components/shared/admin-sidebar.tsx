@@ -8,6 +8,7 @@
 import { History, LayoutGrid, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
+import { APP_VERSION_LABEL } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 // Modules that have their own complete left-hand navigation (see
@@ -54,6 +55,12 @@ export function AdminSidebar() {
           </Link>
         );
       })}
+
+      {/* The version this environment runs (commit date · commit), pinned
+          to the bottom — to check that test and production are in sync. */}
+      <p className="mt-auto px-3 text-xs text-sidebar-foreground/50 tabular-nums" title={t("version")}>
+        {APP_VERSION_LABEL}
+      </p>
     </nav>
   );
 }

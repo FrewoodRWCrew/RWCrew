@@ -90,5 +90,9 @@ app.include_router(module_10_router)
 
 @app.get("/api/health")
 def health_check() -> dict[str, str]:
-    """A tiny endpoint to confirm the API is running, used for basic checks."""
-    return {"status": "ok"}
+    """A tiny endpoint to confirm the API is running, used for basic checks.
+    Also returns the deployed version ("2026.10.04 · 97cdc36", "dev" locally),
+    so it can be compared with the label in the web app's left menu.
+    """
+    version = " · ".join(part for part in (settings.app_commit_date, settings.app_commit) if part) or "dev"
+    return {"status": "ok", "version": version}

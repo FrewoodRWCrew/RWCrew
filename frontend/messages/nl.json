@@ -54,7 +54,8 @@
   "sidebar": {
     "manageAccess": "Toegangsbeheer",
     "loginHistory": "Login geschiedenis",
-    "landing": "Hoofdpagina"
+    "landing": "Hoofdpagina",
+    "version": "Versie (datum commit · commit)"
   },
   "modulePage": {
     "comingSoon": "Deze module is nog in ontwikkeling.",

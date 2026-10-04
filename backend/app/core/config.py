@@ -79,6 +79,10 @@ class Settings(BaseSettings):
     # put a clickable "open in RWCrew" link in mails and for the phone app's
     # install link and QR code (module-10). Empty = no link / no QR code.
     app_public_url: str = ""
+    # The deployed version: commit date (Belgian time, "2026.10.04") and short
+    # commit hash, exported by deploy/scripts/deploy.sh. Empty locally.
+    app_commit: str = ""
+    app_commit_date: str = ""
 
 
 # Create one shared Settings object that the rest of the app can import

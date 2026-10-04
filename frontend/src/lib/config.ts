@@ -26,3 +26,13 @@ export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || null;
 // build args) so a banner can warn people they're not on the real site.
 // Left unset for production and local development, where no banner shows.
 export const ENVIRONMENT_LABEL = process.env.NEXT_PUBLIC_ENVIRONMENT_LABEL || null;
+
+// The version this build runs, e.g. "v2026.10.04 · 97cdc36": the commit date
+// (Belgian time) and short commit hash, baked in at build time (see
+// next.config.ts and deploy/scripts/deploy.sh). The same label on two
+// environments means the same code. "dev" when no commit is known.
+const APP_COMMIT = process.env.NEXT_PUBLIC_APP_COMMIT || "";
+const APP_COMMIT_DATE = process.env.NEXT_PUBLIC_APP_COMMIT_DATE || "";
+export const APP_VERSION_LABEL = APP_COMMIT
+  ? `v${APP_COMMIT_DATE ? `${APP_COMMIT_DATE} · ` : ""}${APP_COMMIT}`
+  : "dev";

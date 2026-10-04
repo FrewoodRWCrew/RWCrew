@@ -155,6 +155,14 @@ until October 2026 and was removed entirely; only old login-history rows still m
   re-classified later. `source = "mobile"` only exists on old rows from the removed native app (shown as
   "Native app (old)"); never write it again. iPads on iPadOS 13+ present themselves as a Mac → "desktop".
 
+## Version label (which code runs where)
+
+`deploy/scripts/deploy.sh` exports `APP_COMMIT` (short hash) and `APP_COMMIT_DATE` (commit date in Belgian
+time, `2026.10.04`) from git. `docker-compose.prod.yml` passes them to the frontend build
+(`NEXT_PUBLIC_APP_COMMIT*`) and the backend environment. The frontend shows `v<date> · <hash>` at the bottom of the
+super admin's left menu (`AdminSidebar`, `APP_VERSION_LABEL` in `lib/config.ts`), and `/api/health` returns the
+backend's `version`. Locally `next.config.ts` reads the same values from git; without git the label is `dev`.
+
 ## Running locally
 
 Backend (from `backend/`):

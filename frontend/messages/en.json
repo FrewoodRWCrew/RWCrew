@@ -54,7 +54,8 @@
   "sidebar": {
     "manageAccess": "Manage Access",
     "loginHistory": "Login History",
-    "landing": "Main page"
+    "landing": "Main page",
+    "version": "Version (commit date · commit)"
   },
   "modulePage": {
     "comingSoon": "This module is still under development.",
