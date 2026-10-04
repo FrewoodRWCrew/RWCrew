@@ -136,8 +136,8 @@ def test_saving_a_new_receive_folder_is_reflected_on_get(
     get_response = client.get("/api/modules/module-1/settings")
 
     assert update_response.status_code == 200
-    assert update_response.json() == {"receive_folder_path": str(custom_path), "is_override": True}
-    assert get_response.json() == {"receive_folder_path": str(custom_path), "is_override": True}
+    for body in (update_response.json(), get_response.json()):
+        assert (body["receive_folder_path"], body["is_override"]) == (str(custom_path), True)
     # The endpoint actually created the folder, failing fast if it couldn't.
     assert custom_path.is_dir()
 

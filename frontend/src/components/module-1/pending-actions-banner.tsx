@@ -8,7 +8,9 @@
 // The count is re-fetched on every page change inside the module, after
 // the dialog changed something, and whenever another screen announces new
 // lines (Tag Headerdata's Scan dispatches PENDING_ACTIONS_CHANGED_EVENT),
-// since a scan on the same page doesn't navigate.
+// since a scan on the same page doesn't navigate — and every
+// RECOUNT_INTERVAL_MS, since the automatic background Scan (Settings) adds
+// lines without any page action at all.
 
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, ChevronRight } from "lucide-react";
@@ -19,6 +21,9 @@ import { PendingActionsDialog } from "@/components/module-1/pending-actions-dial
 
 /** Window event a TagScan screen dispatches after it created/changed lines. */
 export const PENDING_ACTIONS_CHANGED_EVENT = "tagscan:pending-actions-changed";
+
+/** How often the count is refreshed while a TagScan screen is open. */
+const RECOUNT_INTERVAL_MS = 30_000;
 
 interface PendingActionsBannerProps {
   /** Whether the user can see the waiting lines (Tag Linedata view right);
@@ -53,6 +58,12 @@ export function PendingActionsBanner({ canOpen }: PendingActionsBannerProps) {
   useEffect(() => {
     window.addEventListener(PENDING_ACTIONS_CHANGED_EVENT, refreshCount);
     return () => window.removeEventListener(PENDING_ACTIONS_CHANGED_EVENT, refreshCount);
+  }, [refreshCount]);
+
+  // Regularly, for lines added by the automatic background Scan.
+  useEffect(() => {
+    const timer = window.setInterval(refreshCount, RECOUNT_INTERVAL_MS);
+    return () => window.clearInterval(timer);
   }, [refreshCount]);
 
   function openDialog() {

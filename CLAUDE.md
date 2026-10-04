@@ -108,6 +108,12 @@ Lines start `new` at scan time; the file's status is derived from its lines
   (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
   `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines
   without navigating dispatch `PENDING_ACTIONS_CHANGED_EVENT` so the banner re-counts.
+- **Automatic background Scan** (`module_1/auto_scan.py`): an asyncio task started in `main.py`'s lifespan runs
+  `scan_unreaded_tags` every `auto_scan_interval_seconds` (default on, 60 s; set on TagScan's Settings screen,
+  `Tagscan_settings`, `PUT /settings/auto-scan`). It ticks every 5 s and re-reads the settings, so changes apply
+  without a restart. `SCAN_LOCK` stops it from running together with a manual Scan click. Relies on the backend
+  being **one** uvicorn process per environment — if workers are ever added, move this to a single worker/cron.
+  Ops switch `TAGSCAN_AUTO_SCAN_WORKER=false` keeps it from starting. Tests never run it (no lifespan).
 - Rows on Tag Headerdata/Tag Linedata are coloured by `process_status` (`components/module-1/process-status.ts`:
   orange new, green loaded, red cancelled). Lines that existed before this feature were backfilled as `loaded`.
 

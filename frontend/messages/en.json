@@ -452,7 +452,16 @@
       "uploadUrlHint": "Paste this into the device's watcher configuration alongside its API key.",
       "copy": "Copy",
       "copied": "Copied to clipboard.",
-      "copyFailed": "Failed to copy."
+      "copyFailed": "Failed to copy.",
+      "autoScanTitle": "Automatic scan",
+      "autoScanDescription": "Scans the \"Unreaded Tags\" folder in the background, exactly like the Scan button on Tag Headerdata, so new CSV files are processed without anyone clicking.",
+      "autoScanEnabledLabel": "Scan automatically",
+      "autoScanIntervalLabel": "Interval (seconds)",
+      "autoScanIntervalInvalid": "Enter a whole number of seconds between {min} and {max}.",
+      "autoScanSaved": "Automatic scan settings saved.",
+      "autoScanSaveFailed": "Failed to save the automatic scan settings.",
+      "lastAutoScan": "Last automatic scan: {when} — {summary}",
+      "autoScanNeverRun": "The automatic scan has not run yet."
     },
     "roles": {
       "title": "Roles",

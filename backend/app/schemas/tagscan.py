@@ -270,6 +270,12 @@ class TagscanSettingsResponse(BaseModel):
     # Whether receive_folder_path is a DB-saved override, or just the
     # .env-configured default shown because nothing's been saved yet.
     is_override: bool
+    # The automatic background Scan of "Unreaded Tags" (see
+    # module_1/auto_scan.py) and its last run.
+    auto_scan_enabled: bool
+    auto_scan_interval_seconds: int
+    last_auto_scan_at: datetime | None
+    last_auto_scan_summary: str | None
 
 
 class TagscanSettingsUpdateRequest(BaseModel):
@@ -281,6 +287,15 @@ class TagscanSettingsUpdateRequest(BaseModel):
     @classmethod
     def _strip_path(cls, value: str) -> str:
         return value.strip()
+
+
+class TagscanAutoScanUpdateRequest(BaseModel):
+    """What's sent to switch the automatic background Scan on/off and set
+    how often it runs (10 seconds to 1 day).
+    """
+
+    enabled: bool
+    interval_seconds: int = Field(ge=10, le=86400)
 
 
 class IntakeUploadResponse(BaseModel):

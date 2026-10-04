@@ -370,6 +370,11 @@ export interface TagscanSettings {
   /** Whether receive_folder_path is a DB-saved override, or just the
    * backend's .env-configured default shown because nothing's been saved yet. */
   is_override: boolean;
+  /** The automatic background Scan of "Unreaded Tags", and its last run. */
+  auto_scan_enabled: boolean;
+  auto_scan_interval_seconds: number;
+  last_auto_scan_at: string | null;
+  last_auto_scan_summary: string | null;
 }
 
 /** The fields sent to create or fully update a scanner device. Unlike

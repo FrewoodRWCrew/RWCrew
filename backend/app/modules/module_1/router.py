@@ -37,6 +37,7 @@ from app.modules.module_1.deps import (
     require_screen_permission,
     user_can,
 )
+from app.modules.module_1.auto_scan import DEFAULT_ENABLED, DEFAULT_INTERVAL_SECONDS, SCAN_LOCK
 from app.modules.module_1.file_browser import (
     SETTINGS_ROW_ID,
     build_folder_tree,
@@ -86,6 +87,7 @@ from app.schemas.tagscan import (
     TagHeaderDataScanResponse,
     TagLineDataResponse,
     TagLineDataSyncResponse,
+    TagscanAutoScanUpdateRequest,
     TagscanProductOption,
     TagscanSettingsResponse,
     TagscanSettingsUpdateRequest,
@@ -233,7 +235,9 @@ def scan_tag_header_data(
     again. One bad file is reported, not fatal to the rest of the scan —
     see app/modules/module_1/tag_header_data.py.
     """
-    results, entries = scan_unreaded_tags(db)
+    # Never at the same time as the automatic background Scan.
+    with SCAN_LOCK:
+        results, entries = scan_unreaded_tags(db)
     return TagHeaderDataScanResponse(
         results=results,
         entries=[TagHeaderDataResponse.model_validate(entry, from_attributes=True) for entry in entries],
@@ -664,10 +668,17 @@ def revoke_scanner_api_key(
 
 
 def _resolve_settings_response(db: Session) -> TagscanSettingsResponse:
-    override = db.get(TagscanSettings, SETTINGS_ROW_ID)
-    if override is not None and override.receive_folder_path:
-        return TagscanSettingsResponse(receive_folder_path=override.receive_folder_path, is_override=True)
-    return TagscanSettingsResponse(receive_folder_path=settings.tagscan_source_dir, is_override=False)
+    row = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    # The automatic Scan's settings — the defaults while no row exists yet.
+    auto_scan = {
+        "auto_scan_enabled": row.auto_scan_enabled if row is not None else DEFAULT_ENABLED,
+        "auto_scan_interval_seconds": row.auto_scan_interval_seconds if row is not None else DEFAULT_INTERVAL_SECONDS,
+        "last_auto_scan_at": row.last_auto_scan_at if row is not None else None,
+        "last_auto_scan_summary": row.last_auto_scan_summary if row is not None else None,
+    }
+    if row is not None and row.receive_folder_path:
+        return TagscanSettingsResponse(receive_folder_path=row.receive_folder_path, is_override=True, **auto_scan)
+    return TagscanSettingsResponse(receive_folder_path=settings.tagscan_source_dir, is_override=False, **auto_scan)
 
 
 @router.get("/settings", response_model=TagscanSettingsResponse)
@@ -704,6 +715,28 @@ def update_settings(
         db.add(override)
     else:
         override.receive_folder_path = payload.receive_folder_path
+    db.commit()
+
+    return _resolve_settings_response(db)
+
+
+@router.put("/settings/auto-scan", response_model=TagscanSettingsResponse)
+def update_auto_scan_settings(
+    payload: TagscanAutoScanUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.settings", "edit")),
+) -> TagscanSettingsResponse:
+    """Switch the automatic background Scan on/off and set its interval —
+    picked up by the running job within seconds (see auto_scan.py). Kept
+    apart from the folder-path save so neither form overwrites the other.
+    """
+    row = db.get(TagscanSettings, SETTINGS_ROW_ID)
+    if row is None:
+        # receive_folder_path stays NULL = keep using the .env default.
+        row = TagscanSettings(id=SETTINGS_ROW_ID)
+        db.add(row)
+    row.auto_scan_enabled = payload.enabled
+    row.auto_scan_interval_seconds = payload.interval_seconds
     db.commit()
 
     return _resolve_settings_response(db)

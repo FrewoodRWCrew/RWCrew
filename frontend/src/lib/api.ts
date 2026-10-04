@@ -819,10 +819,18 @@ export function getTagscanSettings(): Promise<TagscanSettings> {
   return apiFetch<TagscanSettings>("/api/modules/module-1/settings");
 }
 
-export function updateTagscanSettings(payload: TagscanSettings): Promise<TagscanSettings> {
+export function updateTagscanSettings(payload: { receive_folder_path: string }): Promise<TagscanSettings> {
   return apiFetch<TagscanSettings>("/api/modules/module-1/settings", {
     method: "PUT",
     body: JSON.stringify({ receive_folder_path: payload.receive_folder_path }),
+  });
+}
+
+/** Switch the automatic background Scan on/off and set its interval (seconds). */
+export function updateTagscanAutoScan(payload: { enabled: boolean; interval_seconds: number }): Promise<TagscanSettings> {
+  return apiFetch<TagscanSettings>("/api/modules/module-1/settings/auto-scan", {
+    method: "PUT",
+    body: JSON.stringify(payload),
   });
 }
 

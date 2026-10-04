@@ -452,7 +452,16 @@
       "uploadUrlHint": "Plak dit samen met de API-sleutel in de configuratie van het apparaat.",
       "copy": "Kopiëren",
       "copied": "Gekopieerd naar klembord.",
-      "copyFailed": "Kopiëren is mislukt."
+      "copyFailed": "Kopiëren is mislukt.",
+      "autoScanTitle": "Automatische scan",
+      "autoScanDescription": "Scant de map \"Unreaded Tags\" op de achtergrond, net zoals de Scan-knop op Tag Headerdata, zodat nieuwe CSV-bestanden verwerkt worden zonder dat iemand moet klikken.",
+      "autoScanEnabledLabel": "Automatisch scannen",
+      "autoScanIntervalLabel": "Interval (seconden)",
+      "autoScanIntervalInvalid": "Geef een geheel aantal seconden tussen {min} en {max}.",
+      "autoScanSaved": "Instellingen automatische scan opgeslagen.",
+      "autoScanSaveFailed": "Kon de instellingen van de automatische scan niet opslaan.",
+      "lastAutoScan": "Laatste automatische scan: {when} — {summary}",
+      "autoScanNeverRun": "De automatische scan is nog niet gelopen."
     },
     "roles": {
       "title": "Rollen",

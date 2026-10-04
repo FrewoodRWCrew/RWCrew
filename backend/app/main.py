@@ -6,8 +6,9 @@
 # virtual environment active) with:
 #   uvicorn app.main:app --reload --port 8010
 
+import asyncio
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -17,6 +18,7 @@ from app.core.database import SessionLocal
 from app.landing.admin import router as admin_router
 from app.landing.auth import router as auth_router
 from app.landing.modules import router as modules_router
+from app.modules.module_1.auto_scan import auto_scan_loop
 from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
 from app.modules.module_10.router import router as module_10_router
@@ -52,7 +54,15 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         sync_intervention_requests_screens(db)
         sync_altsien_select_screens(db)
         sync_masterdata_screens(db)
+
+    # TagScan's automatic background Scan (see module_1/auto_scan.py) —
+    # runs for as long as the backend runs, stopped cleanly at shutdown.
+    auto_scan_task = asyncio.create_task(auto_scan_loop()) if settings.tagscan_auto_scan_worker else None
     yield
+    if auto_scan_task is not None:
+        auto_scan_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await auto_scan_task
 
 
 # Create the actual FastAPI application object.
