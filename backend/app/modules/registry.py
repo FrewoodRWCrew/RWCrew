@@ -31,11 +31,15 @@ class ModuleDefinition:
 # module-8 (Altsien Select) likewise has its own bespoke router: the Ploeg
 # Wizard in which Altsien Kernleden make their per-team choices.
 #
+# module-4 (StockMaster) has its own bespoke router too: the warehouse stock
+# of MasterData products, as free stock and loaded in KarTracker's kars.
+#
 # module-10 ("Mobile App") is the install page for the phone app (the PWA
 # under /m): its address and a QR code; it contains no phone screens itself.
 _MODULE_NAMES = {
     "module-1": "TagScan",
     "module-3": "Intervention Requests",
+    "module-4": "StockMaster",
     "module-8": "Altsien Select",
     "module-9": "MasterData",
     "module-10": "Mobile App",

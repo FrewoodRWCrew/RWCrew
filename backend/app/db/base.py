@@ -49,6 +49,16 @@ from app.db.models.refresh_token import RefreshToken  # noqa: F401
 from app.db.models.rfid_tag import RfidTag  # noqa: F401
 from app.db.models.scanner import Scanner  # noqa: F401
 from app.db.models.season import Season  # noqa: F401
+from app.db.models.stockmaster_balance import StockMasterBalance  # noqa: F401
+from app.db.models.stockmaster_document import StockMasterDocument  # noqa: F401
+from app.db.models.stockmaster_kar_requirement import StockMasterKarRequirement  # noqa: F401
+from app.db.models.stockmaster_kar_trip import StockMasterKarTrip  # noqa: F401
+from app.db.models.stockmaster_movement import StockMasterMovement  # noqa: F401
+from app.db.models.stockmaster_reason import StockMasterReason  # noqa: F401
+from app.db.models.stockmaster_role import StockMasterRole  # noqa: F401
+from app.db.models.stockmaster_role_permission import StockMasterRolePermission  # noqa: F401
+from app.db.models.stockmaster_screen import StockMasterScreen  # noqa: F401
+from app.db.models.stockmaster_user_role import StockMasterUserRole  # noqa: F401
 from app.db.models.tag_header_data import TagHeaderData  # noqa: F401
 from app.db.models.tag_line_data import TagLineData  # noqa: F401
 from app.db.models.tagscan_role import TagscanRole  # noqa: F401

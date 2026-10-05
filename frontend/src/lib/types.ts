@@ -191,6 +191,10 @@ export interface Product {
   is_logistics_product: boolean;
   limit_id: number | null;
   description: string | null;
+  /** StockMaster: where returned goods go on "Kar terug". */
+  stock_return_to: "kar" | "free";
+  /** StockMaster: minimum stock of a consumable (reorder alert). */
+  min_stock: number | null;
 }
 
 /** The fields sent to create or fully update a product. */
@@ -205,6 +209,8 @@ export interface ProductInput {
   is_logistics_product?: boolean;
   limit_id?: number | null;
   description?: string | null;
+  stock_return_to?: "kar" | "free";
+  min_stock?: number | null;
 }
 
 /** One product type, as managed on MasterData's Type screen. */
@@ -1562,4 +1568,281 @@ export interface AltsienSelectDashboardStats {
   open_requests: number;
   step_breakdown: { step_key: string; label: string; completed_count: number }[];
   status_breakdown: { status_name: string; color: string; count: number }[];
+}
+
+// --- StockMaster (module-4): warehouse stock, kars, bookings, kar needs ---
+//
+// The custom-roles shapes are identical to Intervention Requests' (the
+// backend re-uses the same schemas), so they're aliased rather than copied.
+
+export type StockMasterScreen = InterventionRequestsScreen;
+export type StockMasterScreenPermission = InterventionRequestsScreenPermission;
+export type StockMasterRole = InterventionRequestsRole;
+export type StockMasterUserSummary = InterventionRequestsUserSummary;
+export type StockMasterMyPermissions = InterventionRequestsMyPermissions;
+
+/** The bookings a screen can make, in the order of the warehouse process. */
+export type StockMasterAction =
+  | "book_in"
+  | "kar_load"
+  | "book_out"
+  | "kar_dispatch"
+  | "kar_return"
+  | "kar_unload"
+  | "count";
+
+/** Every booking type, including the reversal ("Ongedaan maken"). */
+export type StockMasterDocType = StockMasterAction | "reversal";
+
+/** Where stock is: free stock, in a kar, or outside our stock. */
+export type StockMasterBucket = "free" | "kar" | "external";
+
+export interface StockMasterNamedItem {
+  id: number;
+  name: string;
+}
+
+/** One reason that can be chosen on a booking. */
+export interface StockMasterReason {
+  id: number;
+  name: string;
+  /** The booking type it's offered on, or null for every type. */
+  applies_to: StockMasterAction | null;
+  active: boolean;
+  sort_order: number;
+}
+
+export interface StockMasterReasonInput {
+  name: string;
+  applies_to: StockMasterAction | null;
+  active: boolean;
+  sort_order: number;
+}
+
+/** Dropdowns and filters of the StockMaster screens. */
+export interface StockMasterLookups {
+  warehouses: StockMasterNamedItem[];
+  categories: StockMasterNamedItem[];
+  teams: StockMasterNamedItem[];
+  reasons: StockMasterReason[];
+  booking_users: StockMasterNamedItem[];
+}
+
+export interface StockMasterKarQuantity {
+  kar_id: number;
+  kar_nummer: string;
+  quantity: number;
+}
+
+/** One product on the stock overview (and in the booking panel's search). */
+export interface StockMasterProductStock {
+  product_id: number;
+  name: string;
+  type_name: string | null;
+  category_id: number | null;
+  category_name: string | null;
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  warehouse_location: string | null;
+  bin_label: string | null;
+  is_consumable: boolean;
+  is_blocked: boolean;
+  stock_return_to: "kar" | "free";
+  min_stock: number | null;
+  free: number;
+  in_kars: number;
+  total: number;
+  kars: StockMasterKarQuantity[];
+  below_minimum: boolean;
+}
+
+export interface StockMasterTrip {
+  trip_id: number;
+  team_id: number | null;
+  team_name: string | null;
+  festival_id: number | null;
+  festival_name: string | null;
+  dispatched_at: string;
+  dispatch_document_id: number;
+  dispatch_doc_number: string;
+}
+
+/** One kar card on the Karren screen. */
+export interface StockMasterKarSummary {
+  kar_id: number;
+  kar_nummer: string;
+  team_id: number | null;
+  team_name: string | null;
+  kartracker_status: string | null;
+  is_out: boolean;
+  trip: StockMasterTrip | null;
+  product_count: number;
+  total_quantity: number;
+  required_total: number;
+  loaded_toward_required: number;
+}
+
+export interface StockMasterKarLine {
+  product_id: number;
+  name: string;
+  bin_label: string | null;
+  in_kar: number;
+  required: number;
+  missing: number;
+  surplus: number;
+  free_available: number;
+  is_consumable: boolean;
+  is_blocked: boolean;
+  stock_return_to: "kar" | "free";
+}
+
+export interface StockMasterDispatchedLine {
+  product_id: number;
+  name: string;
+  quantity: number;
+  is_consumable: boolean;
+  stock_return_to: "kar" | "free";
+}
+
+export interface StockMasterKarDetail {
+  kar: StockMasterKarSummary;
+  lines: StockMasterKarLine[];
+  dispatched: StockMasterDispatchedLine[];
+  festivals: StockMasterNamedItem[];
+}
+
+export interface StockMasterBookingLineInput {
+  product_id: number;
+  quantity: number;
+  destination?: "kar" | "free" | null;
+}
+
+export interface StockMasterBookingInput {
+  action: StockMasterAction;
+  season_id: number;
+  kar_id?: number | null;
+  from_kar_id?: number | null;
+  team_id?: number | null;
+  festival_id?: number | null;
+  reference?: string | null;
+  reason_id?: number | null;
+  comment?: string | null;
+  lines: StockMasterBookingLineInput[];
+}
+
+export interface StockMasterMovement {
+  product_id: number;
+  product_name: string;
+  quantity: number;
+  from_bucket: StockMasterBucket;
+  from_kar_nummer: string | null;
+  to_bucket: StockMasterBucket;
+  to_kar_nummer: string | null;
+  bin_snapshot: string | null;
+}
+
+/** One booking (with its lines on the detail page). */
+export interface StockMasterDocument {
+  id: number;
+  doc_number: string;
+  doc_type: StockMasterDocType;
+  status: "posted" | "reversed";
+  season_id: number;
+  season_name: string | null;
+  kar_id: number | null;
+  kar_nummer: string | null;
+  from_kar_nummer: string | null;
+  team_name: string | null;
+  festival_name: string | null;
+  reference: string | null;
+  reason_name: string | null;
+  comment: string | null;
+  source: string;
+  reversal_of_id: number | null;
+  reversal_of_number: string | null;
+  reversed_by_id: number | null;
+  reversed_by_number: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  line_count: number;
+  total_quantity: number;
+  lines: StockMasterMovement[];
+}
+
+export interface StockMasterDocumentPage {
+  items: StockMasterDocument[];
+  total: number;
+}
+
+export interface StockMasterDocumentFilters {
+  season_id?: number | null;
+  doc_type?: string | null;
+  product_id?: number | null;
+  kar_id?: number | null;
+  user_id?: number | null;
+  date_from?: string | null;
+  date_to?: string | null;
+  offset?: number;
+  limit?: number;
+}
+
+/** One product a kar needs this season. */
+export interface StockMasterRequirement {
+  product_id: number;
+  product_name: string;
+  bin_label: string | null;
+  quantity: number;
+  comment: string | null;
+  in_kar: number;
+  updated_by_name: string | null;
+  updated_at: string;
+}
+
+export interface StockMasterRequirementInput {
+  product_id: number;
+  quantity: number;
+  comment?: string | null;
+}
+
+export interface StockMasterPreviousRequirements {
+  season_name: string | null;
+  lines: { product_id: number; product_name: string; quantity: number; current_quantity: number | null }[];
+}
+
+export interface StockMasterOrderNeed {
+  product_id: number;
+  name: string;
+  category_name: string | null;
+  warehouse_id: number | null;
+  warehouse_name: string | null;
+  bin_label: string | null;
+  needed: number;
+  free: number;
+  in_kars: number;
+  in_stock: number;
+  to_order: number;
+  is_blocked: boolean;
+}
+
+export interface StockMasterCountSheetLine {
+  product_id: number;
+  name: string;
+  bin_label: string | null;
+  warehouse_location: string | null;
+  expected: number;
+}
+
+export interface StockMasterDashboard {
+  total_stock: number;
+  free_stock: number;
+  in_kars: number;
+  kars_in_warehouse: number;
+  kars_out: number;
+  kars_with_needs: number;
+  kars_complete: number;
+  below_minimum: number;
+  order_lines: number;
+  bookings_per_month: { month: string; doc_type: StockMasterDocType; count: number }[];
+  consumption_per_team: { name: string; quantity: number }[];
+  top_consumed_products: { name: string; quantity: number }[];
 }

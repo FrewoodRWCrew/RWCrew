@@ -6,7 +6,7 @@
 // Once real module names/branding are decided, these colours (and their
 // order) can simply be reassigned here without touching any component.
 
-import { Box, Database, Nfc, Smartphone, type LucideIcon } from "lucide-react";
+import { Box, Database, Nfc, Smartphone, Warehouse, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import AltsienIcon from "@/components/icons/altsien-icon";
@@ -72,6 +72,9 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     badgeClassName: "bg-teal-100 text-teal-700 dark:bg-teal-500/15 dark:text-teal-300",
     accentColorToken: "teal-600",
     accentForegroundColorToken: "neutral-950",
+    // StockMaster: the warehouse stock of products, free and in the kars —
+    // lucide's "Warehouse" icon says exactly that.
+    icon: Warehouse,
   },
   "module-5": {
     tileClassName: "bg-red-600 text-white",
@@ -174,13 +177,14 @@ export function getModuleNumber(moduleKey: string): string {
 // real name also carry a translated "moduleTitle" in messages/*.json (used
 // in their own sidebar); this maps a module key to that translation key so
 // the landing tile can show the localized name instead. Placeholder
-// modules ("Module 2", "Module 4".."Module 8") have no entry here and fall
-// back to the backend's name as-is, since "Module 2" reads the same in
+// modules ("Module 5".."Module 7") have no entry here and fall
+// back to the backend's name as-is, since "Module 5" reads the same in
 // every locale anyway.
 const MODULE_TRANSLATION_KEYS: Record<string, string> = {
   "module-1": "tagscan.moduleTitle",
   "module-2": "karTracker.moduleTitle",
   "module-3": "interventionRequests.moduleTitle",
+  "module-4": "stockMaster.moduleTitle",
   "module-8": "altsienSelect.moduleTitle",
   "module-9": "masterdata.moduleTitle",
 };

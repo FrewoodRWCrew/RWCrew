@@ -128,6 +128,24 @@ import type {
   Warehouse,
   WarehouseImportResponse,
   ZoneImportResponse,
+  StockMasterCountSheetLine,
+  StockMasterDashboard,
+  StockMasterDocument,
+  StockMasterDocumentFilters,
+  StockMasterDocumentPage,
+  StockMasterBookingInput,
+  StockMasterKarDetail,
+  StockMasterKarSummary,
+  StockMasterLookups,
+  StockMasterOrderNeed,
+  StockMasterPreviousRequirements,
+  StockMasterProductStock,
+  StockMasterReason,
+  StockMasterReasonInput,
+  StockMasterRequirement,
+  StockMasterRequirementInput,
+  StockMasterRole,
+  StockMasterUserSummary,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -2116,6 +2134,218 @@ export function createOrGrantAltsienSelectUser(payload: {
   role_id?: number | null;
 }): Promise<AltsienSelectUserSummary> {
   return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- StockMaster (module-4): stock, kars, bookings, kar needs ---
+
+const STOCKMASTER_BASE = "/api/modules/module-4";
+
+/** "?a=1&b=2" from the given values, leaving out empty ones. */
+function stockMasterQuery(values: Record<string, string | number | null | undefined>): string {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(values)) {
+    if (value !== null && value !== undefined && value !== "") {
+      params.set(key, String(value));
+    }
+  }
+  const query = params.toString();
+  return query ? `?${query}` : "";
+}
+
+export function getStockMasterLookups(): Promise<StockMasterLookups> {
+  return apiFetch<StockMasterLookups>(`${STOCKMASTER_BASE}/lookups`);
+}
+
+export function getStockMasterStock(): Promise<StockMasterProductStock[]> {
+  return apiFetch<StockMasterProductStock[]>(`${STOCKMASTER_BASE}/stock`);
+}
+
+export function getStockMasterAlerts(): Promise<{ below_minimum_count: number }> {
+  return apiFetch<{ below_minimum_count: number }>(`${STOCKMASTER_BASE}/alerts`);
+}
+
+export function getStockMasterDashboard(seasonId: number): Promise<StockMasterDashboard> {
+  return apiFetch<StockMasterDashboard>(`${STOCKMASTER_BASE}/dashboard?season_id=${seasonId}`);
+}
+
+export function listStockMasterKars(seasonId: number | null): Promise<StockMasterKarSummary[]> {
+  return apiFetch<StockMasterKarSummary[]>(`${STOCKMASTER_BASE}/kars${stockMasterQuery({ season_id: seasonId })}`);
+}
+
+export function getStockMasterKar(karId: number, seasonId: number | null): Promise<StockMasterKarDetail> {
+  return apiFetch<StockMasterKarDetail>(
+    `${STOCKMASTER_BASE}/kars/${karId}${stockMasterQuery({ season_id: seasonId })}`,
+  );
+}
+
+/** Make one booking; always stored under the logged-in user (server-side). */
+export function createStockMasterBooking(payload: StockMasterBookingInput): Promise<StockMasterDocument> {
+  return apiFetch<StockMasterDocument>(`${STOCKMASTER_BASE}/bookings`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listStockMasterBookings(filters: StockMasterDocumentFilters): Promise<StockMasterDocumentPage> {
+  return apiFetch<StockMasterDocumentPage>(`${STOCKMASTER_BASE}/bookings${stockMasterQuery({ ...filters })}`);
+}
+
+export function getStockMasterBooking(documentId: number): Promise<StockMasterDocument> {
+  return apiFetch<StockMasterDocument>(`${STOCKMASTER_BASE}/bookings/${documentId}`);
+}
+
+/** "Ongedaan maken": books the exact opposite of a booking. */
+export function reverseStockMasterBooking(documentId: number, comment?: string): Promise<StockMasterDocument> {
+  return apiFetch<StockMasterDocument>(`${STOCKMASTER_BASE}/bookings/${documentId}/reverse`, {
+    method: "POST",
+    body: JSON.stringify({ comment: comment || null }),
+  });
+}
+
+export function getStockMasterRequirements(seasonId: number, karId: number): Promise<StockMasterRequirement[]> {
+  return apiFetch<StockMasterRequirement[]>(
+    `${STOCKMASTER_BASE}/requirements?season_id=${seasonId}&kar_id=${karId}`,
+  );
+}
+
+export function saveStockMasterRequirements(
+  seasonId: number,
+  karId: number,
+  lines: StockMasterRequirementInput[],
+): Promise<StockMasterRequirement[]> {
+  return apiFetch<StockMasterRequirement[]>(`${STOCKMASTER_BASE}/requirements`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, kar_id: karId, lines }),
+  });
+}
+
+export function getStockMasterPreviousRequirements(
+  seasonId: number,
+  karId: number,
+): Promise<StockMasterPreviousRequirements> {
+  return apiFetch<StockMasterPreviousRequirements>(
+    `${STOCKMASTER_BASE}/requirements/previous?season_id=${seasonId}&kar_id=${karId}`,
+  );
+}
+
+export function getStockMasterOrderNeeds(
+  seasonId: number,
+  warehouseId: number | null,
+  categoryId: number | null,
+): Promise<StockMasterOrderNeed[]> {
+  return apiFetch<StockMasterOrderNeed[]>(
+    `${STOCKMASTER_BASE}/order-needs${stockMasterQuery({ season_id: seasonId, warehouse_id: warehouseId, category_id: categoryId })}`,
+  );
+}
+
+export interface StockMasterCountScope {
+  kar_id?: number | null;
+  warehouse_id?: number | null;
+  bin_from?: string | null;
+  bin_to?: string | null;
+}
+
+export function getStockMasterCountSheet(scope: StockMasterCountScope): Promise<StockMasterCountSheetLine[]> {
+  return apiFetch<StockMasterCountSheetLine[]>(`${STOCKMASTER_BASE}/count-sheet${stockMasterQuery({ ...scope })}`);
+}
+
+export function listStockMasterReasons(): Promise<StockMasterReason[]> {
+  return apiFetch<StockMasterReason[]>(`${STOCKMASTER_BASE}/reasons`);
+}
+
+export function createStockMasterReason(payload: StockMasterReasonInput): Promise<StockMasterReason> {
+  return apiFetch<StockMasterReason>(`${STOCKMASTER_BASE}/reasons`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateStockMasterReason(reasonId: number, payload: StockMasterReasonInput): Promise<StockMasterReason> {
+  return apiFetch<StockMasterReason>(`${STOCKMASTER_BASE}/reasons/${reasonId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteStockMasterReason(reasonId: number): Promise<void> {
+  return apiFetch<void>(`${STOCKMASTER_BASE}/reasons/${reasonId}`, { method: "DELETE" });
+}
+
+// PDFs open in a new browser tab (print or save from there).
+
+export function stockMasterBookingPdfUrl(documentId: number, locale: string): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/bookings/${documentId}/pdf?locale=${locale}`;
+}
+
+export function stockMasterLoadListPdfUrl(karId: number, seasonId: number, locale: string): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/kars/${karId}/load-list/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
+export function stockMasterOrderListPdfUrl(
+  seasonId: number,
+  warehouseId: number | null,
+  categoryId: number | null,
+  locale: string,
+): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/order-needs/pdf${stockMasterQuery({
+    season_id: seasonId,
+    warehouse_id: warehouseId,
+    category_id: categoryId,
+    locale,
+  })}`;
+}
+
+export function stockMasterCountSheetPdfUrl(scope: StockMasterCountScope, seasonId: number | null, locale: string): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/count-sheet/pdf${stockMasterQuery({ ...scope, season_id: seasonId, locale })}`;
+}
+
+// Custom roles with per-screen permissions (same shapes as module-3's).
+
+export function createStockMasterRole(name: string): Promise<StockMasterRole> {
+  return apiFetch<StockMasterRole>(`${STOCKMASTER_BASE}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameStockMasterRole(roleId: number, name: string): Promise<StockMasterRole> {
+  return apiFetch<StockMasterRole>(`${STOCKMASTER_BASE}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteStockMasterRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`${STOCKMASTER_BASE}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function setStockMasterRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<StockMasterRole> {
+  return apiFetch<StockMasterRole>(`${STOCKMASTER_BASE}/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function setStockMasterUserRole(userId: number, roleId: number | null): Promise<StockMasterUserSummary> {
+  return apiFetch<StockMasterUserSummary>(`${STOCKMASTER_BASE}/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantStockMasterUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<StockMasterUserSummary> {
+  return apiFetch<StockMasterUserSummary>(`${STOCKMASTER_BASE}/users`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

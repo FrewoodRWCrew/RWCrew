@@ -10,7 +10,7 @@
 # Warehouse, ProductCategory, ProductLimit), they're foreign keys into
 # those tables instead.
 
-from sqlalchemy import Boolean, ForeignKey, String, Text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -44,3 +44,10 @@ class Product(Base):
     limit_id: Mapped[int | None] = mapped_column(ForeignKey("MasterData_product_limit.id"), nullable=True)
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # StockMaster (module-4) settings, maintained on this product screen:
+    # where returned goods go on "Kar terug" — back into the kar ("kar") or
+    # straight to free stock ("free") — and, for consumable products, the
+    # minimum stock below which StockMaster warns that it's time to reorder.
+    stock_return_to: Mapped[str] = mapped_column(String(10), default="kar", server_default="kar", nullable=False)
+    min_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)

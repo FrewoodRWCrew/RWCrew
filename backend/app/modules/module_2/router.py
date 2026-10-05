@@ -35,6 +35,7 @@ from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.season import Season
+from app.db.models.stockmaster_balance import StockMasterBalance
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -639,10 +640,19 @@ def delete_kar(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("kartracker.karmanagement", "delete")),
 ) -> None:
-    """Remove a kar from the fleet registry."""
+    """Remove a kar from the fleet registry — unless StockMaster (module-4)
+    still has stock loaded in it, which must be unloaded first.
+    """
     kar = db.get(KarTrackerKar, kar_id)
     if kar is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kar not found")
+
+    holds_stock = db.scalar(select(StockMasterBalance.id).where(StockMasterBalance.kar_id == kar_id).limit(1))
+    if holds_stock is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This kar still holds stock in StockMaster; unload it there first",
+        )
 
     db.delete(kar)
     db.commit()

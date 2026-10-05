@@ -22,9 +22,9 @@ backend/
   app/db/models/ SQLAlchemy models (one file per table): landing ones (User, Module, UserModuleAccess,
                  ModuleRole, RefreshToken, LoginHistory) plus every module's own tables
   app/landing/   Auth endpoints (/api/auth/*) + super-admin endpoints (/api/admin/*)
-  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 8 and 9 have their own
-                 routers with the custom-roles-with-per-screen-permissions system (see
-                 docs/module-custom-roles-pattern.md); modules 4-7 (placeholders) and 10 (phone-app
+  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 4, 8 and 9 have their
+                 own routers with the custom-roles-with-per-screen-permissions system (see
+                 docs/module-custom-roles-pattern.md); modules 5-7 (placeholders) and 10 (phone-app
                  install page) use the shared app/modules/common.py factory
   app/shared/    Small cross-module helpers (accessible module keys, device type from a User-Agent)
   app/cli/seed.py   Seeds the modules + the first super-admin user
@@ -47,7 +47,9 @@ frontend/
                                   Kernlid walks through steps), "Ploegfiche" (all choices on
                                   one screen + PDF), request follow-up, request statuses,
                                   Access Rights — see "Altsien Select (module-8)" below
-    modules/module-4..7/         Placeholder modules: thin wrapper around ModulePlaceholderPage
+    modules/module-4/             StockMaster: warehouse stock (free + in kars), bookings,
+                                  kar needs, "Te bestellen", PDFs — see "StockMaster (module-4)"
+    modules/module-5..7/         Placeholder modules: thin wrapper around ModulePlaceholderPage
                                   until real content is designed
     modules/module-10/            "Mobile App": install page for the phone app (QR code + steps),
                                   see "Phone section (PWA)" below
@@ -60,6 +62,37 @@ frontend/
   messages/nl.json (default), en.json    next-intl translations
 docker-compose.yml   Local Postgres for dev only (port 5433, see Gotchas)
 ```
+
+## StockMaster (module-4)
+
+The warehouse stock of MasterData products (whole pieces only), as **free stock** on the product's fixed
+bin (`MasterData_product.warehouse_id` + `warehouse_location`, no bin table) and **loaded in KarTracker's
+kars** while they stand in the warehouse. Web only (no `/m` screens). Full design: `docs/stockmaster-design.md`.
+Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `module_4/screens.py`).
+
+- **Only `module_4/stock_service.py` changes stock.** Each booking = one `StockMaster_document` + one
+  `StockMaster_movement` per product (`free`/`kar`/`external` from → to), and `StockMaster_balance` (one row
+  per product per place; `kar_id` NULL = free; emptied rows are deleted) is updated in the same transaction
+  after `SELECT … FOR UPDATE`, so stock never goes negative. Nothing is edited or deleted: "Ongedaan maken"
+  = `reverse_document` (a `reversal` document). The service never commits — the router (or, later, an
+  automated TagScan handler in `module_1/line_processing.py`) does; a `StockError("code", *params)` becomes
+  HTTP detail `"code|param|…"`, translated by the frontend under `stockMaster.errors.<code>` — a new code
+  needs a translation in both languages.
+- **The booked-by user is always the session user** (`created_by` + `created_by_name` snapshot on documents
+  and movements), never taken from the request.
+- **Kar stock only exists in the warehouse**: "Kar vertrekt" books the kar's whole contents out and opens a
+  `StockMaster_kar_trip`; "Kar terug" books the returned lines into the kar or to free stock (per line,
+  defaulted from the product's new `stock_return_to`) and closes it. A kar with an open trip can't be
+  loaded/unloaded/counted. What didn't come back is the team's consumption on the KPI page.
+- **Kar needs** (`StockMaster_kar_requirement`, per season + kar) only through `module_4/requirement_service.py`
+  — Altsien Select's Products wizard step should reuse it later (no module-8 copy of the data). They pre-fill
+  "Kar laden", drive the kar cards' "18 / 20" and "Te bestellen" (needs − free − in kars).
+- **Minimum stock** = MasterData product `min_stock` (consumables only) → orange banner in the module layout.
+- Seasons: the module's own dropdown (`?season=`); bookings in a closed season need "edit" on the
+  `stockmaster.closedseason` switch-screen. MasterData/KarTracker refuse deleting a product with stock history
+  or a kar holding stock.
+- PDFs (`module_4/stock_pdfs.py`, house style in `pdf_layout.py` with the TeamKar logo): Laadlijst, Vertrekbon
+  (`/bookings/{id}/pdf` of a dispatch), Bestellijst, Telblad, Boekingsbon.
 
 ## Altsien Select (module-8)
 

@@ -63,6 +63,8 @@ const EMPTY_FORM: ProductInput = {
   is_logistics_product: false,
   limit_id: null,
   description: "",
+  stock_return_to: "kar",
+  min_stock: null,
 };
 
 function toFormValues(product: Product): ProductInput {
@@ -77,6 +79,8 @@ function toFormValues(product: Product): ProductInput {
     is_logistics_product: product.is_logistics_product,
     limit_id: product.limit_id,
     description: product.description ?? "",
+    stock_return_to: product.stock_return_to,
+    min_stock: product.min_stock,
   };
 }
 
@@ -378,6 +382,41 @@ function ProductFormDialog({
               />
               <Label htmlFor="product-logistics">{t("logisticsProductLabel")}</Label>
             </div>
+          </div>
+
+          {/* StockMaster (module-4): where returned goods go, and the
+              minimum stock of a consumable (reorder alert). */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="product-stock-return">{t("stockReturnToLabel")}</Label>
+            <Select
+              value={form.stock_return_to ?? "kar"}
+              onValueChange={(value) => updateField("stock_return_to", value === "free" ? "free" : "kar")}
+            >
+              <SelectTrigger id="product-stock-return" className="w-full">
+                <SelectValue>
+                  {(value: string | null) => (value === "free" ? t("stockReturnFree") : t("stockReturnKar"))}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="kar">{t("stockReturnKar")}</SelectItem>
+                <SelectItem value="free">{t("stockReturnFree")}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="product-min-stock">{t("minStockLabel")}</Label>
+            <Input
+              id="product-min-stock"
+              type="number"
+              min={0}
+              step={1}
+              disabled={!form.is_consumable}
+              placeholder={form.is_consumable ? "" : t("minStockConsumableOnly")}
+              value={form.min_stock ?? ""}
+              onChange={(event) =>
+                updateField("min_stock", event.target.value === "" ? null : Math.max(0, Number.parseInt(event.target.value, 10) || 0))
+              }
+            />
           </div>
 
           <div className="col-span-2 flex flex-col gap-2">

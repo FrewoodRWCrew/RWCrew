@@ -19,6 +19,7 @@ from app.db.models.masterdata_screen import MasterDataScreen
 from app.db.models.masterdata_user_role import MasterDataUserRole
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.stockmaster_movement import StockMasterMovement
 from app.db.models.product_category import ProductCategory
 from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
@@ -1161,10 +1162,21 @@ def delete_product(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("masterdata.products", "delete")),
 ) -> None:
-    """Permanently delete a product."""
+    """Permanently delete a product — unless StockMaster (module-4) has
+    stock or booking history for it, which must never silently disappear.
+    """
     product = db.get(Product, product_id)
     if product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+
+    has_stock_history = db.scalar(
+        select(StockMasterMovement.id).where(StockMasterMovement.product_id == product_id).limit(1)
+    )
+    if has_stock_history is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This product has stock bookings in StockMaster and can't be deleted (block it instead)",
+        )
 
     db.delete(product)
     db.commit()

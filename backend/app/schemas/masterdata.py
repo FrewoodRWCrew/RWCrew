@@ -283,6 +283,10 @@ class ProductResponse(BaseModel):
     is_logistics_product: bool
     limit_id: int | None
     description: str | None
+    # StockMaster (module-4): where returned goods go on "Kar terug", and
+    # the minimum stock of a consumable.
+    stock_return_to: Literal["kar", "free"]
+    min_stock: int | None
 
 
 class ProductCreateRequest(BaseModel):
@@ -302,6 +306,8 @@ class ProductCreateRequest(BaseModel):
     is_logistics_product: bool = False
     limit_id: int | None = None
     description: str | None = None
+    stock_return_to: Literal["kar", "free"] = "kar"
+    min_stock: int | None = Field(default=None, ge=0)
 
 
 class ProductUpdateRequest(ProductCreateRequest):
