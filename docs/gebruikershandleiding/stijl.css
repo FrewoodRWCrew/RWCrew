@@ -1,0 +1,483 @@
+/* Opmaak van de RWCrew-gebruikershandleiding (gebaseerd op die van de ontwikkelaarshandleiding).
+   Wordt door build_pdf.py in de HTML geplakt en door Paged.js (vendor/) in
+   A4-pagina's gezet. */
+
+/* ---------- Kleuren en lettertypes ---------- */
+:root {
+  --groen-donker: #10261f;   /* donkergroen van het RW-logo */
+  --groen: #1f6b4f;          /* accentkleur voor koppen en lijnen */
+  --groen-licht: #e8f2ed;    /* lichte achtergrond voor kaders */
+  --inkt: #1d2521;           /* gewone tekst */
+  --grijs: #5d6863;          /* bijschriften, kop- en voettekst */
+  --lijn: #cdd6d1;           /* tabel- en kaderlijnen */
+  --code-bg: #f4f6f5;
+  --oranje: #b45309;
+  --oranje-licht: #fdf3e7;
+  --blauw: #1d4f91;
+  --blauw-licht: #eaf1fb;
+  --paars: #5b3f8c;
+  --paars-licht: #f1ecf8;
+  --body-font: "Segoe UI", "Calibri", Arial, sans-serif;
+  --kop-font: "Segoe UI Semibold", "Segoe UI", Arial, sans-serif;
+  --code-font: "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+/* ---------- Pagina-opzet ---------- */
+@page {
+  size: A4;
+  margin: 24mm 18mm 20mm 18mm;
+  @top-left {
+    content: "RWCrew · Gebruikershandleiding";
+    font: 8pt var(--body-font);
+    color: var(--grijs);
+    vertical-align: bottom;
+    padding-bottom: 3mm;
+    border-bottom: 0.4pt solid var(--lijn);
+  }
+  @top-right {
+    content: string(hoofdstuk);
+    font: 8pt var(--body-font);
+    color: var(--grijs);
+    vertical-align: bottom;
+    padding-bottom: 3mm;
+    border-bottom: 0.4pt solid var(--lijn);
+  }
+  @bottom-left {
+    content: "Gebruikershandleiding · versie 1.0 · oktober 2026";
+    font: 8pt var(--body-font);
+    color: var(--grijs);
+  }
+  @bottom-right {
+    content: "Pagina " counter(page);
+    font: 8pt var(--body-font);
+    color: var(--grijs);
+  }
+}
+
+/* build_pdf.py vult na de opmaak "Pagina X van Y" in (data-label op elk voettekstvak). */
+.met-totaal::after { content: attr(data-label) !important; }
+
+/* Voorblad: geen kop- of voettekst, geen marges. */
+@page voorblad {
+  margin: 0;
+  @top-left { content: none; border: none; }
+  @top-right { content: none; border: none; }
+  @bottom-left { content: none; }
+  @bottom-right { content: none; }
+}
+
+/* Scheidingspagina per deel: geen koptekst. */
+@page deel {
+  @top-left { content: none; border: none; }
+  @top-right { content: none; border: none; }
+}
+
+/* ---------- Basistekst ---------- */
+html { font-family: var(--body-font); font-size: 10pt; color: var(--inkt); line-height: 1.5; }
+body { margin: 0; }
+p { margin: 0 0 2.6mm; orphans: 3; widows: 3; }
+ul, ol { margin: 0 0 3mm; padding-left: 6mm; }
+li { margin-bottom: 1mm; }
+li > ul, li > ol { margin-top: 1mm; margin-bottom: 1mm; }
+strong { font-weight: 600; }
+a { color: var(--blauw); text-decoration: none; }
+em { font-style: italic; }
+code {
+  font-family: var(--code-font);
+  font-size: 8.6pt;
+  background: var(--code-bg);
+  padding: 0 1mm;
+  border-radius: 1mm;
+  overflow-wrap: anywhere;
+}
+kbd {
+  font-family: var(--code-font);
+  font-size: 8.4pt;
+  border: 0.5pt solid var(--lijn);
+  border-bottom-width: 1.2pt;
+  border-radius: 1mm;
+  padding: 0 1mm;
+}
+
+/* ---------- Voorblad ---------- */
+.voorblad {
+  page: voorblad;
+  height: 297mm;
+  box-sizing: border-box;
+  background: var(--groen-donker);
+  color: #fff;
+  padding: 38mm 24mm 22mm;
+  display: flex;
+  flex-direction: column;
+}
+.voorblad .label {
+  font: 600 9pt var(--body-font);
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #9fd3bb;
+}
+.voorblad h1.titel {
+  font: 600 38pt/1.1 var(--kop-font);
+  margin: 6mm 0 4mm;
+  color: #fff;
+  border: none;
+  string-set: none;
+}
+.voorblad .ondertitel { font-size: 15pt; color: #d6ebe1; max-width: 140mm; line-height: 1.4; }
+.voorblad .streep { width: 30mm; height: 1.4mm; background: #4fb38a; margin: 12mm 0; }
+.voorblad .inhoud-kort { font-size: 10.5pt; color: #d6ebe1; max-width: 135mm; }
+.voorblad .inhoud-kort li { margin-bottom: 1.5mm; }
+.voorblad .onderaan { margin-top: auto; font-size: 9.5pt; color: #b9d9ca; display: flex; justify-content: space-between; align-items: flex-end; }
+.voorblad .onderaan table { border-collapse: collapse; }
+.voorblad .onderaan tr td { background: none !important; }
+.voorblad .onderaan td { padding: 0.6mm 6mm 0.6mm 0; border: none; color: #e8f4ee; font-size: 9.5pt; }
+.voorblad .onderaan td:first-child { color: #9fd3bb; }
+.voorblad .vertrouwelijk { border: 0.6pt solid #4fb38a; color: #9fd3bb; padding: 1.5mm 3mm; font-size: 8.5pt; letter-spacing: 0.1em; text-transform: uppercase; }
+
+/* ---------- Voorwerk (documentbeheer, inhoudsopgave) ---------- */
+.voorwerk { break-before: page; }
+.voorwerk h1 {
+  font: 600 20pt var(--kop-font);
+  color: var(--groen-donker);
+  margin: 0 0 6mm;
+  string-set: hoofdstuk content(text);
+}
+
+/* Inhoudsopgave: titel links, paginanummer rechts, puntjes ertussen. */
+.toc { list-style: none; padding: 0; margin: 0; }
+.toc li { margin: 0; }
+.toc a {
+  display: flex;
+  align-items: baseline;
+  color: var(--inkt);
+  padding: 0.7mm 0;
+}
+.toc a .toc-titel { flex: 0 1 auto; padding-right: 1.5mm; }
+.toc a .toc-puntjes { flex: 1 1 auto; border-bottom: 0.8pt dotted #9aa5a0; margin-bottom: 1mm; min-width: 6mm; }
+.toc a::after {
+  content: target-counter(attr(href), page);
+  flex: 0 0 auto;
+  padding-left: 1.5mm;
+  font-variant-numeric: tabular-nums;
+}
+.toc .toc-deel { font: 600 10.5pt var(--kop-font); color: var(--groen); margin-top: 4mm; text-transform: uppercase; letter-spacing: 0.06em; }
+.toc .toc-deel a { color: var(--groen); }
+.toc .toc-h1 a { font-weight: 600; margin-top: 1.6mm; }
+.toc .toc-h2 a { padding-left: 8mm; font-size: 9.3pt; color: #36403b; }
+.toc .toc-num { display: inline-block; min-width: 8mm; }
+.toc .toc-h2 .toc-num { min-width: 10mm; }
+.toc-lijst-titel { font: 600 13pt var(--kop-font); color: var(--groen-donker); margin: 8mm 0 3mm; }
+
+/* ---------- Delen en hoofdstukken ---------- */
+section.deel {
+  page: deel;
+  break-before: page;
+  break-after: page;
+  padding-top: 70mm;
+}
+section.deel h1 {
+  font: 600 30pt var(--kop-font);
+  color: var(--groen-donker);
+  margin: 0;
+  string-set: hoofdstuk content(text);
+}
+section.deel .deel-label { font: 600 10pt var(--body-font); letter-spacing: 0.25em; text-transform: uppercase; color: var(--groen); }
+section.deel .streep { width: 25mm; height: 1.2mm; background: var(--groen); margin: 7mm 0; }
+section.deel p { font-size: 11pt; color: #3d4742; max-width: 135mm; }
+section.deel .deel-lezers { margin-top: 10mm; font-size: 9.5pt; color: var(--grijs); }
+
+h1.hoofdstuk {
+  break-before: page;
+  font: 600 22pt/1.2 var(--kop-font);
+  color: var(--groen-donker);
+  margin: 0 0 6mm;
+  padding-bottom: 3mm;
+  border-bottom: 1.4pt solid var(--groen);
+  string-set: hoofdstuk content(text);
+}
+h1.hoofdstuk .num { color: var(--groen); margin-right: 1.5mm; }
+h2 {
+  font: 600 14pt/1.25 var(--kop-font);
+  color: var(--groen-donker);
+  margin: 7mm 0 2.5mm;
+  break-after: avoid;
+}
+h2 .num { color: var(--groen); margin-right: 1.2mm; }
+h3 {
+  font: 600 11pt/1.3 var(--kop-font);
+  color: var(--inkt);
+  margin: 5mm 0 1.8mm;
+  break-after: avoid;
+}
+h3 .num { color: var(--grijs); margin-right: 1mm; font-weight: 400; }
+h4 { font: 600 10pt var(--kop-font); margin: 3.5mm 0 1.2mm; break-after: avoid; color: var(--groen); }
+
+/* ---------- Kaders (callouts) ---------- */
+.kader {
+  border-left: 1.6mm solid var(--groen);
+  background: var(--groen-licht);
+  padding: 2.8mm 4mm 1.2mm;
+  margin: 3mm 0 4mm;
+  break-inside: avoid;
+  border-radius: 0 1.2mm 1.2mm 0;
+}
+.kader > .kader-titel {
+  display: block;
+  font: 600 8.5pt var(--body-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 1.2mm;
+  color: var(--groen);
+}
+.kader.kort .kader-titel::before { content: "Kort gezegd"; }
+.kader.letop { border-color: var(--oranje); background: var(--oranje-licht); }
+.kader.letop .kader-titel { color: var(--oranje); }
+.kader.letop .kader-titel::before { content: "Let op"; }
+.kader.tip { border-color: var(--blauw); background: var(--blauw-licht); }
+.kader.tip .kader-titel { color: var(--blauw); }
+.kader.tip .kader-titel::before { content: "Tip"; }
+.kader.dev { border-color: var(--paars); background: var(--paars-licht); }
+.kader.dev .kader-titel { color: var(--paars); }
+.kader.dev .kader-titel::before { content: "Voor ontwikkelaars"; }
+.kader.analogie { border-color: #8a6d1f; background: #faf6e9; }
+.kader.analogie .kader-titel { color: #8a6d1f; }
+.kader.analogie .kader-titel::before { content: "Vergelijking"; }
+.kader ul { margin-bottom: 1.5mm; }
+
+/* Badge naast een hoofdstuktitel: "Vooral voor ontwikkelaars". */
+.doelgroep {
+  display: inline-block;
+  font: 600 7.5pt var(--body-font);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.8mm 2.2mm;
+  border-radius: 5mm;
+  margin: -3mm 0 5mm;
+}
+.doelgroep.iedereen { background: var(--groen-licht); color: var(--groen); }
+.doelgroep.ontwikkelaars { background: var(--paars-licht); color: var(--paars); }
+.doelgroep.beheer { background: var(--blauw-licht); color: var(--blauw); }
+
+/* ---------- Code ---------- */
+figure.code { margin: 3mm 0 4mm; }
+figure.code pre { orphans: 4; widows: 4; }
+figure.code pre {
+  margin: 0;
+  font-family: var(--code-font);
+  font-size: 8.2pt;
+  line-height: 1.42;
+  background: var(--code-bg);
+  border: 0.5pt solid var(--lijn);
+  border-left: 1mm solid var(--groen);
+  padding: 2.5mm 3.5mm;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+figure.code .bestand {
+  font: 600 7.8pt var(--code-font);
+  color: var(--grijs);
+  background: #e9eeeb;
+  border: 0.5pt solid var(--lijn);
+  border-bottom: none;
+  padding: 1mm 3.5mm;
+  display: block;
+  break-after: avoid;
+}
+pre .c { color: #6b7a73; }          /* commentaar */
+pre .k { color: #7c3aed; }          /* sleutelwoord */
+pre .s { color: #0f766e; }          /* tekst/string */
+pre .p { color: #b45309; }          /* prompt/commando */
+
+/* ---------- Tabellen ---------- */
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2mm 0 5mm;
+  font-size: 9pt;
+  line-height: 1.38;
+}
+table caption {
+  caption-side: top;
+  text-align: left;
+  font: 600 8.6pt var(--body-font);
+  color: var(--grijs);
+  padding-bottom: 1.5mm;
+}
+th {
+  background: var(--groen-donker);
+  color: #fff;
+  text-align: left;
+  font-weight: 600;
+  padding: 1.6mm 2.2mm;
+  vertical-align: bottom;
+}
+td { padding: 1.4mm 2.2mm; border-bottom: 0.5pt solid var(--lijn); vertical-align: top; }
+tr:nth-child(even) td { background: #f7f9f8; }
+tr { break-inside: avoid; }
+td code, th code { font-size: 8pt; }
+table.compact { font-size: 8.4pt; }
+table.compact td { padding: 1mm 2mm; }
+td.nowrap, th.nowrap { white-space: nowrap; }
+
+/* ---------- Figuren (diagrammen) ---------- */
+figure.diagram { margin: 4mm 0 5mm; break-inside: avoid; text-align: center; }
+figure.diagram svg { width: 100%; height: auto; }
+figure figcaption {
+  font: 8.6pt var(--body-font);
+  color: var(--grijs);
+  margin-top: 2mm;
+  text-align: left;
+}
+figure figcaption .fig-num { font-weight: 600; color: var(--inkt); }
+
+/* SVG-stijlen, gedeeld door alle diagrammen. */
+svg text { font-family: var(--body-font); fill: var(--inkt); }
+svg .box { fill: #fff; stroke: var(--groen); stroke-width: 1.4; }
+svg .box-donker { fill: var(--groen-donker); stroke: none; }
+svg .box-licht { fill: var(--groen-licht); stroke: var(--groen); stroke-width: 1; }
+svg .box-blauw { fill: var(--blauw-licht); stroke: var(--blauw); stroke-width: 1.2; }
+svg .box-oranje { fill: var(--oranje-licht); stroke: var(--oranje); stroke-width: 1.2; }
+svg .box-paars { fill: var(--paars-licht); stroke: var(--paars); stroke-width: 1.2; }
+svg .box-grijs { fill: #f3f5f4; stroke: #a9b4af; stroke-width: 1; stroke-dasharray: 4 3; }
+svg .zone { fill: none; stroke: #a9b4af; stroke-width: 1; stroke-dasharray: 5 4; }
+svg .t-wit { fill: #fff; }
+svg .t-titel { font-weight: 600; font-size: 13px; }
+svg .t-klein { font-size: 10.5px; fill: var(--grijs); }
+svg .t-mini { font-size: 9.5px; fill: var(--grijs); }
+svg .t-zone { font-size: 10px; font-weight: 600; fill: var(--grijs); letter-spacing: 0.08em; }
+svg .pijl { stroke: var(--inkt); stroke-width: 1.3; fill: none; marker-end: url(#pijlpunt); }
+svg .pijl-stippel { stroke: var(--grijs); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; marker-end: url(#pijlpunt-grijs); }
+
+/* ---------- Diversen ---------- */
+.twee-kolommen { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
+.twee-kolommen > div { break-inside: avoid; }
+.stappen { counter-reset: stap; list-style: none; padding-left: 0; }
+.stappen > li { counter-increment: stap; position: relative; padding-left: 9mm; margin-bottom: 2.2mm; }
+.stappen > li::before {
+  content: counter(stap);
+  position: absolute; left: 0; top: 0.2mm;
+  width: 5.6mm; height: 5.6mm; border-radius: 50%;
+  background: var(--groen); color: #fff;
+  font: 600 8pt/5.6mm var(--body-font); text-align: center;
+}
+.checklist { list-style: none; padding-left: 0; }
+.checklist li { padding-left: 6mm; position: relative; }
+.checklist li::before { content: "☐"; position: absolute; left: 0; color: var(--groen); }
+.pad { font-family: var(--code-font); font-size: 8.6pt; color: var(--paars); }
+.klein { font-size: 8.8pt; color: var(--grijs); }
+dl.woordenlijst { margin: 0; }
+dl.woordenlijst dt { font-weight: 600; color: var(--groen-donker); margin-top: 2.6mm; break-after: avoid; }
+dl.woordenlijst dd { margin: 0.5mm 0 0 0; padding-left: 5mm; border-left: 0.8pt solid var(--lijn); }
+.niet-breken { break-inside: avoid; }
+.pagina-einde { break-after: page; }
+
+/* ===================================================================
+   Aanvullingen voor de gebruikershandleiding
+   =================================================================== */
+
+/* Kleur per module, dezelfde als de tegels in de app (lib/module-theme.ts). */
+:root {
+  --m-tagscan: #2563eb;
+  --m-kartracker: #9333ea;
+  --m-interventie: #ea580c;
+  --m-stockmaster: #0d9488;
+  --m-altsien: #c026d3;
+  --m-masterdata: #0891b2;
+  --m-mobiel: #059669;
+}
+
+/* Een knop of menu-item uit de app, zoals de gebruiker het op het scherm ziet. */
+.knop {
+  display: inline-block;
+  font: 600 8.6pt var(--body-font);
+  padding: 0 1.8mm;
+  border: 0.6pt solid #9aa5a0;
+  border-radius: 1.2mm;
+  background: #f7f9f8;
+  color: var(--inkt);
+  white-space: nowrap;
+}
+/* Pad in het menu, bv. Akties › Inboeken. */
+.menu {
+  font-weight: 600;
+  color: var(--groen-donker);
+  white-space: nowrap;
+}
+.menu .sep { color: var(--grijs); font-weight: 400; padding: 0 0.8mm; }
+
+/* Extra kaders. */
+.kader.voorbeeld { border-color: #8a6d1f; background: #faf6e9; }
+.kader.voorbeeld .kader-titel { color: #8a6d1f; }
+.kader.voorbeeld .kader-titel::before { content: "Voorbeeld"; }
+.kader.beheer { border-color: var(--paars); background: var(--paars-licht); }
+.kader.beheer .kader-titel { color: var(--paars); }
+.kader.beheer .kader-titel::before { content: "Voor beheerders"; }
+
+/* Steekkaart bovenaan elk modulehoofdstuk: gekleurde band + vier vakjes. */
+.module-kaart {
+  break-inside: avoid;
+  border: 0.6pt solid var(--lijn);
+  border-top: 2.4mm solid var(--modulekleur, var(--groen));
+  border-radius: 0 0 1.5mm 1.5mm;
+  margin: 0 0 5mm;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+}
+.module-kaart > div { padding: 2.4mm 3.5mm; border-bottom: 0.5pt solid var(--lijn); }
+.module-kaart > div:nth-child(odd) { border-right: 0.5pt solid var(--lijn); }
+.module-kaart > div:nth-last-child(-n+2) { border-bottom: none; }
+.module-kaart .vak-titel {
+  display: block;
+  font: 600 7.6pt var(--body-font);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--modulekleur, var(--groen));
+  margin-bottom: 0.6mm;
+}
+.module-kaart p { margin: 0; font-size: 9.2pt; }
+.m-tagscan { --modulekleur: var(--m-tagscan); }
+.m-kartracker { --modulekleur: var(--m-kartracker); }
+.m-interventie { --modulekleur: var(--m-interventie); }
+.m-stockmaster { --modulekleur: var(--m-stockmaster); }
+.m-altsien { --modulekleur: var(--m-altsien); }
+.m-masterdata { --modulekleur: var(--m-masterdata); }
+.m-mobiel { --modulekleur: var(--m-mobiel); }
+
+/* Modulebadge in de lopende tekst. */
+.mod {
+  display: inline-block;
+  font: 600 8pt var(--body-font);
+  color: #fff;
+  background: var(--modulekleur, var(--groen));
+  padding: 0 1.8mm;
+  border-radius: 1mm;
+  white-space: nowrap;
+}
+
+/* Tegeloverzicht van de modules (hoofdstuk 1). */
+.tegels { display: grid; grid-template-columns: 1fr 1fr; gap: 3.5mm; margin: 3mm 0 5mm; }
+.tegel {
+  break-inside: avoid;
+  border-radius: 1.6mm;
+  border: 0.6pt solid var(--lijn);
+  border-left: 2.2mm solid var(--modulekleur, var(--groen));
+  padding: 2.6mm 3.5mm 2mm;
+  background: #fff;
+}
+.tegel .tegel-naam { font: 600 11pt var(--kop-font); color: var(--modulekleur, var(--groen)); }
+.tegel .tegel-zin { font-size: 8.8pt; color: #3d4742; margin-top: 0.8mm; line-height: 1.4; }
+
+/* Lijst "schermen in deze module": de schermnaam vet in een eigen kolom. */
+table.schermen td:first-child { font-weight: 600; color: var(--groen-donker); width: 30%; }
+
+/* Antwoord-/vraagblok in de veelgestelde vragen. */
+.faq { break-inside: avoid; margin-bottom: 3.2mm; }
+.faq .vraag { font-weight: 600; color: var(--groen-donker); margin-bottom: 0.8mm; }
+.faq .vraag::before { content: "?"; display: inline-block; width: 4.6mm; height: 4.6mm; border-radius: 50%; background: var(--groen); color: #fff; text-align: center; font: 600 7.5pt/4.6mm var(--body-font); margin-right: 1.8mm; }
+.faq p { padding-left: 6.4mm; }
+
+/* Inhoudsopgave iets compacter, en ruimte na "Bijlage A". */
+.toc a { padding: 0.45mm 0; }
+.toc .toc-h1 a { margin-top: 1.2mm; }
+.toc .toc-num { padding-right: 1.5mm; }
+table.niet-breken { break-inside: avoid; }

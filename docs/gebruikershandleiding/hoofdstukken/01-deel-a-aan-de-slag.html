@@ -1,0 +1,296 @@
+<!-- Deel A: hoofdstuk 1 (wat is RWCrew), 2 (aan de slag) en 3 (toegang en rechten). -->
+
+<section class="deel" id="deel-a" data-toc="Deel A · Aan de slag">
+  <div class="deel-label">Deel A</div>
+  <h1>Aan de slag</h1>
+  <div class="streep"></div>
+  <p>Wat RWCrew is en waarvoor het dient, hoe je inlogt en je weg vindt in de schermen, en waarom de ene
+  gebruiker andere dingen ziet dan de andere.</p>
+  <div class="deel-lezers">Voor: iedereen</div>
+</section>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-wat">Wat is RWCrew?</h1>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew is één website waarin de organisatie alles bijhoudt wat nodig is om de ploegen op de festivals te
+ondersteunen: welke ploegen er zijn, welke karren ze krijgen en waar die geleverd worden, wat er in het magazijn
+ligt, welke hulpvragen er binnenkomen en welke keuzes elke ploeg maakt. Het werk is opgedeeld in
+<strong>modules</strong>: elke module is een afgebakend stuk van het werk, met haar eigen schermen. Je opent ze via
+de tegels op de hoofdpagina, op de computer of op je telefoon.
+</div>
+
+<h2 id="s-doel">Het doel</h2>
+<p>Elk festivalseizoen werken heel wat ploegen (verenigingen) mee. Ze krijgen materiaal in <strong>karren</strong>,
+die op een afgesproken <strong>afleverlocatie</strong> op het terrein worden geleverd en na het festival weer worden
+opgehaald. Om dat vlot te laten verlopen, moet veel informatie op één plaats samenkomen:</p>
+<ul>
+  <li>wie de ploegen zijn, op welke festivals ze actief zijn en wie hun verantwoordelijken zijn;</li>
+  <li>welke kar bij welke ploeg hoort, wat erin moet zitten en waar hij zich bevindt;</li>
+  <li>hoeveel materiaal er in het magazijn ligt en wat er bijbesteld moet worden;</li>
+  <li>welke ploeg tijdens het festival hulp of extra materiaal vraagt, en of dat al opgelost is.</li>
+</ul>
+<p>Vroeger zat dat in losse Excel-bestanden, mails en papieren lijsten. RWCrew brengt het samen, zodat iedereen met
+<strong>dezelfde, actuele gegevens</strong> werkt en je van overal (ook op het terrein, met je telefoon) kunt opzoeken
+en registreren wat er gebeurt.</p>
+
+<h2 id="s-modules-overzicht">De modules in één oogopslag</h2>
+<p>Op de hoofdpagina (<em>Overzicht Modules</em>) zie je een gekleurde tegel per module waartoe je toegang hebt. Elke module heeft
+overal in de app dezelfde kleur, zodat je altijd ziet waar je bent.</p>
+
+<div class="tegels">
+  <div class="tegel m-masterdata"><div class="tegel-naam">MasterData</div><div class="tegel-zin">De basisgegevens waar alle andere modules op steunen: jaartallen, festivals, ploegen, producten en magazijnen.</div></div>
+  <div class="tegel m-kartracker"><div class="tegel-naam">KarTracker</div><div class="tegel-zin">Het wagenpark: elke kar, zijn ploeg, zijn status en locatie, de planning van de afleverlocaties, kaarten en karbladen.</div></div>
+  <div class="tegel m-interventie"><div class="tegel-naam">Interventie Aanvragen</div><div class="tegel-zin">Hulpvragen van ploegen tijdens het festival registreren, opvolgen en afsluiten, ook via een QR-code op de kar.</div></div>
+  <div class="tegel m-stockmaster"><div class="tegel-naam">StockMaster</div><div class="tegel-zin">De magazijnvoorraad: inboeken, karren laden en laten vertrekken, terugname, tellingen en wat er besteld moet worden.</div></div>
+  <div class="tegel m-altsien"><div class="tegel-naam">Altsien Select</div><div class="tegel-zin">De Ploeg Wizard waarin Altsien Kernleden per ploeg en per jaartal hun keuzes maken, plus de Ploegfiche.</div></div>
+  <div class="tegel m-tagscan"><div class="tegel-naam">TagScan</div><div class="tegel-zin">RFID-tags op het materiaal: scanbestanden ontvangen en verwerken, tags registreren en aan producten koppelen.</div></div>
+  <div class="tegel m-mobiel"><div class="tegel-naam">Mobile App</div><div class="tegel-zin">De installatiepagina van de telefoon-app: een QR-code en de stappen om RWCrew op je beginscherm te zetten.</div></div>
+  <div class="tegel"><div class="tegel-naam" style="color:#5d6863">Module 5, 6 en 7</div><div class="tegel-zin">Gereserveerd voor toekomstige modules. Ze tonen voorlopig enkel "Deze module is nog in ontwikkeling."</div></div>
+</div>
+
+<h2 id="s-samenhang">Hoe de modules samenhangen</h2>
+<p>De modules zijn geen losse programma's: ze delen hun gegevens. Een ploeg die je in MasterData aanmaakt, kun je meteen
+aan een kar koppelen in KarTracker, kiezen in een interventieaanvraag en openen in de Ploeg Wizard. Een afleverlocatie die
+een Kernlid in Altsien Select kiest, verschijnt meteen in de planning van KarTracker. Je voert iets dus maar
+<strong>één keer</strong> in.</p>
+
+<figure class="diagram" id="fig-samenhang">
+<svg viewBox="0 0 680 330" xmlns="http://www.w3.org/2000/svg">
+  <!-- Verbindingen vanuit MasterData (basisgegevens) -->
+  <line class="pijl-stippel" x1="255" y1="140" x2="203" y2="88"/>
+  <line class="pijl-stippel" x1="425" y1="140" x2="477" y2="88"/>
+  <line class="pijl-stippel" x1="255" y1="192" x2="203" y2="244"/>
+  <line class="pijl-stippel" x1="340" y1="198" x2="340" y2="243"/>
+  <line class="pijl-stippel" x1="425" y1="192" x2="477" y2="244"/>
+  <!-- Gegevensstromen tussen modules -->
+  <line class="pijl" x1="201" y1="52" x2="477" y2="52"/>
+  <text x="339" y="44" text-anchor="middle" class="t-klein">afleverlocaties per festival</text>
+  <line class="pijl" x1="570" y1="85" x2="570" y2="243"/>
+  <text x="578" y="160" class="t-klein">karren</text>
+  <text x="578" y="173" class="t-klein">en ploegen</text>
+  <!-- Boxen -->
+  <rect x="20" y="20" width="180" height="64" rx="7" style="fill:#fdf4ff;stroke:#c026d3;stroke-width:1.4"/>
+  <text x="110" y="47" text-anchor="middle" class="t-titel" style="fill:#a21caf">Altsien Select</text>
+  <text x="110" y="66" text-anchor="middle" class="t-klein">keuzes van de ploegen</text>
+  <rect x="480" y="20" width="180" height="64" rx="7" style="fill:#faf5ff;stroke:#9333ea;stroke-width:1.4"/>
+  <text x="570" y="47" text-anchor="middle" class="t-titel" style="fill:#7e22ce">KarTracker</text>
+  <text x="570" y="66" text-anchor="middle" class="t-klein">karren, planning, kaart</text>
+  <rect x="250" y="134" width="180" height="64" rx="7" style="fill:#0891b2;stroke:none"/>
+  <text x="340" y="157" text-anchor="middle" class="t-titel t-wit">MasterData</text>
+  <text x="340" y="174" text-anchor="middle" style="font-size:10.5px;fill:#e0f7fb">jaartallen · festivals</text>
+  <text x="340" y="188" text-anchor="middle" style="font-size:10.5px;fill:#e0f7fb">ploegen · producten</text>
+  <rect x="20" y="246" width="180" height="64" rx="7" style="fill:#eff6ff;stroke:#2563eb;stroke-width:1.4"/>
+  <text x="110" y="273" text-anchor="middle" class="t-titel" style="fill:#1d4ed8">TagScan</text>
+  <text x="110" y="292" text-anchor="middle" class="t-klein">RFID-tags op materiaal</text>
+  <rect x="250" y="246" width="180" height="64" rx="7" style="fill:#fff7ed;stroke:#ea580c;stroke-width:1.4"/>
+  <text x="340" y="273" text-anchor="middle" class="t-titel" style="fill:#c2410c">Interventie Aanvragen</text>
+  <text x="340" y="292" text-anchor="middle" class="t-klein">hulpvragen tijdens festivals</text>
+  <rect x="480" y="246" width="180" height="64" rx="7" style="fill:#f0fdfa;stroke:#0d9488;stroke-width:1.4"/>
+  <text x="570" y="273" text-anchor="middle" class="t-titel" style="fill:#0f766e">StockMaster</text>
+  <text x="570" y="292" text-anchor="middle" class="t-klein">magazijnvoorraad</text>
+</svg>
+<figcaption>MasterData levert de basisgegevens aan alle modules (stippellijnen); daarnaast geven sommige modules gegevens aan elkaar door (volle pijlen).</figcaption>
+</figure>
+
+<h2 id="s-jaartal">Alles draait om het jaartal</h2>
+<p>Bijna alles in RWCrew hoort bij een <strong>jaartal</strong> (in StockMaster <em>seizoen</em> genoemd): de festivals, de
+planning van de karren, de keuzes van de ploegen, de voorraadboekingen. Een jaartal kan <strong>open</strong> of
+<strong>afgesloten</strong> zijn (het vinkje <em>Periode Open</em> in MasterData):</p>
+<ul>
+  <li><strong>Open</strong>: er wordt aan gewerkt. Je kunt het kiezen in de kopbalk en er gegevens voor invullen.</li>
+  <li><strong>Afgesloten</strong>: het jaartal is voorbij. Je kunt de gegevens nog bekijken (bijvoorbeeld om ze over te nemen
+  naar een nieuw jaartal), maar in Altsien Select en StockMaster niets meer wijzigen, tenzij je daar een speciaal recht voor hebt.</li>
+</ul>
+
+<h2 id="s-telefoon-kort">Op de computer én op je telefoon</h2>
+<p>RWCrew is een website die je in je browser opent: je hoeft niets te installeren. Voor het terrein is er een
+<strong>telefoonversie</strong> om karren te scannen, de kaart te openen of interventies te registreren (zie <a class="ref" href="#h-telefoon"></a>).</p>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-start">Inloggen en je weg vinden</h1>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Je logt in met je e-mailadres en wachtwoord. Kies daarna bovenaan het jaartal waarin je werkt, en klik op de tegel van een
+module. Elke module heeft links een eigen menu. Lijsten werken overal op dezelfde manier: zoeken per kolom, knoppen
+<span class="knop">Wijzigen</span> en <span class="knop">Verwijderen</span> per lijn, en een knop om iets nieuws toe te voegen.
+</div>
+
+<h2 id="s-inloggen">Inloggen</h2>
+<ol class="stappen">
+  <li>Open het adres van RWCrew dat je van de organisatie kreeg. Je komt op het scherm <em>Inloggen bij RW Crew</em>.</li>
+  <li>Vul je <em>E-mailadres</em> en <em>Wachtwoord</em> in en klik op <span class="knop">Inloggen</span>.</li>
+  <li>Je komt op de hoofdpagina, <em>Overzicht Modules</em>, met de tegels van de modules die je mag openen.</li>
+</ol>
+<p>Je kunt jezelf niet registreren: een account wordt altijd aangemaakt door een beheerder, die je ook een
+<strong>tijdelijk wachtwoord</strong> geeft. Verander dat meteen na je eerste aanmelding (zie <a class="ref" href="#s-wachtwoord"></a>).</p>
+
+<div class="kader letop"><span class="kader-titel"></span>
+Om veiligheidsredenen blijf je <strong>maximaal 6 uur</strong> ingelogd. Daarna vraagt RWCrew opnieuw je wachtwoord, ook als je
+de hele tijd aan het werk was. Sla daarom je werk regelmatig op. Ben je je wachtwoord vergeten? Vraag de super admin om een
+nieuw tijdelijk wachtwoord (zie <a class="ref" href="#h-superadmin"></a>).
+</div>
+
+<div class="kader tip"><span class="kader-titel"></span>
+Zie je bovenaan een opvallende balk met <em>"geen echte data, niet gebruiken voor productiewerk"</em>? Dan zit je op de
+<strong>testomgeving</strong>, een kopie van RWCrew om nieuwe functies uit te proberen. Wat je daar invult, telt niet. Werk voor
+het echte werk altijd op het gewone adres, waar die balk niet staat.
+</div>
+
+<h2 id="s-hoofdpagina">De hoofdpagina en de kopbalk</h2>
+<p>De <strong>kopbalk</strong> bovenaan staat op elk scherm. Ze bevat, van links naar rechts:</p>
+<table>
+  <caption>De onderdelen van de kopbalk</caption>
+  <tr><th style="width:28%">Onderdeel</th><th>Wat het doet</th></tr>
+  <tr><td><strong>RW Crew</strong></td><td>De naam van de app. Klik erop om terug naar de hoofdpagina te gaan.</td></tr>
+  <tr><td><strong>Jaartal selecteren</strong></td><td>Kies het (open) jaartal waarin je werkt. RWCrew onthoudt je keuze. Zolang je geen jaartal kiest,
+  kun je geen module openen: klik je toch op een tegel, dan verschijnt <em>"Geen jaartal geselecteerd – Gelieve een jaartal te
+  selecteren"</em>. Enkel de tegel <em>Mobile App</em> werkt zonder jaartal.</td></tr>
+  <tr><td><strong>Licht / Donker</strong></td><td>Wissel tussen een lichte en een donkere weergave. Donker is standaard; kies wat voor jouw ogen het prettigst is.</td></tr>
+  <tr><td><strong>Taal</strong></td><td>Wissel tussen <em>Nederlands</em> en <em>Engels</em>. Alle schermen en PDF's volgen je keuze.</td></tr>
+  <tr><td><strong>Gebruikersmenu</strong></td><td>Je naam, met <em>Wachtwoord wijzigen</em> en <em>Uitloggen</em>.</td></tr>
+</table>
+<p>Onder de kopbalk staan de <strong>tegels</strong>. Klik op een tegel om de module te openen. Zie je de melding
+<em>"Je hebt nog geen toegang tot een module"</em>, dan moet de super admin je eerst toegang geven.</p>
+<p>Soms staat er boven de tegels een oranje melding, bijvoorbeeld <em>"TagScan: 12 lijnen wachten op verwerking"</em>, met een
+knop <span class="knop">Bekijken</span>. Zo zie je meteen of er werk op je ligt te wachten, zonder elke module te openen.</p>
+
+<h2 id="s-wachtwoord">Je wachtwoord wijzigen</h2>
+<ol class="stappen">
+  <li>Klik in de kopbalk op je naam en kies <em>Wachtwoord wijzigen</em>.</li>
+  <li>Vul je <em>Huidig wachtwoord</em> in, en twee keer het <em>Nieuw wachtwoord</em> (minstens 8 tekens).</li>
+  <li>Klik op <span class="knop">Wachtwoord wijzigen</span>.</li>
+</ol>
+<p>Je blijft op dit toestel ingelogd. Ben je nog ergens anders ingelogd (bijvoorbeeld op je telefoon), dan word je daar
+automatisch uitgelogd. Zo kan niemand met je oude wachtwoord verder werken.</p>
+
+<h2 id="s-module-scherm">Een module: het linkermenu</h2>
+<p>Elke module heeft links een <strong>menu</strong> met bovenaan een gekleurde balk met de naam van de module. Daaronder:</p>
+<ul>
+  <li><strong>de startpagina</strong> van de module, meestal een <em>KPI overzicht</em>: tellers en grafieken die in één oogopslag
+  tonen hoe het ervoor staat. Veel tellers zijn klikbaar en brengen je naar de lijst erachter;</li>
+  <li><strong>groepen</strong> met de schermen, bijvoorbeeld <em>Akties</em> (het dagelijkse werk), <em>MasterData</em> (de lijsten die
+  de module gebruikt), <em>Instellingen</em> en <em>Toegangsrechten</em>.</li>
+</ul>
+<p>Je ziet enkel de schermen waarop je rechten hebt. Een groep waarin je niets mag zien, verdwijnt helemaal.</p>
+
+<h2 id="s-lijsten">Werken met lijsten</h2>
+<p>De meeste schermen zijn lijsten (tabellen). Ze werken overal op dezelfde manier:</p>
+<table>
+  <caption>Wat je in elke lijst kunt doen</caption>
+  <tr><th style="width:28%">Wat</th><th>Hoe</th></tr>
+  <tr><td><strong>Zoeken en filteren</strong></td><td>Onder de kolomtitels staat een tweede rij met zoekvakjes (<em>Zoek …</em>) en keuzelijsten
+  (bijvoorbeeld <em>Alle statussen</em>). Typ een stukje tekst: de lijst toont meteen enkel de passende lijnen. Je kunt meerdere
+  filters combineren.</td></tr>
+  <tr><td><strong>Iets toevoegen</strong></td><td>Klik op de knop bovenaan, bijvoorbeeld <span class="knop">Nieuw festival</span> of
+  <span class="knop">Nieuwe kar</span>. Er opent een venster; vul het in en klik op <span class="knop">Aanmaken</span>.</td></tr>
+  <tr><td><strong>Iets wijzigen</strong></td><td>Klik in de kolom <em>Acties</em> op <span class="knop">Wijzigen</span>, pas aan en klik op
+  <span class="knop">Opslaan</span>. Met <span class="knop">Annuleren</span> of de Escape-toets sluit je het venster zonder iets te bewaren.</td></tr>
+  <tr><td><strong>Iets verwijderen</strong></td><td>Klik in de kolom <em>Acties</em> op <span class="knop">Verwijderen</span> en bevestig.
+  Iets dat nog ergens gebruikt wordt (bijvoorbeeld een product met voorraad, of een kar met inhoud) kan RWCrew weigeren te
+  verwijderen; je krijgt dan een melding waarom.</td></tr>
+  <tr><td><strong>Scrollen</strong></td><td>Lange lijsten scrollen binnen hun eigen kader. De kolomtitels bovenaan en de kolom
+  <em>Acties</em> rechts blijven altijd zichtbaar, ook als je naar beneden of opzij scrollt.</td></tr>
+</table>
+
+<h2 id="s-excel">Gegevens in bulk via Excel</h2>
+<p>Moet je veel gegevens tegelijk invoeren (bijvoorbeeld alle karren of alle producten), dan hoef je ze niet één voor één
+over te typen. Verschillende modules hebben daarvoor een scherm <em>Data Upload/Download</em> met een tegel per soort gegevens.
+Elke tegel werkt zo:</p>
+<ol class="stappen">
+  <li><span class="knop">Sjabloon downloaden</span>: je krijgt een Excel-bestand met de juiste kolommen.</li>
+  <li>Vul het sjabloon in Excel in, één lijn per item. Verander de kolomtitels niet.</li>
+  <li>Kies het bestand bij <em>Excel-bestand</em> en klik op <span class="knop">Uploaden</span>.</li>
+  <li>RWCrew toont per rij het <em>Resultaat</em>: <em>Aangemaakt</em>, of overgeslagen met de reden in <em>Detail</em> (bijvoorbeeld
+  "bestaat al"). Verbeter de overgeslagen rijen en upload enkel die opnieuw.</li>
+</ol>
+<p>Met de knop onder <em>Exporteren</em> download je de volledige, huidige lijst als Excel-bestand, handig als back-up of om
+gegevens in Excel verder te bekijken.</p>
+
+<h2 id="s-pdf">PDF-documenten</h2>
+<p>Op verschillende plaatsen maakt RWCrew een PDF die je kunt afdrukken of doorsturen: karbladen, leveringsbonnen, de Ploegfiche,
+laadlijsten, telbladen, bestellijsten enzovoort. Klik op de knop (bijvoorbeeld <span class="knop">PDF</span> of
+<span class="knop">Bon afdrukken</span>); de PDF opent of wordt gedownload. Alle data en uren staan in Belgische tijd.</p>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-rechten">Toegang en rechten: wie ziet wat?</h1>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Wat je kunt doen, wordt bepaald door twee sleutels. De <strong>super admin</strong> beslist welke modules je mag openen.
+Daarna beslist de <strong>beheerder van elke module</strong> welke rol je daar krijgt, en een rol zegt per scherm of je mag
+<em>Bekijken</em>, <em>Aanmaken</em>, <em>Wijzigen</em> en <em>Verwijderen</em>.
+</div>
+
+<h2 id="s-twee-sleutels">Twee sleutels</h2>
+<figure class="diagram" id="fig-sleutels">
+<svg viewBox="0 0 680 150" xmlns="http://www.w3.org/2000/svg">
+  <rect x="10" y="20" width="200" height="110" rx="8" class="box-blauw"/>
+  <text x="110" y="45" text-anchor="middle" class="t-titel" style="fill:#1d4f91">1. Toegang tot de module</text>
+  <text x="110" y="68" text-anchor="middle" class="t-klein">Beslist door de super admin</text>
+  <text x="110" y="84" text-anchor="middle" class="t-klein">in Toegangsbeheer.</text>
+  <text x="110" y="108" text-anchor="middle" style="font-size:11px;font-weight:600">Ja of nee, per module</text>
+  <line class="pijl" x1="212" y1="75" x2="238" y2="75"/>
+  <rect x="240" y="20" width="200" height="110" rx="8" class="box-paars"/>
+  <text x="340" y="45" text-anchor="middle" class="t-titel" style="fill:#5b3f8c">2. Rol in de module</text>
+  <text x="340" y="68" text-anchor="middle" class="t-klein">Beslist door de beheerder</text>
+  <text x="340" y="84" text-anchor="middle" class="t-klein">van die module.</text>
+  <text x="340" y="108" text-anchor="middle" style="font-size:11px;font-weight:600">Per scherm: B · A · W · V</text>
+  <line class="pijl" x1="442" y1="75" x2="468" y2="75"/>
+  <rect x="470" y="20" width="200" height="110" rx="8" class="box-licht"/>
+  <text x="570" y="45" text-anchor="middle" class="t-titel" style="fill:#1f6b4f">Wat jij ziet en doet</text>
+  <text x="570" y="68" text-anchor="middle" class="t-klein">De tegel, de menu-items</text>
+  <text x="570" y="84" text-anchor="middle" class="t-klein">en de knoppen waarop</text>
+  <text x="570" y="100" text-anchor="middle" class="t-klein">je recht hebt.</text>
+</svg>
+<figcaption>Eerst moet je de module mogen openen, daarna bepaalt je rol wat je er per scherm mag doen (B = Bekijken, A = Aanmaken, W = Wijzigen, V = Verwijderen).</figcaption>
+</figure>
+
+<ol>
+  <li><strong>Toegang tot de module.</strong> Enkel de super admin geeft of ontneemt de toegang tot een module, via
+  <em>Toegangsbeheer</em>. Heb je geen toegang, dan zie je de tegel niet eens. Ook de super admin zelf ziet een module pas
+  als hij of zij zichzelf er toegang toe geeft.</li>
+  <li><strong>Rol in de module.</strong> Binnen een module krijg je een <strong>rol</strong>, bijvoorbeeld "Magazijnier" of
+  "Lezer". De rol bepaalt per scherm wat je mag. Rollen worden gemaakt en toegekend door de beheerder van de module (iemand
+  met rechten op de schermen <em>Rollen</em> en <em>Gebruikers</em> van die module).</li>
+</ol>
+
+<h2 id="s-rollen">Rollen en rechten per scherm</h2>
+<p>Elke module (MasterData, KarTracker, Interventie Aanvragen, StockMaster, Altsien Select en TagScan) heeft in haar menu de groep
+<span class="menu">Toegangsrechten</span> met twee schermen:</p>
+<table class="schermen">
+  <caption>De schermen onder Toegangsrechten (in elke module dezelfde)</caption>
+  <tr><th>Scherm</th><th>Wat je er doet</th></tr>
+  <tr><td>Rollen</td><td>Rollen aanmaken (<span class="knop">Nieuwe rol</span>), hernoemen en verwijderen. Met <span class="knop">Rechten</span>
+  open je een raster met elk scherm van de module en vier vinkjes: <em>Bekijken</em>, <em>Aanmaken</em>, <em>Wijzigen</em>,
+  <em>Verwijderen</em>. Vink aan wat de rol mag en klik op <span class="knop">Opslaan</span>.</td></tr>
+  <tr><td>Gebruikers</td><td>Iedereen met toegang tot de module en zijn of haar huidige <em>Rol</em>. Kies een rol in de keuzelijst
+  om ze meteen toe te kennen, of <em>— Geen rol —</em> om alle rechten in deze module weg te nemen. Met
+  <span class="knop">Nieuwe gebruiker</span> geef je iemand toegang tot <em>deze</em> module: bestaat het e-mailadres nog niet, dan
+  wordt er meteen een account aangemaakt (met naam en tijdelijk wachtwoord).</td></tr>
+</table>
+
+<div class="kader voorbeeld"><span class="kader-titel"></span>
+In StockMaster maakt de beheerder een rol <strong>Magazijnier</strong>: <em>Bekijken</em> en <em>Aanmaken</em> op Voorraadoverzicht,
+Karren en Telling, maar niets op Rollen en Gebruikers. En een rol <strong>Lezer</strong> met enkel <em>Bekijken</em> op het KPI-scherm en
+het Voorraadoverzicht. Een vrijwilliger met de rol Lezer ziet dan enkel die twee schermen, zonder knoppen om te boeken.
+</div>
+
+<h2 id="s-speciale-rechten">Speciale rechten ("schakelaars")</h2>
+<p>Sommige lijnen in het rechtenraster zijn geen echt scherm maar een <strong>schakelaar</strong> die een extra mogelijkheid opent:</p>
+<table>
+  <caption>Schakelaars in het rechtenraster</caption>
+  <tr><th style="width:22%">Module</th><th style="width:30%">Lijn in het raster</th><th>Effect</th></tr>
+  <tr><td>Altsien Select</td><td>All teams (organisation)</td><td><em>Bekijken</em>: je ziet álle ploegen in plaats van enkel de ploegen
+  waaraan je als Kernlid gekoppeld bent. <em>Wijzigen</em>: je mag ook nog wijzigen in een afgesloten jaartal.</td></tr>
+  <tr><td>StockMaster</td><td>Book in a closed season</td><td><em>Wijzigen</em>: je mag nog boeken in een afgesloten seizoen (bijvoorbeeld
+  een late correctie).</td></tr>
+</table>
+
+<h2 id="s-niet-zien">Je ziet iets niet?</h2>
+<ul>
+  <li><strong>Geen tegel</strong>: je hebt geen toegang tot de module. Vraag het aan de super admin.</li>
+  <li><strong>Wel de tegel, geen menu-items</strong>: je hebt toegang maar nog geen rol. Vraag het aan de beheerder van die module.</li>
+  <li><strong>Wel het scherm, geen knop</strong> <span class="knop">Nieuw…</span> of <span class="knop">Wijzigen</span>: je rol mag dat scherm
+  enkel bekijken.</li>
+  <li><strong>"Je hebt geen toegang tot deze pagina."</strong>: je opende een link naar een scherm waar je geen rechten op hebt.</li>
+</ul>

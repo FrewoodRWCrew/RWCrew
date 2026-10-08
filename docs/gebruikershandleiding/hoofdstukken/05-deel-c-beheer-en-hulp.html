@@ -1,0 +1,286 @@
+<!-- Deel C: hoofdstuk 11 (super admin), 12 (een jaartal van begin tot einde), 13 (veelgestelde vragen)
+     en de bijlagen A (woordenlijst) en B (schermnamen in het rechtenraster). -->
+
+<section class="deel" id="deel-c" data-toc="Deel C · Beheer en hulp">
+  <div class="deel-label">Deel C</div>
+  <h1>Beheer en hulp</h1>
+  <div class="streep"></div>
+  <p>Gebruikers en toegang beheren, een festivaljaar van begin tot einde doorlopen in de juiste volgorde, en antwoorden op de
+  vragen die het vaakst gesteld worden.</p>
+  <div class="deel-lezers">Voor: beheerders en de organisatie; hoofdstuk 13 voor iedereen</div>
+</section>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-superadmin">Voor de super admin: gebruikers en toegang</h1>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De super admin maakt accounts aan, beslist wie welke module mag openen en kan in de <em>Login geschiedenis</em> zien wie er wanneer
+inlogde. Wat iemand binnen een module mag doen, regelt de beheerder van die module met rollen (zie <a class="ref" href="#h-rechten"></a>).
+</div>
+
+<p>Als super admin zie je links een extra menu met <em>Hoofdpagina</em>, <em>Toegangsbeheer</em> en <em>Login geschiedenis</em>. Onderaan dat menu
+staat de <em>versie</em> van RWCrew (datum en code van de laatste aanpassing), handig als je een probleem meldt.</p>
+
+<h2 id="s-sa-toegang">Toegangsbeheer</h2>
+<p>Hier staat iedereen met een account, met <em>Naam</em>, <em>E-mailadres</em>, <em>Telefoon</em>, of de persoon <em>Super admin</em> en/of
+<em>Altsien Kernlid</em> is, en de <em>Modules</em> die hij of zij mag openen.</p>
+<table>
+  <caption>Taken in Toegangsbeheer</caption>
+  <tr><th style="width:28%">Taak</th><th>Hoe</th></tr>
+  <tr><td><strong>Nieuwe gebruiker</strong></td><td><span class="knop">Nieuwe gebruiker</span>: naam, e-mailadres, een <em>Tijdelijk wachtwoord</em>, telefoonnummer, en
+  de vinkjes <em>Super admin</em> en <em>Altsien Kernlid</em>. Geef de persoon het tijdelijke wachtwoord persoonlijk door en vraag om het meteen te wijzigen.</td></tr>
+  <tr><td><strong>Modules toekennen</strong></td><td><span class="knop">Wijzigen</span> bij de gebruiker: vink de modules aan die hij of zij mag openen. Vergeet daarna niet dat
+  de beheerder van elke module nog een rol moet toekennen.</td></tr>
+  <tr><td><strong>Wachtwoord vergeten</strong></td><td><span class="knop">Wijzigen</span> › vul bij <em>Nieuw wachtwoord</em> een nieuw tijdelijk wachtwoord in (leeg laten = het huidige
+  blijft). De gebruiker wordt overal uitgelogd en moet opnieuw inloggen.</td></tr>
+  <tr><td><strong>Altsien Kernlid maken</strong></td><td>Vink <em>Altsien Kernlid</em> aan. Pas dan kan de persoon in MasterData bij een ploeg gekozen worden en als
+  verantwoordelijke bij afleverlocaties en distributiepunten.</td></tr>
+  <tr><td><strong>Iemand stopt</strong></td><td>Neem alle modules weg, of verwijder de gebruiker met <span class="knop">Verwijderen</span>. Verwijderen kan niet ongedaan gemaakt worden.</td></tr>
+</table>
+<div class="kader letop"><span class="kader-titel"></span>
+Super admin zijn geeft geen automatische toegang tot de modules: ook jezelf moet je ze toekennen. Wel kun je in elke module
+de rollen beheren. Maak zo weinig mogelijk mensen super admin.
+</div>
+
+<h2 id="s-sa-login">Login geschiedenis</h2>
+<p>Een lijst van elke inlogpoging, ook de mislukte: <em>Tijdstip</em>, <em>Gebruiker</em>, <em>Status</em> (<em>Geslaagd</em> of <em>Mislukt</em>),
+<em>IP-adres</em>, <em>Bron</em> (<em>Website</em> of <em>Telefoon-app</em>) en <em>Toestel</em> (<em>PC</em>, <em>Telefoon</em> of <em>Tablet</em>). Filter met
+<em>Van</em> en <em>Tot</em> en blader met <span class="knop">Vorige</span> / <span class="knop">Volgende</span>. Veel mislukte pogingen op één account kunnen
+wijzen op een vergeten wachtwoord, of op iemand die probeert in te breken.</p>
+<p class="klein">Een iPad verschijnt als <em>PC</em>. De bron <em>Native app (oud)</em> komt van een vroegere telefoon-app die niet meer bestaat.</p>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-jaar">Een festivaljaar van begin tot einde</h1>
+
+<div class="kader kort"><span class="kader-titel"></span>
+De modules werken het best als je ze in de juiste volgorde gebruikt: eerst de basisgegevens, dan de keuzes van de ploegen, dan de
+planning en het magazijn, dan het festival zelf en tot slot de terugkeer en het afsluiten. Dit hoofdstuk is een draaiboek met die volgorde.
+</div>
+
+<figure class="diagram" id="fig-jaar">
+<svg viewBox="0 0 680 110" xmlns="http://www.w3.org/2000/svg">
+  <line x1="20" y1="40" x2="660" y2="40" style="stroke:#cdd6d1;stroke-width:3"/>
+  <circle cx="68" cy="40" r="15" style="fill:#0891b2"/><text x="68" y="45" text-anchor="middle" class="t-wit" style="font-size:13px;font-weight:600">1</text>
+  <text x="68" y="76" text-anchor="middle" style="font-size:11.5px;font-weight:600">Voorbereiden</text>
+  <text x="68" y="92" text-anchor="middle" class="t-mini">MasterData</text>
+  <circle cx="204" cy="40" r="15" style="fill:#c026d3"/><text x="204" y="45" text-anchor="middle" class="t-wit" style="font-size:13px;font-weight:600">2</text>
+  <text x="204" y="76" text-anchor="middle" style="font-size:11.5px;font-weight:600">Keuzes ploegen</text>
+  <text x="204" y="92" text-anchor="middle" class="t-mini">Altsien Select</text>
+  <circle cx="340" cy="40" r="15" style="fill:#9333ea"/><text x="340" y="45" text-anchor="middle" class="t-wit" style="font-size:13px;font-weight:600">3</text>
+  <text x="340" y="76" text-anchor="middle" style="font-size:11.5px;font-weight:600">Plannen en laden</text>
+  <text x="340" y="92" text-anchor="middle" class="t-mini">KarTracker · StockMaster</text>
+  <circle cx="476" cy="40" r="15" style="fill:#ea580c"/><text x="476" y="45" text-anchor="middle" class="t-wit" style="font-size:13px;font-weight:600">4</text>
+  <text x="476" y="76" text-anchor="middle" style="font-size:11.5px;font-weight:600">Tijdens het festival</text>
+  <text x="476" y="92" text-anchor="middle" class="t-mini">Interventies · KarScan</text>
+  <circle cx="612" cy="40" r="15" style="fill:#0d9488"/><text x="612" y="45" text-anchor="middle" class="t-wit" style="font-size:13px;font-weight:600">5</text>
+  <text x="612" y="76" text-anchor="middle" style="font-size:11.5px;font-weight:600">Terug en afsluiten</text>
+  <text x="612" y="92" text-anchor="middle" class="t-mini">StockMaster · MasterData</text>
+</svg>
+<figcaption>De vijf fasen van een festivaljaar en de modules die in elke fase centraal staan.</figcaption>
+</figure>
+
+<h2 id="s-jaar-1">Fase 1: voorbereiden (MasterData)</h2>
+<ul class="checklist">
+  <li>Maak het nieuwe jaartal aan in <em>Jaartallen</em>, met <em>Periode Open</em> aangevinkt.</li>
+  <li>Maak de festivals van dat jaartal aan (met start- en einddatum, <em>Actief</em>), eventueel in één keer via Excel.</li>
+  <li>Kijk de ploegen na: actief of niet, locatie, leverwijze, en de <em>Kernleden</em> die hen opvolgen.</li>
+  <li>Kijk na of elk Kernlid een account heeft met het vinkje <em>Altsien Kernlid</em> en toegang tot Altsien Select (super admin).</li>
+  <li>Kijk de producten na (magazijnlocatie, consumeerbaar, minimum voorraad) en de afleverlocaties in KarTracker (actief of niet).</li>
+  <li>Vul in KarTracker de <em>Leverdata</em> in (lever- en ophaaldatum per festival).</li>
+</ul>
+
+<h2 id="s-jaar-2">Fase 2: de keuzes van de ploegen (Altsien Select)</h2>
+<ul class="checklist">
+  <li>Laat de Kernleden weten dat de Ploeg Wizard open is. Zij kiezen festivals en afleverlocaties, geven de verantwoordelijken op en dienen
+  speciale aanvragen in, en kunnen veel overnemen van vorig jaar.</li>
+  <li>Volg de voortgang op het <em>KPI overzicht</em> (<em>Voortgang per stap</em>) en spreek ploegen aan die achterop raken.</li>
+  <li>Beantwoord de speciale aanvragen in <em>Opvolging aanvragen</em>.</li>
+</ul>
+
+<h2 id="s-jaar-3">Fase 3: plannen en laden (KarTracker en StockMaster)</h2>
+<ul class="checklist">
+  <li>Vul de planning aan in <em>Plan een kar</em> voor ploegen die de wizard niet afrondden. De KPI-grafiek <em>Plan a kar per festival</em> toont wat er nog ontbreekt.</li>
+  <li>Koppel elke kar aan zijn ploeg in <em>KarManagement</em>.</li>
+  <li>Vul in StockMaster de <em>Benodigdheden</em> per ploeg en kar in (kopieer van vorig seizoen), bestel wat <em>Te bestellen</em> aangeeft, en boek de leveringen in.</li>
+  <li>Laad de karren (<em>Kar laden</em>, met de laadlijst) tot het kardetail niets meer als <em>Ontbreekt</em> toont.</li>
+  <li>Druk de karbladen af in <em>Kar Planning</em> en hang er één aan elke kar.</li>
+  <li>Boek <em>Kar vertrekt</em> (met ploeg en festival) en laat de vertrekbon tekenen.</li>
+</ul>
+
+<h2 id="s-jaar-4">Fase 4: tijdens het festival</h2>
+<ul class="checklist">
+  <li>Kijk de <em>Mailinglijst</em> en de leden van <em>TeamKar</em> na, zodat nieuwe interventies bij de juiste mensen terechtkomen.</li>
+  <li>Ploegen vragen hulp via de QR-code op het karblad; TeamKar volgt op via de telefoon-app of de computer en sluit af wat opgelost is.</li>
+  <li>Registreer elke verplaatsing van een kar met KarScan, zodat Kar Map altijd toont waar elke kar staat.</li>
+</ul>
+
+<h2 id="s-jaar-5">Fase 5: terug en afsluiten</h2>
+<ul class="checklist">
+  <li>Boek per kar <em>Kar terug</em>: pas aan wat er anders terugkwam en kies per lijn "terug in de kar" of "naar de vrije voorraad".</li>
+  <li>Doe een <em>Telling</em> van de vrije voorraad en boek de verschillen.</li>
+  <li>Bekijk op de StockMaster-KPI het <em>Verbruik per ploeg</em> en de <em>Meest verbruikte producten</em>, als basis voor volgend jaar.</li>
+  <li>Sluit het jaartal af: zet in MasterData <em>Periode Open</em> uit. De gegevens blijven bewaard en kunnen volgend jaar overgenomen worden.</li>
+</ul>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-faq">Veelgestelde vragen en problemen</h1>
+
+<div class="faq"><div class="vraag">Ik kan inloggen, maar zie geen enkele tegel.</div>
+<p>Je hebt nog geen toegang tot een module. Vraag de super admin om je de modules toe te kennen die je nodig hebt.</p></div>
+
+<div class="faq"><div class="vraag">Ik klik op een tegel en krijg "Geen jaartal geselecteerd".</div>
+<p>Kies eerst bovenaan in de kopbalk een jaartal bij <em>Jaartal selecteren</em>. Staat er geen keuzelijst, dan is er geen enkel open jaartal:
+vraag de beheerder van MasterData om er een aan te maken of te openen.</p></div>
+
+<div class="faq"><div class="vraag">Ik open een module, maar het menu is leeg.</div>
+<p>Je hebt toegang tot de module, maar nog geen rol, of je rol mag geen enkel scherm bekijken. Vraag het aan de beheerder van die module.</p></div>
+
+<div class="faq"><div class="vraag">Ik word plots uitgelogd en moet opnieuw mijn wachtwoord ingeven.</div>
+<p>Je blijft maximaal 6 uur ingelogd; daarna moet je opnieuw inloggen. Je wordt ook uitgelogd als je wachtwoord intussen gewijzigd werd
+(door jezelf op een ander toestel, of door de super admin).</p></div>
+
+<div class="faq"><div class="vraag">Ik ben mijn wachtwoord vergeten.</div>
+<p>Er is geen "wachtwoord vergeten"-link. Vraag de super admin om een nieuw tijdelijk wachtwoord en wijzig het meteen na het inloggen.</p></div>
+
+<div class="faq"><div class="vraag">De camera of de GPS werkt niet op mijn telefoon.</div>
+<p>Je gaf waarschijnlijk geen toestemming. Zet de toestemming voor camera en locatie aan in de instellingen van je browser of telefoon
+(bij Safari: Instellingen › Safari; bij Chrome: het slotje of de instellingen van de site). Gebruik altijd het gewone, beveiligde adres (https)
+van RWCrew; op een ander adres weigert de telefoon camera en GPS.</p></div>
+
+<div class="faq"><div class="vraag">Ik zie in de Ploeg Wizard "Er zijn geen ploegen aan jou gekoppeld".</div>
+<p>Je account moet <em>Altsien Kernlid</em> zijn (super admin) én je moet bij de <em>Kernleden</em> van je ploeg staan (MasterData › Ploegen).</p></div>
+
+<div class="faq"><div class="vraag">Ik kan in Altsien Select of StockMaster niets meer wijzigen.</div>
+<p>Kijk naar de keuzelijst <em>Jaartal</em>/<em>Seizoen</em> bovenaan: staat er "afgesloten" naast, dan is het jaartal voorbij en kun je enkel nog kijken.
+Kies het huidige jaartal.</p></div>
+
+<div class="faq"><div class="vraag">StockMaster zegt "Niet genoeg …: er zijn er maar 3 in …".</div>
+<p>De voorraad mag nooit onder nul gaan. Ofwel ligt het product op een andere plaats (in een kar in plaats van in de vrije voorraad: kijk in het
+Voorraadoverzicht), ofwel klopt de voorraad niet en doe je eerst een telling.</p></div>
+
+<div class="faq"><div class="vraag">"Kar … is onderweg — boek eerst 'Kar terug'."</div>
+<p>Een kar die vertrokken is, kan niet geladen, uitgeladen of geteld worden. Boek eerst de terugkeer.</p></div>
+
+<div class="faq"><div class="vraag">Ik heb in StockMaster een verkeerde boeking gedaan.</div>
+<p>Open de boeking en klik op <span class="knop">Ongedaan maken</span>, en boek het daarna opnieuw (zie <a class="ref" href="#s-sm-ongedaan"></a>).</p></div>
+
+<div class="faq"><div class="vraag">Ik kan een product, ploeg of kar niet verwijderen.</div>
+<p>Het wordt nog gebruikt (voorraad, historiek, planning). Zet het in de plaats op inactief of geblokkeerd.</p></div>
+
+<div class="faq"><div class="vraag">Er komen geen e-mails binnen bij nieuwe interventies.</div>
+<p>Kijk in <em>Instellingen › Mailinglijst</em> of het adres er staat en op <em>Actief</em> staat (niet <em>Gepauzeerd</em>). Kijk ook in je map met
+ongewenste mail. Helpt dat niet, meld het aan de beheerder.</p></div>
+
+<div class="faq"><div class="vraag">Ik zie een balk "geen echte data".</div>
+<p>Je zit op de testomgeving. Gebruik voor echt werk het gewone adres van RWCrew.</p></div>
+
+<div class="faq"><div class="vraag">Ik wil een fout of een idee melden.</div>
+<p>Noteer wat je deed, wat je verwachtte en wat er gebeurde, met een schermafbeelding als dat kan, en geef het door aan de beheerder van
+RWCrew. Vermeld ook de versie die de super admin onderaan het linkermenu ziet.</p></div>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk bijlage" id="bijlage-woordenlijst">Woordenlijst</h1>
+
+<dl class="woordenlijst">
+  <dt>Afleverlocatie</dt><dd>De plaats op het festivalterrein waar de kar van een ploeg geleverd wordt.</dd>
+  <dt>Altsien Kernlid</dt><dd>Een vrijwilliger die één of meer ploegen opvolgt en voor hen de Ploeg Wizard invult.</dd>
+  <dt>API-sleutel</dt><dd>Een lange geheime code waarmee een scanner zich bij RWCrew bekendmaakt om bestanden te mogen sturen.</dd>
+  <dt>Boeking</dt><dd>In StockMaster: één registratie van goederen die van plaats veranderen, met een nummer, op naam van wie ze boekte.</dd>
+  <dt>CSV-bestand</dt><dd>Een eenvoudig tekstbestand met gegevens in kolommen, zoals een scanner dat maakt. Te openen met Excel.</dd>
+  <dt>Distributiepunt</dt><dd>Een centraal punt op het terrein vanwaar meerdere afleverlocaties bediend worden.</dd>
+  <dt>EPC / UID</dt><dd>Het unieke nummer van een RFID-tag.</dd>
+  <dt>Grondplan</dt><dd>De plattegrond van het festivalterrein, als laag over de kaart gelegd.</dd>
+  <dt>Jaartal / seizoen</dt><dd>Het festivaljaar waartoe gegevens behoren. Open = er wordt aan gewerkt; afgesloten = enkel nog bekijken.</dd>
+  <dt>Kar</dt><dd>Een (vaak genummerde) kar of box met materiaal die aan een ploeg wordt geleverd.</dd>
+  <dt>Karblad</dt><dd>De afgedrukte A4 die met een kar meegaat: karnummer, ploeg, leveringen per festival en twee QR-codes.</dd>
+  <dt>KPI</dt><dd>Kerncijfer. Een KPI-scherm toont de belangrijkste cijfers en grafieken van een module.</dd>
+  <dt>Module</dt><dd>Een afgebakend deel van RWCrew met eigen schermen, geopend via een tegel op de hoofdpagina.</dd>
+  <dt>Ploeg</dt><dd>Een team of vereniging die meewerkt op de festivals.</dd>
+  <dt>Ploegfiche</dt><dd>Het overzicht van alle keuzes van één ploeg uit de Ploeg Wizard, ook als PDF.</dd>
+  <dt>QR-code</dt><dd>Een vierkante code die je met de camera van een telefoon scant om een nummer of een webpagina te openen.</dd>
+  <dt>RFID-tag</dt><dd>Een klein elektronisch label op materiaal dat een scanner op afstand kan lezen, zonder het te zien.</dd>
+  <dt>Rol</dt><dd>Een set rechten binnen één module (per scherm: bekijken, aanmaken, wijzigen, verwijderen).</dd>
+  <dt>Super admin</dt><dd>De hoofdbeheerder die accounts aanmaakt en de toegang tot modules geeft.</dd>
+  <dt>TeamKar</dt><dd>De ploeg die interventies bij de ploegen uitvoert en opvolgt.</dd>
+  <dt>Telefoon-app</dt><dd>De telefoonversie van RWCrew, die je op je beginscherm zet (geen download uit een app store).</dd>
+  <dt>Testomgeving</dt><dd>Een aparte kopie van RWCrew om nieuwe functies uit te proberen, herkenbaar aan de balk "geen echte data".</dd>
+  <dt>Vrije voorraad</dt><dd>In StockMaster: wat los in het rek ligt, niet in een kar.</dd>
+</dl>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk bijlage" id="bijlage-schermen">Schermnamen in het rechtenraster</h1>
+
+<p>In het venster <em>Rechten voor …</em> (zie <a class="ref" href="#s-rollen"></a>) staan de schermen met hun interne, meestal Engelse naam.
+Deze tabel helpt je de juiste lijn te vinden. <em>B · A · W · V</em> = Bekijken, Aanmaken, Wijzigen, Verwijderen.</p>
+
+<table class="compact">
+  <caption>MasterData en KarTracker</caption>
+  <tr><th style="width:20%">Module</th><th style="width:30%">Naam in het raster</th><th>Scherm in het menu / wat het opent</th></tr>
+  <tr><td rowspan="15"><strong>MasterData</strong></td><td>Years</td><td>Jaartallen</td></tr>
+  <tr><td>Festivals</td><td>Festivals</td></tr>
+  <tr><td>Teams</td><td>Ploegen</td></tr>
+  <tr><td>Ploegverantwoordelijken</td><td>Ploegen › Ploegverantwoordelijken</td></tr>
+  <tr><td>Team Location</td><td>Teamlocatie</td></tr>
+  <tr><td>Delivery Method</td><td>Leveringsmethode</td></tr>
+  <tr><td>Team Tasks</td><td>Teamtaken</td></tr>
+  <tr><td>Products</td><td>Producten</td></tr>
+  <tr><td>Type</td><td>Producten › Type</td></tr>
+  <tr><td>Magazijnen</td><td>Producten › Magazijnen</td></tr>
+  <tr><td>Categorieën</td><td>Producten › Categorieën</td></tr>
+  <tr><td>Limieten</td><td>Producten › Limieten</td></tr>
+  <tr><td>Data Upload/Download</td><td>Data Upload/Download (uploaden vraagt <em>Aanmaken</em>)</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+  <tr><td rowspan="14"><strong>KarTracker</strong></td><td>Manuele kar beweging</td><td>Acties › Manuele kar beweging, en KarScan op de telefoon (registreren vraagt <em>Aanmaken</em>)</td></tr>
+  <tr><td>Kar Planning</td><td>Acties › Kar Planning (ook op de telefoon)</td></tr>
+  <tr><td>Kar Map</td><td>Acties › Kar Map (ook op de telefoon)</td></tr>
+  <tr><td>Plan a kar</td><td>Acties › Plan een kar</td></tr>
+  <tr><td>KarManagement</td><td>Masterdata › KarManagement</td></tr>
+  <tr><td>Distributiepunten</td><td>Masterdata › Distributiepunten</td></tr>
+  <tr><td>Zone</td><td>Masterdata › Zone</td></tr>
+  <tr><td>Afleverlocatie</td><td>Masterdata › Afleverlocatie</td></tr>
+  <tr><td>KarStatussen</td><td>Masterdata › KarStatussen</td></tr>
+  <tr><td>Delivery Dates</td><td>Masterdata › Leverdata</td></tr>
+  <tr><td>Data Upload/Download</td><td>Masterdata › Gegevens uploaden/downloaden</td></tr>
+  <tr><td>Grondplan</td><td>Masterdata › Grondplan</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+</table>
+
+<div class="pagina-einde"></div>
+<table class="compact">
+  <caption>Interventie Aanvragen, StockMaster, Altsien Select en TagScan</caption>
+  <tr><th style="width:20%">Module</th><th style="width:30%">Naam in het raster</th><th>Scherm in het menu / wat het opent</th></tr>
+  <tr><td rowspan="6"><strong>Interventie Aanvragen</strong></td><td>Intervention Requests</td><td>Akties › Interventieaanvragen, en Akties op de telefoon</td></tr>
+  <tr><td>Intervention Statuses</td><td>MasterData › Interventiestatussen</td></tr>
+  <tr><td>TeamKar</td><td>MasterData › TeamKar</td></tr>
+  <tr><td>Mailing List</td><td>Instellingen › Mailinglijst</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+  <tr><td rowspan="11"><strong>StockMaster</strong></td><td>KPI</td><td>KPI (startpagina)</td></tr>
+  <tr><td>Stock overview</td><td>Voorraad › Voorraadoverzicht; met <em>Aanmaken</em> ook Inboeken en Uitboeken</td></tr>
+  <tr><td>Kars</td><td>Voorraad › Karren; met <em>Aanmaken</em> ook Kar laden, Kar vertrekt, Kar terug en Kar uitladen</td></tr>
+  <tr><td>Stock count</td><td>Akties › Telling</td></tr>
+  <tr><td>Kar needs</td><td>Planning › Benodigdheden</td></tr>
+  <tr><td>To order</td><td>Planning › Te bestellen</td></tr>
+  <tr><td>Bookings</td><td>Historiek › Boekingen</td></tr>
+  <tr><td>Reasons</td><td>Instellingen › Redenen</td></tr>
+  <tr><td>Book in a closed season</td><td>Schakelaar: <em>Wijzigen</em> = boeken in een afgesloten seizoen</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+  <tr><td rowspan="7"><strong>Altsien Select</strong></td><td>Ploeg Wizard</td><td>Akties › Ploeg Wizard</td></tr>
+  <tr><td>Ploegfiche</td><td>Akties › Ploegfiche</td></tr>
+  <tr><td>All teams (organisation)</td><td>Schakelaar: <em>Bekijken</em> = alle ploegen; <em>Wijzigen</em> = ook in een afgesloten jaartal</td></tr>
+  <tr><td>Request follow-up</td><td>Akties › Opvolging aanvragen</td></tr>
+  <tr><td>Request statuses</td><td>MasterData › Statussen aanvragen</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+  <tr><td rowspan="8"><strong>TagScan</strong></td><td>CSV Source Files</td><td>Acties › CSV Bron Bestanden</td></tr>
+  <tr><td>Tag Headerdata</td><td>Acties › Tag Headergegevens (scannen)</td></tr>
+  <tr><td>Tag Linedata</td><td>Acties › Tag Regelgegevens; <em>Wijzigen</em> = wachtende acties verwerken</td></tr>
+  <tr><td>TagManagement</td><td>MasterData › TagBeheer</td></tr>
+  <tr><td>Scanners</td><td>MasterData › Scanners</td></tr>
+  <tr><td>Settings</td><td>Instellingen</td></tr>
+  <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
+  <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
+</table>

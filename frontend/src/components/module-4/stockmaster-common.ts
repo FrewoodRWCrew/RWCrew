@@ -22,10 +22,10 @@ export function announceStockChanged() {
 export const ACTION_ORDER: StockMasterAction[] = [
   "book_in",
   "kar_load",
-  "book_out",
   "kar_dispatch",
   "kar_return",
   "kar_unload",
+  "book_out",
   "count",
 ];
 

@@ -1677,6 +1677,18 @@
       "external": "Extern",
       "cancel": "Annuleren"
     },
+    "processFlow": {
+      "label": "Verloop in het magazijn",
+      "festival": "Festival",
+      "help": {
+        "book_in": "Goederen komen binnen (levering, aankoop) en gaan naar de vrije voorraad op hun vaste locatie in het magazijn.",
+        "kar_load": "Vul een kar vanuit de vrije voorraad (of vanuit een andere kar). Wat de kar volgens de kar-behoeften nog mist, staat al klaar.",
+        "kar_dispatch": "De kar verlaat het magazijn naar de ploeg en het festival. De volledige inhoud gaat mee en wordt uit de voorraad geboekt; de Vertrekbon wordt aangemaakt.",
+        "festival": "De kar is onderweg: tijdens het festival gebruikt de ploeg de goederen. In StockMaster wordt hier niets geboekt.",
+        "kar_return": "De kar is terug. Wat vertrok staat al ingevuld: pas enkel aan wat anders is. Elke lijn gaat terug in de kar of naar de vrije voorraad; wat niet terugkomt, telt als verbruik van de ploeg.",
+        "kar_unload": "Haal goederen uit een kar in het magazijn terug naar de vrije voorraad, bijvoorbeeld na het seizoen."
+      }
+    },
     "actions": {
       "book_in": {
         "title": "Inboeken",

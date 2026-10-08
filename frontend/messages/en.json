@@ -1677,6 +1677,18 @@
       "external": "External",
       "cancel": "Cancel"
     },
+    "processFlow": {
+      "label": "Warehouse process",
+      "festival": "Festival",
+      "help": {
+        "book_in": "Goods arrive (delivery, purchase) and go to free stock on their fixed location in the warehouse.",
+        "kar_load": "Fill a kar from free stock (or from another kar). What the kar still misses according to its needs is already filled in.",
+        "kar_dispatch": "The kar leaves the warehouse for the team and the festival. Its whole contents go along and are booked out of stock; the dispatch note is created.",
+        "festival": "The kar is away: the team uses the goods during the festival. Nothing is booked in StockMaster during this step.",
+        "kar_return": "The kar is back. What left is already filled in: only change what differs. Each line goes back into the kar or to free stock; what did not come back counts as the team’s consumption.",
+        "kar_unload": "Move goods from a kar in the warehouse back to free stock, for example after the season."
+      }
+    },
     "actions": {
       "book_in": {
         "title": "Book in",

@@ -1,0 +1,184 @@
+<!-- Deel B: de modules. Hoofdstuk 4 (MasterData) en 5 (KarTracker). -->
+
+<section class="deel" id="deel-b" data-toc="Deel B · De modules">
+  <div class="deel-label">Deel B</div>
+  <h1>De modules</h1>
+  <div class="streep"></div>
+  <p>Per module: waarvoor ze dient, wie ermee werkt, welke schermen er zijn en hoe je de belangrijkste taken uitvoert.
+  We beginnen met MasterData, omdat alle andere modules op die basisgegevens steunen.</p>
+  <div class="deel-lezers">Voor: gebruikers van de betrokken module</div>
+</section>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-masterdata">MasterData: de basisgegevens</h1>
+
+<div class="module-kaart m-masterdata">
+  <div><span class="vak-titel">Waarvoor</span><p>De lijsten die overal in RWCrew gebruikt worden: jaartallen, festivals, ploegen en hun verantwoordelijken, producten en magazijnen.</p></div>
+  <div><span class="vak-titel">Voor wie</span><p>De organisatie en de beheerders die de stamgegevens bijhouden. Anderen hebben meestal enkel leesrechten.</p></div>
+  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-masterdata">MasterData</span> op de hoofdpagina.</p></div>
+  <div><span class="vak-titel">Belangrijk</span><p>Wat hier staat, verschijnt in de keuzelijsten van alle andere modules. Houd het daarom juist en volledig.</p></div>
+</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+In MasterData beheer je de "woordenlijsten" van RWCrew. Een ploeg, festival of product dat je hier aanmaakt, kun je meteen kiezen
+in KarTracker, Altsien Select, StockMaster en Interventie Aanvragen. Bij het begin van een nieuw seizoen begin je hier: nieuw
+jaartal, festivals, ploegen nakijken.
+</div>
+
+<h2 id="s-md-kpi">Masterdata Overzicht</h2>
+<p>De startpagina toont tellers (<em>Totaal aantal producten</em>, <em>Totaal aantal jaartallen</em>, <em>Geblokkeerde producten</em>,
+<em>Consumeerbare producten</em>, <em>Logistieke producten</em> en <em>Onvolledige classificatie</em>: producten zonder type, categorie
+of magazijn) en grafieken met het aantal producten per type, per categorie en per magazijn. Zo zie je snel of er producten
+zijn die nog aangevuld moeten worden.</p>
+
+<h2 id="s-md-schermen">De schermen</h2>
+<p>Het menu van MasterData is opgebouwd in drie blokken: jaartallen en festivals, ploegen (met hun hulplijsten) en producten
+(met hun hulplijsten).</p>
+
+<table class="schermen">
+  <caption>Schermen in MasterData</caption>
+  <tr><th>Scherm</th><th>Wat je er beheert</th></tr>
+  <tr><td>Jaartallen</td><td>De lijst van jaartallen (bijvoorbeeld "2026"), elk met het vinkje <em>Periode Open</em>. Enkel open jaartallen kun je in de
+  kopbalk kiezen. Sluit een jaartal af wanneer het seizoen helemaal voorbij is.</td></tr>
+  <tr><td>Festivals</td><td>De festivals per jaartal: <em>Festival naam</em>, <em>Startdatum</em>, <em>Einddatum</em>, <em>Jaartal</em> en <em>Actief</em>.
+  Enkel actieve festivals verschijnen in de planning van KarTracker en in de Ploeg Wizard.</td></tr>
+  <tr><td>Ploegen</td><td>De ploegen (teams/verenigingen): naam, <em>Locatie</em>, <em>Leverwijze</em>, <em>Taken</em>, <em>Kernleden</em>,
+  <em>Beschrijving</em> en <em>Actief</em>. Bij <em>Kernleden</em> kies je de Altsien Kernleden die deze ploeg in Altsien Select mogen
+  opvolgen (zie <a class="ref" href="#h-altsien"></a>).</td></tr>
+  <tr><td>Ploegverantwoordelijken</td><td>Per ploeg en per jaartal de verantwoordelijken met <em>E-mail</em>, <em>Telefoonnummer</em> en
+  <em>Opmerkingen</em>. Zij hoeven geen RWCrew-gebruiker te zijn. Bovenaan filter je op <em>Jaartal</em> en <em>Ploeg</em>. Dezelfde lijst
+  wordt ook ingevuld door de Kernleden in stap 3 van de Ploeg Wizard.</td></tr>
+  <tr><td>Teamlocatie, Leveringsmethode, Teamtaken</td><td>Eenvoudige keuzelijsten die je bij een ploeg kunt kiezen (waar de ploeg zit,
+  hoe er geleverd wordt, welke taken ze heeft).</td></tr>
+  <tr><td>Producten</td><td>Alle producten (materiaal) met <em>Type</em>, <em>Magazijn</em>, <em>Magazijn locatie</em> (de vaste plaats in
+  het rek), <em>Categorie</em>, <em>Limiet</em> en <em>Beschrijving</em>, en de vinkjes <em>Consumeerbaar</em>, <em>Blokkeer</em> en
+  <em>Is logistiek product</em>. Twee velden zijn voor StockMaster: <em>na 'Kar terug'</em> en <em>minimum voorraad</em> (zie hieronder).</td></tr>
+  <tr><td>Type, Magazijnen, Categorieën, Limieten</td><td>De keuzelijsten die je bij een product kiest. Ze dienen om producten te
+  groeperen en te filteren.</td></tr>
+  <tr><td>Data Upload/Download</td><td>Excel-sjablonen, bulkimport en export voor jaartallen, festivals, ploegen, teamlocaties, leverwijzen,
+  teamtaken, producten, types, magazijnen, categorieën en limieten (zie <a class="ref" href="#s-excel"></a>). Bij ploegen gaan enkel naam,
+  locatie, leverwijze, beschrijving en actief mee; taken en kernleden stel je in op het scherm Ploegen zelf.</td></tr>
+</table>
+
+<h2 id="s-md-product">Een product goed instellen</h2>
+<p>Omdat StockMaster op de productgegevens steunt, loont het om een product volledig in te vullen:</p>
+<table>
+  <caption>Productvelden die het gedrag van StockMaster bepalen</caption>
+  <tr><th style="width:30%">Veld</th><th>Betekenis</th></tr>
+  <tr><td><em>Magazijn</em> + <em>Magazijn locatie</em></td><td>Waar het product in het magazijn ligt (bijvoorbeeld rek A-03). Laadlijsten en
+  telbladen worden op deze locatie gesorteerd, zodat je in één looproute alles kunt nemen.</td></tr>
+  <tr><td><em>Consumeerbaar</em></td><td>Een verbruiksgoed (bijvoorbeeld vuilniszakken). Wat daarvan niet terugkomt met de kar, wordt niet als
+  "ontbrekend" gemeld.</td></tr>
+  <tr><td><em>Blokkeer</em></td><td>Een geblokkeerd product kan niet meer ingeboekt of in een kar geladen worden (bijvoorbeeld een uitgefaseerd model).</td></tr>
+  <tr><td><em>StockMaster: na 'Kar terug'</em></td><td>Waar het product standaard naartoe gaat als een kar terugkomt: <em>Terug in de kar</em> (het blijft in de
+  kar voor de volgende keer) of <em>Naar de vrije voorraad</em> (het gaat terug in het rek).</td></tr>
+  <tr><td><em>StockMaster: minimum voorraad</em></td><td>Enkel voor verbruiksgoederen. Zakt de voorraad onder dit aantal, dan toont StockMaster een oranje waarschuwing.</td></tr>
+</table>
+
+<div class="kader letop"><span class="kader-titel"></span>
+Een product dat al voorraadboekingen heeft, kun je niet meer verwijderen: de historiek moet bewaard blijven. Zet het in de plaats
+daarvan op <em>Blokkeer</em>. Hetzelfde geldt voor jaartallen, ploegen en festivals die al gebruikt worden.
+</div>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-kartracker">KarTracker: de karren</h1>
+
+<div class="module-kaart m-kartracker">
+  <div><span class="vak-titel">Waarvoor</span><p>Het volledige wagenpark: welke kar bij welke ploeg hoort, waar hij moet geleverd worden, waar hij nu staat en wat er met hem gebeurde.</p></div>
+  <div><span class="vak-titel">Voor wie</span><p>De logistiek, de chauffeurs en iedereen die op het terrein karren verplaatst of zoekt.</p></div>
+  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-kartracker">KarTracker</span>, en op de telefoon: KarScan, Kar Planning en Kar Map.</p></div>
+  <div><span class="vak-titel">Jaartal</span><p>Volgt het jaartal dat je in de kopbalk kiest.</p></div>
+</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Elke kar heeft een nummer, een ploeg, een status en een laatst gekende GPS-locatie. Je plant per ploeg en per festival de
+afleverlocatie (<em>Plan een kar</em>), drukt per kar een <strong>karblad</strong> met QR-codes af (<em>Kar Planning</em>), en registreert
+elke verplaatsing door de QR-code te scannen (<em>Manuele kar beweging</em> of KarScan op de telefoon). Op <em>Kar Map</em> zie je
+alles op een kaart van het terrein.
+</div>
+
+<h2 id="s-kt-kpi">KPI Overzicht</h2>
+<p>De startpagina toont het wagenpark in cijfers: <em>Totaal karren</em>, <em>Karren met een ploeg</em> en <em>zonder ploeg</em>,
+<em>Bewegingen (laatste 7 dagen)</em> en hoeveel locaties al gepland zijn in Plan a kar. Daaronder de grafieken <em>Karren per status</em>,
+<em>Karren per ploeg</em>, <em>Bewegingen per dag</em> (laatste 14 dagen) en <em>Plan a kar per festival</em>: hoeveel van de actieve ploegen al
+een afleverlocatie hebben per festival. Die laatste grafiek is je beste hulp om te zien of de planning rond is.</p>
+
+<h2 id="s-kt-schermen">De schermen</h2>
+<table class="schermen">
+  <caption>Schermen in KarTracker</caption>
+  <tr><th>Scherm</th><th>Wat je er doet</th></tr>
+  <tr><td colspan="2" style="background:#f1ecf8;font-weight:600;color:#7e22ce">Acties</td></tr>
+  <tr><td>Manuele kar beweging</td><td>Een verplaatsing van een kar registreren: kar, nieuwe status en GPS-locatie. Onderaan de lijst van alle geregistreerde bewegingen.</td></tr>
+  <tr><td>Kar Planning</td><td>Overzicht van alle karren met per actief festival de geplande afleverlocatie. Hier druk je de karbladen af.</td></tr>
+  <tr><td>Kar Map</td><td>Kaart met karren, afleverlocaties, distributiepunten en het grondplan van het terrein.</td></tr>
+  <tr><td>Plan een kar</td><td>Per ploeg de afleverlocatie kiezen voor elk actief festival van het jaartal.</td></tr>
+  <tr><td colspan="2" style="background:#f1ecf8;font-weight:600;color:#7e22ce">Masterdata</td></tr>
+  <tr><td>KarManagement</td><td>Het wagenpark: <em>Karnummer</em>, <em>Status</em>, <em>Ploeg</em>, <em>Transporttype</em>, laatste locatie en tijdstip.</td></tr>
+  <tr><td>Distributiepunten</td><td>De distributiepunten op het terrein, met coördinaten, <em>TerreinPositie</em> en het verantwoordelijke Altsien Kernlid.</td></tr>
+  <tr><td>Zone</td><td>De leveringszones waarin het terrein is opgedeeld.</td></tr>
+  <tr><td>Afleverlocatie</td><td>De plaatsen waar karren geleverd worden: naam, <em>Omschrijving</em>, <em>Zone</em>, <em>Distributiepunt</em>, coördinaten,
+  <em>TerreinPositie</em>, Altsien Kernlid en <em>Actief</em>. Enkel actieve locaties kun je plannen.</td></tr>
+  <tr><td>KarStatussen</td><td>De mogelijke statussen van een kar (bijvoorbeeld "In magazijn", "Geleverd", "Opgehaald").</td></tr>
+  <tr><td>Leverdata</td><td>Per actief festival de <em>Leverdatum</em> en de <em>Ophaaldatum</em>. Die komen op het karblad.</td></tr>
+  <tr><td>Gegevens uploaden/downloaden</td><td>Excel-import en -export van karren, karstatussen, distributiepunten, zones, afleverlocaties en leverdata, plus
+  <span class="knop">Volledige databank downloaden</span>.</td></tr>
+  <tr><td>Grondplan</td><td>De plattegronden van de festivalsite (afbeelding + coördinaten van twee hoeken), die als laag op de kaarten verschijnen.</td></tr>
+</table>
+
+<h2 id="s-kt-plannen">Karren plannen: Plan een kar en Leverdata</h2>
+<ol class="stappen">
+  <li>Kies bovenaan in de kopbalk het juiste (open) jaartal.</li>
+  <li>Ga naar <span class="menu">Acties<span class="sep">›</span>Plan een kar</span> en kies een <em>Team</em> (ploeg).</li>
+  <li>Je ziet een lijn per actief festival van het jaartal. Kies per festival de <em>Afleverlocatie</em>, of <em>— Geen afleverlocatie —</em>
+  als de ploeg er niet geleverd wordt. Klik op <span class="knop">Opslaan</span>.</li>
+  <li>Vul op <span class="menu">Masterdata<span class="sep">›</span>Leverdata</span> per festival de lever- en ophaaldatum in. Heb je ze in Excel,
+  gebruik dan de tegel <em>Leverdata</em> op het uploadscherm: het sjabloon staat al klaar met alle actieve festivals.</li>
+</ol>
+<div class="kader tip"><span class="kader-titel"></span>
+De Altsien Kernleden kiezen de afleverlocaties van hun ploeg zelf in de Ploeg Wizard (stap 2). Wat zij kiezen, komt in dezelfde
+planning terecht: je hoeft het niet over te typen. Plan een kar is er voor de organisatie, om aan te vullen of te corrigeren.
+</div>
+
+<h2 id="s-kt-karblad">Karbladen afdrukken (Kar Planning)</h2>
+<p><span class="menu">Acties<span class="sep">›</span>Kar Planning</span> toont alle karren met <em>Karnummer</em>, <em>Status</em>, <em>Ploeg</em>,
+<em>Transporttype</em>, <em>Locatie</em> en een kolom per actief festival met de geplande afleverlocatie. Dit scherm is enkel om te bekijken;
+wijzigen doe je op KarManagement en Plan een kar. Filter op eender welke kolom, vink de gewenste karren aan (of <em>Alles selecteren</em>)
+en klik op <span class="knop">Afdrukken</span>.</p>
+<p>Je krijgt een PDF met <strong>één A4 per kar</strong>, die met de kar meegaat. Erop staan het karnummer, de ploeg, en per festival waar en
+wanneer de kar geleverd en opgehaald wordt. Het karblad heeft twee QR-codes:</p>
+<ul>
+  <li><strong>rechtsboven</strong>: het karnummer. Scan je die met KarScan, dan opent meteen die kar om een beweging te registreren;</li>
+  <li><strong>onderaan</strong>: het openbare formulier om een interventie aan te vragen, al ingevuld met de ploeg, het karnummer, de
+  afleverlocatie en de zone. Zo kan de ploeg zelf, zonder login, hulp vragen (zie <a class="ref" href="#h-interventie"></a>).</li>
+</ul>
+
+<h2 id="s-kt-beweging">Een kar verplaatsen: Manuele kar beweging</h2>
+<ol class="stappen">
+  <li>Open <span class="menu">Acties<span class="sep">›</span>Manuele kar beweging</span> (op de telefoon: KarScan).</li>
+  <li>Kies de <em>Kar</em> in de lijst, of klik op <span class="knop">Scan QR</span> en richt de camera op de QR-code rechtsboven op het karblad.
+  De <em>Ploeg</em> van de kar wordt ter info getoond.</li>
+  <li>Kies de nieuwe <em>Status</em>.</li>
+  <li>Bepaal de <em>GPS-locatie</em>: klik op <span class="knop">Gebruik mijn locatie</span>, of klik op de kaart op de juiste plaats. Zet de laag
+  <em>Grondplan</em> aan en regel de <em>Doorzichtigheid</em> om de plattegrond van het terrein te zien.</li>
+  <li>Klik op <span class="knop">Opslaan</span>. De kar krijgt meteen deze status en locatie, ook op KarManagement en Kar Map.</li>
+</ol>
+<p>Onder <em>Geregistreerde bewegingen</em> zie je elke beweging met tijdstip, kar, status, ploeg, coördinaten en wie ze registreerde.
+Met <em>Filter op kar</em> zie je de volledige geschiedenis van één kar.</p>
+<div class="kader letop"><span class="kader-titel"></span>
+De camera en de GPS werken enkel als je browser er toestemming voor heeft. De eerste keer vraagt je toestel dat; kies
+<em>Toestaan</em>. Weigerde je per ongeluk, zet het dan aan in de instellingen van je browser. Binnen in een gebouw kan de GPS
+onnauwkeurig zijn: kies dan de plaats op de kaart.
+</div>
+
+<h2 id="s-kt-map">Kar Map</h2>
+<p>De kaart toont drie lagen die je elk aan- en uitzet: <em>Karren</em>, <em>Afleverlocaties</em> en <em>Distributiepunten</em>, plus het
+<em>Grondplan</em> met regelbare <em>Dekking</em>. Klik op een punt voor de details (karnummer, status, ploeg; of naam, zone en omschrijving).
+Onder de kaart staat dezelfde informatie als lijst; met <span class="knop">Toon op kaart</span> zoomt de kaart in op die lijn. Items zonder
+coördinaten staan wel in de lijst, met <em>Geen locatie</em>.</p>
+
+<div class="kader beheer"><span class="kader-titel"></span>
+Een grondplan toevoegen: <span class="menu">Masterdata<span class="sep">›</span>Grondplan</span> › <span class="knop">Nieuw grondplan</span>. Geef een naam, kies
+de afbeelding (de plattegrond) en vul de coördinaten in van de <em>zuidwest</em>- en <em>noordoosthoek</em> van die afbeelding. Je vindt
+coördinaten door in een online kaart (bijvoorbeeld Google Maps) rechts te klikken op de hoek van het terrein. Alle grondplannen
+worden samen als één laag getoond.
+</div>

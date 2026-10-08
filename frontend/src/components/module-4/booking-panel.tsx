@@ -3,7 +3,9 @@
 // StockMaster's booking panel: ONE screen for Inboeken, Kar laden,
 // Uitboeken, Kar vertrekt, Kar terug and Kar uitladen, pre-set for the
 // action of the page it's on (Telling has its own screen, count-panel.tsx).
-// The person never chooses "from/to": the action decides it.
+// The person never chooses "from/to": the action decides it. Above the
+// title, the process bar (process-flow.tsx) shows where the screen sits in
+// the warehouse process (not on Uitboeken, which is outside that flow).
 //
 // It works like a basket: type a few letters of a product (the search shows
 // its bin and stock), Enter, type the quantity, Enter — the line is added
@@ -53,6 +55,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { ProcessFlow, isProcessFlowAction } from "@/components/module-4/process-flow";
 import { KarSearch, ProductSearch, SelectedKar } from "@/components/module-4/stock-pickers";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import {
@@ -459,6 +462,9 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
 
   return (
     <div className="flex flex-col gap-6" onKeyDown={handleKeyDown}>
+      {/* Where this screen sits in the warehouse process (not on Uitboeken). */}
+      {isProcessFlowAction(action) && <ProcessFlow action={action} permissions={permissions} />}
+
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight underline">{tAction("title")}</h1>
