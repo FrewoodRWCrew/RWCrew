@@ -31,6 +31,11 @@ class ModuleDefinition:
 # module-8 (Altsien Select) likewise has its own bespoke router: the Ploeg
 # Wizard in which Altsien Kernleden make their per-team choices.
 #
+# module-2 (KarTracker) has its own bespoke router as well: the fleet of
+# karren, their planning per festival, movements and the Kar Map. Its name
+# was missing here for a while, so a database seeded after its migration got
+# "Module 2" — migration 9c4e2b7a1d35 renames those rows.
+#
 # module-4 (StockMaster) has its own bespoke router too: the warehouse stock
 # of MasterData products, as free stock and loaded in KarTracker's kars.
 #
@@ -38,6 +43,7 @@ class ModuleDefinition:
 # under /m): its address and a QR code; it contains no phone screens itself.
 _MODULE_NAMES = {
     "module-1": "TagScan",
+    "module-2": "KarTracker",
     "module-3": "Intervention Requests",
     "module-4": "StockMaster",
     "module-8": "Altsien Select",
