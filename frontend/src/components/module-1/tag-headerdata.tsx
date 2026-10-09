@@ -390,7 +390,8 @@ function DeleteHeaderDataAlertDialog({ entry, onDeleted }: DeleteHeaderDataAlert
     setIsDeleting(true);
     try {
       await deleteTagHeaderData(entry.id);
-      toast.success(t("entryDeleted"));
+      // The header's lines in Tag Linedata are deleted with it.
+      toast.success(t("entryDeleted", { count: entry.line_count }));
       onDeleted(entry.id);
       setIsOpen(false);
     } catch (error) {
@@ -414,7 +415,7 @@ function DeleteHeaderDataAlertDialog({ entry, onDeleted }: DeleteHeaderDataAlert
         <AlertDialogHeader>
           <AlertDialogTitle>{t("deleteConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>
-            {t("deleteConfirmDescription", { filename: entry.filename })}
+            {t("deleteConfirmDescription", { filename: entry.filename, count: entry.line_count })}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
