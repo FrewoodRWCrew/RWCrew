@@ -48,6 +48,7 @@ export default async function LandingPage() {
   if (tagscanPendingCount) {
     pendingWorkItems.push({
       key: TAGSCAN_MODULE_KEY,
+      moduleKey: TAGSCAN_MODULE_KEY,
       text: t("pendingWork.tagscan", { count: tagscanPendingCount }),
       // Opens TagScan with its waiting-actions dialog already open.
       href: "/modules/module-1?pending=open",

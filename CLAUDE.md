@@ -137,7 +137,7 @@ Lines start `new` at scan time; the file's status is derived from its lines
   that product, fills the product in on a registered tag without one, and never changes a tag that already has a
   product. **Adding an action** = one `_process_<action>(db, line, context)` returning `(outcome, comment)` + a dict
   entry (extend `ProcessContext` for extra user input); lines with an action without a handler simply stay `new`.
-- Waiting lines (`new` + action with a handler) show as an orange banner above every TagScan screen
+- Waiting lines (`new` + action with a handler) show as a banner in TagScan's own soft blue (`module-theme.ts`) above every TagScan screen
   (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
   `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines
   without navigating dispatch `PENDING_ACTIONS_CHANGED_EVENT` so the banner re-counts.

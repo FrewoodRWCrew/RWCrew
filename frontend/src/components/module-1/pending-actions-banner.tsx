@@ -1,7 +1,8 @@
 "use client";
 
-// The coloured "actions waiting" message shown at the top of every TagScan
-// screen (rendered by the module's layout): how many scanned lines still
+// The "actions waiting" message shown at the top of every TagScan screen,
+// in TagScan's own soft blue (see lib/module-theme.ts), rendered by the
+// module's layout: how many scanned lines still
 // have an action (e.g. "Assignment") that hasn't been carried out. Hidden
 // when nothing is waiting. Clicking it opens PendingActionsDialog.
 //
@@ -21,10 +22,16 @@ import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { usePathname } from "@/i18n/navigation";
 import { getPendingTagActionsCount } from "@/lib/api";
+import { getModuleTheme } from "@/lib/module-theme";
+import { cn } from "@/lib/utils";
 import { PendingActionsDialog } from "@/components/module-1/pending-actions-dialog";
 
 /** Window event a TagScan screen dispatches after it created/changed lines. */
 export const PENDING_ACTIONS_CHANGED_EVENT = "tagscan:pending-actions-changed";
+
+// TagScan's soft tint (background + text) and solid accent (border + icon).
+const { badgeClassName, accentColorToken } = getModuleTheme("module-1");
+const ACCENT_COLOR = `var(--color-${accentColorToken})`;
 
 /** How often the count is refreshed while a TagScan screen is open. */
 const RECOUNT_INTERVAL_MS = 30_000;
@@ -84,9 +91,13 @@ export function PendingActionsBanner({ canOpen }: PendingActionsBannerProps) {
           type="button"
           disabled={!canOpen}
           onClick={openDialog}
-          className="mb-4 flex w-full items-center gap-3 rounded-md border border-orange-500/40 bg-orange-100 px-4 py-3 text-left text-sm font-medium text-orange-900 transition-colors hover:bg-orange-200 disabled:cursor-default disabled:hover:bg-orange-100 dark:bg-orange-500/15 dark:text-orange-300 dark:hover:bg-orange-500/25 dark:disabled:hover:bg-orange-500/15"
+          className={cn(
+            "mb-4 flex w-full items-center gap-3 rounded-md border px-4 py-3 text-left text-sm font-medium transition-[filter] hover:brightness-95 disabled:cursor-default disabled:hover:brightness-100",
+            badgeClassName,
+          )}
+          style={{ borderColor: `color-mix(in oklab, ${ACCENT_COLOR} 40%, transparent)` }}
         >
-          <AlertTriangle className="size-5 shrink-0" />
+          <AlertTriangle className="size-5 shrink-0" style={{ color: ACCENT_COLOR }} />
           <span className="flex-1">{t("bannerText", { count })}</span>
           {canOpen && (
             <span className="flex items-center gap-1 font-semibold underline">
