@@ -2389,3 +2389,16 @@ export function createOrGrantStockMasterUser(payload: {
     body: JSON.stringify(payload),
   });
 }
+
+// --- Module help manuals --------------------------------------------------
+
+/**
+ * Direct link to a module's help manual PDF (backend/app/help/), opened in a
+ * new tab: the whole manual, or only one topic (the per-screen "?" button).
+ * The backend leaves out the chapters of screens the user can't view.
+ */
+export function moduleHelpPdfUrl(moduleKey: string, locale: string, topic?: string): string {
+  const query = new URLSearchParams({ locale });
+  if (topic) query.set("topic", topic);
+  return `${API_BASE_URL}/api/modules/${moduleKey}/help/pdf?${query.toString()}`;
+}

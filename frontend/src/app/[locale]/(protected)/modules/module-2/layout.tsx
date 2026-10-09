@@ -2,13 +2,17 @@
 // under access-rights/) with the module's own left-hand menu, the same way
 // Intervention Requests'/TagScan's/MasterData's own layout.tsx do for
 // module-3/module-1/module-9 — see
-// components/module-2/kartracker-sidebar.tsx for what shows in it and why.
+// components/module-2/kartracker-sidebar.tsx for what shows in it and why —
+// plus the "Help bij dit scherm" link to the manual's chapter about the
+// open screen (see components/shared/module-help.tsx).
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
 import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { KarTrackerMyPermissions } from "@/lib/types";
 import { KarTrackerSidebar } from "@/components/module-2/kartracker-sidebar";
+import { KARTRACKER_HELP_ROUTES } from "@/components/module-2/kartracker-help";
+import { ScreenHelpButton } from "@/components/shared/module-help";
 
 interface KarTrackerLayoutProps {
   children: React.ReactNode;
@@ -39,7 +43,10 @@ export default async function KarTrackerLayout({ children }: KarTrackerLayoutPro
     // this module's own accent colour — see getModuleAccentStyle().
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-2")}>
       <KarTrackerSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
-      <div className="min-w-0 flex-1 p-6">{children}</div>
+      <div className="min-w-0 flex-1 p-6">
+        <ScreenHelpButton moduleKey="module-2" routes={KARTRACKER_HELP_ROUTES} className="-mt-4 mb-1" />
+        {children}
+      </div>
     </div>
   );
 }

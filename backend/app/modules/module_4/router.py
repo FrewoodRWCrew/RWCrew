@@ -37,16 +37,17 @@ from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
+from app.help.routes import register_help_route
 from app.modules.module_4 import requirement_service, stock_service
 from app.modules.module_4.deps import (
     MODULE_KEY,
-    PermissionAction,
     ensure_season_editable,
     get_season_or_404,
     get_user_role,
     require_any_screen_permission,
     require_module_access,
     require_screen_permission,
+    screen_keys_allowed,
     user_can,
 )
 from app.modules.module_4.stock_pdfs import (
@@ -103,6 +104,14 @@ from app.schemas.stockmaster import (
 )
 
 router = APIRouter(prefix="/api/modules/module-4", tags=["StockMaster"])
+
+# GET /help/pdf: the module's manual, with only the screens the user can view.
+register_help_route(
+    router,
+    module_key=MODULE_KEY,
+    require_access=require_module_access,
+    viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
 
 STOCK_SCREEN = "stockmaster.stock"
 KARS_SCREEN = "stockmaster.kars"
@@ -464,17 +473,11 @@ def get_my_permissions(
     view / create on / edit / delete on, so it knows which menu items and
     buttons to show.
     """
-    screens = db.scalars(select(StockMasterScreen)).all()
-
-    def keys_allowed(action: PermissionAction) -> list[str]:
-        """The keys of every screen this user may perform `action` on."""
-        return [screen.key for screen in screens if user_can(db, current_user, screen.key, action)]
-
     return MyPermissionsResponse(
-        viewable_screen_keys=keys_allowed("view"),
-        creatable_screen_keys=keys_allowed("create"),
-        editable_screen_keys=keys_allowed("edit"),
-        deletable_screen_keys=keys_allowed("delete"),
+        viewable_screen_keys=screen_keys_allowed(db, current_user, "view"),
+        creatable_screen_keys=screen_keys_allowed(db, current_user, "create"),
+        editable_screen_keys=screen_keys_allowed(db, current_user, "edit"),
+        deletable_screen_keys=screen_keys_allowed(db, current_user, "delete"),
     )
 
 

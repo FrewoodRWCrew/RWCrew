@@ -23,6 +23,7 @@ import {
 } from "@/lib/api";
 import type { TagLineDataEntry, TagLineProcessRowResult, TagscanProductOption } from "@/lib/types";
 import { PROCESS_STATUS_ROW_CLASS } from "@/components/module-1/process-status";
+import { HelpTopicLink } from "@/components/shared/module-help";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -186,6 +187,10 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
         <DialogHeader>
           <DialogTitle>{t("dialogTitle")}</DialogTitle>
           <DialogDescription>{t("dialogDescription")}</DialogDescription>
+          {/* The manual's chapter about processing waiting actions. */}
+          <div>
+            <HelpTopicLink moduleKey="module-1" topic="pending" />
+          </div>
         </DialogHeader>
 
         {/* The outcome of the last "Process" run, kept on screen until the

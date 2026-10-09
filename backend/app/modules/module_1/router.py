@@ -30,11 +30,13 @@ from app.db.models.tagscan_settings import TagscanSettings
 from app.db.models.tagscan_user_role import TagscanUserRole
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.help.routes import register_help_route
 from app.modules.module_1.deps import (
     MODULE_KEY,
     get_user_role,
     require_module_access,
     require_screen_permission,
+    screen_keys_allowed,
     user_can,
 )
 from app.modules.module_1.auto_scan import DEFAULT_ENABLED, DEFAULT_INTERVAL_SECONDS, SCAN_LOCK
@@ -106,6 +108,14 @@ from app.schemas.tagscan import (
 )
 
 router = APIRouter(prefix="/api/modules/module-1", tags=["Tagscan"])
+
+# GET /help/pdf: the module's manual, with only the screens the user can view.
+register_help_route(
+    router,
+    module_key=MODULE_KEY,
+    require_access=require_module_access,
+    viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
 
 
 def _content_disposition(filename: str) -> str:
@@ -1137,12 +1147,8 @@ def get_my_permissions(
     create on and delete on, so it knows what to show (sidebar links,
     upload and delete controls) without duplicating the permission-checking rules itself.
     """
-    screens = db.scalars(select(TagscanScreen)).all()
-    viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
-    deletable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "delete")]
     return MyPermissionsResponse(
-        viewable_screen_keys=viewable_keys,
-        creatable_screen_keys=creatable_keys,
-        deletable_screen_keys=deletable_keys,
+        viewable_screen_keys=screen_keys_allowed(db, current_user, "view"),
+        creatable_screen_keys=screen_keys_allowed(db, current_user, "create"),
+        deletable_screen_keys=screen_keys_allowed(db, current_user, "delete"),
     )

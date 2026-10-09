@@ -92,6 +92,15 @@ def user_can(db: Session, user: User, screen_key: str, action: PermissionAction)
     }[action]
 
 
+def screen_keys_allowed(db: Session, user: User, action: PermissionAction) -> list[str]:
+    """The keys of every KarTracker screen this user may perform `action`
+    on — used by "my permissions" and by the help manual (only the screens
+    the user can view get a chapter).
+    """
+    screens = db.scalars(select(KarTrackerScreen)).all()
+    return [screen.key for screen in screens if user_can(db, user, screen.key, action)]
+
+
 def require_screen_permission(screen_key: str, action: PermissionAction):
     """Build a dependency that only lets a request through if the caller
     can perform "action" on the screen identified by "screen_key".

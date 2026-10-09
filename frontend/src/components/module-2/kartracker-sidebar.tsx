@@ -16,12 +16,14 @@
 // "Access Rights" (Roles/Users) — same group order as Intervention
 // Requests' own sidebar. Future phases (delivery planning, ...) add their
 // own groups here the same way.
+// At the bottom: the "Help" group with the module's help manual (PDF).
 
 import { Database, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
+import { ModuleHelpMenuLink } from "@/components/shared/module-help";
 
 interface KarTrackerSidebarProps {
   viewableScreenKeys: string[];
@@ -220,6 +222,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
           )}
         </>
       )}
+
+      <ModuleHelpMenuLink moduleKey="module-2" />
     </nav>
   );
 }

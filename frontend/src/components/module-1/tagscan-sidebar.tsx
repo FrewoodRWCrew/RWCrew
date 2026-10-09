@@ -7,13 +7,15 @@
 // current user's Tagscan role: "Roles" and "Users" each only appear if
 // they can view that screen ("tagscan.roles" / "tagscan.users",
 // independently gated — passed in from the server, which already knows
-// how to resolve that — see app/modules/module_1/deps.py).
+// how to resolve that — see app/modules/module_1/deps.py). At the bottom:
+// the "Handleiding (PDF)" link to the module's help manual.
 
 import { Database, Settings, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
+import { ModuleHelpMenuLink } from "@/components/shared/module-help";
 
 interface TagscanSidebarProps {
   viewableScreenKeys: string[];
@@ -152,6 +154,8 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
           </Link>
         </>
       )}
+
+      <ModuleHelpMenuLink moduleKey="module-1" />
     </nav>
   );
 }

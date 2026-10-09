@@ -5,7 +5,8 @@
 // docs/module-custom-roles-pattern.md): a header bar in the module's tile
 // colour, the KPI main page, then the groups Voorraad, Akties (in the
 // order of the warehouse process), Planning, Historiek, Instellingen and
-// Toegangsrechten — each link gated by the user's StockMaster role.
+// Toegangsrechten — each link gated by the user's StockMaster role — and
+// the "Handleiding (PDF)" link to the module's help manual at the bottom.
 
 import { ChartColumn, ClipboardList, Package, ScrollText, Settings, ShieldCheck, Zap, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -14,6 +15,7 @@ import { getModuleTheme } from "@/lib/module-theme";
 import type { StockMasterMyPermissions } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { ACTION_ORDER, ACTION_PATHS, STOCKMASTER_BASE, canBook } from "@/components/module-4/stockmaster-common";
+import { ModuleHelpMenuLink } from "@/components/shared/module-help";
 
 const BASE = STOCKMASTER_BASE;
 
@@ -130,6 +132,8 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
             ))}
           </div>
         ))}
+
+      <ModuleHelpMenuLink moduleKey="module-4" />
     </nav>
   );
 }

@@ -150,6 +150,23 @@ Lines start `new` at scan time; the file's status is derived from its lines
 - Rows on Tag Headerdata/Tag Linedata are coloured by `process_status` (`components/module-1/process-status.ts`:
   orange new, green loaded, red cancelled). Lines that existed before this feature were backfilled as `loaded`.
 
+## Module help manuals (PDF)
+
+Each module can have a user manual, generated as PDF by the backend (`backend/app/help/`, fpdf2, module's own
+accent colour). Today: TagScan (module-1), KarTracker (module-2) and StockMaster (module-4); modules 3, 8 and 9 to follow the same way.
+
+- **Text** lives in `backend/app/help/content/<module_N>/{nl,en}.md` (small Markdown subset, see `content.py`):
+  `## [topic | screen.key] Title` per chapter. A chapter is only in the PDF when the user may *view* that screen
+  (no screen key = always shown). `tests/help/test_help.py` checks that keys exist, nl/en match and images exist.
+- **Endpoint** `GET /api/modules/<module>/help/pdf?locale=&topic=`, added to a module's router with
+  `register_help_route` (`app/help/routes.py`), passing its own module-access dependency + viewable-screens function.
+- **Frontend**: `components/shared/module-help.tsx` — `ModuleHelpMenuLink` at the bottom of the module sidebar
+  (whole manual) and `ScreenHelpButton` in the module layout (only the chapter of the open route, from the module's
+  `<module>-help.ts` route → topic list).
+- **Screenshots** in `content/<module_N>/images/`, made from localhost with `npm run help:screenshots [module-N]`
+  (`frontend/scripts/help-screenshots.mjs`, playwright-core + the installed Edge, needs `HELP_SHOTS_EMAIL` /
+  `HELP_SHOTS_PASSWORD` of a local login that sees every screen). Re-run it after a screen changes.
+
 ## Outgoing email (Resend)
 
 - `backend/app/core/mail.py` `send_email()` posts to Resend's HTTP API with `httpx` (no extra package). It

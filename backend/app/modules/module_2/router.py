@@ -39,6 +39,7 @@ from app.db.models.stockmaster_balance import StockMasterBalance
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.help.routes import register_help_route
 from app.modules.module_2.afleverlocatie_import import (
     build_afleverlocatie_template_xlsx,
     export_afleverlocaties_to_xlsx,
@@ -50,6 +51,7 @@ from app.modules.module_2.deps import (
     require_module_access,
     require_screen_permission,
     require_screen_view_or_create,
+    screen_keys_allowed,
     user_can,
 )
 from app.modules.module_2.distributiepunt_import import (
@@ -140,6 +142,14 @@ from app.schemas.kartracker import (
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 router = APIRouter(prefix="/api/modules/module-2", tags=["KarTracker"])
+
+# GET /help/pdf: the module's manual, with only the screens the user can view.
+register_help_route(
+    router,
+    module_key=MODULE_KEY,
+    require_access=require_module_access,
+    viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
 
 
 def _build_role_response(db: Session, role: KarTrackerRole) -> RoleResponse:
@@ -469,16 +479,11 @@ def get_my_permissions(
     finer-grained controls like the Data Upload/Download screen's upload
     button — without duplicating the permission-checking rules itself.
     """
-    screens = db.scalars(select(KarTrackerScreen)).all()
-    viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
-    editable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "edit")]
-    deletable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "delete")]
     return MyPermissionsResponse(
-        viewable_screen_keys=viewable_keys,
-        creatable_screen_keys=creatable_keys,
-        editable_screen_keys=editable_keys,
-        deletable_screen_keys=deletable_keys,
+        viewable_screen_keys=screen_keys_allowed(db, current_user, "view"),
+        creatable_screen_keys=screen_keys_allowed(db, current_user, "create"),
+        editable_screen_keys=screen_keys_allowed(db, current_user, "edit"),
+        deletable_screen_keys=screen_keys_allowed(db, current_user, "delete"),
     )
 
 

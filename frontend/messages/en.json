@@ -2618,5 +2618,10 @@
   },
   "phone": {
     "hello": "Hello, {name}"
+  },
+  "help": {
+    "group": "Help",
+    "manual": "User guide (PDF)",
+    "screenHelp": "Help for this screen"
   }
 }

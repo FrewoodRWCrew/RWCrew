@@ -2,7 +2,8 @@
 // under access-rights/) with Tagscan's own left-hand menu, the same way
 // the site-wide (protected) layout wraps everything with the admin
 // sidebar — see components/module-1/tagscan-sidebar.tsx for what shows
-// in it and why.
+// in it and why — plus the "Help bij dit scherm" link to the manual's
+// chapter about the open screen (see components/shared/module-help.tsx).
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
@@ -10,6 +11,8 @@ import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { TagscanMyPermissions } from "@/lib/types";
 import { TagscanSidebar } from "@/components/module-1/tagscan-sidebar";
 import { PendingActionsBanner } from "@/components/module-1/pending-actions-banner";
+import { TAGSCAN_HELP_ROUTES } from "@/components/module-1/tagscan-help";
+import { ScreenHelpButton } from "@/components/shared/module-help";
 
 interface TagscanLayoutProps {
   children: React.ReactNode;
@@ -44,6 +47,7 @@ export default async function TagscanLayout({ children }: TagscanLayoutProps) {
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-1")}>
       <TagscanSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
       <div className="min-w-0 flex-1 p-6">
+        <ScreenHelpButton moduleKey="module-1" routes={TAGSCAN_HELP_ROUTES} className="-mt-4 mb-1" />
         {/* "Actions waiting" message above every TagScan screen; only
             clickable for users who may see the waiting lines. */}
         <PendingActionsBanner canOpen={permissions.viewable_screen_keys.includes("tagscan.tag-linedata")} />
