@@ -47,6 +47,11 @@ Een modulebeheerder kan ook zelf vanuit <em>Access Rights &gt; Users</em> van zi
 Die gebruiker krijgt dan toegang tot die ene module, niet tot andere.
 </div>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-manage-access">
+  <img src="afbeeldingen/03-manage-access.png" alt="">
+  <figcaption>Manage Access: gebruikers aanmaken en per gebruiker de modules aanvinken. Rechtsboven de knop ‘Nieuwe gebruiker’.</figcaption>
+</figure>
+
 <h2 id="s-beheer-wijzigen">Toegang intrekken, wachtwoord resetten, verwijderen</h2>
 <table class="compact">
   <caption>Veelvoorkomende wijzigingen aan gebruikers</caption>
@@ -73,6 +78,11 @@ module minstens twee mensen heeft die rollen kunnen beheren. Een overzicht van a
 "Native app (old)" voor oude rijen) en toesteltype. Gebruik het om te zien wie de applicatie gebruikt, of om verdachte
 pogingen te herkennen (veel mislukte pogingen op één e-mailadres of van één IP-adres).</p>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-loginhistoriek">
+  <img src="afbeeldingen/04-login-history.png" alt="">
+  <figcaption>Login History: elke inlogpoging met tijdstip, gebruiker, resultaat, bron (website of telefoon-app), toestel en IP-adres.</figcaption>
+</figure>
+
 <h2 id="s-beheer-seizoenen">Seizoenen en stamgegevens</h2>
 <p>Stamgegevens beheer je in <strong>MasterData</strong> (module 9). De belangrijkste jaarlijkse taak is het <strong>nieuwe seizoen</strong>:</p>
 <ol class="stappen">
@@ -85,6 +95,16 @@ pogingen te herkennen (veel mislukte pogingen op één e-mailadres of van één 
   <li>Na de inschrijvingsperiode: <em>periode open</em> uitzetten. Vanaf dan kunnen alleen gebruikers met het recht "organisatie" in
   Altsien Select nog wijzigen.</li>
 </ol>
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-jaren">
+  <img src="afbeeldingen/32-masterdata-jaren.png" alt="">
+  <figcaption>MasterData · Jaartallen: de seizoenen en of hun periode open is.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-upload">
+  <img src="afbeeldingen/34-masterdata-upload.png" alt="">
+  <figcaption>MasterData · Data Upload/Download: per tabel een sjabloon downloaden, invullen en weer uploaden.</figcaption>
+</figure>
+
 <p><strong>Altsien-kernleden aan ploegen koppelen</strong>: zet de vlag <em>Altsien Kernlid</em> bij de gebruiker (Manage Access), en koppel
 hem in MasterData &gt; <em>Teams</em> aan zijn ploeg(en). Hij ziet in Altsien Select alleen die ploegen.</p>
 
@@ -92,6 +112,11 @@ hem in MasterData &gt; <em>Teams</em> aan zijn ploeg(en). Hij ziet in Altsien Se
 <p>In Interventie Aanvragen &gt; <em>Instellingen &gt; Mailinglijst</em> beheer je wie een mail krijgt bij elke nieuwe aanvraag. Je kunt
 een adres tijdelijk <em>inactief</em> zetten zonder het te verwijderen. Op test begint het onderwerp met "[TEST]". Komen er geen mails
 aan, zie dan <a class="ref" href="#tab-storingen"></a>.</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-mailinglijst">
+  <img src="afbeeldingen/18-interventie-mailinglijst.png" alt="">
+  <figcaption>Interventie Aanvragen · Mailinglijst: wie een mail krijgt bij elke nieuwe aanvraag.</figcaption>
+</figure>
 
 <h2 id="s-beheer-scanner">Een TagScan-scanner toevoegen</h2>
 <ol class="stappen">
@@ -104,17 +129,33 @@ aan, zie dan <a class="ref" href="#tab-storingen"></a>.</p>
 <p>Een sleutel werkt alleen op de omgeving waar hij gemaakt is. Kwijt of gelekt? Genereer een nieuwe; de oude werkt dan niet meer.
 De volledige installatie van een Pi staat in <code>docs/tagscan-raspi-setup-guide.pdf</code>.</p>
 
+<p><strong>Automatisch scannen en acties verwerken.</strong> Op het scherm <em>Instellingen</em> van TagScan zet je het
+automatisch scannen aan of uit en kies je het interval (standaard 60 seconden). Staat er een oranje balk boven de
+TagScan-schermen, dan wachten er regels met een actie op verwerking: open de balk, kies per bestand het product en klik
+op verwerken, of annuleer een foute regel met een reden.</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-scanners">
+  <img src="afbeeldingen/08-tagscan-scanners.png" alt="">
+  <figcaption>TagScan · Scanners: de geregistreerde scanners; via het sleutelpictogram maak je een nieuwe API-sleutel aan.</figcaption>
+</figure>
+
 <h2 id="s-beheer-telefoon">De telefoon-app laten installeren</h2>
 <p>Geef de gebruiker toegang tot module 10 (<em>Mobile App</em>). Die pagina toont het adres en een QR-code. De gebruiker scant de
 code, opent het adres in Safari (iPhone) of Chrome (Android) en kiest "Zet op beginscherm" (iPhone: deelknop) of
 "App installeren" (Android). De app opent daarna schermvullend op <code>/m</code>. Een update is niet nodig: de app is altijd de
 nieuwste versie van de website.</p>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-beheer-mobile-app">
+  <img src="afbeeldingen/35-mobile-app.png" alt="">
+  <figcaption>Mobile App (module 10): het adres van de telefoon-app met de installatiestappen. Lokaal staat er ‘niet geconfigureerd’ omdat <code>APP_PUBLIC_URL</code> daar leeg is; op test en productie staat hier de QR-code.</figcaption>
+</figure>
+
 <h2 id="s-beheer-controle">Controleren of alles draait</h2>
 <table class="compact">
   <caption>Snelle controles</caption>
   <tr><th style="width:38%">Controle</th><th>Verwacht resultaat</th></tr>
-  <tr><td><code>https://rwcrew.eu/api/health</code> in een browser</td><td><code>{"status":"ok"}</code>: de backend draait</td></tr>
+  <tr><td><code>https://rwcrew.eu/api/health</code> in een browser</td><td><code>{"status":"ok","version":"…"}</code>: de backend draait, met de versie</td></tr>
+  <tr><td>Versielabel onderaan het beheermenu</td><td>Dezelfde commit als de laatste op GitHub (zie <a class="ref" href="#s-versielabel"></a>)</td></tr>
   <tr><td><code>https://rwcrew.eu/nl/login</code></td><td>Het loginscherm: frontend en Nginx draaien</td></tr>
   <tr><td>GitHub &gt; tabblad <em>Actions</em></td><td>De laatste deployments zijn groen</td></tr>
   <tr><td>Op de server: <code>docker compose -f docker-compose.prod.yml ps</code></td><td>Drie containers met status "running" / "Up"</td></tr>
@@ -165,6 +206,7 @@ volgen. Los het op via een commit, of vraag hulp.
   <dt>Background task (achtergrondtaak)</dt><dd>Werk dat FastAPI uitvoert nadat het antwoord al vertrokken is, bv. een mail versturen.</dd>
   <dt>Backend</dt><dd>Het deel van de software dat de regels toepast en met de database praat. In RWCrew: FastAPI (Python).</dd>
   <dt>Base UI</dt><dd>Bibliotheek met toegankelijke basisonderdelen waarop de shadcn-componenten hier gebouwd zijn.</dd>
+  <dt>Boeking (StockMaster)</dt><dd>Eén handeling die voorraad verplaatst (inboeken, kar laden, …), met een nummer zoals <code>SM-2026-00002</code>. Wordt nooit gewist; een fout herstel je met een tegenboeking.</dd>
   <dt>Branch</dt><dd>Een aparte lijn van wijzigingen in Git. <code>main</code> = productie, <code>develop</code> = test.</dd>
   <dt>Build (bouwen)</dt><dd>Broncode omzetten naar een uitvoerbare, geoptimaliseerde versie.</dd>
   <dt>certbot / Let's Encrypt</dt><dd>Gratis HTTPS-certificaten en het programma dat ze aanvraagt en vernieuwt.</dd>
@@ -189,6 +231,7 @@ volgen. Los het op via een commit, of vraag hulp.
   <dt>Frontend</dt><dd>Het deel van de software dat schermen maakt. In RWCrew: Next.js.</dd>
   <dt>Git / GitHub</dt><dd>Versiebeheersysteem / de website waar de centrale kopie van de repository staat.</dd>
   <dt>GitHub Actions</dt><dd>De automatisatie van GitHub die bij een push de deployment uitvoert.</dd>
+  <dt>Grootboek (ledger)</dt><dd>De volledige, onveranderlijke lijst van alle voorraadbewegingen in StockMaster; het saldo per product en plaats kan er altijd uit herberekend worden.</dd>
   <dt>Hash</dt><dd>Een onomkeerbare "vingerafdruk" van gegevens; wachtwoorden worden alleen als hash bewaard.</dd>
   <dt>Headless</dt><dd>Een programma (bv. een browser) dat zonder zichtbaar venster draait.</dd>
   <dt>HTTP / HTTPS</dt><dd>Het protocol van het web / dezelfde, maar versleuteld.</dd>
@@ -321,7 +364,22 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   <tr><td><code>masterdata.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
   <tr><td><code>masterdata.roles</code>, <code>masterdata.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
 </table>
-<p>Modules 4 tot 7 en 10 hebben geen schermregister; daar gelden de vaste rollen admin/editor/reader (zie <a class="ref" href="#s-vaste-rollen"></a>).</p>
+<table class="compact">
+  <caption>StockMaster (module 4)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>stockmaster.kpi</code></td><td>(KPI) voorraad en karren in één oogopslag</td></tr>
+  <tr><td><code>stockmaster.stock</code></td><td>(Stock overview) voorraadoverzicht per product, met inboeken en uitboeken</td></tr>
+  <tr><td><code>stockmaster.kars</code></td><td>(Kars) karren: laden, vertrekt, terug, uitladen</td></tr>
+  <tr><td><code>stockmaster.count</code></td><td>(Stock count) telling</td></tr>
+  <tr><td><code>stockmaster.requirements</code></td><td>(Kar needs) benodigdheden per kar en seizoen</td></tr>
+  <tr><td><code>stockmaster.orderneeds</code></td><td>(To order) te bestellen</td></tr>
+  <tr><td><code>stockmaster.bookings</code></td><td>(Bookings) alle boekingen, ongedaan maken, boekingsbon</td></tr>
+  <tr><td><code>stockmaster.reasons</code></td><td>(Reasons) redenen voor uitboeken en telverschillen</td></tr>
+  <tr><td><code>stockmaster.closedseason</code></td><td>(Book in a closed season) <em>wijzigen</em> = ook boeken in een gesloten seizoen</td></tr>
+  <tr><td><code>stockmaster.roles</code>, <code>stockmaster.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<p>Modules 5 tot 7 en 10 hebben geen schermregister; daar gelden de vaste rollen admin/editor/reader (zie <a class="ref" href="#s-vaste-rollen"></a>).</p>
 
 <h1 class="hoofdstuk bijlage" id="bijlage-bijwerken">Deze handleiding bijwerken</h1>
 <p>De bron van deze handleiding staat in de repository, in <code>docs/handleiding/</code>, zodat ze samen met de code kan meegroeien.</p>
@@ -331,8 +389,10 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   <tr><td><code>docs/handleiding/hoofdstukken/*.html</code></td><td>De tekst, per deel, in naamvolgorde samengevoegd (<code>00-voorwerk.html</code>, <code>01-inleiding.html</code>, …)</td></tr>
   <tr><td><code>docs/handleiding/stijl.css</code></td><td>De opmaak: A4, kop- en voettekst, kaders, tabellen, diagrammen</td></tr>
   <tr><td><code>docs/handleiding/build_pdf.py</code></td><td>Script dat nummert, de inhoudsopgave maakt en de PDF afdrukt</td></tr>
+  <tr><td><code>docs/handleiding/afbeeldingen/*.png</code></td><td>De schermafbeeldingen (gemaakt met <code>screenshots.py</code>)</td></tr>
+  <tr><td><code>docs/handleiding/screenshot_user.py</code>, <code>screenshots.py</code></td><td>Tijdelijke demogebruiker aanmaken en opruimen; de schermafbeeldingen maken met gemaskeerde persoonsgegevens</td></tr>
   <tr><td><code>docs/handleiding/vendor/paged.polyfill.js</code></td><td>Paged.js 0.4.3 (MIT-licentie): zet HTML om naar pagina's</td></tr>
-  <tr><td><code>docs/RWCrew-Ontwikkelaarshandleiding.pdf</code></td><td>Het resultaat</td></tr>
+  <tr><td><code>docs/RWCrew-Ontwikkelaarshandleiding-v2.pdf</code></td><td>Het resultaat (versie 2; versie 1 blijft als <code>RWCrew-Ontwikkelaarshandleiding.pdf</code>)</td></tr>
 </table>
 <h2 id="s-bijwerken-stappen">Werkwijze</h2>
 <ol class="stappen">
@@ -344,6 +404,24 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   Google Chrome nodig.</li>
   <li>Controleer de PDF (inhoudsopgave, nieuwe figuren en tabellen) en commit de bronbestanden en de PDF samen.</li>
 </ol>
+<h2 id="s-bijwerken-schermen">Schermafbeeldingen vernieuwen</h2>
+<p>Na een wijziging aan de schermen maak je de afbeeldingen opnieuw, tegen de <strong>lokale</strong> applicatie (database, backend en
+frontend moeten draaien, zie <a class="ref" href="#s-lokaal-opstarten"></a>):</p>
+<figure class="code"><span class="bestand">Vanuit de hoofdmap van de repository</span><pre>backend/.venv/Scripts/python docs/handleiding/screenshot_user.py setup     <span class="c"># tijdelijke demogebruiker</span>
+python docs/handleiding/screenshots.py                                  <span class="c"># alle afbeeldingen</span>
+python docs/handleiding/screenshots.py 16 20                            <span class="c"># of alleen enkele</span>
+backend/.venv/Scripts/python docs/handleiding/screenshot_user.py cleanup   <span class="c"># gebruiker weer weg</span>
+python docs/handleiding/build_pdf.py</pre></figure>
+<ul>
+  <li><code>setup</code> maakt de superbeheerder <code>screenshots@voorbeeld.be</code> met toegang en een rol met alle rechten in elke module,
+  en exporteert alle namen, e-mailadressen, telefoonnummers en IP-adressen uit de database naar een bestand dat niet in Git komt.</li>
+  <li><code>screenshots.py</code> logt in als die gebruiker (licht thema, Belgische datumweergave), opent elk scherm en vervangt vóór
+  de opname alle persoonsgegevens door fictieve waarden. Welke schermen, staat in de lijst bovenaan het script.</li>
+  <li>Kijk elke nieuwe afbeelding na voor je ze commit: geen echte namen of adressen, geen foutpagina's.</li>
+  <li>Een schermafbeelding in de tekst: <code>&lt;figure class="diagram" data-soort="scherm" id="fig-scr-…"&gt;&lt;img src=&quot;afbeeldingen/naam.png&quot; alt=&quot;&quot;&gt;&lt;figcaption&gt;…&lt;/figcaption&gt;&lt;/figure&gt;</code>;
+  telefoonschermen naast elkaar met <code>data-soort="telefoon"</code> en een <code>&lt;div class="telefoon-rij"&gt;</code>.</li>
+</ul>
+
 <h2 id="s-bijwerken-opmaak">Opmaakregels voor auteurs</h2>
 <ul>
   <li><strong>Hoofdstuk</strong>: <code>&lt;h1 class="hoofdstuk" id="h-…"&gt;Titel&lt;/h1&gt;</code>, gevolgd door een doelgroeplabel

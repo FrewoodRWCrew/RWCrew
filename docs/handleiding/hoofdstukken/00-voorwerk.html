@@ -11,7 +11,7 @@
 </svg>
   <div class="label">RWCrew · Technische documentatie</div>
   <h1 class="titel">Ontwikkelaarshandleiding</h1>
-  <div class="ondertitel">Opzet, architectuur, gebruikte tools en de manier waarop de applicatie ontwikkeld is, voor iedereen die RWCrew mee gaat onderhouden.</div>
+  <div class="ondertitel">Opzet, architectuur, gebruikte tools en de manier waarop de applicatie ontwikkeld is, voor iedereen die RWCrew mee gaat onderhouden. Versie 2 · met schermafbeeldingen.</div>
   <div class="streep"></div>
   <ul class="inhoud-kort">
     <li><strong>Deel A</strong>: Opzet en architectuur: hoe RWCrew in elkaar zit en waar het draait</li>
@@ -21,9 +21,9 @@
   </ul>
   <div class="onderaan">
     <table>
-      <tr><td>Versie</td><td>1.0</td></tr>
-      <tr><td>Datum</td><td>3 oktober 2026</td></tr>
-      <tr><td>Codebasis</td><td>branch <em>develop</em>, commit 97cdc36</td></tr>
+      <tr><td>Versie</td><td>2.0</td></tr>
+      <tr><td>Datum</td><td>8 oktober 2026</td></tr>
+      <tr><td>Codebasis</td><td>branch <em>develop</em>, commit 0dc8a8e</td></tr>
       <tr><td>Status</td><td>Vrijgegeven</td></tr>
     </table>
     <div class="vertrouwelijk">Intern document</div>
@@ -43,10 +43,10 @@
   <table class="compact">
     <caption>Documentgegevens</caption>
     <tr><td style="width:32%"><strong>Titel</strong></td><td>RWCrew · Ontwikkelaarshandleiding</td></tr>
-    <tr><td><strong>Versie</strong></td><td>1.0</td></tr>
-    <tr><td><strong>Datum</strong></td><td>3 oktober 2026</td></tr>
+    <tr><td><strong>Versie</strong></td><td>2.0 (met schermafbeeldingen)</td></tr>
+    <tr><td><strong>Datum</strong></td><td>8 oktober 2026</td></tr>
     <tr><td><strong>Oorspronkelijke ontwikkelaar</strong></td><td>Frederik Verstraeten</td></tr>
-    <tr><td><strong>Beschreven codebasis</strong></td><td>Git-repository <code>RWCrew</code>, branch <code>develop</code>, commit <code>97cdc36</code></td></tr>
+    <tr><td><strong>Beschreven codebasis</strong></td><td>Git-repository <code>RWCrew</code>, branch <code>develop</code>, commit <code>0dc8a8e</code></td></tr>
     <tr><td><strong>Bron van dit document</strong></td><td><code>docs/handleiding/</code> in dezelfde repository (zie <a class="ref" href="#bijlage-bijwerken"></a>)</td></tr>
     <tr><td><strong>Classificatie</strong></td><td>Intern: bevat geen wachtwoorden of sleutels, wel interne adressen en werkwijzen</td></tr>
   </table>
@@ -56,6 +56,7 @@
     <caption>Versiegeschiedenis</caption>
     <tr><th style="width:12%">Versie</th><th style="width:20%">Datum</th><th style="width:22%">Auteur</th><th>Wijziging</th></tr>
     <tr><td>1.0</td><td>3 oktober 2026</td><td>F. Verstraeten</td><td>Eerste volledige versie: architectuur, tools, ontwikkelwerkwijze en beheer.</td></tr>
+    <tr><td>2.0</td><td>8 oktober 2026</td><td>F. Verstraeten</td><td>Schermafbeeldingen van website en telefoon-app; StockMaster (module 4); verwerking van TagScan-acties en automatisch scannen; doorsturen van CSV's tussen test en productie; versielabel; Belgische tijd.</td></tr>
     <tr><td></td><td></td><td></td><td></td></tr>
     <tr><td></td><td></td><td></td><td></td></tr>
   </table>
@@ -81,6 +82,7 @@
 
   <h3>Schrijfwijze</h3>
   <ul>
+    <li>Schermafbeeldingen zijn gemaakt op een lokale testomgeving. Alle namen, e-mailadressen, telefoonnummers en IP-adressen erop zijn <strong>fictief</strong>; ploegnamen en karnummers zijn testgegevens.</li>
     <li><span class="pad">backend/app/main.py</span> of <code>backend/app/main.py</code>: een bestand of map in de repository, altijd vanaf de hoofdmap van de repository.</li>
     <li><code>npm run dev</code>: een commando dat je in een terminal typt.</li>
     <li>Termen in het Engels (zoals <em>backend</em>, <em>endpoint</em>) worden bij het eerste gebruik uitgelegd en staan ook in de woordenlijst. We vertalen ze niet geforceerd, omdat je ze in de code en online documentatie altijd in het Engels tegenkomt.</li>

@@ -62,6 +62,11 @@ clientcomponent <code>components/module-3/intervention-requests-management.tsx</
   ...                                   <span class="c">// lijst bijwerken, dialoog sluiten</span>
   <span class="c">// bij een fout: toast.error(message) met de melding van de backend</span>
 }</pre></figure>
+<figure class="diagram" data-soort="scherm" id="fig-scr-interventie-nieuw">
+  <img src="afbeeldingen/17-interventie-nieuw.png" alt="">
+  <figcaption>Het dialoogvenster ‘Nieuwe interventieaanvraag aanmaken’ waarin de medewerker het formulier invult.</figcaption>
+</figure>
+
 <p><code>createInterventionRequest</code> staat in <code>lib/api.ts</code> en roept <code>apiFetch</code> aan met <code>POST</code> en de gegevens als
 JSON. <code>apiFetch</code> gebruikt <code>credentials: "include"</code>, zodat de browser de inlogcookies meestuurt, en loopt via
 <code>fetchWithRefresh</code>: krijgt het verzoek 401 omdat het toegangstoken net verlopen is, dan vernieuwt die functie één keer
@@ -158,18 +163,18 @@ de rechten om het te testen.</p>
   <li>Draai alle tests.</li>
 </ol>
 
-<h2 id="s-recept-module">Een nieuwe module bouwen (bv. module 4 echt maken)</h2>
+<h2 id="s-recept-module">Een nieuwe module bouwen (bv. module 5 echt maken)</h2>
 <ol class="stappen">
   <li><strong>Naam</strong>: voeg de naam toe aan <code>_MODULE_NAMES</code> in <code>app/modules/registry.py</code>, en maak een migratie die
-  <code>UPDATE "Landing_modules" SET name = '…' WHERE key = 'module-4'</code> uitvoert (met de omgekeerde wijziging in <code>downgrade()</code>).</li>
+  <code>UPDATE "Landing_modules" SET name = '…' WHERE key = 'module-5'</code> uitvoert (met de omgekeerde wijziging in <code>downgrade()</code>).</li>
   <li><strong>Rechtensysteem</strong>: volg <code>docs/module-custom-roles-pattern.md</code> stap voor stap: vier modellen
   (<code>&lt;Naam&gt;_screens</code>, <code>_roles</code>, <code>_role_permissions</code>, <code>_user_roles</code>), migratie, schema's,
   <code>screens.py</code>, <code>deps.py</code>, <code>router.py</code>. Kopieer van de module die het meest lijkt op wat je bouwt (module 3 is het
-  meest overzichtelijke voorbeeld).</li>
+  meest overzichtelijke voorbeeld; module 4 StockMaster is het meest recente).</li>
   <li><strong>main.py</strong>: importeer de nieuwe router en <code>sync_screens</code>, en roep die in <code>lifespan</code> aan.</li>
   <li><strong>Tests</strong>: kopieer <code>tests/modules/module_3/test_roles.py</code> en <code>helpers.py</code> en pas sleutels en namen aan.</li>
-  <li><strong>Frontend</strong>: types en API-functies; <code>components/module-4/</code> met sidebar, <code>roles-management.tsx</code>,
-  <code>users-management.tsx</code>; <code>app/[locale]/(protected)/modules/module-4/layout.tsx</code> (rechten ophalen, menu, accentkleur)
+  <li><strong>Frontend</strong>: types en API-functies; <code>components/module-5/</code> met sidebar, <code>roles-management.tsx</code>,
+  <code>users-management.tsx</code>; <code>app/[locale]/(protected)/modules/module-5/layout.tsx</code> (rechten ophalen, menu, accentkleur)
   en de pagina's onder <code>access-rights/roles</code> en <code>access-rights/users</code>.</li>
   <li><strong>Uitstraling</strong>: kleur en eventueel pictogram in <code>lib/module-theme.ts</code>.</li>
   <li><strong>Teksten</strong>: een nieuwe namespace in beide vertaalbestanden.</li>
@@ -310,6 +315,19 @@ altijd samen:</p>
 </ol>
 <p><code>bg-background</code> is verplicht op elke vaste cel; anders schuift de inhoud er zichtbaar onderdoor. Een tabel zonder
 Acties-kolom krijgt alleen deel 1 en 2. Het gedeelde <code>module-9/lookup-management.tsx</code> volgt het patroon al.</p>
+
+<h2 id="s-conv-tijd">Belgische tijd overal</h2>
+<p>Elke datum en elk tijdstip in RWCrew (schermen, telefoon-app, PDF's, mails, dashboards, Excel-exports) is in
+<strong>Belgische tijd</strong> (Europe/Brussels), nooit UTC. De database bewaart tijdstippen met tijdzone; de omzetting gebeurt op één plaats:</p>
+<ul>
+  <li><strong>frontend</strong>: alleen via <code>frontend/src/lib/date-time.ts</code>. Nooit <code>slice()</code> op een ISO-tekst en nooit
+  <code>toLocaleString()</code>: dat toont UTC of de tijdzone van de pc;</li>
+  <li><strong>backend</strong>: via <code>app/core/timezone.py</code> (<code>to_belgian</code>, <code>belgian_now</code>, <code>belgian_today</code>), nooit
+  <code>datetime.now()</code> of <code>date.today()</code> voor iets wat de gebruiker ziet;</li>
+  <li>databasesessies draaien in Europe/Brussels (<code>app/core/database.py</code>), zodat een datum en uur uit een formulier zonder
+  tijdzone als Belgische tijd gelezen worden.</li>
+</ul>
+<p>De aanleiding: op Tag Headerdata stond het tijdstip eerst in UTC, één tot twee uur verschoven.</p>
 
 <h2 id="s-conv-backend">Afspraken in de backend</h2>
 <ul>
@@ -525,5 +543,9 @@ browser <code>scriptProps</code> met <code>type: "application/json"</code> mee t
   <tr><td>Kolom of tabel kwijt na een migratie</td><td>Autogenerate zag een hernoeming als verwijderen + aanmaken.</td><td>Migraties altijd nalezen; <code>rename_table</code> / <code>alter_column</code> gebruiken.</td></tr>
   <tr><td>Module 10 toont "niet geconfigureerd"</td><td><code>APP_PUBLIC_URL</code> niet ingesteld.</td><td>Instelling invullen op de server (en in <code>docker-compose.prod.yml</code>).</td></tr>
   <tr><td>iPad telt als pc in de inloghistoriek</td><td>iPadOS 13+ doet zich voor als Mac.</td><td>Bekende beperking; de bron (<code>pwa</code>) toont wel dat het de telefoon-app was.</td></tr>
+  <tr><td>TagScan-bestanden worden twee keer verwerkt of de automatische scan loopt dubbel</td><td>Meerdere backendprocessen (workers) starten elk hun eigen automatische scan.</td><td>Eén uvicorn-proces per omgeving houden, of de taak naar één worker of cron verhuizen; noodstop met <code>TAGSCAN_AUTO_SCAN_WORKER=false</code>.</td></tr>
+  <tr><td>CSV met <code>Mode</code> = andere omgeving komt niet aan</td><td><code>TAGSCAN_ENVIRONMENT</code>, <code>TAGSCAN_FORWARD_URL</code> of <code>TAGSCAN_FORWARD_API_KEY</code> ontbreekt, of de sleutel is niet op de andere omgeving gemaakt.</td><td>Alle drie instellen in elke <code>.env</code> (en <code>docker-compose.prod.yml</code>). Een doorgestuurd bestand krijgt de header <code>X-TagScan-Forwarded: 1</code> en wordt nooit teruggestuurd.</td></tr>
+  <tr><td>Tijdstippen één of twee uur verschoven</td><td>Een tijd in UTC getoond (bv. <code>slice()</code> op een ISO-tekst).</td><td><code>lib/date-time.ts</code> en <code>app/core/timezone.py</code> gebruiken (zie <a class="ref" href="#s-conv-tijd"></a>).</td></tr>
+  <tr><td>Foutmelding in StockMaster toont een code als <code>insufficient_stock|…</code></td><td>Nieuwe <code>StockError</code>-code zonder vertaling.</td><td>Vertaling toevoegen onder <code>stockMaster.errors.&lt;code&gt;</code> in <code>nl.json</code> en <code>en.json</code>.</td></tr>
   <tr><td>Verwarring met een "RWCrew"-project in <code>c:\Fre Software\RWCrew.be</code></td><td>Ander, los project met dezelfde naam.</td><td>Negeren; het heeft niets met deze repository te maken.</td></tr>
 </table>

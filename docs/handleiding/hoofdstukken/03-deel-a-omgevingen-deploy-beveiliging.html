@@ -197,6 +197,10 @@ staat in Git.</p>
   <tr><td><code>MAIL_SUBJECT_PREFIX</code></td><td>backend</td><td>Voor elk mailonderwerp, bv. <code>[TEST] </code> op test</td></tr>
   <tr><td><code>APP_PUBLIC_URL</code></td><td>backend</td><td>Publiek adres van de app, voor links in mails en de QR-code van module 10</td></tr>
   <tr><td><code>TAGSCAN_SOURCE_DIR</code></td><td>backend</td><td>Map voor de TagScan-bestanden (op de server een Docker-volume)</td></tr>
+  <tr><td><code>TAGSCAN_ENVIRONMENT</code></td><td>backend</td><td>Naam van deze omgeving voor de kolom <code>Mode</code> van TagScan-CSV's (<code>test</code> of <code>production</code>); leeg = nooit doorsturen</td></tr>
+  <tr><td><code>TAGSCAN_FORWARD_URL</code>, <code>TAGSCAN_FORWARD_API_KEY</code></td><td>backend</td><td>Ontvangstadres van de <em>andere</em> omgeving en een scannersleutel die op die andere omgeving is aangemaakt</td></tr>
+  <tr><td><code>TAGSCAN_AUTO_SCAN_WORKER</code></td><td>backend</td><td>Noodschakelaar: <code>false</code> start het automatisch scannen niet (standaard <code>true</code>)</td></tr>
+  <tr><td><code>APP_COMMIT</code>, <code>APP_COMMIT_DATE</code></td><td>beide</td><td>Versielabel; wordt door <code>deploy.sh</code> zelf uit Git gezet, niet in <code>.env</code> (zie <a class="ref" href="#s-versielabel"></a>)</td></tr>
   <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>frontend</td><td>Adres van de backend zoals de browser het aanroept. Wordt bij het <em>bouwen</em> ingebakken.</td></tr>
   <tr><td><code>DEV_API_PROXY_TARGET</code></td><td>frontend</td><td>Alleen lokaal: stuurt <code>/api/...</code> door naar de backend</td></tr>
   <tr><td><code>NEXT_PUBLIC_SITE_URL</code></td><td>frontend</td><td>Publiek adres voor QR-codes op afgedrukte karbladen</td></tr>
@@ -357,6 +361,16 @@ waarde in de <code>.env</code> van de server, dan moet de frontend opnieuw <em>g
   (<code>docker compose -f docker-compose.prod.yml up -d backend</code>).</li>
 </ol>
 
+<h2 id="s-versielabel">Welke versie draait waar?</h2>
+<p><code>deploy.sh</code> haalt bij elke deployment de korte commitcode (<code>APP_COMMIT</code>) en de commitdatum in Belgische tijd
+(<code>APP_COMMIT_DATE</code>, bv. <code>2026.10.04</code>) uit Git en geeft die aan beide containers. Zo zie je altijd welke code er draait:</p>
+<ul>
+  <li>onderaan het beheermenu links staat <code>v&lt;datum&gt; · &lt;commit&gt;</code> (alleen zichtbaar voor de superbeheerder);</li>
+  <li><code>https://rwcrew.eu/api/health</code> geeft naast <code>"status":"ok"</code> ook de <code>"version"</code> van de backend.</li>
+</ul>
+<p>Lokaal leest <code>next.config.ts</code> dezelfde waarden uit Git; zonder Git is het label <code>dev</code>. Vergelijk het label met de
+commit op GitHub om na een deployment te controleren dat de nieuwe versie echt live staat.</p>
+
 <h2 id="s-handmatig-terugdraaien">Handmatig deployen en terugdraaien</h2>
 <p>Een deployment opnieuw uitvoeren, bijvoorbeeld na het aanpassen van een <code>.env</code>, kan met de hand op de
 server, vanuit de map van de omgeving:</p>
@@ -513,6 +527,11 @@ stilzwijgend falen. Verwijder die niet.
 <figcaption>De twee toegangsniveaus. Een gebruiker heeft eerst moduletoegang nodig; pas dan telt zijn rol binnen de module.</figcaption>
 </figure>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-manage-access">
+  <img src="afbeeldingen/03-manage-access.png" alt="">
+  <figcaption>Manage Access (Toegangsbeheer): per gebruiker de vlaggen Super admin en Altsien Kernlid, en één vinkje per module.</figcaption>
+</figure>
+
 <h3 id="s-moduletoegang">Niveau 1: moduletoegang</h3>
 <p>De <strong>superbeheerder</strong> (een gebruiker met <code>is_super_admin</code>) beslist op het scherm
 <em>Manage Access</em> per gebruiker welke modules die mag openen. Dat is een eenvoudig vinkje per module, bewaard
@@ -526,7 +545,7 @@ iedereen. Code: <code>backend/app/shared/access.py</code>.
 </div>
 
 <h3 id="s-rechten-per-scherm">Niveau 2: rollen met rechten per scherm</h3>
-<p>Binnen modules 1, 2, 3, 8 en 9 bepaalt een <strong>rollensysteem</strong> wat iemand mag. Elke module heeft
+<p>Binnen modules 1, 2, 3, 4, 8 en 9 bepaalt een <strong>rollensysteem</strong> wat iemand mag. Elke module heeft
 daarvoor een eigen menu <em>Access Rights</em> met twee schermen:</p>
 <ul>
   <li><strong>Roles</strong>: rollen aanmaken (vrij te kiezen namen, bv. "Kernlid", "Logistiek", "Lezer") en per rol
@@ -559,8 +578,18 @@ daarvoor een eigen menu <em>Access Rights</em> met twee schermen:</p>
 <p>De volledige lijst van schermen per module staat in <a class="ref" href="#bijlage-schermen"></a>. Hoe dit in de code
 gebouwd is, staat in <a class="ref" href="#s-be-rechten"></a>.</p>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-rechten-matrix">
+  <img src="afbeeldingen/20-rechten-matrix.png" alt="">
+  <figcaption>Access Rights &gt; Rollen: de rechtenmatrix van een rol, met per scherm de vinkjes Bekijken, Aanmaken, Wijzigen en Verwijderen.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-rechten-gebruikers">
+  <img src="afbeeldingen/21-rechten-gebruikers.png" alt="">
+  <figcaption>Access Rights &gt; Gebruikers: per gebruiker met moduletoegang één rol in deze module.</figcaption>
+</figure>
+
 <h3 id="s-vaste-rollen">Modules met vaste rollen</h3>
-<p>Modules 4 tot 7 en module 10 gebruiken nog een eenvoudiger, ouder systeem: drie vaste rollen
+<p>Modules 5 tot 7 en module 10 gebruiken nog een eenvoudiger, ouder systeem: drie vaste rollen
 (<em>admin</em>, <em>editor</em>, <em>reader</em>) in één gedeelde tabel <code>Landing_module_roles</code>. Zodra zo'n
 module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per scherm (zie <a class="ref" href="#s-recept-module"></a>).</p>
 

@@ -301,8 +301,6 @@
       "columnNotes5": "Notities 5",
       "tableActions": "Acties",
       "newTag": "Nieuwe tag",
-      "downloadTemplate": "Sjabloon downloaden",
-      "importCsv": "Excel importeren",
       "filterEpcUid": "Zoek op EPC / UID",
       "filterStatus": "Status",
       "filterProduct": "Toegewezen product",
@@ -323,21 +321,6 @@
       "allProducts": "Alle producten",
       "selectAll": "Alles selecteren",
       "selectRow": "Selecteer tag \"{epcUid}\"",
-      "importCsvTitle": "Tags importeren via Excel",
-      "importCsvDescription": "Upload een Excel-bestand (.xlsx) op basis van het sjabloon om tags in bulk te registreren of bij te werken.",
-      "chooseFileLabel": "Excel-bestand",
-      "uploadButton": "Uploaden",
-      "importFailed": "Importeren van Excel-bestand is mislukt.",
-      "importSummary": "{created} aangemaakt, {updated} bijgewerkt, {errors} overgeslagen.",
-      "importColumnRow": "Rij",
-      "importColumnEpcUid": "EPC / UID",
-      "importColumnOutcome": "Resultaat",
-      "importColumnDetail": "Detail",
-      "importOutcome": {
-        "created": "Aangemaakt",
-        "updated": "Bijgewerkt",
-        "error": "Overgeslagen"
-      },
       "createTitle": "Nieuwe tag registreren",
       "createDescription": "Voeg een nieuwe RFID-tag toe aan het register.",
       "changeTitle": "Tag wijzigen",
@@ -374,7 +357,12 @@
       "deleteConfirmTitle": "Tag verwijderen?",
       "deleteConfirmDescription": "Dit verwijdert tag \"{epcUid}\" definitief. Dit kan niet ongedaan worden gemaakt.",
       "tagDeleted": "Tag verwijderd.",
-      "deleteFailed": "Verwijderen van tag is mislukt."
+      "deleteFailed": "Verwijderen van tag is mislukt.",
+      "deleteSelected": "Verwijder geselecteerde ({count})",
+      "deleteSelectedConfirmTitle": "Geselecteerde tags verwijderen?",
+      "deleteSelectedConfirmDescription": "Dit verwijdert {count, plural, one {# tag} other {# tags}} definitief. Gescande regels die eraan gekoppeld zijn verliezen hun koppeling. Dit kan niet ongedaan worden gemaakt.",
+      "tagsDeleted": "{count, plural, one {# tag verwijderd.} other {# tags verwijderd.}}",
+      "deleteSelectedFailed": "Verwijderen van de geselecteerde tags is mislukt."
     },
     "scanners": {
       "title": "Scanners",
@@ -565,6 +553,38 @@
       "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}",
       "columnCsvComment": "Product / opmerkingen (CSV)",
       "csvCommentLabel": "CSV product / opmerkingen"
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Hulpmiddelen om de tabellen van TagScan in bulk te importeren en exporteren, één tegel per tabel.",
+      "downloadTemplateLabel": "Sjabloon",
+      "downloadTemplateButton": "Sjabloon downloaden",
+      "uploadNotAllowed": "Je hebt geen rechten om hier te uploaden — vraag een TagScan-beheerder om deze toe te kennen.",
+      "chooseFileLabel": "Excel-bestand",
+      "uploadButton": "Uploaden",
+      "importFailed": "Importeren van het Excel-bestand is mislukt.",
+      "importSummary": "{created} aangemaakt, {updated} bijgewerkt, {errors} overgeslagen.",
+      "importColumnRow": "Rij",
+      "importColumnOutcome": "Resultaat",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Aangemaakt",
+        "updated": "Bijgewerkt",
+        "error": "Fout"
+      },
+      "exportLabel": "Exporteren",
+      "tags": {
+        "tileTitle": "Tags",
+        "dialogDescription": "Download een sjabloon om tags voor te bereiden, upload het om ze in bulk te registreren (een bestaande EPC / UID wordt bijgewerkt), of exporteer de volledige lijst.",
+        "importColumnKey": "EPC / UID",
+        "exportButton": "Tags downloaden"
+      },
+      "scanners": {
+        "tileTitle": "Scanners",
+        "dialogDescription": "Download een sjabloon om scanners voor te bereiden, upload het om ze in bulk te registreren (een bestaande scannernaam wordt bijgewerkt, de API-sleutel blijft behouden), of exporteer de volledige lijst.",
+        "importColumnKey": "Scanner",
+        "exportButton": "Scanners downloaden"
+      }
     }
   },
   "masterdata": {

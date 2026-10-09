@@ -301,8 +301,6 @@
       "columnNotes5": "Notes 5",
       "tableActions": "Actions",
       "newTag": "New tag",
-      "downloadTemplate": "Download template",
-      "importCsv": "Import Excel",
       "filterEpcUid": "Search EPC / UID",
       "filterStatus": "Status",
       "filterProduct": "Assigned Product",
@@ -323,21 +321,6 @@
       "allProducts": "All products",
       "selectAll": "Select all",
       "selectRow": "Select tag \"{epcUid}\"",
-      "importCsvTitle": "Import tags from Excel",
-      "importCsvDescription": "Upload an Excel file (.xlsx) based on the template to bulk-register or update tags.",
-      "chooseFileLabel": "Excel file",
-      "uploadButton": "Upload",
-      "importFailed": "Failed to import the Excel file.",
-      "importSummary": "{created} created, {updated} updated, {errors} skipped.",
-      "importColumnRow": "Row",
-      "importColumnEpcUid": "EPC / UID",
-      "importColumnOutcome": "Outcome",
-      "importColumnDetail": "Detail",
-      "importOutcome": {
-        "created": "Created",
-        "updated": "Updated",
-        "error": "Skipped"
-      },
       "createTitle": "Register a new tag",
       "createDescription": "Add a new RFID tag to the registry.",
       "changeTitle": "Change tag",
@@ -374,7 +357,12 @@
       "deleteConfirmTitle": "Delete tag?",
       "deleteConfirmDescription": "This will permanently remove the tag \"{epcUid}\". This cannot be undone.",
       "tagDeleted": "Tag deleted.",
-      "deleteFailed": "Failed to delete the tag."
+      "deleteFailed": "Failed to delete the tag.",
+      "deleteSelected": "Delete selected ({count})",
+      "deleteSelectedConfirmTitle": "Delete selected tags?",
+      "deleteSelectedConfirmDescription": "This will permanently remove {count, plural, one {# tag} other {# tags}}. Scanned lines matched to them lose their link. This cannot be undone.",
+      "tagsDeleted": "{count, plural, one {# tag deleted.} other {# tags deleted.}}",
+      "deleteSelectedFailed": "Failed to delete the selected tags."
     },
     "scanners": {
       "title": "Scanners",
@@ -565,6 +553,38 @@
       "fileLineCount": "{count, plural, one {# line} other {# lines}}",
       "columnCsvComment": "Product / comments (CSV)",
       "csvCommentLabel": "CSV product / comments"
+    },
+    "dataUploadDownload": {
+      "title": "Data Upload/Download",
+      "description": "Tools to bulk import and export TagScan's tables, one tile per table.",
+      "downloadTemplateLabel": "Template",
+      "downloadTemplateButton": "Download template",
+      "uploadNotAllowed": "You don't have permission to upload here — ask a TagScan administrator to grant it.",
+      "chooseFileLabel": "Excel file",
+      "uploadButton": "Upload",
+      "importFailed": "Failed to import the Excel file.",
+      "importSummary": "{created} created, {updated} updated, {errors} skipped.",
+      "importColumnRow": "Row",
+      "importColumnOutcome": "Outcome",
+      "importColumnDetail": "Detail",
+      "importOutcome": {
+        "created": "Created",
+        "updated": "Updated",
+        "error": "Error"
+      },
+      "exportLabel": "Export",
+      "tags": {
+        "tileTitle": "Tags",
+        "dialogDescription": "Download a template to prepare tags, upload it to register them in bulk (an existing EPC / UID is updated), or export the full list.",
+        "importColumnKey": "EPC / UID",
+        "exportButton": "Download tags"
+      },
+      "scanners": {
+        "tileTitle": "Scanners",
+        "dialogDescription": "Download a template to prepare scanners, upload it to register them in bulk (an existing scanner name is updated, its API key is kept), or export the full list.",
+        "importColumnKey": "Scanner",
+        "exportButton": "Download scanners"
+      }
     }
   },
   "masterdata": {

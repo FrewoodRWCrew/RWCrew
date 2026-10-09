@@ -88,10 +88,12 @@ import type {
   ProductTypeImportResponse,
   PublicInterventionRequestInput,
   RfidTag,
+  RfidTagBulkDeleteResponse,
   RfidTagImportResponse,
   RfidTagInput,
   Scanner,
   ScannerApiKey,
+  ScannerImportResponse,
   ScannerInput,
   Season,
   SeasonInput,
@@ -796,6 +798,14 @@ export function deleteRfidTag(tagId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-1/tags/${tagId}`, { method: "DELETE" });
 }
 
+/** Deletes every checked tag on the TagManagement screen in one go (all or nothing). */
+export function deleteRfidTags(tagIds: number[]): Promise<RfidTagBulkDeleteResponse> {
+  return apiFetch<RfidTagBulkDeleteResponse>("/api/modules/module-1/tags/bulk-delete", {
+    method: "POST",
+    body: JSON.stringify({ tag_ids: tagIds }),
+  });
+}
+
 // --- Scanners (module-1's "tagscan.scanners" screen) ---------------------
 
 export function listScanners(): Promise<Scanner[]> {
@@ -853,7 +863,8 @@ export function updateTagscanAutoScan(payload: { enabled: boolean; interval_seco
 }
 
 /**
- * Uploads a CSV file to bulk-import tags. Uses a plain fetch instead of
+ * Uploads an XLSX file to bulk-import tags (TagScan's Data Upload/Download
+ * screen; an existing EPC is updated). Uses a plain fetch instead of
  * apiFetch: the body is FormData, not JSON, and the browser must set its
  * own multipart Content-Type (with boundary) — setting it manually would
  * break the upload.
@@ -862,7 +873,7 @@ export async function importRfidTags(file: File): Promise<RfidTagImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-1/tags/import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-1/tag-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -875,6 +886,26 @@ export async function importRfidTags(file: File): Promise<RfidTagImportResponse>
   }
 
   return (await response.json()) as RfidTagImportResponse;
+}
+
+/** Uploads an XLSX file to bulk-import scanners (an existing name is updated). Mirrors importRfidTags above. */
+export async function importScanners(file: File): Promise<ScannerImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-1/scanner-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as ScannerImportResponse;
 }
 
 export function getTagDashboardStats(): Promise<TagDashboardStats> {

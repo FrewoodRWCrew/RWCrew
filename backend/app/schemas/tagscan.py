@@ -107,12 +107,14 @@ class CreateOrGrantUserRequest(BaseModel):
 
 
 class MyPermissionsResponse(BaseModel):
-    """Which Tagscan screens the calling user is allowed to view — used by
-    the frontend to decide what to show in the sidebar, without it having
-    to know the full permission-checking rules itself.
+    """Which Tagscan screens the calling user is allowed to view (and
+    create on) — used by the frontend to decide what to show in the sidebar
+    and whether to offer upload controls, without it having to know the
+    full permission-checking rules itself.
     """
 
     viewable_screen_keys: list[str]
+    creatable_screen_keys: list[str]
 
 
 class FolderNode(BaseModel):
@@ -311,6 +313,19 @@ class IntakeUploadResponse(BaseModel):
     environment: str | None = None
 
 
+class RfidTagBulkDeleteRequest(BaseModel):
+    """The tags checked on the TagManagement screen, to delete in one go."""
+
+    # Capped so a single request can't ask for an absurd number of deletes.
+    tag_ids: list[int] = Field(min_length=1, max_length=5000)
+
+
+class RfidTagBulkDeleteResponse(BaseModel):
+    """How many tags were actually deleted (ids already gone are skipped)."""
+
+    deleted: int
+
+
 class RfidTagImportRowResult(BaseModel):
     """What happened to one row of an uploaded CSV import."""
 
@@ -324,6 +339,21 @@ class RfidTagImportResponse(BaseModel):
     """The full outcome of a CSV import — one result per row, in order."""
 
     results: list[RfidTagImportRowResult]
+
+
+class ScannerImportRowResult(BaseModel):
+    """What happened to one row of an uploaded scanners workbook."""
+
+    row_number: int
+    scanner: str | None
+    outcome: Literal["created", "updated", "error"]
+    detail: str | None
+
+
+class ScannerImportResponse(BaseModel):
+    """The full outcome of a scanners import — one result per row, in order."""
+
+    results: list[ScannerImportRowResult]
 
 
 class TagStatusBreakdownItem(BaseModel):

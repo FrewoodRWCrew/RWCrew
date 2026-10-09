@@ -292,6 +292,29 @@ def test_deleting_a_tag_matched_by_scanned_lines_unlinks_them(
     assert lines[0].process_status == "loaded"
 
 
+def test_bulk_deleting_tags_matched_by_scanned_lines_unlinks_them(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # Same unlinking as the single delete above, for several tags at once.
+    product = _create_product(db_session)
+    _write_csv(scan_dirs, "scan.csv", [("E2AAA", "Assignment"), ("E2BBB", "Assignment")])
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post(f"{BASE}/header-data/scan")
+    client.post(
+        f"{BASE}/line-data/pending/process",
+        json={"files": [{"header_data_id": _header_id(db_session, "scan.csv"), "product_id": product.id}]},
+    )
+    tag_ids = list(db_session.scalars(select(RfidTag.id)).all())
+
+    response = client.post(f"{BASE}/tags/bulk-delete", json={"tag_ids": tag_ids})
+
+    assert response.json() == {"deleted": 2}
+    db_session.expire_all()
+    lines = db_session.scalars(select(TagLineData)).all()
+    assert all((line.rfid_tag_id, line.status) == (None, "no_match") for line in lines)
+
+
 def test_scan_stores_the_csv_product_comment_column(client: TestClient, db_session: Session, scan_dirs: Path) -> None:
     # A column named "Comment" (any case): the first row's empty cell falls
     # back to the file's first non-empty value.

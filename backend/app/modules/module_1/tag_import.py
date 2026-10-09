@@ -1,5 +1,7 @@
-# Bulk XLSX import for TagManagement: building the downloadable template
-# and applying an uploaded workbook row by row. Kept free of FastAPI/
+# Bulk XLSX import/export for TagManagement (used by TagScan's "Data
+# Upload/Download" screen): building the downloadable template, applying an
+# uploaded workbook row by row, and exporting every tag in that same column
+# layout (so an export can be edited and uploaded again). Kept free of FastAPI/
 # routing concerns (mirrors file_browser.py), so it's easy to unit test
 # on its own.
 #
@@ -21,6 +23,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core.timezone import to_belgian
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
 from app.schemas.tagscan import RfidTagImportRowResult
@@ -205,3 +208,45 @@ def import_tags_from_xlsx(db: Session, file_bytes: bytes) -> list[RfidTagImportR
 
     db.commit()
     return results
+
+
+def export_tags_to_xlsx(db: Session) -> bytes:
+    """Every tag as a single-sheet workbook, in the template's own columns —
+    so an export can be edited and uploaded again as-is (rows then update)."""
+    workbook = Workbook()
+    sheet = workbook.active
+    sheet.title = "Tags"
+    sheet.append(TEMPLATE_COLUMNS)
+    for cell in sheet[1]:
+        cell.font = Font(bold=True)
+
+    # Product names by id, so each row shows the name a person can edit.
+    product_names = {product.id: product.name for product in db.scalars(select(Product)).all()}
+
+    for tag in db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all():
+        values = {
+            "epc_uid": tag.epc_uid,
+            "status": tag.status,
+            "product_name": product_names.get(tag.assigned_product_id) if tag.assigned_product_id else None,
+            "assigned_serial_number": tag.assigned_serial_number,
+            "date_assigned": tag.date_assigned,
+            # Excel has no time zones: write the Belgian wall-clock time.
+            "last_read_at": to_belgian(tag.last_read_at).replace(tzinfo=None) if tag.last_read_at else None,
+            "last_reader_id": tag.last_reader_id,
+            "last_location": tag.last_location,
+            "manufacturer": tag.manufacturer,
+            "batch_number": tag.batch_number,
+            "notes_1": tag.notes_1,
+            "notes_2": tag.notes_2,
+            "notes_3": tag.notes_3,
+            "notes_4": tag.notes_4,
+            "notes_5": tag.notes_5,
+        }
+        sheet.append([values[column] for column in TEMPLATE_COLUMNS])
+
+    for index, column in enumerate(TEMPLATE_COLUMNS, start=1):
+        sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 14)
+
+    buffer = io.BytesIO()
+    workbook.save(buffer)
+    return buffer.getvalue()

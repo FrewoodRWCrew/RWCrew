@@ -36,8 +36,10 @@ class ScreenDefinition:
 # RFID-reader devices used to enrich Tag Headerdata/Tag Linedata with
 # which device produced a given CSV; "Roles" and "Users" are the two
 # access-rights screens; "Settings" configures the device CSV-intake
-# receive folder (see app/modules/module_1/device_router.py). All are
-# gated independently of one another.
+# receive folder (see app/modules/module_1/device_router.py); "Data
+# Upload/Download" gates the bulk XLSX import/export tiles for tags and
+# scanners (one screen key for both tiles, like MasterData's own
+# "masterdata.dataupload"). All are gated independently of one another.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="tagscan.dashboard", label="CSV Source Files", sort_order=1),
     ScreenDefinition(key="tagscan.tag-headerdata", label="Tag Headerdata", sort_order=2),
@@ -47,6 +49,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="tagscan.users", label="Users", sort_order=6),
     ScreenDefinition(key="tagscan.scanners", label="Scanners", sort_order=7),
     ScreenDefinition(key="tagscan.settings", label="Settings", sort_order=8),
+    ScreenDefinition(key="tagscan.dataupload", label="Data Upload/Download", sort_order=9),
 ]
 
 

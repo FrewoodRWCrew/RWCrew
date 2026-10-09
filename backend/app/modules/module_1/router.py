@@ -49,7 +49,12 @@ from app.modules.module_1.file_browser import (
 from app.modules.module_1.tag_dashboard import build_dashboard_stats
 from app.modules.module_1.tag_header_data import delete_header_data, list_header_data, scan_unreaded_tags
 from app.modules.module_1.tag_header_pdf import build_header_summary_pdf
-from app.modules.module_1.tag_import import build_template_xlsx, import_tags_from_xlsx
+from app.modules.module_1.scanner_import import (
+    build_scanner_template_xlsx,
+    export_scanners_to_xlsx,
+    import_scanners_from_xlsx,
+)
+from app.modules.module_1.tag_import import build_template_xlsx, export_tags_to_xlsx, import_tags_from_xlsx
 from app.modules.module_1.line_processing import (
     cancel_line_processing,
     count_pending_lines,
@@ -67,6 +72,8 @@ from app.schemas.tagscan import (
     LineProcessResponse,
     MyPermissionsResponse,
     PendingActionsCountResponse,
+    RfidTagBulkDeleteRequest,
+    RfidTagBulkDeleteResponse,
     RfidTagCreateRequest,
     RfidTagImportResponse,
     RfidTagResponse,
@@ -76,6 +83,7 @@ from app.schemas.tagscan import (
     RoleUpdateRequest,
     ScannerApiKeyResponse,
     ScannerCreateRequest,
+    ScannerImportResponse,
     ScannerResponse,
     ScannerUpdateRequest,
     ScreenPermissionResponse,
@@ -490,25 +498,16 @@ def update_tag(
     return tag
 
 
-@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_tag(
-    tag_id: int,
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
-) -> None:
-    """Permanently delete a tag. Scanned lines matched to it are unlinked
-    first (otherwise their rfid_tag_id foreign key blocks the delete): they
-    become "no_match" with an empty tag snapshot — exactly what Synchro
-    would make of them once the tag is gone. Cancelled lines keep their
-    status and snapshot (a manual override), only the link is cleared.
+def _unlink_tag_lines(db: Session, tag_ids: list[int]) -> None:
+    """Unlink the scanned lines matched to these tags, so their rfid_tag_id
+    foreign key doesn't block deleting them: they become "no_match" with an
+    empty tag snapshot — exactly what Synchro would make of them once the tag
+    is gone. Cancelled lines keep their status and snapshot (a manual
+    override), only the link is cleared. Doesn't commit.
     """
-    tag = db.get(RfidTag, tag_id)
-    if tag is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
-
     db.execute(
         update(TagLineData)
-        .where(TagLineData.rfid_tag_id == tag_id, TagLineData.status != "cancelled")
+        .where(TagLineData.rfid_tag_id.in_(tag_ids), TagLineData.status != "cancelled")
         .values(
             status="no_match",
             rfid_tag_id=None,
@@ -518,10 +517,49 @@ def delete_tag(
             batch_number=None,
         )
     )
-    db.execute(update(TagLineData).where(TagLineData.rfid_tag_id == tag_id).values(rfid_tag_id=None))
+    db.execute(update(TagLineData).where(TagLineData.rfid_tag_id.in_(tag_ids)).values(rfid_tag_id=None))
+
+
+@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_tag(
+    tag_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
+) -> None:
+    """Permanently delete a tag, unlinking its scanned lines first (see
+    _unlink_tag_lines).
+    """
+    tag = db.get(RfidTag, tag_id)
+    if tag is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
+
+    _unlink_tag_lines(db, [tag_id])
 
     db.delete(tag)
     db.commit()
+
+
+@router.post("/tags/bulk-delete", response_model=RfidTagBulkDeleteResponse)
+def bulk_delete_tags(
+    payload: RfidTagBulkDeleteRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "delete")),
+) -> RfidTagBulkDeleteResponse:
+    """Permanently delete every tag checked on the TagManagement screen, in
+    one transaction (all or nothing). Ids that no longer exist — e.g. deleted
+    meanwhile by someone else — are simply skipped.
+    """
+    tags = list(db.scalars(select(RfidTag).where(RfidTag.id.in_(payload.tag_ids))).all())
+    if not tags:
+        return RfidTagBulkDeleteResponse(deleted=0)
+
+    # Same unlinking as the single delete, for all of them at once.
+    _unlink_tag_lines(db, [tag.id for tag in tags])
+
+    for tag in tags:
+        db.delete(tag)
+    db.commit()
+    return RfidTagBulkDeleteResponse(deleted=len(tags))
 
 
 def _validate_scanner_lookup_ids(db: Session, payload: ScannerCreateRequest | ScannerUpdateRequest) -> None:
@@ -742,30 +780,82 @@ def update_auto_scan_settings(
     return _resolve_settings_response(db)
 
 
-@router.get("/tags/template")
-def download_tag_import_template(
-    _user: User = Depends(require_screen_permission("tagscan.tag-management", "view")),
-) -> Response:
-    """The downloadable XLSX template for bulk-importing tags."""
+# --- Data Upload/Download: bulk XLSX import/export of tags and scanners,
+# one tile per table on the "tagscan.dataupload" screen. "view" is enough
+# for the template and the export, uploading needs "create".
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _xlsx_response(content: bytes, filename: str) -> Response:
+    """An XLSX workbook as a file download."""
     return Response(
-        content=build_template_xlsx(),
-        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": 'attachment; filename="tag-import-template.xlsx"'},
+        content=content,
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
-@router.post("/tags/import", response_model=RfidTagImportResponse)
+@router.get("/tag-import/template")
+def download_tag_import_template(
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-importing tags."""
+    return _xlsx_response(build_template_xlsx(), "tag-import-template.xlsx")
+
+
+@router.post("/tag-import", response_model=RfidTagImportResponse)
 def import_tags(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission("tagscan.tag-management", "create")),
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "create")),
 ) -> RfidTagImportResponse:
     """Bulk-import tags from an uploaded XLSX workbook — best-effort:
     every row is applied independently, so invalid rows are skipped (and
-    reported) rather than failing the whole upload.
+    reported) rather than failing the whole upload. Existing EPCs update.
     """
     results = import_tags_from_xlsx(db, file.file.read())
     return RfidTagImportResponse(results=results)
+
+
+@router.get("/tags/export")
+def export_tags(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "view")),
+) -> Response:
+    """Every tag as an XLSX workbook, in the import template's columns."""
+    return _xlsx_response(export_tags_to_xlsx(db), "tagscan-tags-export.xlsx")
+
+
+@router.get("/scanner-import/template")
+def download_scanner_import_template(
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "view")),
+) -> Response:
+    """The downloadable XLSX template for bulk-importing scanners."""
+    return _xlsx_response(build_scanner_template_xlsx(), "scanner-import-template.xlsx")
+
+
+@router.post("/scanner-import", response_model=ScannerImportResponse)
+def import_scanners(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "create")),
+) -> ScannerImportResponse:
+    """Bulk-import scanners from an uploaded XLSX workbook — best-effort,
+    like the tag import; an existing scanner name is updated (its API key
+    is left alone).
+    """
+    results = import_scanners_from_xlsx(db, file.file.read())
+    return ScannerImportResponse(results=results)
+
+
+@router.get("/scanners/export")
+def export_scanners(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.dataupload", "view")),
+) -> Response:
+    """Every scanner as an XLSX workbook, in the import template's columns."""
+    return _xlsx_response(export_scanners_to_xlsx(db), "tagscan-scanners-export.xlsx")
 
 
 @router.get("/screens", response_model=list[ScreenResponse])
@@ -1024,10 +1114,11 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
-    """Tell the frontend which Tagscan screens the current user can view,
-    so it knows what to show in the sidebar without duplicating the
-    permission-checking rules itself.
+    """Tell the frontend which Tagscan screens the current user can view
+    and create on, so it knows what to show (sidebar links, upload
+    controls) without duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(TagscanScreen)).all()
     viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys)
+    creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
+    return MyPermissionsResponse(viewable_screen_keys=viewable_keys, creatable_screen_keys=creatable_keys)

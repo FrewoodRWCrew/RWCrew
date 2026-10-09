@@ -11,7 +11,7 @@
 //
 // Each tile's dialog combines template download / bulk upload / export,
 // mirroring TagScan's own import dialog
-// (components/module-1/tag-import-dialog.tsx) — except a duplicate key
+// (components/module-1/tagscan-data-upload-download.tsx) — except a duplicate key
 // (kar_nummer / status name) is reported as an error, never upserted (see
 // kar_import.py / kar_status_import.py on the backend for why), so there's
 // no "updated" outcome here.

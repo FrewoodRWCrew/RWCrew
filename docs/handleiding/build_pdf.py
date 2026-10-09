@@ -33,6 +33,7 @@ import sys
 import tempfile
 import time
 import urllib.request
+from contextlib import contextmanager
 from pathlib import Path
 
 # Mappen en bestanden, relatief ten opzichte van dit script.
@@ -40,7 +41,8 @@ HIER = Path(__file__).resolve().parent
 HOOFDSTUKKEN = HIER / "hoofdstukken"
 STIJL = HIER / "stijl.css"
 PAGEDJS = HIER / "vendor" / "paged.polyfill.js"
-UITVOER = HIER.parent / "RWCrew-Ontwikkelaarshandleiding.pdf"
+UITVOER = HIER.parent / "RWCrew-Ontwikkelaarshandleiding-v2.pdf"
+AFBEELDINGEN = HIER / "afbeeldingen"
 
 # Waar Edge of Chrome meestal staat (Windows, macOS, Linux), in volgorde van voorkeur.
 BROWSER_KANDIDATEN = [
@@ -288,6 +290,18 @@ def bouw_html() -> str:
         sys.exit(f"Geen hoofdstukken gevonden in {HOOFDSTUKKEN}")
     inhoud = "\n".join(bestand.read_text(encoding="utf-8") for bestand in fragmenten)
 
+    # Schermafbeeldingen (src="afbeeldingen/x.png") als data-URI in de HTML zetten: de HTML
+    # wordt in een tijdelijke map opgebouwd, waar de relatieve paden niet meer kloppen.
+    def inline_afbeelding(match: re.Match) -> str:
+        bestand = AFBEELDINGEN / match.group(1)
+        if not bestand.exists():
+            print(f"  waarschuwing: afbeelding ontbreekt: {bestand.name}", file=sys.stderr)
+            return match.group(0)
+        data = base64.b64encode(bestand.read_bytes()).decode()
+        return f'src="data:image/png;base64,{data}"'
+
+    inhoud = re.sub(r'src="afbeeldingen/([^"]+)"', inline_afbeelding, inhoud)
+
     inhoud, toc, figuren, tabellen = nummer_document(inhoud)
     inhoud = inhoud.replace(TOC_MARKER, maak_toc(toc))
     inhoud = inhoud.replace(FIGUREN_MARKER, maak_lijst(figuren, "Figuur"))
@@ -414,16 +428,22 @@ class DevTools:
         return resultaat.get("result", {}).get("value")
 
 
-def druk_af(browser: str, html_bestand: Path, profiel_map: Path) -> tuple[bytes, int]:
-    """Opent de HTML in een onzichtbare browser, wacht op Paged.js en geeft de PDF terug."""
+@contextmanager
+def start_browser(profiel_map: Path):
+    """Start een onzichtbare Edge/Chrome en geeft een DevTools-verbinding met het eerste tabblad.
+
+    Gedeeld met screenshots.py. Bij het verlaten van het with-blok wordt de browser afgesloten.
+    """
     proces = subprocess.Popen(
         [
-            browser,
+            zoek_browser(),
             "--headless=new",
             "--disable-gpu",
             "--no-first-run",
             "--no-default-browser-check",
             "--remote-debugging-port=0",
+            # Nederlandse (Belgische) browsertaal: datumvelden tonen dd/mm/jjjj op schermafbeeldingen.
+            "--lang=nl-BE",
             # Een eigen, tijdelijk profiel: botst niet met een geopende Edge/Chrome.
             f"--user-data-dir={profiel_map}",
             "about:blank",
@@ -445,8 +465,22 @@ def druk_af(browser: str, html_bestand: Path, profiel_map: Path) -> tuple[bytes,
             doelen = json.load(antwoord)
         pagina = next(doel for doel in doelen if doel.get("type") == "page")
         devtools = DevTools(pagina["webSocketDebuggerUrl"])
-
         devtools.roep("Page.enable")
+        yield devtools
+        try:
+            devtools.roep("Browser.close")
+        except RuntimeError:
+            pass
+    finally:
+        try:
+            proces.wait(timeout=10)
+        except subprocess.TimeoutExpired:
+            proces.kill()
+
+
+def druk_af(html_bestand: Path, profiel_map: Path) -> tuple[bytes, int]:
+    """Opent de HTML in een onzichtbare browser, wacht op Paged.js en geeft de PDF terug."""
+    with start_browser(profiel_map) as devtools:
         devtools.roep("Page.navigate", url=html_bestand.as_uri())
 
         # Wachten tot Paged.js alle pagina's heeft opgemaakt.
@@ -465,21 +499,11 @@ def druk_af(browser: str, html_bestand: Path, profiel_map: Path) -> tuple[bytes,
             # Bladwijzers in de PDF op basis van de koppen.
             generateDocumentOutline=True,
         )
-        try:
-            devtools.roep("Browser.close")
-        except RuntimeError:
-            pass
         return base64.b64decode(resultaat["data"]), paginas
-    finally:
-        try:
-            proces.wait(timeout=10)
-        except subprocess.TimeoutExpired:
-            proces.kill()
 
 
 def main() -> None:
-    browser = zoek_browser()
-    print(f"Browser: {browser}")
+    print(f"Browser: {zoek_browser()}")
     print("HTML samenstellen...")
     volledige_html = bouw_html()
 
@@ -492,7 +516,7 @@ def main() -> None:
         profiel_map.mkdir()
 
         print("Opmaken met Paged.js en afdrukken naar PDF...")
-        pdf, paginas = druk_af(browser, html_bestand, profiel_map)
+        pdf, paginas = druk_af(html_bestand, profiel_map)
 
     UITVOER.write_bytes(pdf)
     print(f"Klaar: {UITVOER} ({paginas} pagina's)")

@@ -45,15 +45,21 @@ thema (standaard donker) en het gebruikersmenu (wachtwoord wijzigen, uitloggen).
 
 <table id="tab-modules">
   <caption>De modules van RWCrew</caption>
-  <tr><th class="nowrap" style="width:11%">Sleutel</th><th style="width:20%">Naam</th><th>Waarvoor</th><th style="width:13%">Telefoon</th></tr>
+  <tr><th class="nowrap" style="width:15%">Sleutel</th><th style="width:20%">Naam</th><th>Waarvoor</th><th style="width:13%">Telefoon</th></tr>
   <tr><td><code>module-1</code></td><td><strong>TagScan</strong></td><td>RFID-tags: CSV-bestanden van scanners inlezen, tag-gegevens bekijken, tags beheren, scanners en hun API-sleutels registreren.</td><td>Nee</td></tr>
   <tr><td><code>module-2</code></td><td><strong>KarTracker</strong></td><td>Karren (rolcontainers): registratie, statussen, distributiepunten, zones, afleverlocaties, planning per festival, karbladen met QR-code, kaart, grondplan, manuele bewegingen (scannen).</td><td>Ja: KarScan, Kar Planning, Kar Map</td></tr>
   <tr><td><code>module-3</code></td><td><strong>Interventie Aanvragen</strong> <span class="klein">(Intervention Requests)</span></td><td>Aanvragen van ploegen tijdens het festival: registreren, opvolgen met statussen, toewijzen aan TeamKar, mail met PDF-leveringsbon naar een mailinglijst. Ook een publiek formulier via QR-code, zonder inloggen.</td><td>Ja: Akties (lijst, nieuw, wijzigen), KPI</td></tr>
-  <tr><td><code>module-4</code> tot <code>module-7</code></td><td>Module 4 tot 7</td><td>Plaatshouders voor toekomstige modules: tonen nu een "binnenkort"-pagina.</td><td>Nee</td></tr>
+  <tr><td><code>module-4</code></td><td><strong>StockMaster</strong></td><td>Magazijnvoorraad van de MasterData-producten: vrije voorraad op de vaste plaats van een product en voorraad geladen in karren. Inboeken, uitboeken, karren laden en uitladen, kar vertrekt en kar terug, tellingen, benodigdheden per kar, "Te bestellen", PDF's.</td><td>Nee</td></tr>
+  <tr><td><code>module-5</code> tot <code>module-7</code></td><td>Module 5 tot 7</td><td>Plaatshouders voor toekomstige modules: tonen nu een "binnenkort"-pagina.</td><td>Nee</td></tr>
   <tr><td><code>module-8</code></td><td><strong>Altsien Select</strong></td><td>De "Ploeg Wizard": per ploeg en per seizoen doorloopt een Altsien-kernlid stappen (festivals, afleverlocaties, ploegverantwoordelijken, producten, speciale vragen, walkietalkies). Resultaat op de "Ploegfiche" (scherm en PDF). Opvolging van speciale vragen.</td><td>Nee</td></tr>
   <tr><td><code>module-9</code></td><td><strong>MasterData</strong></td><td>Stamgegevens die alle modules delen: seizoenen (jaren), festivals, ploegen, ploeglocaties, leveringswijzen, ploegtaken, ploegverantwoordelijken, producten met types, categorieën, magazijnen en limieten. Bulk import/export via Excel.</td><td>Nee</td></tr>
   <tr><td><code>module-10</code></td><td><strong>Mobile App</strong></td><td>Installatiepagina voor de telefoon-app: het adres met QR-code en de stappen voor iPhone en Android.</td><td>(is de app)</td></tr>
 </table>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-startscherm">
+  <img src="afbeeldingen/02-startscherm.png" alt="">
+  <figcaption>Het startscherm voor een gebruiker met toegang tot alle modules. Rechtsboven de kleine tegel van de Mobile App; bovenaan de seizoenkiezer, taal, thema en gebruikersmenu.</figcaption>
+</figure>
 
 <h2 id="s-modules-detail">De modules in meer detail</h2>
 
@@ -65,6 +71,29 @@ ingelezen wanneer een gebruiker op de knop <strong>Scan</strong> drukt. Daarna z
 <em>Tag Headerdata</em> (één rij per bestand) en <em>Tag Linedata</em> (één rij per gescande tag). Onder
 <em>TagManagement</em> beheer je het register van tags (ook via Excel-import), onder <em>Scanners</em>
 registreer je scanners en maak je hun API-sleutels aan.</p>
+
+<p><strong>Automatisch scannen.</strong> De backend kan zelf op de achtergrond scannen: een taak die bij het opstarten
+begint, leest elke minuut (instelbaar op het scherm <em>Instellingen</em> van TagScan) de nieuwe bestanden in, net alsof iemand
+op <strong>Scan</strong> drukt. Een vergrendeling voorkomt dat de automatische en een manuele scan tegelijk lopen.</p>
+<p><strong>Acties verwerken.</strong> Elke ingelezen regel heeft naast zijn EPC-status ook een <strong>verwerkingsstatus</strong>:
+<em>nieuw</em> (oranje), <em>verwerkt</em> (groen) of <em>geannuleerd</em> (rood). Als de kolom <code>Action</code> van een regel
+een actie bevat die RWCrew kent, verschijnt boven elk TagScan-scherm een oranje balk "acties wachten op verwerking". Daarin
+kies je per bestand wat er moet gebeuren en verwerk je alle regels in één keer, of annuleer je een regel met een reden.
+Vandaag kent RWCrew één actie, <code>assignment</code>: tags registreren en aan een <strong>product</strong> koppelen (het product kies je
+per bestand). Nieuwe acties worden toegevoegd in <code>module_1/line_processing.py</code>.</p>
+<p><strong>Doorsturen tussen test en productie.</strong> Een CSV-bestand heeft een kolom <code>Mode</code> (<code>TEST</code> of
+<code>PROD</code>). Komt een bestand binnen op de "verkeerde" omgeving, dan stuurt de backend het automatisch door naar de andere
+(zie <a class="ref" href="#tab-instellingen"></a>). Zo kan één Raspberry Pi beide omgevingen bedienen.</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-tagscan-linedata">
+  <img src="afbeeldingen/06-tagscan-linedata.png" alt="">
+  <figcaption>TagScan · Tag Regelgegevens: één rij per gescande tag. De kleur van de eerste kolom toont de verwerkingsstatus (groen = verwerkt).</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-tagscan-instellingen">
+  <img src="afbeeldingen/09-tagscan-instellingen.png" alt="">
+  <figcaption>TagScan · Instellingen: de ontvangstmap, het automatisch scannen met zijn interval en het adres waarop apparaten hun CSV-bestanden sturen.</figcaption>
+</figure>
 
 <h3 id="s-mod-kartracker">KarTracker (module 2)</h3>
 <p>KarTracker volgt de <strong>karren</strong>: genummerde rolcontainers die per seizoen aan een ploeg
@@ -79,6 +108,16 @@ toegewezen worden en op festivals afgeleverd en opgehaald worden. Belangrijkste 
   <li><strong>Data Upload/Download</strong>: bulkgegevens via Excel.</li>
 </ul>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-karren">
+  <img src="afbeeldingen/11-kartracker-karren.png" alt="">
+  <figcaption>KarTracker · KarManagement: het karrenregister met status, ploeg, transporttype en laatst gekende locatie.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-kaart">
+  <img src="afbeeldingen/14-kartracker-kaart.png" alt="">
+  <figcaption>KarTracker · Kar Map: karren, afleverlocaties en distributiepunten op de kaart (OpenStreetMap), met een tabel van de getoonde punten eronder.</figcaption>
+</figure>
+
 <h3 id="s-mod-interventie">Interventie Aanvragen (module 3)</h3>
 <p>Tijdens een festival vraagt een ploeg om hulp: een herstelling, bijkomend materiaal, een levering. Zo'n
 <strong>interventie-aanvraag</strong> krijgt een nummer (<code>IA26_0001</code>: "IA", de laatste twee cijfers
@@ -92,6 +131,51 @@ met kleuren). Aanvragen komen op drie manieren binnen:</p>
 <p>Bij elke nieuwe aanvraag krijgen alle actieve adressen op de <strong>mailinglijst</strong> (Instellingen &gt;
 Mailinglijst) een mail met de gegevens en de leveringsbon als PDF in bijlage. <em>TeamKar</em> bepaalt welke
 medewerkers aan een aanvraag gekoppeld kunnen worden als uitvoerder van de leverkar.</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-interventie-lijst">
+  <img src="afbeeldingen/16-interventie-lijst.png" alt="">
+  <figcaption>Interventie Aanvragen: de lijst van aanvragen, gegroepeerd per dag, met de status in kleur en per regel PDF, wijzigen en verwijderen.</figcaption>
+</figure>
+
+<h3 id="s-mod-stockmaster">StockMaster (module 4)</h3>
+<p>StockMaster houdt de <strong>magazijnvoorraad</strong> bij van de producten uit MasterData, in hele stuks. Een stuk ligt op één van
+twee plaatsen:</p>
+<ul>
+  <li><strong>vrije voorraad</strong>: op de vaste plaats van het product in het magazijn (magazijn + locatie, ingesteld in MasterData);</li>
+  <li><strong>in een kar</strong>: geladen in een KarTracker-kar, zolang die kar in het magazijn staat.</li>
+</ul>
+<p>Hetzelfde product kan tegelijk vrij liggen en in meerdere karren zitten. Het voorraadoverzicht toont per product
+<em>Vrij · In karren · Totaal</em> en klapt open tot de verdeling per kar.</p>
+<p>Alles wat de voorraad verandert, is een <strong>boeking</strong> met een nummer (bv. <code>SM-2026-00002</code>), vanuit één van de
+acties in het menu: <em>Inboeken</em>, <em>Kar laden</em>, <em>Kar vertrekt</em>, <em>Kar terug</em>, <em>Kar uitladen</em>,
+<em>Uitboeken</em> en <em>Telling</em>. Belangrijke regels:</p>
+<ul>
+  <li><strong>Nooit negatief.</strong> Je kunt niet meer uitboeken of laden dan er ligt; twee gebruikers kunnen niet tegelijk het laatste stuk nemen.</li>
+  <li><strong>Niets wordt gewist.</strong> Een fout herstel je met "Ongedaan maken": dat maakt een tegenboeking. Zo blijft altijd zichtbaar wie wat wanneer deed.</li>
+  <li><strong>Altijd onder je eigen naam.</strong> De gebruiker van een boeking is altijd de ingelogde gebruiker, nooit een keuze in het formulier.</li>
+  <li><strong>Karvoorraad bestaat alleen in het magazijn.</strong> "Kar vertrekt" boekt de hele inhoud uit; "Kar terug" boekt wat terugkomt weer in (in de kar of als vrije voorraad). Wat niet terugkwam, telt als verbruik van de ploeg.</li>
+  <li><strong>Gesloten seizoen.</strong> Boeken in een seizoen dat niet meer open is, kan alleen met het recht "Boeken in een gesloten seizoen".</li>
+</ul>
+<p>Onder <em>Benodigdheden</em> leg je per seizoen en per kar vast wat een ploeg nodig heeft. Dat vult "Kar laden" vooraf in,
+toont op de karkaarten hoe ver een kar geladen is ("18 / 20") en berekent <em>Te bestellen</em>: benodigdheden min wat er al
+in voorraad is. Producten onder hun minimumvoorraad (verbruiksgoederen) geven een oranje waarschuwing bovenaan de module.
+Elke actie heeft een PDF: laadlijst, vertrekbon, bestellijst, telblad en boekingsbon. Het volledige ontwerp staat in
+<code>docs/stockmaster-design.md</code>.</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-stockmaster-voorraad">
+  <img src="afbeeldingen/23-stockmaster-voorraad.png" alt="">
+  <figcaption>StockMaster · Voorraadoverzicht: per product de vrije voorraad, wat in karren zit en het totaal, met snelle acties per regel.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-stockmaster-karren">
+  <img src="afbeeldingen/24-stockmaster-karren.png" alt="">
+  <figcaption>StockMaster · Karren: één kaart per kar met de status (in het magazijn of onderweg), de ploeg en hoe ver ze geladen is.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-stockmaster-kar">
+  <img src="afbeeldingen/25-stockmaster-kar.png" alt="">
+  <figcaption>StockMaster · detail van één kar: inhoud tegenover de benodigdheden, de acties (laden, vertrekt, uitladen, tellen, laadlijst) en de geschiedenis.</figcaption>
+</figure>
 
 <h3 id="s-mod-altsien">Altsien Select (module 8)</h3>
 <p>Vóór het seizoen maakt elke ploeg haar keuzes. Een <strong>Altsien-kernlid</strong> (een gebruiker met de
@@ -112,6 +196,16 @@ kunt overnemen. Het resultaat van alle stappen staat op de <strong>Ploegfiche</s
 worden afgedrukt. Na het afsluiten van een seizoen (vlag <em>periode open</em> uit) kan niemand nog wijzigen,
 behalve wie het recht "organisatie" heeft (zie <a class="ref" href="#s-altsien-regels"></a>).</p>
 
+<figure class="diagram" data-soort="scherm" id="fig-scr-altsien-wizard">
+  <img src="afbeeldingen/30-altsien-wizard.png" alt="">
+  <figcaption>Altsien Select · Ploeg Wizard voor één ploeg: bovenaan de stappen met hun voortgang, eronder de huidige stap (hier: de festivals).</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-altsien-ploegfiche">
+  <img src="afbeeldingen/31-altsien-ploegfiche.png" alt="">
+  <figcaption>Altsien Select · Ploegfiche: alle keuzes van één ploeg op één scherm, ook als PDF af te drukken.</figcaption>
+</figure>
+
 <h3 id="s-mod-masterdata">MasterData (module 9)</h3>
 <p>MasterData beheert de <strong>stamgegevens</strong>: de gegevens die alle andere modules delen en die
 zelden veranderen. Denk aan de seizoenen (op het scherm "Years"), festivals, ploegen en hun locatie,
@@ -119,9 +213,14 @@ leveringswijze, taken en verantwoordelijken, en de productcatalogus. Bijna elk s
 <strong>Excel-import en -export</strong>: je downloadt een sjabloon, vult het in en uploadt het; elke rij wordt
 apart gecontroleerd zodat één foute rij niet de hele import tegenhoudt.</p>
 
-<h3 id="s-mod-mobile">Mobile App (module 10) en de plaatshouders (modules 4 tot 7)</h3>
+<figure class="diagram" data-soort="scherm" id="fig-scr-masterdata-ploegen">
+  <img src="afbeeldingen/33-masterdata-ploegen.png" alt="">
+  <figcaption>MasterData · Ploegen: de stamgegevens van alle ploegen, met locatie, leveringswijze en of ze actief zijn.</figcaption>
+</figure>
+
+<h3 id="s-mod-mobile">Mobile App (module 10) en de plaatshouders (modules 5 tot 7)</h3>
 <p>Module 10 toont het adres van de telefoon-app (<code>https://rwcrew.eu/m</code>), een QR-code om dat adres
-met de telefoon te openen, en de stappen om de app op het beginscherm te zetten. Modules 4 tot 7 zijn
+met de telefoon te openen, en de stappen om de app op het beginscherm te zetten. Modules 5 tot 7 zijn
 voorbereide, lege plaatsen: ze hebben al een tegel, een kleur en toegangsrechten, en tonen een
 "binnenkort"-pagina tot hun inhoud ontworpen is.</p>
 
@@ -272,6 +371,7 @@ meteen welke tabellen bij elkaar horen, en kunnen twee modules nooit per ongeluk
   <tr><td><code>Tagscan_</code></td><td>TagScan (module 1)</td><td><code>Tagscan_roles</code>, tag-header- en -linedata</td></tr>
   <tr><td><code>KarTracker_</code></td><td>KarTracker (module 2)</td><td><code>KarTracker_karren</code>, <code>KarTracker_kar_actions</code></td></tr>
   <tr><td><code>InterventionRequests_</code></td><td>Interventie Aanvragen (module 3)</td><td><code>InterventionRequests_request</code>, <code>InterventionRequests_status</code></td></tr>
+  <tr><td><code>StockMaster_</code></td><td>StockMaster (module 4)</td><td><code>StockMaster_document</code>, <code>StockMaster_movement</code>, <code>StockMaster_balance</code></td></tr>
   <tr><td><code>AltsienSelect_</code></td><td>Altsien Select (module 8)</td><td><code>AltsienSelect_step_progress</code>, <code>AltsienSelect_special_requests</code></td></tr>
   <tr><td><code>MasterData_</code></td><td>MasterData (module 9)</td><td><code>MasterData_team</code>, <code>MasterData_season</code>, <code>MasterData_festival</code></td></tr>
 </table>

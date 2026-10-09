@@ -274,9 +274,10 @@ export interface TagscanUserSummary {
   role_name: string | null;
 }
 
-/** Which Tagscan screens the current user is allowed to view. */
+/** Which Tagscan screens the current user is allowed to view (and create on). */
 export interface TagscanMyPermissions {
   viewable_screen_keys: string[];
+  creatable_screen_keys: string[];
 }
 
 /** One folder in the CSV intake directory's tree, with its subfolders nested inside. */
@@ -398,7 +399,7 @@ export interface ScannerInput {
   info3?: string | null;
 }
 
-/** What happened to one row of an uploaded CSV import. */
+/** What happened to one row of an uploaded tags workbook. */
 export interface RfidTagImportRowResult {
   row_number: number;
   epc_uid: string | null;
@@ -406,9 +407,27 @@ export interface RfidTagImportRowResult {
   detail: string | null;
 }
 
-/** The full outcome of a CSV import — one result per row, in order. */
+/** The full outcome of a tags import — one result per row, in order. */
 export interface RfidTagImportResponse {
   results: RfidTagImportRowResult[];
+}
+
+/** What happened to one row of an uploaded scanners workbook. */
+export interface ScannerImportRowResult {
+  row_number: number;
+  scanner: string | null;
+  outcome: "created" | "updated" | "error";
+  detail: string | null;
+}
+
+/** The full outcome of a scanners import — one result per row, in order. */
+export interface ScannerImportResponse {
+  results: ScannerImportRowResult[];
+}
+
+/** How many tags a bulk delete actually removed (ids already gone are skipped). */
+export interface RfidTagBulkDeleteResponse {
+  deleted: number;
 }
 
 /** How many tags are in one status — one entry per fixed status value. */

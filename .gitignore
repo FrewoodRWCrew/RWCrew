@@ -21,3 +21,8 @@ Thumbs.db
 *.log
 docs/RWCrew-Brochure.pdf
 docs/RWCrew-Brochure-NL.pdf
+
+# --- Handleiding (docs/handleiding) ---
+docs/handleiding/.screenshot-login
+docs/handleiding/__pycache__/
+docs/handleiding/.screenshot-namen.json

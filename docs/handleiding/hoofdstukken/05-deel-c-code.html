@@ -121,7 +121,7 @@ De backend is een FastAPI-applicatie. <code>main.py</code> registreert per modul
 endpoints). Elk endpoint krijgt via <strong>dependencies</strong> een databasesessie en de ingelogde gebruiker, en
 controleert met <code>require_screen_permission</code> of die gebruiker het mag. Tabellen zijn
 <strong>SQLAlchemy-modellen</strong>, invoer en uitvoer zijn <strong>Pydantic-schema's</strong>, wijzigingen aan de
-database gaan via <strong>Alembic-migraties</strong>, en alles is gedekt door meer dan 550 <strong>pytest</strong>-tests
+database gaan via <strong>Alembic-migraties</strong>, en alles is gedekt door meer dan 600 <strong>pytest</strong>-tests
 die op een tijdelijke SQLite-database draaien.
 </div>
 
@@ -133,7 +133,9 @@ die op een tijdelijke SQLite-database draaien.
   <li>Het registreert alle routers: <code>auth</code>, <code>admin</code>, <code>modules</code> en die van elke module (inclusief de
   publieke routers van module 1 en 3).</li>
   <li>In de <code>lifespan</code>-functie, die één keer bij het opstarten loopt, synchroniseert het de
-  <strong>schermregisters</strong> van modules 1, 2, 3, 8 en 9 met de code (zie <a class="ref" href="#s-be-rechten"></a>).</li>
+  <strong>schermregisters</strong> van modules 1, 2, 3, 4, 8 en 9 met de code (zie <a class="ref" href="#s-be-rechten"></a>), en start het
+  <strong>automatisch scannen</strong> van TagScan als achtergrondtaak (<code>module_1/auto_scan.py</code>). Dat rekent op precies één
+  backendproces per omgeving; komen er ooit meerdere workers, verhuis die taak dan naar één worker of een cron-job.</li>
 </ol>
 
 <h2 id="s-be-config">Instellingen en databaseverbinding</h2>
@@ -257,15 +259,15 @@ de gebruiker opzoeken, dan de rechtenrij voor dat scherm, en de juiste vlag teru
 vier lijsten schermsleutels (<code>viewable_screen_keys</code>, <code>creatable_…</code>, <code>editable_…</code>, <code>deletable_…</code>).
 Daarmee toont het menu alleen de schermen die je mag zien, en verbergt een scherm de knoppen die je niet mag gebruiken.</p>
 <div class="kader dev"><span class="kader-titel"></span>
-Dit systeem is <strong>per module gekopieerd</strong> (modules 1, 2, 3, 8 en 9 hebben elk hun eigen modellen, schema's,
+Dit systeem is <strong>per module gekopieerd</strong> (modules 1, 2, 3, 4, 8 en 9 hebben elk hun eigen modellen, schema's,
 <code>deps.py</code> en endpoints), in plaats van één gedeelde fabriek. Dat was een bewuste keuze: eerst echte varianten
-bouwen en pas veralgemenen als het patroon zich bewezen heeft. Nu het vijf keer bestaat, is een gedeelde versie
+bouwen en pas veralgemenen als het patroon zich bewezen heeft. Nu het zes keer bestaat, is een gedeelde versie
 (geparametriseerd met modulesleutel en tabelvoorvoegsel, zoals <code>create_module_router</code>) een kandidaat voor
 een opkuis, maar geen verplichting. De volledige kopieerhandleiding staat in <code>docs/module-custom-roles-pattern.md</code>.
 </div>
 
 <h2 id="s-be-common">De gedeelde fabriek voor eenvoudige modules</h2>
-<p>Modules zonder eigen inhoud (4 tot 7) en module 10 gebruiken <code>create_module_router(module_key, module_label)</code> uit
+<p>Modules zonder eigen inhoud (5 tot 7) en module 10 gebruiken <code>create_module_router(module_key, module_label)</code> uit
 <code>app/modules/common.py</code>. Die maakt in één regel een router met drie endpoints: <code>GET /status</code> (voor de
 "binnenkort"-pagina), <code>GET /roles</code> en <code>PUT /roles/{user_id}</code> (de vaste rollen admin/editor/reader). Een
 module die echte inhoud krijgt, zet eigen endpoints naast die oproep in haar <code>router.py</code>, of stapt over op het
@@ -281,7 +283,26 @@ volledige rechtensysteem.</p>
   <tr><td><code>module_9/team_responsible_service.py</code> (ploegverantwoordelijken)</td><td>MasterData "Ploegverantwoordelijken" én Altsien Select stap 3</td></tr>
   <tr><td><code>module_2/kar_action_service.py</code> (karbewegingen)</td><td>KarTracker-scherm én KarScan op de telefoon</td></tr>
   <tr><td><code>module_3/service.py</code> (aanvraagnummer, standaardstatus, ploegen)</td><td>Ingelogde router én publieke router van module 3</td></tr>
+  <tr><td><code>module_4/stock_service.py</code> (de <em>enige</em> code die voorraad wijzigt)</td><td>Alle boekingsschermen van StockMaster; later ook automatische boekingen vanuit TagScan</td></tr>
+  <tr><td><code>module_4/requirement_service.py</code> (benodigdheden per kar)</td><td>StockMaster; later de productenstap van Altsien Select</td></tr>
+  <tr><td><code>module_1/line_processing.py</code> (acties van TagScan-regels)</td><td>Het verwerkingsvenster van TagScan; nieuwe acties komen hier als functie bij</td></tr>
 </table>
+
+<h2 id="s-be-stockmaster">StockMaster: grootboek en saldo</h2>
+<p>StockMaster werkt als een boekhouding. Elke handeling is een <code>StockMaster_document</code> met één
+<code>StockMaster_movement</code> per product ("van" en "naar": <code>free</code>, <code>kar</code> of <code>external</code>). Die rijen worden
+nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_document</code>). Daarnaast houdt
+<code>StockMaster_balance</code> het actuele saldo bij: één rij per product per plaats (<code>kar_id</code> leeg = vrije voorraad).</p>
+<ul>
+  <li><strong>Alleen <code>stock_service.py</code> wijzigt voorraad.</strong> Het vergrendelt de saldorijen (<code>SELECT … FOR UPDATE</code>),
+  schrijft document, bewegingen en saldo in dezelfde transactie en weigert alles wat negatief zou worden.</li>
+  <li><strong>De service doet zelf geen commit</strong>; de router (of later een automatische TagScan-verwerking) doet dat. Zo kan een
+  aanroeper meerdere stappen samen laten slagen of mislukken.</li>
+  <li><strong>Foutmeldingen zijn codes.</strong> Een <code>StockError("code", *parameters)</code> wordt HTTP-detail <code>"code|param|…"</code>; de
+  frontend vertaalt die onder <code>stockMaster.errors.&lt;code&gt;</code>. Een nieuwe foutcode heeft dus een vertaling in beide taalbestanden nodig.</li>
+  <li><strong>De gebruiker komt uit de sessie</strong> (<code>created_by</code> + een kopie van de naam in <code>created_by_name</code>), nooit uit het verzoek.</li>
+  <li>MasterData en KarTracker weigeren het verwijderen van een product met voorraadgeschiedenis of een kar met voorraad.</li>
+</ul>
 
 <h2 id="s-be-pdf-excel">PDF's, Excel en QR-codes</h2>
 <ul>
@@ -340,7 +361,7 @@ Anders krijgt de mailinglijst die aanvragen niet. Een wijziging van een bestaand
 </ul>
 
 <h2 id="s-be-tests">Automatische tests</h2>
-<p>De backend heeft meer dan 550 testfuncties in <code>backend/tests/</code>, met dezelfde mappenstructuur als <code>app/</code>.
+<p>De backend heeft meer dan 600 testfuncties in <code>backend/tests/</code>, met dezelfde mappenstructuur als <code>app/</code>.
 Ze dekken inloggen, tokenrotatie, alle toegangsregels en de endpoints van elke module. Draaien:</p>
 <figure class="code"><span class="bestand">Tests draaien (map backend)</span><pre>.venv/Scripts/python -m pytest                          <span class="c"># alles</span>
 .venv/Scripts/python -m pytest tests/modules/module_3   <span class="c"># één module</span>
@@ -544,6 +565,15 @@ verwijderd en vervangen door de PWA, omdat:</p>
 <p>Alleen oude rijen in de inloghistoriek verwijzen nog naar de native app (bron <code>mobile</code>, getoond als "Native app (old)").
 Die waarde wordt nooit meer geschreven.</p>
 
+<figure class="diagram" data-soort="telefoon" id="fig-scr-telefoon-start">
+  <div class="telefoon-rij">
+    <img src="afbeeldingen/40-m-login.png" alt="">
+    <img src="afbeeldingen/41-m-start.png" alt="">
+    <img src="afbeeldingen/42-m-kartracker.png" alt="">
+  </div>
+  <figcaption>De telefoon-app: inloggen, de moduletegels met de jaarkeuze, en het menu van KarTracker.</figcaption>
+</figure>
+
 <h2 id="s-pwa-manifest">Installeerbaar maken: het manifest</h2>
 <p><code>frontend/src/app/manifest.ts</code> beschrijft de app voor de telefoon: naam ("RWCrew", of "RWCrew Test" op test, zodat je beide
 naast elkaar kunt installeren), iconen (ook een <em>maskable</em> versie voor Android), donkergroene achtergrond,
@@ -585,6 +615,23 @@ geen zijbalk of bovenbalk van de website, geen verwijderknop en geen PDF.</p>
 <p>Endpoints die speciaal voor de telefoon bijkwamen, staan gewoon in de router van de module: module 3
 <code>GET /lookups</code> en <code>GET /intervention-requests/{id}</code>, module 2 <code>GET /seasons</code>, en <code>me/permissions</code> geeft nu
 ook de lijsten voor aanmaken, wijzigen en verwijderen.</p>
+
+<figure class="diagram" data-soort="telefoon" id="fig-scr-telefoon-schermen">
+  <div class="telefoon-rij">
+    <img src="afbeeldingen/44-m-kar.png" alt="">
+    <img src="afbeeldingen/45-m-akties.png" alt="">
+    <img src="afbeeldingen/46-m-aanvraag.png" alt="">
+  </div>
+  <figcaption>Telefoonschermen: een kar en haar bewegingen (KarScan), de lijst van interventie-aanvragen (Akties) en een nieuwe aanvraag.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="telefoon" id="fig-scr-telefoon-kpi">
+  <div class="telefoon-rij">
+    <img src="afbeeldingen/43-m-planning.png" alt="">
+    <img src="afbeeldingen/47-m-kpi.png" alt="">
+  </div>
+  <figcaption>Kar Planning en het KPI-overzicht van Interventie Aanvragen op de telefoon.</figcaption>
+</figure>
 
 <h2 id="s-pwa-gedeeld">Code die website en telefoon delen</h2>
 <p>Code die beide gebruiken, blijft in de map van de module, niet in <code>phone/</code>:

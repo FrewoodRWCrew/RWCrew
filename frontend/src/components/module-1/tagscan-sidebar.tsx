@@ -32,6 +32,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const tRoles = useTranslations("tagscan.roles");
   const tUsers = useTranslations("tagscan.users");
   const tSettings = useTranslations("tagscan.settings");
+  const tDataUploadDownload = useTranslations("tagscan.dataUploadDownload");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -44,6 +45,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const canViewRoles = viewableScreenKeys.includes("tagscan.roles");
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
   const canViewSettings = viewableScreenKeys.includes("tagscan.settings");
+  const canViewDataUpload = viewableScreenKeys.includes("tagscan.dataupload");
 
   function subLinkClassName(href: string) {
     return cn(
@@ -90,7 +92,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
         </Link>
       )}
 
-      {(canViewTagManagement || canViewScanners) && (
+      {(canViewTagManagement || canViewScanners || canViewDataUpload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Database className="size-4" />
@@ -107,6 +109,14 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
           {canViewScanners && (
             <Link href="/modules/module-1/scanners" className={subLinkClassName("/modules/module-1/scanners")}>
               {tScanners("title")}
+            </Link>
+          )}
+          {canViewDataUpload && (
+            <Link
+              href="/modules/module-1/data-upload-download"
+              className={subLinkClassName("/modules/module-1/data-upload-download")}
+            >
+              {tDataUploadDownload("title")}
             </Link>
           )}
         </>

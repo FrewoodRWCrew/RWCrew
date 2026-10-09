@@ -12,11 +12,9 @@ import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
-import { ApiError, createRfidTag, deleteRfidTag, updateRfidTag } from "@/lib/api";
-import { API_BASE_URL } from "@/lib/config";
+import { ApiError, createRfidTag, deleteRfidTag, deleteRfidTags, updateRfidTag } from "@/lib/api";
 import { formatDate, formatDateTime, toDateTimeLocalValue } from "@/lib/date-time";
 import type { Product, RfidTag, RfidTagInput, RfidTagStatus } from "@/lib/types";
-import { TagImportDialog } from "@/components/module-1/tag-import-dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,7 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -184,6 +182,12 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
   const filteredIds = useMemo(() => filteredTags.map((tag) => tag.id), [filteredTags]);
   const allFilteredSelected = filteredIds.length > 0 && filteredIds.every((id) => selectedIds.has(id));
   const someFilteredSelected = filteredIds.some((id) => selectedIds.has(id));
+  // Only the checked rows that are visible right now get bulk-deleted, so a
+  // row hidden by a filter is never deleted without the user seeing it.
+  const selectedVisibleIds = useMemo(
+    () => filteredIds.filter((id) => selectedIds.has(id)),
+    [filteredIds, selectedIds],
+  );
 
   function toggleSelectAll(checked: boolean) {
     setSelectedIds((current) => {
@@ -205,6 +209,14 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
     });
   }
 
+  // Drop deleted tags from the table and from the selection.
+  function removeTags(tagIds: number[]) {
+    const removed = new Set(tagIds);
+    setTags((current) => current.filter((tag) => !removed.has(tag.id)));
+    setSelectedIds((current) => new Set([...current].filter((id) => !removed.has(id))));
+    router.refresh();
+  }
+
   function upsert(updated: RfidTag) {
     setTags((current) => {
       const exists = current.some((tag) => tag.id === updated.id);
@@ -223,13 +235,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex items-center gap-2">
-          <a
-            href={`${API_BASE_URL}/api/modules/module-1/tags/template`}
-            className={buttonVariants({ variant: "outline" })}
-          >
-            {t("downloadTemplate")}
-          </a>
-          <TagImportDialog trigger={<Button variant="outline">{t("importCsv")}</Button>} />
+          <DeleteSelectedTagsAlertDialog tagIds={selectedVisibleIds} onDeleted={removeTags} />
           <TagFormDialog trigger={<Button>{t("newTag")}</Button>} onSaved={upsert} products={products} />
         </div>
       </div>
@@ -489,15 +495,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                     />
                     <DeleteTagAlertDialog
                       tag={tag}
-                      onDeleted={(tagId) => {
-                        setTags((current) => current.filter((item) => item.id !== tagId));
-                        setSelectedIds((current) => {
-                          const next = new Set(current);
-                          next.delete(tagId);
-                          return next;
-                        });
-                        router.refresh();
-                      }}
+                      onDeleted={(tagId) => removeTags([tagId])}
                     />
                   </div>
                 </TableCell>
@@ -747,6 +745,62 @@ function DeleteTagAlertDialog({ tag, onDeleted }: DeleteTagAlertDialogProps) {
         <AlertDialogHeader>
           <AlertDialogTitle>{t("deleteConfirmTitle")}</AlertDialogTitle>
           <AlertDialogDescription>{t("deleteConfirmDescription", { epcUid: tag.epc_uid })}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={handleConfirmDelete}>
+            {t("delete")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
+interface DeleteSelectedTagsAlertDialogProps {
+  tagIds: number[];
+  onDeleted: (tagIds: number[]) => void;
+}
+
+/** The toolbar's bin button: deletes every checked (and visible) tag in one
+ * request, after a confirmation. Disabled while nothing is checked. */
+function DeleteSelectedTagsAlertDialog({ tagIds, onDeleted }: DeleteSelectedTagsAlertDialogProps) {
+  const t = useTranslations("tagscan.tagManagement");
+  const tCommon = useTranslations("common");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    setIsDeleting(true);
+    try {
+      const { deleted } = await deleteRfidTags(tagIds);
+      toast.success(t("tagsDeleted", { count: deleted }));
+      onDeleted(tagIds);
+      setIsOpen(false);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : t("deleteSelectedFailed");
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogTrigger
+        render={
+          <Button variant="outline" disabled={tagIds.length === 0}>
+            <Trash2 className="size-4 text-destructive" />
+            {t("deleteSelected", { count: tagIds.length })}
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("deleteSelectedConfirmTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>
+            {t("deleteSelectedConfirmDescription", { count: tagIds.length })}
+          </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
           <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>

@@ -8,7 +8,7 @@
 // lines can be cancelled with a reason. After processing, the per-line
 // outcome (created / product assigned / already existed / error) stays on
 // screen as a log inside the same dialog, the same way the Excel import
-// does (see tag-import-dialog.tsx), rather than a toast that disappears.
+// does (see tagscan-data-upload-download.tsx), rather than a toast that disappears.
 
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";

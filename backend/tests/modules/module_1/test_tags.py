@@ -321,6 +321,54 @@ def test_deleting_a_missing_tag_returns_404(client: TestClient, db_session: Sess
     assert response.status_code == 404
 
 
+def test_bulk_delete_removes_only_the_given_tags(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    first = _create_tag(db_session, epc_uid="E2AAA")
+    second = _create_tag(db_session, epc_uid="E2BBB")
+    _create_tag(db_session, epc_uid="E2CCC")
+    _login(client, "admin@example.com")
+
+    # 999 doesn't exist: skipped, not an error.
+    response = client.post(
+        "/api/modules/module-1/tags/bulk-delete", json={"tag_ids": [first.id, second.id, 999]}
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 2}
+    remaining = [tag["epc_uid"] for tag in client.get("/api/modules/module-1/tags").json()]
+    assert remaining == ["E2CCC"]
+
+
+def test_bulk_delete_with_an_empty_list_is_rejected(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+    response = client.post("/api/modules/module-1/tags/bulk-delete", json={"tag_ids": []})
+
+    assert response.status_code == 422
+
+
+def test_bulk_delete_needs_the_delete_permission(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    user = _create_user(db_session, email="editor@example.com")
+    _grant_module_access(db_session, user, module)
+    _grant_tag_management_permission(db_session, user, can_view=True, can_create=True, can_edit=True)
+    tag = _create_tag(db_session)
+    _login(client, "editor@example.com")
+
+    response = client.post("/api/modules/module-1/tags/bulk-delete", json={"tag_ids": [tag.id]})
+
+    assert response.status_code == 403
+    assert len(client.get("/api/modules/module-1/tags").json()) == 1
+
+
 # --- XLSX template + bulk import --------------------------------------------
 
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -344,7 +392,7 @@ def test_downloading_the_template_requires_module_access(client: TestClient, db_
     _create_user(db_session, email="regular@example.com")
     _login(client, "regular@example.com")
 
-    response = client.get("/api/modules/module-1/tags/template")
+    response = client.get("/api/modules/module-1/tag-import/template")
 
     assert response.status_code == 403
 
@@ -356,7 +404,7 @@ def test_super_admin_can_download_the_template(client: TestClient, db_session: S
     _grant_module_access(db_session, admin, module)
     _login(client, "admin@example.com")
 
-    response = client.get("/api/modules/module-1/tags/template")
+    response = client.get("/api/modules/module-1/tag-import/template")
 
     assert response.status_code == 200
     assert response.headers["content-type"] == XLSX_CONTENT_TYPE
@@ -368,17 +416,35 @@ def test_super_admin_can_download_the_template(client: TestClient, db_session: S
     assert "product_name" in header_row
 
 
-def test_view_only_tag_management_permission_cannot_import_tags(client: TestClient, db_session: Session) -> None:
+def _grant_dataupload_permission(db_session: Session, user: User, *, can_view: bool, can_create: bool) -> None:
+    """Give the user a role with only the "tagscan.dataupload" screen."""
+    role = TagscanRole(name=f"Data upload Role {user.email}")
+    db_session.add(role)
+    db_session.commit()
+    db_session.refresh(role)
+    screen = db_session.scalar(select(TagscanScreen).where(TagscanScreen.key == "tagscan.dataupload"))
+    db_session.add(
+        TagscanRolePermission(role_id=role.id, screen_id=screen.id, can_view=can_view, can_create=can_create)
+    )
+    db_session.add(TagscanUserRole(user_id=user.id, role_id=role.id))
+    db_session.commit()
+
+
+def test_view_only_dataupload_permission_cannot_import_tags(client: TestClient, db_session: Session) -> None:
     sync_tagscan_screens(db_session)
     module = _create_tagscan_module(db_session)
     user = _create_user(db_session, email="viewer@example.com")
     _grant_module_access(db_session, user, module)
-    _grant_tag_management_permission(db_session, user, can_view=True)
+    _grant_dataupload_permission(db_session, user, can_view=True, can_create=False)
     _login(client, "viewer@example.com")
 
+    # View is enough for the template...
+    assert client.get("/api/modules/module-1/tag-import/template").status_code == 200
+
+    # ...but not for the upload.
     xlsx_bytes = _build_xlsx(["epc_uid"], [["E200001122334455"]])
     response = client.post(
-        "/api/modules/module-1/tags/import",
+        "/api/modules/module-1/tag-import",
         files={"file": ("tags.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)},
     )
 
@@ -406,7 +472,7 @@ def test_import_creates_updates_and_reports_row_errors(client: TestClient, db_se
     )
 
     response = client.post(
-        "/api/modules/module-1/tags/import",
+        "/api/modules/module-1/tag-import",
         files={"file": ("tags.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)},
     )
 
@@ -447,7 +513,7 @@ def test_import_accepts_native_excel_date_cells(client: TestClient, db_session: 
     )
 
     response = client.post(
-        "/api/modules/module-1/tags/import",
+        "/api/modules/module-1/tag-import",
         files={"file": ("tags.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)},
     )
 
@@ -458,3 +524,52 @@ def test_import_accepts_native_excel_date_cells(client: TestClient, db_session: 
     assert tag is not None
     assert tag.date_assigned == date(2026, 1, 15)
     assert tag.last_read_at.replace(tzinfo=None) == datetime(2026, 2, 1, 10, 30)
+
+
+def test_tag_management_permission_alone_cannot_use_the_data_upload_tools(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    user = _create_user(db_session, email="manager@example.com")
+    _grant_module_access(db_session, user, module)
+    _grant_tag_management_permission(db_session, user, can_view=True, can_create=True)
+    _login(client, "manager@example.com")
+
+    assert client.get("/api/modules/module-1/tag-import/template").status_code == 403
+    assert client.get("/api/modules/module-1/tags/export").status_code == 403
+
+
+def test_export_round_trips_through_the_import(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    product = _create_product(db_session, name="KBC Lint")
+    tag = RfidTag(epc_uid="E2EXPORT", status="lost", assigned_product_id=product.id, manufacturer="Impinj")
+    db_session.add(tag)
+    db_session.commit()
+    _login(client, "admin@example.com")
+
+    response = client.get("/api/modules/module-1/tags/export")
+
+    assert response.status_code == 200
+    assert response.headers["content-type"] == XLSX_CONTENT_TYPE
+    sheet = load_workbook(io.BytesIO(response.content)).active
+    header = [cell.value for cell in sheet[1]]
+    row = dict(zip(header, [cell.value for cell in sheet[2]]))
+    assert (row["epc_uid"], row["status"], row["product_name"], row["manufacturer"]) == (
+        "E2EXPORT",
+        "lost",
+        "KBC Lint",
+        "Impinj",
+    )
+
+    # The exported file can be uploaded as-is: the tag is updated, unchanged.
+    upload = client.post(
+        "/api/modules/module-1/tag-import",
+        files={"file": ("tags.xlsx", response.content, XLSX_CONTENT_TYPE)},
+    )
+    assert [result["outcome"] for result in upload.json()["results"]] == ["updated"]
+    db_session.refresh(tag)
+    assert (tag.status, tag.assigned_product_id) == ("lost", product.id)

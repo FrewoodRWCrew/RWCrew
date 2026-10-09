@@ -43,7 +43,7 @@
     border-bottom: 0.4pt solid var(--lijn);
   }
   @bottom-left {
-    content: "Intern document · versie 1.0 · oktober 2026";
+    content: "Intern document · versie 2.0 · oktober 2026";
     font: 8pt var(--body-font);
     color: var(--grijs);
   }
@@ -347,6 +347,22 @@ svg .t-mini { font-size: 9.5px; fill: var(--grijs); }
 svg .t-zone { font-size: 10px; font-weight: 600; fill: var(--grijs); letter-spacing: 0.08em; }
 svg .pijl { stroke: var(--inkt); stroke-width: 1.3; fill: none; marker-end: url(#pijlpunt); }
 svg .pijl-stippel { stroke: var(--grijs); stroke-width: 1.2; fill: none; stroke-dasharray: 4 3; marker-end: url(#pijlpunt-grijs); }
+
+/* Modulesleutels in de moduletabel niet midden in het woord afbreken. */
+#tab-modules code { white-space: nowrap; overflow-wrap: normal; }
+
+/* ---------- Schermafbeeldingen ---------- */
+figure.diagram[data-soort] img {
+  display: block;
+  margin: 0 auto;
+  max-width: 100%;
+  max-height: 150mm;
+  border: 0.6pt solid var(--lijn);
+  border-radius: 1.5mm;
+  box-shadow: 0 0.6mm 2.2mm rgba(16, 38, 31, 0.14);
+}
+.telefoon-rij { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6mm; align-items: start; }
+.telefoon-rij img { max-height: 118mm; border-radius: 3mm !important; }
 
 /* ---------- Diversen ---------- */
 .twee-kolommen { display: grid; grid-template-columns: 1fr 1fr; gap: 6mm; }
