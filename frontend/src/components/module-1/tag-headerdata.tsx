@@ -80,6 +80,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [createdAtFilter, setCreatedAtFilter] = useState("");
   const [lineCountFilter, setLineCountFilter] = useState("");
   const [scannerNameFilter, setScannerNameFilter] = useState("");
+  // The scanner's Type: which activity (module) the file is for.
+  const [scannerTypeFilter, setScannerTypeFilter] = useState("");
   const [scannerLocationFilter, setScannerLocationFilter] = useState("");
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
@@ -93,6 +95,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(String(entry.line_count), lineCountFilter)) return false;
       if (!textMatches(entry.scanner_name ?? "", scannerNameFilter)) return false;
+      if (!textMatches(entry.scanner_type ?? "", scannerTypeFilter)) return false;
       if (!textMatches(entry.scanner_location ?? "", scannerLocationFilter)) return false;
       if (!textMatches(entry.scanner_technology ?? "", scannerTechnologyFilter)) return false;
       if (!textMatches(entry.mode ?? "", modeFilter)) return false;
@@ -112,6 +115,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
     createdAtFilter,
     lineCountFilter,
     scannerNameFilter,
+    scannerTypeFilter,
     scannerLocationFilter,
     scannerTechnologyFilter,
     modeFilter,
@@ -194,6 +198,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCreatedAt")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("columnLineCount")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerName")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerType")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerLocation")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerTechnology")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnMode")}</TableHead>
@@ -265,6 +270,15 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterScannerType")}
+                  placeholder={t("filterScannerType")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerTypeFilter}
+                  onChange={(event) => setScannerTypeFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterScannerLocation")}
                   placeholder={t("filterScannerLocation")}
                   className="h-8 w-full min-w-32 font-normal"
@@ -331,6 +345,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 <TableCell>{formatDateTime(entry.created_at)}</TableCell>
                 <TableCell className="text-right">{entry.line_count}</TableCell>
                 <TableCell>{entry.scanner_name}</TableCell>
+                <TableCell>{entry.scanner_type}</TableCell>
                 <TableCell>{entry.scanner_location}</TableCell>
                 <TableCell>{entry.scanner_technology}</TableCell>
                 <TableCell>{entry.mode}</TableCell>

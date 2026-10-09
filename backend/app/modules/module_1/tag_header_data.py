@@ -71,6 +71,7 @@ def _build_line_rows(
     product_names_by_id: dict[int, str],
     scanners_by_name: dict[str, Scanner],
     scanners_by_id: dict[int, Scanner],
+    type_names_by_id: dict[int, str],
     header_mode: str | None = None,
     header_action: str | None = None,
     header_csv_comment: str | None = None,
@@ -102,7 +103,7 @@ def _build_line_rows(
             # out — see line_processing.py.
             process_status="new",
             **match_tag(row["epc"], tags_by_epc, product_names_by_id),
-            **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id),
+            **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id, type_names_by_id),
         )
         for row in parsed_rows
     ]
@@ -131,7 +132,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
     # Loaded once per scan call (not per-file/per-row) — a scan can cover
     # many files with many rows each, and neither list changes mid-scan.
     tags_by_epc, product_names_by_id = preload_tag_lookup(db)
-    scanners_by_name, scanners_by_id = preload_scanner_lookup(db)
+    scanners_by_name, scanners_by_id, type_names_by_id = preload_scanner_lookup(db)
 
     for file in csv_files:
         filename = file.name
@@ -157,7 +158,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
         # its parsed rows (every row in one CSV comes from the same
         # physical device), matched the same way a line's raw value is.
         header_scanner = next((row["scanner"] for row in parsed_rows if row["scanner"]), None)
-        header_match = match_scanner(header_scanner, None, scanners_by_name, scanners_by_id)
+        header_match = match_scanner(header_scanner, None, scanners_by_name, scanners_by_id, type_names_by_id)
 
         # The file's mode and action: same rule as the scanner above —
         # the first non-empty value among its parsed rows.
@@ -217,6 +218,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
                 product_names_by_id,
                 scanners_by_name,
                 scanners_by_id,
+                type_names_by_id,
                 header_mode=header_mode,
                 header_action=header_action,
                 header_csv_comment=header_csv_comment,

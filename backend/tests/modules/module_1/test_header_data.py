@@ -225,6 +225,7 @@ def test_scan_resolves_header_scanner_snapshot_from_the_first_csv_row(
     assert entry["scanner_name"] == "Scan_01"
     assert entry["scanner_location"] == "Warehouse A"
     assert entry["scanner_technology"] == "Raspberry Pi 5"
+    assert entry["scanner_type"] == "Type for Scan_01"
 
 
 def test_scan_leaves_header_scanner_snapshot_null_when_unmatched(

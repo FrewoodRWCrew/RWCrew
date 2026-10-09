@@ -305,6 +305,8 @@ def test_matched_scanner_is_enriched_from_scanners_registry(
     assert line.scanner_name == "Scan_01"
     assert line.scanner_location == "Warehouse A"
     assert line.scanner_technology == "Raspberry Pi 5"
+    # The scanner's Type (MasterData ProductType) says which activity it's for.
+    assert line.scanner_type == "Type for Scan_01"
 
     header = db_session.scalar(select(TagHeaderData))
     assert header.scanner == "Scan_01"
@@ -312,6 +314,10 @@ def test_matched_scanner_is_enriched_from_scanners_registry(
     assert header.scanner_name == "Scan_01"
     assert header.scanner_location == "Warehouse A"
     assert header.scanner_technology == "Raspberry Pi 5"
+    assert header.scanner_type == "Type for Scan_01"
+
+    # Also returned by the Tag Linedata list.
+    assert client.get("/api/modules/module-1/line-data").json()[0]["scanner_type"] == "Type for Scan_01"
 
 
 def test_unmatched_scanner_leaves_snapshot_fields_null_but_keeps_raw_text(
@@ -331,9 +337,11 @@ def test_unmatched_scanner_leaves_snapshot_fields_null_but_keeps_raw_text(
     assert line.scanner_name is None
     assert line.scanner_location is None
     assert line.scanner_technology is None
+    assert line.scanner_type is None
 
     header = db_session.scalar(select(TagHeaderData))
     assert header.scanner == "Unknown_Scanner"
+    assert header.scanner_type is None
     assert header.scanner_id is None
 
 
@@ -599,6 +607,28 @@ def test_sync_reflects_a_scanner_rename_on_an_already_matched_line(
     header = db_session.scalar(select(TagHeaderData))
     assert header.scanner_name == "New Scanner Name"
     assert header.scanner_location == "New Location"
+
+
+def test_sync_reflects_a_changed_scanner_type(client: TestClient, db_session: Session, scan_dirs: Path) -> None:
+    scanner = _create_scanner_device(db_session, scanner="Scan_01")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes((REAL_HEADER + "Scan_01,E2AAA,78,1,92,10:36:07\n").encode())
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post("/api/modules/module-1/header-data/scan")
+
+    # The scanner is moved to another Type (activity) afterwards.
+    new_type = ProductType(name="KarTracker")
+    db_session.add(new_type)
+    db_session.commit()
+    scanner.type_id = new_type.id
+    db_session.commit()
+
+    response = client.post("/api/modules/module-1/line-data/sync")
+
+    assert response.json()["entries"][0]["scanner_type"] == "KarTracker"
+    header = db_session.scalar(select(TagHeaderData))
+    db_session.refresh(header)
+    assert header.scanner_type == "KarTracker"
 
 
 def test_sync_leaves_cancelled_lines_scanner_snapshot_untouched(

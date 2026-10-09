@@ -77,6 +77,8 @@ class TagLineData(Base):
     scanner_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
     scanner_location: Mapped[str | None] = mapped_column(Text, nullable=True)
     scanner_technology: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    # The device's Type (MasterData ProductType name): which activity the scan is for.
+    scanner_type: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     status: Mapped[str] = mapped_column(String(20), nullable=False)
 

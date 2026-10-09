@@ -53,6 +53,7 @@ type SortableColumn =
   | "line_number"
   | "scanner"
   | "scanner_name"
+  | "scanner_type"
   | "scanner_location"
   | "created_at"
   | "scanner_technology"
@@ -157,6 +158,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [lineNumberFilter, setLineNumberFilter] = useState("");
   const [scannerFilter, setScannerFilter] = useState("");
   const [scannerNameFilter, setScannerNameFilter] = useState("");
+  // The scanner's Type: which activity (module) the line is for.
+  const [scannerTypeFilter, setScannerTypeFilter] = useState("");
   const [scannerLocationFilter, setScannerLocationFilter] = useState("");
   const [createdAtFilter, setCreatedAtFilter] = useState("");
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
@@ -196,6 +199,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.line_number, lineNumberFilter)) return false;
       if (!textMatches(entry.scanner, scannerFilter)) return false;
       if (!textMatches(entry.scanner_name, scannerNameFilter)) return false;
+      if (!textMatches(entry.scanner_type, scannerTypeFilter)) return false;
       if (!textMatches(entry.scanner_location, scannerLocationFilter)) return false;
       if (!textMatches(formatDateTime(entry.created_at), createdAtFilter)) return false;
       if (!textMatches(entry.scanner_technology, scannerTechnologyFilter)) return false;
@@ -221,6 +225,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     lineNumberFilter,
     scannerFilter,
     scannerNameFilter,
+    scannerTypeFilter,
     scannerLocationFilter,
     createdAtFilter,
     scannerTechnologyFilter,
@@ -340,6 +345,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <TableCell>{entry.assigned_serial_number}</TableCell>
         <TableCell>{entry.scanner}</TableCell>
         <TableCell>{entry.scanner_name}</TableCell>
+        <TableCell>{entry.scanner_type}</TableCell>
         <TableCell>{entry.scanner_location}</TableCell>
         <TableCell>{formatDateTime(entry.created_at)}</TableCell>
         <TableCell>{entry.scanner_technology}</TableCell>
@@ -470,6 +476,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnScannerName")}
                 column="scanner_name"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnScannerType")}
+                column="scanner_type"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -696,6 +711,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterScannerType")}
+                  placeholder={t("filterScannerType")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={scannerTypeFilter}
+                  onChange={(event) => setScannerTypeFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterScannerLocation")}
                   placeholder={t("filterScannerLocation")}
                   className="h-8 w-full min-w-32 font-normal"
@@ -823,7 +847,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={22} className="font-semibold">
+                        <TableCell colSpan={23} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

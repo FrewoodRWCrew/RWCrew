@@ -479,6 +479,8 @@ export interface TagHeaderDataEntry {
   scanner_name: string | null;
   scanner_location: string | null;
   scanner_technology: string | null;
+  /** The matched scanner's Type (MasterData ProductType): which activity it scans for. */
+  scanner_type: string | null;
   // The file's "Mode" and "Action" CSV values (first non-empty per file).
   mode: string | null;
   action: string | null;
@@ -536,6 +538,8 @@ export interface TagLineDataEntry {
   scanner_name: string | null;
   scanner_location: string | null;
   scanner_technology: string | null;
+  /** The matched scanner's Type (MasterData ProductType): which activity it scans for. */
+  scanner_type: string | null;
   status: TagLineStatus;
   // Whether this line's action has been carried out, and why (or why not).
   process_status: TagProcessStatus;

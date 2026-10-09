@@ -417,6 +417,8 @@ class TagHeaderDataResponse(BaseModel):
     scanner_name: str | None
     scanner_location: str | None
     scanner_technology: str | None
+    # The matched device's Type (MasterData ProductType name), i.e. which activity it scans for.
+    scanner_type: str | None
     # The file's "Mode" and "Action" CSV values (first non-empty per file).
     mode: str | None
     action: str | None
@@ -482,6 +484,8 @@ class TagLineDataResponse(BaseModel):
     scanner_name: str | None
     scanner_location: str | None
     scanner_technology: str | None
+    # The matched device's Type (MasterData ProductType name), i.e. which activity it scans for.
+    scanner_type: str | None
     status: TagLineStatus
     # Whether this line's action has been carried out, and why (or why not).
     process_status: TagProcessStatus

@@ -14,6 +14,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models.product import Product
+from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
 from app.db.models.scanner import Scanner
 from app.db.models.tag_header_data import TagHeaderData
@@ -89,9 +90,10 @@ class ScannerMatch(TypedDict):
     scanner_name: str | None
     scanner_location: str | None
     scanner_technology: str | None
+    scanner_type: str | None
 
 
-def preload_scanner_lookup(db: Session) -> tuple[dict[str, Scanner], dict[int, Scanner]]:
+def preload_scanner_lookup(db: Session) -> tuple[dict[str, Scanner], dict[int, Scanner], dict[int, str]]:
     """The current Scanners registry snapshot needed by match_scanner() —
     loaded once per scan/sync call (not per-row), since neither dict
     changes mid-call.
@@ -115,7 +117,10 @@ def preload_scanner_lookup(db: Session) -> tuple[dict[str, Scanner], dict[int, S
     scanners = db.scalars(select(Scanner)).all()
     scanners_by_name = {scanner.scanner.strip().lower(): scanner for scanner in scanners}
     scanners_by_id = {scanner.id: scanner for scanner in scanners}
-    return scanners_by_name, scanners_by_id
+    # A scanner's Type is a MasterData ProductType — its name by id, for the
+    # "Type" snapshot (which activity the scan is for).
+    type_names_by_id = {product_type.id: product_type.name for product_type in db.scalars(select(ProductType)).all()}
+    return scanners_by_name, scanners_by_id, type_names_by_id
 
 
 def match_scanner(
@@ -123,6 +128,7 @@ def match_scanner(
     current_scanner_id: int | None,
     scanners_by_name: dict[str, Scanner],
     scanners_by_id: dict[int, Scanner],
+    type_names_by_id: dict[int, str],
 ) -> ScannerMatch:
     """Resolve one row's scanner snapshot.
 
@@ -146,13 +152,16 @@ def match_scanner(
         else (scanners_by_name.get(raw_scanner.strip().lower()) if raw_scanner else None)
     )
     if matched_scanner is None:
-        return ScannerMatch(scanner_id=None, scanner_name=None, scanner_location=None, scanner_technology=None)
+        return ScannerMatch(
+            scanner_id=None, scanner_name=None, scanner_location=None, scanner_technology=None, scanner_type=None
+        )
 
     return ScannerMatch(
         scanner_id=matched_scanner.id,
         scanner_name=matched_scanner.scanner,
         scanner_location=matched_scanner.location,
         scanner_technology=matched_scanner.technology,
+        scanner_type=type_names_by_id.get(matched_scanner.type_id),
     )
 
 
@@ -327,7 +336,7 @@ def sync_line_data(db: Session) -> int:
     sync must never silently flip it back to converted/no_match.
     """
     tags_by_epc, product_names_by_id = preload_tag_lookup(db)
-    scanners_by_name, scanners_by_id = preload_scanner_lookup(db)
+    scanners_by_name, scanners_by_id, type_names_by_id = preload_scanner_lookup(db)
 
     lines = db.scalars(select(TagLineData).where(TagLineData.status != "cancelled")).all()
 
@@ -335,7 +344,7 @@ def sync_line_data(db: Session) -> int:
     for line in lines:
         match: dict = {
             **match_tag(line.epc, tags_by_epc, product_names_by_id),
-            **match_scanner(line.scanner, line.scanner_id, scanners_by_name, scanners_by_id),
+            **match_scanner(line.scanner, line.scanner_id, scanners_by_name, scanners_by_id, type_names_by_id),
         }
         changed = any(getattr(line, field) != value for field, value in match.items())
         if not changed:
@@ -366,7 +375,9 @@ def sync_line_data(db: Session) -> int:
         for field in ("scanner", "mode", "action"):
             if not getattr(header, field) and first_values.get(field):
                 setattr(header, field, first_values[field])
-        header_match = match_scanner(header.scanner, header.scanner_id, scanners_by_name, scanners_by_id)
+        header_match = match_scanner(
+            header.scanner, header.scanner_id, scanners_by_name, scanners_by_id, type_names_by_id
+        )
         if any(getattr(header, field) != value for field, value in header_match.items()):
             for field, value in header_match.items():
                 setattr(header, field, value)

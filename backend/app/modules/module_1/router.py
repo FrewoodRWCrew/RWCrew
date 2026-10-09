@@ -291,6 +291,7 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         scanner_name=line.scanner_name,
         scanner_location=line.scanner_location,
         scanner_technology=line.scanner_technology,
+        scanner_type=line.scanner_type,
         status=line.status,
         process_status=line.process_status,
         process_comment=line.process_comment,
