@@ -1,19 +1,19 @@
 // TagScan's "CSV Source Files" screen: a read-only, Explorer-style
 // browser over the folder currently receiving incoming CSV scan files —
-// see FileBrowser for the actual UI. Parsing/importing that data into
-// the database is a later step; this one is purely for looking at what
-// has arrived so far. Moved here (off the module's root URL) once
+// see FileBrowser for the actual UI. Users with "delete" on this screen
+// can also delete files from the server there. Moved here (off the module's root URL) once
 // TagScan got its own landing page — see modules/module-1/page.tsx.
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
-import type { TagscanFileEntry, TagscanFolderNode } from "@/lib/types";
+import type { TagscanFileEntry, TagscanFolderNode, TagscanMyPermissions } from "@/lib/types";
 import { FileBrowser } from "@/components/module-1/file-browser";
 
 interface DashboardPageData {
   tree: TagscanFolderNode;
   initialFolderPath: string;
   initialFiles: TagscanFileEntry[];
+  canDelete: boolean;
 }
 
 // The intake folder new CSVs land in (backend: UNREADED_SUBFOLDER) — the
@@ -35,7 +35,11 @@ export default async function TagscanFilesPage() {
     const initialFiles = await serverApiFetch<TagscanFileEntry[]>(
       `/api/modules/module-1/files?path=${encodeURIComponent(initialFolderPath)}`,
     );
-    data = { tree, initialFolderPath, initialFiles };
+    // Already fetched by the module layout — request memoization means no
+    // second network call. "delete" on this screen allows deleting files.
+    const permissions = await serverApiFetch<TagscanMyPermissions>("/api/modules/module-1/me/permissions");
+    const canDelete = permissions.deletable_screen_keys.includes("tagscan.dashboard");
+    data = { tree, initialFolderPath, initialFiles, canDelete };
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
       return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
@@ -43,5 +47,12 @@ export default async function TagscanFilesPage() {
     throw error;
   }
 
-  return <FileBrowser initialTree={data.tree} initialFolderPath={data.initialFolderPath} initialFiles={data.initialFiles} />;
+  return (
+    <FileBrowser
+      initialTree={data.tree}
+      initialFolderPath={data.initialFolderPath}
+      initialFiles={data.initialFiles}
+      canDelete={data.canDelete}
+    />
+  );
 }

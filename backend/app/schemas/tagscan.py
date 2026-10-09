@@ -115,6 +115,7 @@ class MyPermissionsResponse(BaseModel):
 
     viewable_screen_keys: list[str]
     creatable_screen_keys: list[str]
+    deletable_screen_keys: list[str]
 
 
 class FolderNode(BaseModel):
@@ -136,6 +137,19 @@ class FileEntryResponse(BaseModel):
     path: str
     size_bytes: int
     modified_at: datetime
+
+
+class FileDeleteRequest(BaseModel):
+    """The files checked on the CSV Source Files screen, to delete from disk."""
+
+    # Paths relative to the source folder, as returned by the file listing.
+    paths: list[str] = Field(min_length=1, max_length=1000)
+
+
+class FileDeleteResponse(BaseModel):
+    """How many files were deleted from disk."""
+
+    deleted: int
 
 
 class FileContentResponse(BaseModel):

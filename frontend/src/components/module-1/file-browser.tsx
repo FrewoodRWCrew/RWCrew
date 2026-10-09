@@ -1,21 +1,40 @@
 "use client";
 
-// TagScan's "Dashboard" screen: a read-only, Explorer-style browser over
-// the folder where incoming CSV scan files currently land. Three panes:
+// TagScan's "Dashboard" screen: an Explorer-style browser over the folder
+// where incoming CSV scan files currently land. Three panes:
 //   1. Folder tree (left) — the whole folder structure.
 //   2. File list (middle) — files directly inside whichever folder is
 //      selected in the tree.
 //   3. Content preview (right) — a "notepad"-style read-only view of
 //      whichever file is selected in the file list.
-// Purely for looking at what has arrived so far — parsing/importing the
-// CSV data into the database is a later step.
+// Users with "delete" on this screen can check files in the file list and
+// delete them from the server (the Files pane's bin button).
 
 import { useCallback, useState } from "react";
-import { ChevronDown, ChevronRight, File, Folder, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronRight, File, Folder, RefreshCw, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { ApiError, getTagscanFileContent, getTagscanFolderTree, listTagscanFiles } from "@/lib/api";
+import { toast } from "sonner";
+import {
+  ApiError,
+  deleteTagscanFiles,
+  getTagscanFileContent,
+  getTagscanFolderTree,
+  listTagscanFiles,
+} from "@/lib/api";
 import type { TagscanFileContent, TagscanFileEntry, TagscanFolderNode } from "@/lib/types";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 interface FileBrowserProps {
@@ -23,6 +42,8 @@ interface FileBrowserProps {
   // The folder selected on open, whose files are initialFiles.
   initialFolderPath: string;
   initialFiles: TagscanFileEntry[];
+  /** Whether the user has "delete" on this screen (shows the checkboxes + bin button). */
+  canDelete: boolean;
 }
 
 function formatSize(bytes: number): string {
@@ -31,7 +52,7 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: FileBrowserProps) {
+export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canDelete }: FileBrowserProps) {
   const t = useTranslations("tagscan.dashboard");
 
   const [tree, setTree] = useState(initialTree);
@@ -43,10 +64,14 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
   const [fileContent, setFileContent] = useState<TagscanFileContent | null>(null);
   const [contentError, setContentError] = useState<string | null>(null);
   const [isLoadingContent, setIsLoadingContent] = useState(false);
+  // The files checked for deletion — always within the folder shown.
+  const [checkedPaths, setCheckedPaths] = useState<Set<string>>(new Set());
 
   const loadFiles = useCallback(
     async (folderPath: string) => {
       setFilesError(null);
+      // A new listing starts with nothing checked.
+      setCheckedPaths(new Set());
       try {
         const entries = await listTagscanFiles(folderPath);
         setFiles(entries);
@@ -78,6 +103,32 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
     } finally {
       setIsLoadingContent(false);
     }
+  }
+
+  const allChecked = files.length > 0 && files.every((file) => checkedPaths.has(file.path));
+  const someChecked = files.some((file) => checkedPaths.has(file.path));
+
+  function toggleCheckAll(checked: boolean) {
+    setCheckedPaths(checked ? new Set(files.map((file) => file.path)) : new Set());
+  }
+
+  function toggleCheckOne(filePath: string, checked: boolean) {
+    setCheckedPaths((current) => {
+      const next = new Set(current);
+      if (checked) next.add(filePath);
+      else next.delete(filePath);
+      return next;
+    });
+  }
+
+  // After a delete: drop the preview if its file is gone, then reload the
+  // tree and the folder's files (which also clears the checkboxes).
+  async function handleDeleted(deletedPaths: string[]) {
+    if (selectedFilePath && deletedPaths.includes(selectedFilePath)) {
+      setSelectedFilePath(null);
+      setFileContent(null);
+    }
+    await handleRefresh();
   }
 
   async function handleRefresh() {
@@ -116,8 +167,11 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
         </div>
 
         <div className="flex flex-col overflow-hidden rounded-md border">
-          <div className="border-b bg-muted/50 px-3 py-2 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
-            {t("filesHeading")}
+          <div className="flex items-center justify-between gap-2 border-b bg-muted/50 px-3 py-1">
+            <span className="py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
+              {t("filesHeading")}
+            </span>
+            {canDelete && <DeleteFilesAlertDialog paths={[...checkedPaths]} onDeleted={handleDeleted} />}
           </div>
           <div className="flex-1 overflow-y-auto">
             {filesError && <p className="p-3 text-sm text-destructive">{filesError}</p>}
@@ -128,6 +182,16 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-xs text-muted-foreground">
+                    {canDelete && (
+                      <th className="w-8 py-1.5 pl-3">
+                        <Checkbox
+                          checked={allChecked}
+                          indeterminate={someChecked && !allChecked}
+                          onCheckedChange={(checked) => toggleCheckAll(checked === true)}
+                          aria-label={t("selectAll")}
+                        />
+                      </th>
+                    )}
                     <th className="px-3 py-1.5 font-medium">{t("columnName")}</th>
                     <th className="px-3 py-1.5 font-medium">{t("columnSize")}</th>
                   </tr>
@@ -142,6 +206,16 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
                         selectedFilePath === file.path && "bg-accent",
                       )}
                     >
+                      {canDelete && (
+                        // Checking a file must not also open its preview.
+                        <td className="w-8 py-1.5 pl-3" onClick={(event) => event.stopPropagation()}>
+                          <Checkbox
+                            checked={checkedPaths.has(file.path)}
+                            onCheckedChange={(checked) => toggleCheckOne(file.path, checked === true)}
+                            aria-label={t("selectFile", { name: file.name })}
+                          />
+                        </td>
+                      )}
                       <td className="flex items-center gap-2 px-3 py-1.5">
                         <File className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
                         {file.name}
@@ -175,6 +249,60 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles }: Fi
         </div>
       </div>
     </div>
+  );
+}
+
+interface DeleteFilesAlertDialogProps {
+  paths: string[];
+  onDeleted: (paths: string[]) => void | Promise<void>;
+}
+
+/** The Files pane's bin button: deletes every checked file from the server,
+ * after a confirmation. Disabled while nothing is checked. */
+function DeleteFilesAlertDialog({ paths, onDeleted }: DeleteFilesAlertDialogProps) {
+  const t = useTranslations("tagscan.dashboard");
+  const tCommon = useTranslations("common");
+  const [isOpen, setIsOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleConfirmDelete() {
+    setIsDeleting(true);
+    try {
+      const { deleted } = await deleteTagscanFiles(paths);
+      toast.success(t("filesDeleted", { count: deleted }));
+      setIsOpen(false);
+      await onDeleted(paths);
+    } catch (error) {
+      const message = error instanceof ApiError ? error.message : t("deleteFailed");
+      toast.error(message);
+    } finally {
+      setIsDeleting(false);
+    }
+  }
+
+  return (
+    <AlertDialog open={isOpen} onOpenChange={setIsOpen}>
+      <AlertDialogTrigger
+        render={
+          <Button variant="outline" size="sm" disabled={paths.length === 0}>
+            <Trash2 className="size-4 text-destructive" />
+            {t("deleteSelected", { count: paths.length })}
+          </Button>
+        }
+      />
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{t("deleteConfirmTitle")}</AlertDialogTitle>
+          <AlertDialogDescription>{t("deleteConfirmDescription", { count: paths.length })}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>{tCommon("cancel")}</AlertDialogCancel>
+          <AlertDialogAction variant="destructive" disabled={isDeleting} onClick={handleConfirmDelete}>
+            {t("delete")}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
 

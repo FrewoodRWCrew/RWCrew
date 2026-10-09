@@ -172,7 +172,15 @@
       "loadContentFailed": "Laden van de bestandsinhoud is mislukt.",
       "truncatedNotice": "Dit bestand is groot — enkel het eerste deel van de inhoud wordt getoond.",
       "columnName": "Naam",
-      "columnSize": "Grootte"
+      "columnSize": "Grootte",
+      "deleteSelected": "Verwijderen ({count})",
+      "deleteConfirmTitle": "Bestanden verwijderen?",
+      "deleteConfirmDescription": "{count, plural, one {# bestand wordt} other {# bestanden worden}} definitief van de server verwijderd. Dit kan niet ongedaan worden gemaakt. Een bestand dat al geregistreerd is, blijft in Tag Headergegevens staan.",
+      "filesDeleted": "{count, plural, one {# bestand verwijderd.} other {# bestanden verwijderd.}}",
+      "deleteFailed": "Verwijderen van de bestanden is mislukt.",
+      "delete": "Verwijderen",
+      "selectAll": "Alle bestanden selecteren",
+      "selectFile": "Selecteer bestand \"{name}\""
     },
     "tagHeaderdata": {
       "title": "Tag Headergegevens",

@@ -274,10 +274,11 @@ export interface TagscanUserSummary {
   role_name: string | null;
 }
 
-/** Which Tagscan screens the current user is allowed to view (and create on). */
+/** Which Tagscan screens the current user is allowed to view (and create/delete on). */
 export interface TagscanMyPermissions {
   viewable_screen_keys: string[];
   creatable_screen_keys: string[];
+  deletable_screen_keys: string[];
 }
 
 /** One folder in the CSV intake directory's tree, with its subfolders nested inside. */

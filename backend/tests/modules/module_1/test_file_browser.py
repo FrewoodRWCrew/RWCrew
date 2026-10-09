@@ -1,7 +1,7 @@
 # Tests for TagScan's read-only Explorer-style file browser (the
 # Dashboard screen's real content): folder tree, per-folder file listing,
-# and file content preview — all gated by the existing "tagscan.dashboard"
-# view permission, plus the path-traversal guard in file_browser.py.
+# file content preview and deleting files — gated by the "tagscan.dashboard"
+# view (delete: delete) permission, plus the path-traversal guard in file_browser.py.
 
 from pathlib import Path
 
@@ -169,3 +169,59 @@ def test_missing_file_returns_404(client: TestClient, db_session: Session, sourc
     response = client.get("/api/modules/module-1/files/content", params={"path": "does-not-exist.csv"})
 
     assert response.status_code == 404
+
+
+def _admin_client(client: TestClient, db_session: Session) -> None:
+    """Log in as a super admin with TagScan module access (may delete)."""
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+
+def test_deleting_files_removes_only_the_given_files(
+    client: TestClient, db_session: Session, source_dir: Path
+) -> None:
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    response = client.post("/api/modules/module-1/files/delete", json={"paths": ["2026-08-23/scan.csv"]})
+
+    assert response.status_code == 200
+    assert response.json() == {"deleted": 1}
+    assert not (source_dir / "2026-08-23" / "scan.csv").exists()
+    # The folder itself and the other file stay.
+    assert (source_dir / "2026-08-23").is_dir()
+    assert (source_dir / "root-file.csv").exists()
+
+
+def test_deleting_with_one_bad_path_deletes_nothing(
+    client: TestClient, db_session: Session, source_dir: Path
+) -> None:
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    outside = source_dir.parent / "outside.txt"
+    outside.write_bytes(b"keep me")
+
+    traversal = client.post("/api/modules/module-1/files/delete", json={"paths": ["root-file.csv", "../outside.txt"]})
+    folder = client.post("/api/modules/module-1/files/delete", json={"paths": ["root-file.csv", "2026-08-23"]})
+    missing = client.post("/api/modules/module-1/files/delete", json={"paths": ["root-file.csv", "nope.csv"]})
+
+    assert (traversal.status_code, folder.status_code, missing.status_code) == (400, 404, 404)
+    assert outside.exists()
+    assert (source_dir / "root-file.csv").exists()
+
+
+def test_view_only_dashboard_permission_cannot_delete_files(
+    client: TestClient, db_session: Session, source_dir: Path
+) -> None:
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+
+    response = client.post("/api/modules/module-1/files/delete", json={"paths": ["root-file.csv"]})
+
+    assert response.status_code == 403
+    assert (source_dir / "root-file.csv").exists()
+    permissions = client.get("/api/modules/module-1/me/permissions").json()
+    assert "tagscan.dashboard" in permissions["viewable_screen_keys"]
+    assert "tagscan.dashboard" not in permissions["deletable_screen_keys"]

@@ -715,6 +715,14 @@ export function getTagscanFileContent(path: string): Promise<TagscanFileContent>
   return apiFetch<TagscanFileContent>(`/api/modules/module-1/files/content?path=${encodeURIComponent(path)}`);
 }
 
+/** Permanently deletes files (paths as listed) from the CSV intake folder; returns how many. */
+export function deleteTagscanFiles(paths: string[]): Promise<{ deleted: number }> {
+  return apiFetch<{ deleted: number }>("/api/modules/module-1/files/delete", {
+    method: "POST",
+    body: JSON.stringify({ paths }),
+  });
+}
+
 // --- Tag Headerdata (module-1's "tagscan.tag-headerdata" screen) --------
 
 export function listTagHeaderData(): Promise<TagHeaderDataEntry[]> {

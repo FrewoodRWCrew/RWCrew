@@ -1,5 +1,5 @@
-# Plain filesystem helpers backing TagScan's "Dashboard" screen: a
-# read-only, Explorer-style browser over the folder where incoming CSV
+# Plain filesystem helpers backing TagScan's "Dashboard" screen: an
+# Explorer-style browser (view + delete files) over the folder where incoming CSV
 # scan files currently land (see app.core.config.settings.tagscan_source_dir,
 # overridable per app.db.models.tagscan_settings.TagscanSettings — see
 # get_source_root() below).
@@ -100,3 +100,23 @@ def read_file_preview(file: Path) -> tuple[str, bool]:
         raw = handle.read(MAX_PREVIEW_BYTES)
 
     return raw.decode("utf-8", errors="replace"), size > MAX_PREVIEW_BYTES
+
+
+def delete_files(db: Session, relative_paths: list[str]) -> int:
+    """Permanently delete files inside the configured source folder, and
+    return how many were deleted. All paths are checked first (inside the
+    folder, an existing file — never a folder), so one bad path deletes
+    nothing at all. Logged Tag Headerdata/Linedata rows are left untouched.
+    """
+    files = []
+    for relative_path in relative_paths:
+        file = resolve_safe_path(db, relative_path)
+        if not file.is_file():
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File not found: {relative_path}")
+        files.append(file)
+
+    # The same file listed twice is only deleted (and counted) once.
+    unique_files = list(dict.fromkeys(files))
+    for file in unique_files:
+        file.unlink()
+    return len(unique_files)

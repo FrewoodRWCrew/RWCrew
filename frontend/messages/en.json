@@ -172,7 +172,15 @@
       "loadContentFailed": "Failed to load the file content.",
       "truncatedNotice": "This file is large — showing only the first part of its content.",
       "columnName": "Name",
-      "columnSize": "Size"
+      "columnSize": "Size",
+      "deleteSelected": "Delete ({count})",
+      "deleteConfirmTitle": "Delete files?",
+      "deleteConfirmDescription": "{count, plural, one {# file} other {# files}} will be permanently deleted from the server. This cannot be undone. A file that was already registered stays in Tag Headerdata.",
+      "filesDeleted": "{count, plural, one {# file deleted.} other {# files deleted.}}",
+      "deleteFailed": "Failed to delete the files.",
+      "delete": "Delete",
+      "selectAll": "Select all files",
+      "selectFile": "Select file \"{name}\""
     },
     "tagHeaderdata": {
       "title": "Tag Headerdata",

@@ -41,6 +41,7 @@ from app.modules.module_1.auto_scan import DEFAULT_ENABLED, DEFAULT_INTERVAL_SEC
 from app.modules.module_1.file_browser import (
     SETTINGS_ROW_ID,
     build_folder_tree,
+    delete_files,
     get_source_root,
     list_files,
     read_file_preview,
@@ -65,6 +66,8 @@ from app.modules.module_1.tag_line_data import list_line_data, sync_line_data
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
+    FileDeleteRequest,
+    FileDeleteResponse,
     FileEntryResponse,
     FolderNode,
     LineProcessCancelRequest,
@@ -199,6 +202,21 @@ def get_file_content(
 
     content, truncated = read_file_preview(file)
     return FileContentResponse(path=path, content=content, truncated=truncated)
+
+
+@router.post("/files/delete", response_model=FileDeleteResponse)
+def delete_source_files(
+    payload: FileDeleteRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.dashboard", "delete")),
+) -> FileDeleteResponse:
+    """Permanently delete the checked files from the CSV intake directory
+    (see file_browser.delete_files). Holds SCAN_LOCK, so it never deletes a
+    file that a manual or automatic Scan is moving at that very moment.
+    """
+    with SCAN_LOCK:
+        deleted = delete_files(db, payload.paths)
+    return FileDeleteResponse(deleted=deleted)
 
 
 @router.get("/header-data", response_model=list[TagHeaderDataResponse])
@@ -1115,11 +1133,16 @@ def get_my_permissions(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_module_access),
 ) -> MyPermissionsResponse:
-    """Tell the frontend which Tagscan screens the current user can view
-    and create on, so it knows what to show (sidebar links, upload
-    controls) without duplicating the permission-checking rules itself.
+    """Tell the frontend which Tagscan screens the current user can view,
+    create on and delete on, so it knows what to show (sidebar links,
+    upload and delete controls) without duplicating the permission-checking rules itself.
     """
     screens = db.scalars(select(TagscanScreen)).all()
     viewable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "view")]
     creatable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "create")]
-    return MyPermissionsResponse(viewable_screen_keys=viewable_keys, creatable_screen_keys=creatable_keys)
+    deletable_keys = [screen.key for screen in screens if user_can(db, current_user, screen.key, "delete")]
+    return MyPermissionsResponse(
+        viewable_screen_keys=viewable_keys,
+        creatable_screen_keys=creatable_keys,
+        deletable_screen_keys=deletable_keys,
+    )
