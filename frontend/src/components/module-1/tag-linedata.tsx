@@ -18,7 +18,7 @@
 // dialog opened from the banner at the top of every TagScan screen.
 
 import { Fragment, useMemo, useState } from "react";
-import { ArrowDown, ArrowUp, ArrowUpDown, Layers } from "lucide-react";
+import { ArrowDown, ArrowUp, ArrowUpDown, Layers, Truck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -35,6 +35,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/date-time";
+import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
 
 interface TagLineDataProps {
@@ -43,6 +44,13 @@ interface TagLineDataProps {
 
 const STATUS_VALUES: TagLineStatus[] = ["converted", "no_match", "cancelled"];
 const ALL_VALUE = "all";
+
+/** Which grouping is shown: none (flat, sortable table), per (file,
+ * product) with subtotals, or per kar (a file's lines under its kar). */
+type GroupMode = "none" | "product" | "kar";
+
+// Kar groups use KarTracker's own accent colour, so they read as "a kar".
+const KAR_ACCENT_CLASS = getModuleTheme("module-2").badgeClassName;
 
 /** Every column a user can click to sort by — matches the corresponding
  * TagLineDataEntry field name directly, so the comparator can index into
@@ -82,7 +90,10 @@ type SortDirection = "asc" | "desc";
  */
 type DisplayBlock =
   | { type: "line"; entry: TagLineDataEntry }
-  | { type: "group"; key: string; filename: string; product: string; entries: TagLineDataEntry[] };
+  | { type: "group"; key: string; filename: string; product: string; entries: TagLineDataEntry[] }
+  // One scanned file with a kar among its lines: the kar's own line first,
+  // then every other line of that file (what was scanned with the kar).
+  | { type: "kar"; key: string; karNummer: string; filename: string; entries: TagLineDataEntry[] };
 
 function textMatches(fieldValue: string | number | null, filterValue: string): boolean {
   if (!filterValue) return true;
@@ -151,7 +162,13 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   }
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [groupByProduct, setGroupByProduct] = useState(false);
+  const [groupMode, setGroupMode] = useState<GroupMode>("none");
+  const isGrouped = groupMode !== "none";
+
+  // Clicking the active grouping button switches grouping off again.
+  function toggleGroupMode(mode: GroupMode) {
+    setGroupMode((current) => (current === mode ? "none" : mode));
+  }
 
   // Pre-filled when arriving from a filename link on Tag Headerdata
   // (?filename=...) — every other filter still starts blank as usual.
@@ -303,6 +320,46 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     return blocks;
   }, [filteredEntries]);
 
+  // The "group by kar" view, also built from filteredEntries. Per scanned
+  // file, the first line (CSV order) whose tag has a kar number is the kar;
+  // all of that file's lines are collected under it, placed where the
+  // file's first line was. Files without a kar line stay ungrouped.
+  const karBlocks = useMemo<DisplayBlock[]>(() => {
+    const karLineByHeader = new Map<number, TagLineDataEntry>();
+    for (const entry of filteredEntries) {
+      if (entry.kar_nummer && !karLineByHeader.has(entry.header_data_id)) {
+        karLineByHeader.set(entry.header_data_id, entry);
+      }
+    }
+
+    const blocks: DisplayBlock[] = [];
+    const karBlocksByHeader = new Map<number, Extract<DisplayBlock, { type: "kar" }>>();
+    for (const entry of filteredEntries) {
+      const karLine = karLineByHeader.get(entry.header_data_id);
+      if (!karLine) {
+        blocks.push({ type: "line", entry });
+        continue;
+      }
+
+      let block = karBlocksByHeader.get(entry.header_data_id);
+      if (!block) {
+        // The kar's own line always leads its block.
+        block = {
+          type: "kar",
+          key: `kar-${entry.header_data_id}`,
+          karNummer: karLine.kar_nummer ?? "",
+          filename: entry.header_filename,
+          entries: [karLine],
+        };
+        karBlocksByHeader.set(entry.header_data_id, block);
+        blocks.push(block);
+      }
+      if (entry !== karLine) block.entries.push(entry);
+    }
+
+    return blocks;
+  }, [filteredEntries]);
+
   async function handleSync() {
     setIsSyncing(true);
     try {
@@ -331,20 +388,33 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     }
   }
 
-  function renderEntryRow(entry: TagLineDataEntry) {
+  function renderEntryRow(entry: TagLineDataEntry, karGroup?: { isKarLine: boolean }) {
     // Whole-row colour by processing status (orange/green/red, see
     // process-status.ts), so waiting lines stand out at a glance; the
     // EPC-match status stays readable as text in its own column.
     return (
       <TableRow key={entry.id} className={cn("group", PROCESS_STATUS_ROW_CLASS[entry.process_status])}>
-        <TableCell>
+        {/* Inside a kar group, a purple bar down the left edge ties the
+            lines to their kar header row. */}
+        <TableCell className={cn(karGroup && "border-l-4 border-l-purple-500")}>
           <Badge variant="outline" className={PROCESS_STATUS_BADGE_CLASS[entry.process_status]}>
             {tProcess(entry.process_status)}
           </Badge>
         </TableCell>
         <TableCell>{entry.scanner_type}</TableCell>
         <TableCell>{entry.action}</TableCell>
-        <TableCell>{entry.kar_nummer}</TableCell>
+        <TableCell>
+          <span className="inline-flex items-center gap-1.5">
+            {entry.kar_nummer}
+            {/* Marks the kar's own line among the lines scanned with it. */}
+            {karGroup?.isKarLine && (
+              <Badge variant="outline" className={cn("gap-1", KAR_ACCENT_CLASS)}>
+                <Truck className="size-3" />
+                {t("karLineBadge")}
+              </Badge>
+            )}
+          </span>
+        </TableCell>
         <TableCell>{entry.assigned_product_name}</TableCell>
         <TableCell className="font-medium">{entry.epc}</TableCell>
         <TableCell>{entry.header_filename}</TableCell>
@@ -380,6 +450,50 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     );
   }
 
+  /** One block of a grouped view: a plain line, a (file, product) group
+   * followed by its subtotal row, or a kar group under its kar header row. */
+  function renderBlock(block: DisplayBlock) {
+    switch (block.type) {
+      case "line":
+        return renderEntryRow(block.entry);
+      case "group":
+        return (
+          <Fragment key={block.key}>
+            {block.entries.map((entry) => renderEntryRow(entry))}
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableCell colSpan={24} className="font-semibold">
+                {t("subtotalLabel", {
+                  product: block.product,
+                  filename: block.filename,
+                  count: block.entries.length,
+                })}
+              </TableCell>
+            </TableRow>
+          </Fragment>
+        );
+      case "kar":
+        return (
+          <Fragment key={block.key}>
+            {/* The kar header row: KarTracker's purple, a thick top border
+                and a truck icon, so each kar stands out. */}
+            <TableRow className={cn("border-t-4 border-t-purple-500 hover:bg-transparent", KAR_ACCENT_CLASS)}>
+              <TableCell colSpan={24} className="py-2 font-bold">
+                <span className="inline-flex items-center gap-2">
+                  <Truck className="size-4" />
+                  {t("karGroupLabel", {
+                    kar: block.karNummer,
+                    filename: block.filename,
+                    count: block.entries.length,
+                  })}
+                </span>
+              </TableCell>
+            </TableRow>
+            {block.entries.map((entry, index) => renderEntryRow(entry, { isKarLine: index === 0 }))}
+          </Fragment>
+        );
+    }
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
@@ -389,11 +503,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         </div>
         <div className="flex items-center gap-2">
           <Button
-            variant={groupByProduct ? "default" : "outline"}
-            onClick={() => setGroupByProduct((current) => !current)}
+            variant={groupMode === "product" ? "default" : "outline"}
+            onClick={() => toggleGroupMode("product")}
           >
             <Layers className="size-4" />
             {t("groupByProductButton")}
+          </Button>
+          <Button variant={groupMode === "kar" ? "default" : "outline"} onClick={() => toggleGroupMode("kar")}>
+            <Truck className="size-4" />
+            {t("groupByKarButton")}
           </Button>
           <Button variant="outline" onClick={handleSync} disabled={isSyncing}>
             {isSyncing ? t("syncing") : t("syncButton")}
@@ -421,7 +539,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -430,7 +548,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -439,7 +557,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -448,7 +566,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -457,7 +575,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -466,7 +584,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -475,7 +593,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -484,7 +602,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -493,7 +611,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -502,7 +620,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -511,7 +629,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -520,7 +638,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -529,7 +647,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -538,7 +656,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -547,7 +665,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -556,7 +674,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -565,7 +683,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -574,7 +692,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -583,7 +701,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -592,7 +710,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -601,7 +719,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -610,7 +728,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
@@ -619,7 +737,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
-                disabled={groupByProduct}
+                disabled={isGrouped}
                 className="sticky top-0 z-20 bg-background"
               />
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
@@ -862,26 +980,11 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {groupByProduct
-              ? groupedBlocks.map((block) =>
-                  block.type === "line" ? (
-                    renderEntryRow(block.entry)
-                  ) : (
-                    <Fragment key={block.key}>
-                      {block.entries.map((entry) => renderEntryRow(entry))}
-                      <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={24} className="font-semibold">
-                          {t("subtotalLabel", {
-                            product: block.product,
-                            filename: block.filename,
-                            count: block.entries.length,
-                          })}
-                        </TableCell>
-                      </TableRow>
-                    </Fragment>
-                  ),
-                )
-              : sortedEntries.map((entry) => renderEntryRow(entry))}
+            {groupMode === "kar"
+              ? karBlocks.map(renderBlock)
+              : groupMode === "product"
+                ? groupedBlocks.map(renderBlock)
+                : sortedEntries.map((entry) => renderEntryRow(entry))}
           </TableBody>
         </Table>
       </div>

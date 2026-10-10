@@ -71,7 +71,7 @@ Elk gescand CSV-bestand op één lijn: de bestandsnaam, wanneer het geregistreer
 Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne, aantal, laatst gezien, product, serienummer, karnummer, fabrikant, batchnummer, matchstatus en verwerking.
 
 1. Zoek met de filters onder de kolomtitels, bv. op EPC, product, scanner of status.
-2. Klik op **Groeperen per product** om per bestand en product een subtotaal te zien.
+2. Klik op **Groeperen per product** om per bestand en product een subtotaal te zien, of op **Groeperen per kar** om de regels van elk bestand met een kar (een tag met karnummer) onder die kar te zien.
 3. Werd TagBeheer of het scannerregister intussen aangevuld? Klik op **Synchro**: alle regels worden opnieuw gekoppeld aan de tags en scanners van nu.
 4. Een regel die niet klopt, kan je **annuleren**.
 
