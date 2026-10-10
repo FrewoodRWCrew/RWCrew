@@ -338,21 +338,21 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             {tProcess(entry.process_status)}
           </Badge>
         </TableCell>
-        <TableCell>{entry.process_comment}</TableCell>
+        <TableCell>{entry.scanner_type}</TableCell>
+        <TableCell>{entry.action}</TableCell>
+        <TableCell>{entry.header_filename}</TableCell>
         <TableCell>{t(`status.${entry.status}`)}</TableCell>
+        <TableCell>{entry.process_comment}</TableCell>
         <TableCell className="font-medium">{entry.epc}</TableCell>
         <TableCell>{entry.assigned_product_name}</TableCell>
         <TableCell>{entry.assigned_serial_number}</TableCell>
         <TableCell>{entry.scanner}</TableCell>
         <TableCell>{entry.scanner_name}</TableCell>
-        <TableCell>{entry.scanner_type}</TableCell>
         <TableCell>{entry.scanner_location}</TableCell>
         <TableCell>{formatDateTime(entry.created_at)}</TableCell>
         <TableCell>{entry.scanner_technology}</TableCell>
         <TableCell>{entry.mode}</TableCell>
-        <TableCell>{entry.action}</TableCell>
         <TableCell>{entry.last_seen}</TableCell>
-        <TableCell>{entry.header_filename}</TableCell>
         <TableCell>{entry.line_number}</TableCell>
         <TableCell>{entry.rssi}</TableCell>
         <TableCell>{entry.antenna}</TableCell>
@@ -420,8 +420,26 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
-                label={t("columnProcessComment")}
-                column="process_comment"
+                label={t("columnScannerType")}
+                column="scanner_type"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnAction")}
+                column="action"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnHeaderFilename")}
+                column="header_filename"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -431,6 +449,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnStatus")}
                 column="status"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnProcessComment")}
+                column="process_comment"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -483,15 +510,6 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
-                label={t("columnScannerType")}
-                column="scanner_type"
-                activeColumn={sortColumn}
-                direction={sortDirection}
-                onSort={handleSort}
-                disabled={groupByProduct}
-                className="sticky top-0 z-20 bg-background"
-              />
-              <SortableHeader
                 label={t("columnScannerLocation")}
                 column="scanner_location"
                 activeColumn={sortColumn}
@@ -528,26 +546,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 className="sticky top-0 z-20 bg-background"
               />
               <SortableHeader
-                label={t("columnAction")}
-                column="action"
-                activeColumn={sortColumn}
-                direction={sortDirection}
-                onSort={handleSort}
-                disabled={groupByProduct}
-                className="sticky top-0 z-20 bg-background"
-              />
-              <SortableHeader
                 label={t("columnLastSeen")}
                 column="last_seen"
-                activeColumn={sortColumn}
-                direction={sortDirection}
-                onSort={handleSort}
-                disabled={groupByProduct}
-                className="sticky top-0 z-20 bg-background"
-              />
-              <SortableHeader
-                label={t("columnHeaderFilename")}
-                column="header_filename"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -638,11 +638,29 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
-                  aria-label={t("filterProcessComment")}
-                  placeholder={t("filterProcessComment")}
+                  aria-label={t("filterScannerType")}
+                  placeholder={t("filterScannerType")}
                   className="h-8 w-full min-w-32 font-normal"
-                  value={processCommentFilter}
-                  onChange={(event) => setProcessCommentFilter(event.target.value)}
+                  value={scannerTypeFilter}
+                  onChange={(event) => setScannerTypeFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterAction")}
+                  placeholder={t("filterAction")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={actionFilter}
+                  onChange={(event) => setActionFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterHeaderFilename")}
+                  placeholder={t("filterHeaderFilename")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={headerFilenameFilter}
+                  onChange={(event) => setHeaderFilenameFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
@@ -663,6 +681,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     ))}
                   </SelectContent>
                 </Select>
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterProcessComment")}
+                  placeholder={t("filterProcessComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={processCommentFilter}
+                  onChange={(event) => setProcessCommentFilter(event.target.value)}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -711,15 +738,6 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
-                  aria-label={t("filterScannerType")}
-                  placeholder={t("filterScannerType")}
-                  className="h-8 w-full min-w-32 font-normal"
-                  value={scannerTypeFilter}
-                  onChange={(event) => setScannerTypeFilter(event.target.value)}
-                />
-              </TableHead>
-              <TableHead className="sticky top-10 z-20 bg-background">
-                <Input
                   aria-label={t("filterScannerLocation")}
                   placeholder={t("filterScannerLocation")}
                   className="h-8 w-full min-w-32 font-normal"
@@ -756,29 +774,11 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
-                  aria-label={t("filterAction")}
-                  placeholder={t("filterAction")}
-                  className="h-8 w-full min-w-28 font-normal"
-                  value={actionFilter}
-                  onChange={(event) => setActionFilter(event.target.value)}
-                />
-              </TableHead>
-              <TableHead className="sticky top-10 z-20 bg-background">
-                <Input
                   aria-label={t("filterLastSeen")}
                   placeholder={t("filterLastSeen")}
                   className="h-8 w-full min-w-24 font-normal"
                   value={lastSeenFilter}
                   onChange={(event) => setLastSeenFilter(event.target.value)}
-                />
-              </TableHead>
-              <TableHead className="sticky top-10 z-20 bg-background">
-                <Input
-                  aria-label={t("filterHeaderFilename")}
-                  placeholder={t("filterHeaderFilename")}
-                  className="h-8 w-full min-w-32 font-normal"
-                  value={headerFilenameFilter}
-                  onChange={(event) => setHeaderFilenameFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
