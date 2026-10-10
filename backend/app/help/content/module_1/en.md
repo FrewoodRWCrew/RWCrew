@@ -68,7 +68,7 @@ Every scanned CSV file on one line: the file name, when it was logged, the numbe
 > Scanning needs the **Create** right on this screen, deleting the **Delete** right.
 
 ## [line-data | tagscan.tag-linedata] Tag Linedata
-Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, antenna, count, last seen, product, serial number, manufacturer, batch number, match status and processing.
+Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, antenna, count, last seen, product, serial number, kar number, manufacturer, batch number, match status and processing.
 
 1. Search with the filters under the column titles, e.g. on EPC, product, scanner or status.
 2. Click **Group by Product** to see a subtotal per file and product.
@@ -80,10 +80,10 @@ Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, an
 > **No match** means the EPC isn't (yet) in TagManagement. Add the tag in TagManagement or through an Assignment, then click **Synchro**.
 
 ## [tag-management | tagscan.tag-management] TagManagement
-The register of all RFID tags: EPC / UID, status, assigned product and serial number, dates, last read and location, manufacturer, batch number and five note fields.
+The register of all RFID tags: EPC / UID, status, assigned product and serial number, kar number (the KarTracker kar the tag is mounted on), dates, last read and location, manufacturer, batch number and five note fields.
 
 1. Click **New tag** to register a tag. Fill in at least the **EPC / UID**.
-2. Click **Change** on a tag to change e.g. the product, the serial number or the **status** (Active, Inactive, Lost, Damaged, Retired).
+2. Click **Change** on a tag to change e.g. the product, the serial number, the kar number or the **status** (Active, Inactive, Lost, Damaged, Retired).
 3. Search with the filters under the column titles, e.g. on status or product.
 4. Tick tags and click **Delete** to delete several at once.
 

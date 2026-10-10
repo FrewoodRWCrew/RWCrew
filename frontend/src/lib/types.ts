@@ -314,6 +314,8 @@ export interface RfidTag {
   status: RfidTagStatus;
   assigned_product_id: number | null;
   assigned_serial_number: string | null;
+  /** The KarTracker kar this tag is mounted on, if any. */
+  kar_id: number | null;
   date_registered: string;
   date_assigned: string | null;
   last_read_at: string | null;
@@ -334,6 +336,7 @@ export interface RfidTagInput {
   status?: RfidTagStatus;
   assigned_product_id?: number | null;
   assigned_serial_number?: string | null;
+  kar_id?: number | null;
   date_assigned?: string | null;
   last_read_at?: string | null;
   last_reader_id?: string | null;
@@ -487,6 +490,8 @@ export interface TagHeaderDataEntry {
   action: string | null;
   // The CSV's free-text "product / comments" column (first non-empty).
   csv_comment: string | null;
+  // The distinct kar numbers of its lines' matched tags, comma-separated.
+  kar_nummers: string | null;
   // The file's overall processing status, derived from its lines' own.
   process_status: TagProcessStatus;
   process_comment: string | null;
@@ -533,6 +538,8 @@ export interface TagLineDataEntry {
   assigned_serial_number: string | null;
   manufacturer: string | null;
   batch_number: string | null;
+  // The kar number of the KarTracker kar the matched tag is mounted on.
+  kar_nummer: string | null;
   // Which registered Scanners device the raw "scanner" text matched, if
   // any — null means no match was found (soft match).
   scanner_id: number | null;
@@ -581,6 +588,12 @@ export interface TagLineProcessFile {
 export interface TagscanProductOption {
   id: number;
   name: string;
+}
+
+/** One KarTracker kar for TagManagement's "Karnummer" dropdown. */
+export interface TagscanKarOption {
+  id: number;
+  kar_nummer: string;
 }
 
 /** The outcome of processing the waiting actions. */

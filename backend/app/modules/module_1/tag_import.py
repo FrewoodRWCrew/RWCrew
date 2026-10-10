@@ -24,6 +24,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.timezone import to_belgian
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
 from app.schemas.tagscan import RfidTagImportRowResult
@@ -31,11 +32,12 @@ from app.schemas.tagscan import RfidTagImportRowResult
 # The workbook's columns, in order — also the header row of the
 # downloadable template. "product_name" (not an id) since this is filled
 # in by a person editing a spreadsheet, matched against Product.name on
-# import.
+# import. Same for "kar_nummer", matched against KarTracker's kar number.
 TEMPLATE_COLUMNS = [
     "epc_uid",
     "status",
     "product_name",
+    "kar_nummer",
     "assigned_serial_number",
     "date_assigned",
     "last_read_at",
@@ -59,6 +61,7 @@ _EXAMPLE_ROW = {
     "epc_uid": "E200001122334455",
     "status": "active",
     "product_name": "KBC Lint",
+    "kar_nummer": "",
     "assigned_serial_number": "SN-001",
     "date_assigned": date(2026, 1, 15),
     "last_read_at": datetime(2026, 2, 1, 10, 30),
@@ -135,6 +138,17 @@ def _resolve_product_id(db: Session, product_name: str | None) -> int | None:
     return product.id
 
 
+def _resolve_kar_id(db: Session, kar_nummer: str | None) -> int | None:
+    """An empty cell means "no kar"; otherwise the kar number must exist
+    in KarTracker (matched ignoring case)."""
+    if kar_nummer is None:
+        return None
+    kar = db.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer.ilike(kar_nummer)))
+    if kar is None:
+        raise ValueError(f'Kar "{kar_nummer}" not found')
+    return kar.id
+
+
 def import_tags_from_xlsx(db: Session, file_bytes: bytes) -> list[RfidTagImportRowResult]:
     """Apply every row of an uploaded XLSX workbook's active sheet,
     returning one result per row. Row numbers match the actual
@@ -174,6 +188,7 @@ def import_tags_from_xlsx(db: Session, file_bytes: bytes) -> list[RfidTagImportR
             fields = {
                 "status": status_value,
                 "assigned_product_id": _resolve_product_id(db, _cell_text(cell(row, "product_name"))),
+                "kar_id": _resolve_kar_id(db, _cell_text(cell(row, "kar_nummer"))),
                 "assigned_serial_number": _cell_text(cell(row, "assigned_serial_number")),
                 "date_assigned": _parse_date_cell(cell(row, "date_assigned")),
                 "last_read_at": _parse_datetime_cell(cell(row, "last_read_at")),
@@ -222,12 +237,15 @@ def export_tags_to_xlsx(db: Session) -> bytes:
 
     # Product names by id, so each row shows the name a person can edit.
     product_names = {product.id: product.name for product in db.scalars(select(Product)).all()}
+    # Kar numbers by id, same reason.
+    kar_numbers = {kar.id: kar.kar_nummer for kar in db.scalars(select(KarTrackerKar)).all()}
 
     for tag in db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all():
         values = {
             "epc_uid": tag.epc_uid,
             "status": tag.status,
             "product_name": product_names.get(tag.assigned_product_id) if tag.assigned_product_id else None,
+            "kar_nummer": kar_numbers.get(tag.kar_id) if tag.kar_id else None,
             "assigned_serial_number": tag.assigned_serial_number,
             "date_assigned": tag.date_assigned,
             # Excel has no time zones: write the Belgian wall-clock time.

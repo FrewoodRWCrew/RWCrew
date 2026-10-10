@@ -59,6 +59,7 @@ type SortableColumn =
   | "scanner_technology"
   | "mode"
   | "action"
+  | "kar_nummer"
   | "epc"
   | "rssi"
   | "antenna"
@@ -165,6 +166,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
+  const [karFilter, setKarFilter] = useState("");
   const [epcFilter, setEpcFilter] = useState("");
   const [rssiFilter, setRssiFilter] = useState("");
   const [antennaFilter, setAntennaFilter] = useState("");
@@ -205,6 +207,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.scanner_technology, scannerTechnologyFilter)) return false;
       if (!textMatches(entry.mode, modeFilter)) return false;
       if (!textMatches(entry.action, actionFilter)) return false;
+      if (!textMatches(entry.kar_nummer, karFilter)) return false;
       if (!textMatches(entry.epc, epcFilter)) return false;
       if (!textMatches(entry.rssi, rssiFilter)) return false;
       if (!textMatches(entry.antenna, antennaFilter)) return false;
@@ -231,6 +234,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     scannerTechnologyFilter,
     modeFilter,
     actionFilter,
+    karFilter,
     epcFilter,
     rssiFilter,
     antennaFilter,
@@ -340,6 +344,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         </TableCell>
         <TableCell>{entry.scanner_type}</TableCell>
         <TableCell>{entry.action}</TableCell>
+        <TableCell>{entry.kar_nummer}</TableCell>
         <TableCell>{entry.header_filename}</TableCell>
         <TableCell>{t(`status.${entry.status}`)}</TableCell>
         <TableCell>{entry.process_comment}</TableCell>
@@ -431,6 +436,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnAction")}
                 column="action"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={groupByProduct}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnKar")}
+                column="kar_nummer"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -656,6 +670,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
+                  aria-label={t("filterKar")}
+                  placeholder={t("filterKar")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={karFilter}
+                  onChange={(event) => setKarFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
                   aria-label={t("filterHeaderFilename")}
                   placeholder={t("filterHeaderFilename")}
                   className="h-8 w-full min-w-32 font-normal"
@@ -847,7 +870,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                     <Fragment key={block.key}>
                       {block.entries.map((entry) => renderEntryRow(entry))}
                       <TableRow className="bg-muted/50 hover:bg-muted/50">
-                        <TableCell colSpan={23} className="font-semibold">
+                        <TableCell colSpan={24} className="font-semibold">
                           {t("subtotalLabel", {
                             product: block.product,
                             filename: block.filename,

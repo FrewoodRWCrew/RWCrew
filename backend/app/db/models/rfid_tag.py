@@ -38,6 +38,13 @@ class RfidTag(Base):
     assigned_product_id: Mapped[int | None] = mapped_column(ForeignKey("MasterData_product.id"), nullable=True)
     assigned_serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
+    # Which KarTracker kar (module-2's KarManagement) this tag is mounted on —
+    # optional, and one kar may carry several tags. Deleting the kar just
+    # unlinks its tags. Lets a later phase tell which scanned RFID is a kar.
+    kar_id: Mapped[int | None] = mapped_column(
+        ForeignKey("KarTracker_karren.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+
     # Set automatically the moment the row is created.
     date_registered: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     date_assigned: Mapped[date | None] = mapped_column(Date, nullable=True)

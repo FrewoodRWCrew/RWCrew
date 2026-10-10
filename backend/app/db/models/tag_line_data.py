@@ -68,6 +68,8 @@ class TagLineData(Base):
     assigned_serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
     batch_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # The kar number of the KarTracker kar the matched tag is mounted on.
+    kar_nummer: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     # Which registered Scanners device the raw "scanner" text matched, if
     # any — null means no match was found (soft match — never blocks a

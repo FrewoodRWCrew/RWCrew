@@ -169,6 +169,7 @@ class RfidTagResponse(BaseModel):
     status: RfidTagStatus
     assigned_product_id: int | None
     assigned_serial_number: str | None
+    kar_id: int | None
     date_registered: datetime
     date_assigned: date | None
     last_read_at: datetime | None
@@ -194,6 +195,8 @@ class RfidTagCreateRequest(BaseModel):
     status: RfidTagStatus = "active"
     assigned_product_id: int | None = None
     assigned_serial_number: str | None = Field(default=None, max_length=255)
+    # The KarTracker kar this tag is mounted on, if any.
+    kar_id: int | None = None
     date_assigned: date | None = None
     last_read_at: datetime | None = None
     last_reader_id: str | None = Field(default=None, max_length=255)
@@ -438,6 +441,8 @@ class TagHeaderDataResponse(BaseModel):
     action: str | None
     # The CSV's free-text "product / comments" column (first non-empty).
     csv_comment: str | None
+    # The distinct kar numbers of its lines' matched tags, comma-separated.
+    kar_nummers: str | None = None
     # The file's overall processing status, derived from its lines' own.
     process_status: TagProcessStatus
     process_comment: str | None
@@ -492,6 +497,8 @@ class TagLineDataResponse(BaseModel):
     assigned_serial_number: str | None
     manufacturer: str | None
     batch_number: str | None
+    # The kar number of the KarTracker kar the matched tag is mounted on.
+    kar_nummer: str | None
     # Which registered Scanners device the raw "scanner" text matched, if
     # any — null means no match was found (soft match).
     scanner_id: int | None
@@ -546,6 +553,13 @@ class TagscanProductOption(BaseModel):
 
     id: int
     name: str
+
+
+class TagscanKarOption(BaseModel):
+    """One KarTracker kar for TagManagement's "Karnummer" dropdown."""
+
+    id: int
+    kar_nummer: str
 
 
 class LineProcessRowResult(BaseModel):

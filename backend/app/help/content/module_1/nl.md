@@ -68,7 +68,7 @@ Elk gescand CSV-bestand op één lijn: de bestandsnaam, wanneer het geregistreer
 > Scannen kan enkel met het recht **Aanmaken** op dit scherm, verwijderen met **Verwijderen**.
 
 ## [line-data | tagscan.tag-linedata] Tag Regelgegevens
-Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne, aantal, laatst gezien, product, serienummer, fabrikant, batchnummer, matchstatus en verwerking.
+Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne, aantal, laatst gezien, product, serienummer, karnummer, fabrikant, batchnummer, matchstatus en verwerking.
 
 1. Zoek met de filters onder de kolomtitels, bv. op EPC, product, scanner of status.
 2. Klik op **Groeperen per product** om per bestand en product een subtotaal te zien.
@@ -80,10 +80,10 @@ Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne,
 > **Geen match** betekent dat de EPC (nog) niet in TagBeheer staat. Voeg de tag toe in TagBeheer of via een Assignment, en klik daarna op **Synchro**.
 
 ## [tag-management | tagscan.tag-management] TagBeheer
-Het register van alle RFID-tags: EPC / UID, status, toegewezen product en serienummer, data, laatste lezing en locatie, fabrikant, batchnummer en vijf notitievelden.
+Het register van alle RFID-tags: EPC / UID, status, toegewezen product en serienummer, karnummer (de kar uit KarTracker waarop de tag hangt), data, laatste lezing en locatie, fabrikant, batchnummer en vijf notitievelden.
 
 1. Klik op **Nieuwe tag** om een tag te registreren. Vul minstens de **EPC / UID** in.
-2. Klik bij een tag op **Wijzigen** om bv. het product, het serienummer of de **status** aan te passen (Actief, Inactief, Verloren, Beschadigd, Uit dienst).
+2. Klik bij een tag op **Wijzigen** om bv. het product, het serienummer, het karnummer of de **status** aan te passen (Actief, Inactief, Verloren, Beschadigd, Uit dienst).
 3. Zoek met de filters onder de kolomtitels, bv. op status of product.
 4. Vink tags aan en klik op **Verwijderen** om er meerdere tegelijk te verwijderen.
 

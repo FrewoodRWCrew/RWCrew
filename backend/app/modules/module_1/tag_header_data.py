@@ -47,6 +47,24 @@ def list_header_data(db: Session) -> list[TagHeaderData]:
     )
 
 
+def kar_numbers_by_header(db: Session, header_ids: list[int]) -> dict[int, str]:
+    """Per file, the distinct kar numbers of its lines' matched tags (sorted,
+    comma-separated) — the Tag Headerdata screen's "Karnummer" column. Files
+    without any kar are simply missing from the result.
+    """
+    if not header_ids:
+        return {}
+    rows = db.execute(
+        select(TagLineData.header_data_id, TagLineData.kar_nummer)
+        .where(TagLineData.header_data_id.in_(header_ids), TagLineData.kar_nummer.is_not(None))
+        .distinct()
+    ).all()
+    numbers: dict[int, set[str]] = {}
+    for row in rows:
+        numbers.setdefault(row.header_data_id, set()).add(row.kar_nummer)
+    return {header_id: ", ".join(sorted(values)) for header_id, values in numbers.items()}
+
+
 def delete_header_data(db: Session, header_id: int) -> bool:
     """Permanently delete one header row and every line row linked to it,
     so its filename can be logged again by a future scan. Returns False
@@ -69,6 +87,7 @@ def _build_line_rows(
     parsed_rows: list[dict],
     tags_by_epc: dict[str, RfidTag],
     product_names_by_id: dict[int, str],
+    kar_numbers_by_id: dict[int, str],
     scanners_by_name: dict[str, Scanner],
     scanners_by_id: dict[int, Scanner],
     type_names_by_id: dict[int, str],
@@ -102,7 +121,7 @@ def _build_line_rows(
             # Every freshly scanned line waits for its action to be carried
             # out — see line_processing.py.
             process_status="new",
-            **match_tag(row["epc"], tags_by_epc, product_names_by_id),
+            **match_tag(row["epc"], tags_by_epc, product_names_by_id, kar_numbers_by_id),
             **match_scanner(row["scanner"], None, scanners_by_name, scanners_by_id, type_names_by_id),
         )
         for row in parsed_rows
@@ -131,7 +150,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
 
     # Loaded once per scan call (not per-file/per-row) — a scan can cover
     # many files with many rows each, and neither list changes mid-scan.
-    tags_by_epc, product_names_by_id = preload_tag_lookup(db)
+    tags_by_epc, product_names_by_id, kar_numbers_by_id = preload_tag_lookup(db)
     scanners_by_name, scanners_by_id, type_names_by_id = preload_scanner_lookup(db)
 
     for file in csv_files:
@@ -216,6 +235,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
                 parsed_rows,
                 tags_by_epc,
                 product_names_by_id,
+                kar_numbers_by_id,
                 scanners_by_name,
                 scanners_by_id,
                 type_names_by_id,

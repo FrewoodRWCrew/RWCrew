@@ -13,6 +13,7 @@ from typing import TypedDict
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.product import Product
 from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
@@ -33,9 +34,10 @@ class TagMatch(TypedDict):
     assigned_serial_number: str | None
     manufacturer: str | None
     batch_number: str | None
+    kar_nummer: str | None
 
 
-def preload_tag_lookup(db: Session) -> tuple[dict[str, RfidTag], dict[int, str]]:
+def preload_tag_lookup(db: Session) -> tuple[dict[str, RfidTag], dict[int, str], dict[int, str]]:
     """The current registry snapshot needed by match_tag() — loaded once
     per scan/sync call (not per-row), since neither list changes mid-call.
 
@@ -49,10 +51,17 @@ def preload_tag_lookup(db: Session) -> tuple[dict[str, RfidTag], dict[int, str]]
     """
     tags_by_epc = {tag.epc_uid.strip(): tag for tag in db.scalars(select(RfidTag)).all()}
     product_names_by_id = {product.id: product.name for product in db.scalars(select(Product)).all()}
-    return tags_by_epc, product_names_by_id
+    # Kar numbers by id, for the tag's KarTracker kar (see RfidTag.kar_id).
+    kar_numbers_by_id = {kar.id: kar.kar_nummer for kar in db.scalars(select(KarTrackerKar)).all()}
+    return tags_by_epc, product_names_by_id, kar_numbers_by_id
 
 
-def match_tag(epc: str, tags_by_epc: dict[str, RfidTag], product_names_by_id: dict[int, str]) -> TagMatch:
+def match_tag(
+    epc: str,
+    tags_by_epc: dict[str, RfidTag],
+    product_names_by_id: dict[int, str],
+    kar_numbers_by_id: dict[int, str],
+) -> TagMatch:
     """Look up one EPC against the pre-loaded registry snapshot."""
     matched_tag = tags_by_epc.get(epc)
     if matched_tag is None:
@@ -63,6 +72,7 @@ def match_tag(epc: str, tags_by_epc: dict[str, RfidTag], product_names_by_id: di
             assigned_serial_number=None,
             manufacturer=None,
             batch_number=None,
+            kar_nummer=None,
         )
 
     return TagMatch(
@@ -76,6 +86,7 @@ def match_tag(epc: str, tags_by_epc: dict[str, RfidTag], product_names_by_id: di
         assigned_serial_number=matched_tag.assigned_serial_number,
         manufacturer=matched_tag.manufacturer,
         batch_number=matched_tag.batch_number,
+        kar_nummer=kar_numbers_by_id.get(matched_tag.kar_id) if matched_tag.kar_id is not None else None,
     )
 
 
@@ -335,7 +346,7 @@ def sync_line_data(db: Session) -> int:
     a manual override (see router.py's cancel endpoint), and a routine
     sync must never silently flip it back to converted/no_match.
     """
-    tags_by_epc, product_names_by_id = preload_tag_lookup(db)
+    tags_by_epc, product_names_by_id, kar_numbers_by_id = preload_tag_lookup(db)
     scanners_by_name, scanners_by_id, type_names_by_id = preload_scanner_lookup(db)
 
     lines = db.scalars(select(TagLineData).where(TagLineData.status != "cancelled")).all()
@@ -343,7 +354,7 @@ def sync_line_data(db: Session) -> int:
     updated_count = 0
     for line in lines:
         match: dict = {
-            **match_tag(line.epc, tags_by_epc, product_names_by_id),
+            **match_tag(line.epc, tags_by_epc, product_names_by_id, kar_numbers_by_id),
             **match_scanner(line.scanner, line.scanner_id, scanners_by_name, scanners_by_id, type_names_by_id),
         }
         changed = any(getattr(line, field) != value for field, value in match.items())

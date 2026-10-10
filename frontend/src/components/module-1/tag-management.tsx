@@ -14,7 +14,7 @@ import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createRfidTag, deleteRfidTag, deleteRfidTags, updateRfidTag } from "@/lib/api";
 import { formatDate, formatDateTime, toDateTimeLocalValue } from "@/lib/date-time";
-import type { Product, RfidTag, RfidTagInput, RfidTagStatus } from "@/lib/types";
+import type { Product, RfidTag, RfidTagInput, RfidTagStatus, TagscanKarOption } from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -46,6 +46,7 @@ import { Textarea } from "@/components/ui/textarea";
 interface TagManagementProps {
   initialTags: RfidTag[];
   products: Product[];
+  kars: TagscanKarOption[];
 }
 
 const STATUS_VALUES: RfidTagStatus[] = ["active", "inactive", "lost", "damaged", "retired"];
@@ -61,6 +62,7 @@ const EMPTY_FORM: RfidTagInput = {
   status: "active",
   assigned_product_id: null,
   assigned_serial_number: "",
+  kar_id: null,
   date_assigned: "",
   last_read_at: "",
   last_reader_id: "",
@@ -87,6 +89,7 @@ function toFormValues(tag: RfidTag): RfidTagInput {
     status: tag.status,
     assigned_product_id: tag.assigned_product_id,
     assigned_serial_number: tag.assigned_serial_number ?? "",
+    kar_id: tag.kar_id,
     date_assigned: tag.date_assigned ?? "",
     last_read_at: toDateTimeLocalValue(tag.last_read_at),
     last_reader_id: tag.last_reader_id ?? "",
@@ -112,7 +115,7 @@ function toPayload(form: RfidTagInput): RfidTagInput {
   };
 }
 
-export function TagManagement({ initialTags, products }: TagManagementProps) {
+export function TagManagement({ initialTags, products, kars }: TagManagementProps) {
   const t = useTranslations("tagscan.tagManagement");
   const router = useRouter();
 
@@ -120,6 +123,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
   const [epcFilter, setEpcFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
+  const [karFilter, setKarFilter] = useState(ALL_VALUE);
   const [serialNumberFilter, setSerialNumberFilter] = useState("");
   const [dateRegisteredFilter, setDateRegisteredFilter] = useState("");
   const [dateAssignedFilter, setDateAssignedFilter] = useState("");
@@ -139,11 +143,16 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
     return products.find((product) => product.id === productId)?.name ?? "";
   }
 
+  function karLabelFor(karId: number | null) {
+    return kars.find((kar) => kar.id === karId)?.kar_nummer ?? "";
+  }
+
   const filteredTags = useMemo(() => {
     return tags.filter((tag) => {
       if (epcFilter && !tag.epc_uid.toLowerCase().includes(epcFilter.toLowerCase())) return false;
       if (statusFilter !== ALL_VALUE && tag.status !== statusFilter) return false;
       if (productFilter !== ALL_VALUE && String(tag.assigned_product_id ?? "") !== productFilter) return false;
+      if (karFilter !== ALL_VALUE && String(tag.kar_id ?? "") !== karFilter) return false;
       if (!textMatches(tag.assigned_serial_number, serialNumberFilter)) return false;
       if (!textMatches(formatDate(tag.date_registered), dateRegisteredFilter)) return false;
       if (!textMatches(tag.date_assigned, dateAssignedFilter)) return false;
@@ -164,6 +173,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
     epcFilter,
     statusFilter,
     productFilter,
+    karFilter,
     serialNumberFilter,
     dateRegisteredFilter,
     dateAssignedFilter,
@@ -236,7 +246,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
         </div>
         <div className="flex items-center gap-2">
           <DeleteSelectedTagsAlertDialog tagIds={selectedVisibleIds} onDeleted={removeTags} />
-          <TagFormDialog trigger={<Button>{t("newTag")}</Button>} onSaved={upsert} products={products} />
+          <TagFormDialog trigger={<Button>{t("newTag")}</Button>} onSaved={upsert} products={products} kars={kars} />
         </div>
       </div>
 
@@ -255,6 +265,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnEpcUid")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedProduct")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateRegistered")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateAssigned")}</TableHead>
@@ -326,6 +337,27 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                     {products.map((product) => (
                       <SelectItem key={product.id} value={String(product.id)}>
                         {product.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Select value={karFilter} onValueChange={(value) => setKarFilter(value ?? ALL_VALUE)}>
+                  <SelectTrigger aria-label={t("filterKar")} className="h-8 w-full font-normal">
+                    <SelectValue>
+                      {(value: string | null) =>
+                        value && value !== ALL_VALUE
+                          ? (kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("allKars"))
+                          : t("allKars")
+                      }
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value={ALL_VALUE}>{t("allKars")}</SelectItem>
+                    {kars.map((kar) => (
+                      <SelectItem key={kar.id} value={String(kar.id)}>
+                        {kar.kar_nummer}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -464,6 +496,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                 <TableCell className="font-medium">{tag.epc_uid}</TableCell>
                 <TableCell className="text-muted-foreground">{t(`status.${tag.status}`)}</TableCell>
                 <TableCell className="text-muted-foreground">{productLabelFor(tag.assigned_product_id)}</TableCell>
+                <TableCell className="text-muted-foreground">{karLabelFor(tag.kar_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{tag.assigned_serial_number}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(tag.date_registered)}
@@ -492,6 +525,7 @@ export function TagManagement({ initialTags, products }: TagManagementProps) {
                       }
                       onSaved={upsert}
                       products={products}
+                      kars={kars}
                     />
                     <DeleteTagAlertDialog
                       tag={tag}
@@ -513,9 +547,10 @@ interface TagFormDialogProps {
   trigger: React.ReactElement;
   onSaved: (tag: RfidTag) => void;
   products: Product[];
+  kars: TagscanKarOption[];
 }
 
-function TagFormDialog({ tag, trigger, onSaved, products }: TagFormDialogProps) {
+function TagFormDialog({ tag, trigger, onSaved, products, kars }: TagFormDialogProps) {
   const t = useTranslations("tagscan.tagManagement");
   const isEditing = tag !== undefined;
   const [isOpen, setIsOpen] = useState(false);
@@ -603,6 +638,30 @@ function TagFormDialog({ tag, trigger, onSaved, products }: TagFormDialogProps) 
                 {products.map((product) => (
                   <SelectItem key={product.id} value={String(product.id)}>
                     {product.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* The KarTracker kar this tag is mounted on — lets a later phase
+              recognise a scanned RFID as a kar. */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="tag-kar">{t("karLabel")}</Label>
+            <Select
+              value={form.kar_id ? String(form.kar_id) : NO_SELECTION_VALUE}
+              onValueChange={(value) => updateField("kar_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
+            >
+              <SelectTrigger id="tag-kar">
+                <SelectValue>
+                  {(value: string | null) => kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("noSelection")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
+                {kars.map((kar) => (
+                  <SelectItem key={kar.id} value={String(kar.id)}>
+                    {kar.kar_nummer}
                   </SelectItem>
                 ))}
               </SelectContent>

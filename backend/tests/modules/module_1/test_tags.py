@@ -12,6 +12,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
@@ -573,3 +575,102 @@ def test_export_round_trips_through_the_import(client: TestClient, db_session: S
     assert [result["outcome"] for result in upload.json()["results"]] == ["updated"]
     db_session.refresh(tag)
     assert (tag.status, tag.assigned_product_id) == ("lost", product.id)
+
+
+# ---- Kar link (Karnummer) --------------------------------------------------
+
+
+def _create_kar(db_session: Session, *, kar_nummer: str = "B001") -> KarTrackerKar:
+    """A KarTracker kar, with the status/transport type it requires."""
+    kar_status = KarTrackerKarStatus(name=f"Status {kar_nummer}")
+    transport_type = Product(name=f"Transport {kar_nummer}")
+    db_session.add_all([kar_status, transport_type])
+    db_session.flush()
+    kar = KarTrackerKar(kar_nummer=kar_nummer, status_id=kar_status.id, transport_type_id=transport_type.id)
+    db_session.add(kar)
+    db_session.commit()
+    db_session.refresh(kar)
+    return kar
+
+
+def _login_as_tagscan_admin(client: TestClient, db_session: Session) -> None:
+    sync_tagscan_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+
+def test_kars_dropdown_lists_every_kar_by_number(client: TestClient, db_session: Session) -> None:
+    _create_kar(db_session, kar_nummer="K047")
+    _create_kar(db_session, kar_nummer="B001")
+    _login_as_tagscan_admin(client, db_session)
+
+    response = client.get("/api/modules/module-1/kars")
+
+    assert response.status_code == 200
+    assert [kar["kar_nummer"] for kar in response.json()] == ["B001", "K047"]
+
+
+def test_a_tag_can_be_linked_to_a_kar_and_unlinked_again(client: TestClient, db_session: Session) -> None:
+    kar = _create_kar(db_session)
+    _login_as_tagscan_admin(client, db_session)
+
+    created = client.post("/api/modules/module-1/tags", json={"epc_uid": "E2KAR", "kar_id": kar.id})
+    assert created.status_code == 201
+    assert created.json()["kar_id"] == kar.id
+
+    updated = client.put(f"/api/modules/module-1/tags/{created.json()['id']}", json={"epc_uid": "E2KAR", "kar_id": None})
+    assert updated.status_code == 200
+    assert updated.json()["kar_id"] is None
+
+
+def test_linking_a_tag_to_an_unknown_kar_returns_404(client: TestClient, db_session: Session) -> None:
+    _login_as_tagscan_admin(client, db_session)
+
+    response = client.post("/api/modules/module-1/tags", json={"epc_uid": "E2KAR", "kar_id": 999})
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "Kar not found"
+
+
+def test_deleting_a_kar_unlinks_its_tags(client: TestClient, db_session: Session) -> None:
+    kar = _create_kar(db_session)
+    tag = RfidTag(epc_uid="E2KAR", kar_id=kar.id)
+    db_session.add(tag)
+    db_session.commit()
+
+    db_session.delete(kar)
+    db_session.commit()
+    db_session.refresh(tag)
+
+    assert tag.kar_id is None
+
+
+def test_kar_nummer_round_trips_through_export_and_import(client: TestClient, db_session: Session) -> None:
+    kar = _create_kar(db_session, kar_nummer="B001")
+    db_session.add(RfidTag(epc_uid="E2KAR", kar_id=kar.id))
+    db_session.commit()
+    _login_as_tagscan_admin(client, db_session)
+
+    exported = client.get("/api/modules/module-1/tags/export")
+    sheet = load_workbook(io.BytesIO(exported.content)).active
+    header = [cell.value for cell in sheet[1]]
+    assert dict(zip(header, [cell.value for cell in sheet[2]]))["kar_nummer"] == "B001"
+
+    # Import matches the kar number ignoring case; an unknown one is a row error.
+    upload = client.post(
+        "/api/modules/module-1/tag-import",
+        files={
+            "file": (
+                "tags.xlsx",
+                _build_xlsx(["epc_uid", "kar_nummer"], [["E2NEW", "b001"], ["E2BAD", "X999"]]),
+                XLSX_CONTENT_TYPE,
+            )
+        },
+    )
+    results = upload.json()["results"]
+    assert [result["outcome"] for result in results] == ["created", "error"]
+    assert results[1]["detail"] == 'Kar "X999" not found'
+    new_tag = db_session.scalar(select(RfidTag).where(RfidTag.epc_uid == "E2NEW"))
+    assert new_tag.kar_id == kar.id

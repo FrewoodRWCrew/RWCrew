@@ -147,6 +147,12 @@ Lines start `new` at scan time; the file's status is derived from its lines
   without a restart. `SCAN_LOCK` stops it from running together with a manual Scan click. Relies on the backend
   being **one** uvicorn process per environment — if workers are ever added, move this to a single worker/cron.
   Ops switch `TAGSCAN_AUTO_SCAN_WORKER=false` keeps it from starting. Tests never run it (no lifespan).
+- **Tag ↔ kar link**: `Tagscan_rfid_tag.kar_id` (optional FK to `KarTracker_karren`, `ON DELETE SET NULL`, several
+  tags per kar allowed) is set on TagManagement's "Karnummer" dropdown (`GET /api/modules/module-1/kars`, gated by
+  the tag-management screen, so no KarTracker rights needed) and the XLSX `kar_nummer` column. Groundwork for
+  recognising a scanned RFID as a kar later. Lines snapshot it as `Tagscan_line_data.kar_nummer` (via `match_tag`,
+  at scan time and on Synchro, like product/serial); Tag Headerdata shows its lines' distinct kar numbers
+  (`kar_numbers_by_header`, computed, not stored). Both screens show it right after "Actie".
 - Rows on Tag Headerdata/Tag Linedata are coloured by `process_status` (`components/module-1/process-status.ts`:
   orange new, green loaded, red cancelled). Lines that existed before this feature were backfilled as `loaded`.
 

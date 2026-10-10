@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.product_type import ProductType
@@ -50,7 +51,12 @@ from app.modules.module_1.file_browser import (
     resolve_safe_path,
 )
 from app.modules.module_1.tag_dashboard import build_dashboard_stats
-from app.modules.module_1.tag_header_data import delete_header_data, list_header_data, scan_unreaded_tags
+from app.modules.module_1.tag_header_data import (
+    delete_header_data,
+    kar_numbers_by_header,
+    list_header_data,
+    scan_unreaded_tags,
+)
 from app.modules.module_1.tag_header_pdf import build_header_summary_pdf
 from app.modules.module_1.scanner_import import (
     build_scanner_template_xlsx,
@@ -101,6 +107,7 @@ from app.schemas.tagscan import (
     TagLineDataResponse,
     TagLineDataSyncResponse,
     TagscanAutoScanUpdateRequest,
+    TagscanKarOption,
     TagscanProductOption,
     TagscanSettingsResponse,
     TagscanSettingsUpdateRequest,
@@ -229,13 +236,24 @@ def delete_source_files(
     return FileDeleteResponse(deleted=deleted)
 
 
+def _build_header_data_responses(db: Session, headers: list[TagHeaderData]) -> list[TagHeaderDataResponse]:
+    """Header rows for the screen, each with the kar numbers of its lines."""
+    kar_numbers = kar_numbers_by_header(db, [header.id for header in headers])
+    return [
+        TagHeaderDataResponse.model_validate(header, from_attributes=True).model_copy(
+            update={"kar_nummers": kar_numbers.get(header.id)}
+        )
+        for header in headers
+    ]
+
+
 @router.get("/header-data", response_model=list[TagHeaderDataResponse])
 def list_tag_header_data(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-headerdata", "view")),
-) -> list[TagHeaderData]:
+) -> list[TagHeaderDataResponse]:
     """List every CSV file logged so far, for the Tag Headerdata screen's table."""
-    return list_header_data(db)
+    return _build_header_data_responses(db, list_header_data(db))
 
 
 @router.get("/header-data/{header_id}/pdf")
@@ -276,7 +294,7 @@ def scan_tag_header_data(
         results, entries = scan_unreaded_tags(db)
     return TagHeaderDataScanResponse(
         results=results,
-        entries=[TagHeaderDataResponse.model_validate(entry, from_attributes=True) for entry in entries],
+        entries=_build_header_data_responses(db, entries),
     )
 
 
@@ -315,6 +333,7 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         assigned_serial_number=line.assigned_serial_number,
         manufacturer=line.manufacturer,
         batch_number=line.batch_number,
+        kar_nummer=line.kar_nummer,
         scanner_id=line.scanner_id,
         scanner_name=line.scanner_name,
         scanner_location=line.scanner_location,
@@ -456,7 +475,7 @@ def cancel_tag_line_data(
 
 
 def _validate_tag_lookup_ids(db: Session, payload: RfidTagCreateRequest | RfidTagUpdateRequest) -> None:
-    """Make sure assigned_product_id, if given, actually exists — the
+    """Make sure assigned_product_id and kar_id, if given, actually exist — the
     same pattern used for Product's own type_id/warehouse_id/category_id/
     limit_id (see app/modules/module_9/router.py) — otherwise a bad id
     would only surface as an opaque foreign-key IntegrityError instead of
@@ -464,6 +483,19 @@ def _validate_tag_lookup_ids(db: Session, payload: RfidTagCreateRequest | RfidTa
     """
     if payload.assigned_product_id is not None and db.get(Product, payload.assigned_product_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    if payload.kar_id is not None and db.get(KarTrackerKar, payload.kar_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Kar not found")
+
+
+@router.get("/kars", response_model=list[TagscanKarOption])
+def list_tagscan_kars(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("tagscan.tag-management", "view")),
+) -> list[KarTrackerKar]:
+    """Every KarTracker kar, by kar number — TagManagement's "Karnummer"
+    dropdown, served by TagScan itself so it doesn't need KarTracker rights.
+    """
+    return list(db.scalars(select(KarTrackerKar).order_by(KarTrackerKar.kar_nummer)).all())
 
 
 @router.get("/tags", response_model=list[RfidTagResponse])
@@ -544,6 +576,7 @@ def _unlink_tag_lines(db: Session, tag_ids: list[int]) -> None:
             assigned_serial_number=None,
             manufacturer=None,
             batch_number=None,
+            kar_nummer=None,
         )
     )
     db.execute(update(TagLineData).where(TagLineData.rfid_tag_id.in_(tag_ids)).values(rfid_tag_id=None))

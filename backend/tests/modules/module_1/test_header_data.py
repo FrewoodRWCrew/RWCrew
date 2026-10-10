@@ -14,6 +14,8 @@ from sqlalchemy.orm import Session
 
 from app.core.config import settings
 from app.core.security import hash_password
+from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.product_type import ProductType
@@ -601,3 +603,63 @@ def test_synchro_fills_an_empty_header_scanner_from_its_lines(
     assert header.scanner_location == "Magazijn 5"
     assert header.scanner_technology == "Raspberry Pi 4"
     assert header.mode == "IN"
+
+
+# --- Karnummer -----------------------------------------------------------
+
+
+def _create_kar(db_session: Session, kar_nummer: str) -> KarTrackerKar:
+    """A KarTracker kar, with the status/transport type it requires."""
+    kar_status = KarTrackerKarStatus(name=f"Status {kar_nummer}")
+    transport_type = Product(name=f"Transport {kar_nummer}")
+    db_session.add_all([kar_status, transport_type])
+    db_session.flush()
+    kar = KarTrackerKar(kar_nummer=kar_nummer, status_id=kar_status.id, transport_type_id=transport_type.id)
+    db_session.add(kar)
+    db_session.commit()
+    return kar
+
+
+def test_scan_snapshots_the_tags_kar_number_on_lines_and_header(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    kar_b = _create_kar(db_session, "B002")
+    kar_a = _create_kar(db_session, "A001")
+    db_session.add_all([RfidTag(epc_uid="E2AAA", kar_id=kar_b.id), RfidTag(epc_uid="E2BBB", kar_id=kar_a.id)])
+    db_session.commit()
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        b"Scanner,EPC\nScan_01,E2AAA\nScan_01,E2BBB\nScan_01,E2ZZZ\nScan_01,E2AAA\n"
+    )
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+
+    scan = client.post("/api/modules/module-1/header-data/scan")
+
+    # Header: the distinct kar numbers of its lines, sorted.
+    assert scan.json()["entries"][0]["kar_nummers"] == "A001, B002"
+    assert client.get("/api/modules/module-1/header-data").json()[0]["kar_nummers"] == "A001, B002"
+    lines = db_session.scalars(select(TagLineData).order_by(TagLineData.line_number)).all()
+    assert [line.kar_nummer for line in lines] == ["B002", "A001", None, "B002"]
+
+
+def test_synchro_picks_up_a_kar_linked_after_the_scan(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    tag = RfidTag(epc_uid="E2AAA")
+    db_session.add(tag)
+    db_session.commit()
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(b"Scanner,EPC\nScan_01,E2AAA\n")
+    sync_screens(db_session)
+    module = _create_tagscan_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+    client.post("/api/modules/module-1/header-data/scan")
+    assert client.get("/api/modules/module-1/header-data").json()[0]["kar_nummers"] is None
+
+    tag.kar_id = _create_kar(db_session, "K047").id
+    db_session.commit()
+    sync = client.post("/api/modules/module-1/line-data/sync")
+
+    assert sync.json()["entries"][0]["kar_nummer"] == "K047"
+    assert client.get("/api/modules/module-1/header-data").json()[0]["kar_nummers"] == "K047"

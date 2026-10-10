@@ -86,6 +86,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [scannerTechnologyFilter, setScannerTechnologyFilter] = useState("");
   const [modeFilter, setModeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
+  const [karFilter, setKarFilter] = useState("");
   const [processStatusFilter, setProcessStatusFilter] = useState(ALL_VALUE);
   const [processCommentFilter, setProcessCommentFilter] = useState("");
 
@@ -100,6 +101,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(entry.scanner_technology ?? "", scannerTechnologyFilter)) return false;
       if (!textMatches(entry.mode ?? "", modeFilter)) return false;
       if (!textMatches(entry.action ?? "", actionFilter)) return false;
+      if (!textMatches(entry.kar_nummers ?? "", karFilter)) return false;
       if (processStatusFilter !== ALL_VALUE && entry.process_status !== processStatusFilter) return false;
       if (!textMatches(entry.process_comment ?? "", processCommentFilter)) return false;
       return true;
@@ -120,6 +122,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
     scannerTechnologyFilter,
     modeFilter,
     actionFilter,
+    karFilter,
     processStatusFilter,
     processCommentFilter,
   ]);
@@ -196,6 +199,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProcessStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerType")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAction")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnFilename")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProcessComment")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCreatedAt")}</TableHead>
@@ -248,6 +252,15 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   className="h-8 w-full min-w-28 font-normal"
                   value={actionFilter}
                   onChange={(event) => setActionFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterKar")}
+                  placeholder={t("filterKar")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  value={karFilter}
+                  onChange={(event) => setKarFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
@@ -336,6 +349,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 </TableCell>
                 <TableCell>{entry.scanner_type}</TableCell>
                 <TableCell>{entry.action}</TableCell>
+                {/* Every kar number found among the file's lines. */}
+                <TableCell>{entry.kar_nummers}</TableCell>
                 <TableCell className="font-medium">
                   <Link
                     href={`/modules/module-1/tag-linedata?filename=${encodeURIComponent(entry.filename)}`}

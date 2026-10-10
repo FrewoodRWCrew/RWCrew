@@ -233,12 +233,12 @@ def process_pending_lines(db: Session, product_by_header: dict[int, Product]) ->
     # cancelled) line with those EPCs, so they flip from "no_match" to
     # "converted" right away instead of waiting for the next Synchro.
     if touched_epcs:
-        tags_by_epc, product_names_by_id = preload_tag_lookup(db)
+        tags_by_epc, product_names_by_id, kar_numbers_by_id = preload_tag_lookup(db)
         lines_to_rematch = db.scalars(
             select(TagLineData).where(TagLineData.epc.in_(touched_epcs), TagLineData.status != "cancelled")
         ).all()
         for other_line in lines_to_rematch:
-            for field, value in match_tag(other_line.epc, tags_by_epc, product_names_by_id).items():
+            for field, value in match_tag(other_line.epc, tags_by_epc, product_names_by_id, kar_numbers_by_id).items():
                 setattr(other_line, field, value)
 
     for header_id in touched_header_ids:
