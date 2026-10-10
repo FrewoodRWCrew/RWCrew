@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createProduct, deleteProduct, updateProduct } from "@/lib/api";
@@ -95,6 +96,9 @@ export function ProductsManagement({
   const router = useRouter();
 
   const [products, setProducts] = useState(initialProducts);
+  // Arriving from a link to one product (?product=<id>, e.g. from TagScan's
+  // Tag Linedata): that product's fiche opens straight away.
+  const linkedProductId = Number(useSearchParams().get("product")) || null;
 
   function typeLabelFor(typeId: number | null) {
     return productTypes.find((productType) => productType.id === typeId)?.name ?? "";
@@ -159,6 +163,7 @@ export function ProductsManagement({
                   <div className="flex justify-end gap-1">
                     <ProductFormDialog
                       product={product}
+                      defaultOpen={product.id === linkedProductId}
                       trigger={
                         <Button variant="ghost" size="icon" aria-label={t("change")} title={t("change")}>
                           <Pencil className="size-4" />
@@ -190,6 +195,8 @@ export function ProductsManagement({
 
 interface ProductFormDialogProps {
   product?: Product;
+  /** Start opened — when the screen was reached through a link to this product. */
+  defaultOpen?: boolean;
   trigger: React.ReactElement;
   onSaved: (product: Product) => void;
   productTypes: ProductType[];
@@ -200,6 +207,7 @@ interface ProductFormDialogProps {
 
 function ProductFormDialog({
   product,
+  defaultOpen,
   trigger,
   onSaved,
   productTypes,
@@ -209,7 +217,7 @@ function ProductFormDialog({
 }: ProductFormDialogProps) {
   const t = useTranslations("masterdata.products");
   const isEditing = product !== undefined;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<ProductInput>(product ? toFormValues(product) : EMPTY_FORM);
 

@@ -642,6 +642,24 @@ def test_scan_snapshots_the_tags_kar_number_on_lines_and_header(
     assert [line.kar_nummer for line in lines] == ["B002", "A001", None, "B002"]
 
 
+def test_scan_snapshots_the_tags_product_id_for_the_product_link(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    product = Product(name="KBC Lint")
+    db_session.add(product)
+    db_session.commit()
+    db_session.add(RfidTag(epc_uid="E2AAA", assigned_product_id=product.id))
+    db_session.commit()
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(b"Scanner,EPC\nScan_01,E2AAA\n")
+    sync_screens(db_session)
+    _viewer_client(client, db_session)
+
+    client.post("/api/modules/module-1/header-data/scan")
+
+    line = db_session.scalar(select(TagLineData))
+    assert (line.assigned_product_id, line.assigned_product_name) == (product.id, "KBC Lint")
+
+
 def test_synchro_picks_up_a_kar_linked_after_the_scan(
     client: TestClient, db_session: Session, scan_dirs: Path
 ) -> None:

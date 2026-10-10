@@ -30,6 +30,7 @@ class TagMatch(TypedDict):
 
     status: str
     rfid_tag_id: int | None
+    assigned_product_id: int | None
     assigned_product_name: str | None
     assigned_serial_number: str | None
     manufacturer: str | None
@@ -68,6 +69,7 @@ def match_tag(
         return TagMatch(
             status="no_match",
             rfid_tag_id=None,
+            assigned_product_id=None,
             assigned_product_name=None,
             assigned_serial_number=None,
             manufacturer=None,
@@ -78,6 +80,7 @@ def match_tag(
     return TagMatch(
         status="converted",
         rfid_tag_id=matched_tag.id,
+        assigned_product_id=matched_tag.assigned_product_id,
         assigned_product_name=(
             product_names_by_id.get(matched_tag.assigned_product_id)
             if matched_tag.assigned_product_id is not None

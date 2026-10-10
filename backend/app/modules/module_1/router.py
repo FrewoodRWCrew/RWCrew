@@ -329,6 +329,7 @@ def _build_line_data_response(line: TagLineData, header_filename: str) -> TagLin
         action=line.action,
         csv_comment=line.csv_comment,
         rfid_tag_id=line.rfid_tag_id,
+        assigned_product_id=line.assigned_product_id,
         assigned_product_name=line.assigned_product_name,
         assigned_serial_number=line.assigned_serial_number,
         manufacturer=line.manufacturer,
@@ -572,6 +573,7 @@ def _unlink_tag_lines(db: Session, tag_ids: list[int]) -> None:
         .values(
             status="no_match",
             rfid_tag_id=None,
+            assigned_product_id=None,
             assigned_product_name=None,
             assigned_serial_number=None,
             manufacturer=None,

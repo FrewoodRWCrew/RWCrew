@@ -534,6 +534,8 @@ export interface TagLineDataEntry {
   // The CSV's "product / comments" cell, or its file's value.
   csv_comment: string | null;
   rfid_tag_id: number | null;
+  // The matched tag's product id (snapshot), for the link to its fiche.
+  assigned_product_id: number | null;
   assigned_product_name: string | null;
   assigned_serial_number: string | null;
   manufacturer: string | null;

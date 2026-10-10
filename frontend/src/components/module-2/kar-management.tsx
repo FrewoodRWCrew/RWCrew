@@ -12,6 +12,7 @@
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createKar, deleteKar, updateKar } from "@/lib/api";
@@ -90,6 +91,9 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
   const router = useRouter();
 
   const [karren, setKarren] = useState(initialKarren);
+  // Arriving from a link to one kar (?kar=<kar number>, e.g. from TagScan's
+  // Tag Linedata): that kar's dialog opens straight away.
+  const linkedKarNummer = useSearchParams().get("kar");
 
   function statusLabelFor(statusId: number) {
     return karStatuses.find((karStatus) => karStatus.id === statusId)?.name ?? "";
@@ -160,6 +164,7 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
                   <div className="flex justify-end gap-1">
                     <KarFormDialog
                       kar={kar}
+                      defaultOpen={kar.kar_nummer === linkedKarNummer}
                       trigger={
                         <Button variant="ghost" size="icon" aria-label={t("change")} title={t("change")}>
                           <Pencil className="size-4" />
@@ -190,6 +195,8 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
 
 interface KarFormDialogProps {
   kar?: KarTrackerKar;
+  /** Start opened — when the screen was reached through a link to this kar. */
+  defaultOpen?: boolean;
   trigger: React.ReactElement;
   onSaved: (kar: KarTrackerKar) => void;
   karStatuses: KarTrackerKarStatus[];
@@ -197,10 +204,10 @@ interface KarFormDialogProps {
   teams: Team[];
 }
 
-function KarFormDialog({ kar, trigger, onSaved, karStatuses, products, teams }: KarFormDialogProps) {
+function KarFormDialog({ kar, defaultOpen, trigger, onSaved, karStatuses, products, teams }: KarFormDialogProps) {
   const t = useTranslations("karTracker.karManagement");
   const isEditing = kar !== undefined;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<KarFormState>(kar ? toFormValues(kar) : EMPTY_FORM);
 

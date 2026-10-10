@@ -71,7 +71,7 @@ Every scanned CSV file on one line: the file name, when it was logged, the numbe
 Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, antenna, count, last seen, product, serial number, kar number, manufacturer, batch number, match status and processing.
 
 1. Search with the filters under the column titles, e.g. on EPC, product, scanner or status.
-2. Click **Group by Product** to see a subtotal per file and product, or **Group by kar** to see the lines of each file with a kar (a tag with a kar number) under that kar.
+2. Click **Group by Product** to see a subtotal per file and product, or **Group by kar** to see the lines of each file with a kar (a tag with a kar number) under that kar (on by default). Click an EPC, product or kar number to open that tag, product fiche or kar straight away.
 3. Were TagManagement or the scanner register completed in the meantime? Click **Synchro**: every line is linked again to today's tags and scanners.
 4. A line that is wrong can be **cancelled**.
 

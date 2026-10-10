@@ -10,6 +10,7 @@
 import { useMemo, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createRfidTag, deleteRfidTag, deleteRfidTags, updateRfidTag } from "@/lib/api";
@@ -120,7 +121,10 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
   const router = useRouter();
 
   const [tags, setTags] = useState(initialTags);
-  const [epcFilter, setEpcFilter] = useState("");
+  // Arriving from a Tag Linedata EPC link (?epc=...): that tag is filtered
+  // and its dialog opened.
+  const linkedEpc = useSearchParams().get("epc");
+  const [epcFilter, setEpcFilter] = useState(linkedEpc ?? "");
   const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [karFilter, setKarFilter] = useState(ALL_VALUE);
@@ -518,6 +522,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                   <div className="flex justify-end gap-1">
                     <TagFormDialog
                       tag={tag}
+                      defaultOpen={tag.epc_uid === linkedEpc}
                       trigger={
                         <Button variant="ghost" size="icon" aria-label={t("change")} title={t("change")}>
                           <Pencil className="size-4" />
@@ -544,16 +549,18 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
 
 interface TagFormDialogProps {
   tag?: RfidTag;
+  /** Start opened — when the screen was reached through a link to this tag. */
+  defaultOpen?: boolean;
   trigger: React.ReactElement;
   onSaved: (tag: RfidTag) => void;
   products: Product[];
   kars: TagscanKarOption[];
 }
 
-function TagFormDialog({ tag, trigger, onSaved, products, kars }: TagFormDialogProps) {
+function TagFormDialog({ tag, defaultOpen, trigger, onSaved, products, kars }: TagFormDialogProps) {
   const t = useTranslations("tagscan.tagManagement");
   const isEditing = tag !== undefined;
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<RfidTagInput>(tag ? toFormValues(tag) : EMPTY_FORM);
 

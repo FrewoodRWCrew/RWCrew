@@ -493,6 +493,8 @@ class TagLineDataResponse(BaseModel):
     # The CSV's "product / comments" cell, or its file's value.
     csv_comment: str | None
     rfid_tag_id: int | None
+    # The matched tag's product id (snapshot), for the link to its fiche.
+    assigned_product_id: int | None
     assigned_product_name: str | None
     assigned_serial_number: str | None
     manufacturer: str | None

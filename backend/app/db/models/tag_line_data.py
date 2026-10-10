@@ -65,6 +65,10 @@ class TagLineData(Base):
     # A snapshot of the matched tag's key fields at scan time (deliberately
     # NOT a live join to RfidTag/Product — see module docstring above).
     assigned_product_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # The product's id at that moment (plain number, no foreign key — a
+    # snapshot too), so the screen can link to the right product even
+    # when several products share a name.
+    assigned_product_id: Mapped[int | None] = mapped_column(nullable=True)
     assigned_serial_number: Mapped[str | None] = mapped_column(String(255), nullable=True)
     manufacturer: Mapped[str | None] = mapped_column(String(255), nullable=True)
     batch_number: Mapped[str | None] = mapped_column(String(255), nullable=True)

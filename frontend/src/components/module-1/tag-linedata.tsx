@@ -22,6 +22,7 @@ import { ArrowDown, ArrowUp, ArrowUpDown, Layers, Truck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
+import { Link } from "@/i18n/navigation";
 import { ApiError, cancelTagLineData, syncTagLineData } from "@/lib/api";
 import type { TagLineDataEntry, TagLineStatus } from "@/lib/types";
 import {
@@ -48,6 +49,9 @@ const ALL_VALUE = "all";
 /** Which grouping is shown: none (flat, sortable table), per (file,
  * product) with subtotals, or per kar (a file's lines under its kar). */
 type GroupMode = "none" | "product" | "kar";
+
+// The links to a line's tag, product and kar — same look as Tag Headerdata's filename link.
+const LINK_CLASS = "underline underline-offset-4";
 
 // Kar groups use KarTracker's own accent colour, so they read as "a kar".
 const KAR_ACCENT_CLASS = getModuleTheme("module-2").badgeClassName;
@@ -162,7 +166,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   }
   const [cancellingId, setCancellingId] = useState<number | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
-  const [groupMode, setGroupMode] = useState<GroupMode>("none");
+  // Grouped per kar by default; the buttons switch to product grouping or off.
+  const [groupMode, setGroupMode] = useState<GroupMode>("kar");
   const isGrouped = groupMode !== "none";
 
   // Clicking the active grouping button switches grouping off again.
@@ -405,7 +410,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <TableCell>{entry.action}</TableCell>
         <TableCell>
           <span className="inline-flex items-center gap-1.5">
-            {entry.kar_nummer}
+            {/* Opens the kar on KarTracker's KarManagement screen. */}
+            {entry.kar_nummer && (
+              <Link
+                href={`/modules/module-2/kar-management?kar=${encodeURIComponent(entry.kar_nummer)}`}
+                className={LINK_CLASS}
+              >
+                {entry.kar_nummer}
+              </Link>
+            )}
             {/* Marks the kar's own line among the lines scanned with it. */}
             {karGroup?.isKarLine && (
               <Badge variant="outline" className={cn("gap-1", KAR_ACCENT_CLASS)}>
@@ -415,8 +428,26 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             )}
           </span>
         </TableCell>
-        <TableCell>{entry.assigned_product_name}</TableCell>
-        <TableCell className="font-medium">{entry.epc}</TableCell>
+        <TableCell>
+          {/* Opens the product's fiche in MasterData > Producten. */}
+          {entry.assigned_product_id !== null && entry.assigned_product_name ? (
+            <Link href={`/modules/module-9/products?product=${entry.assigned_product_id}`} className={LINK_CLASS}>
+              {entry.assigned_product_name}
+            </Link>
+          ) : (
+            entry.assigned_product_name
+          )}
+        </TableCell>
+        <TableCell className="font-medium">
+          {/* A matched EPC opens its tag on TagManagement; an unknown one has nothing to open. */}
+          {entry.rfid_tag_id !== null ? (
+            <Link href={`/modules/module-1/tag-management?epc=${encodeURIComponent(entry.epc)}`} className={LINK_CLASS}>
+              {entry.epc}
+            </Link>
+          ) : (
+            entry.epc
+          )}
+        </TableCell>
         <TableCell>{entry.header_filename}</TableCell>
         <TableCell>{t(`status.${entry.status}`)}</TableCell>
         <TableCell>{entry.process_comment}</TableCell>
