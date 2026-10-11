@@ -1,8 +1,8 @@
 # Reads and writes the kar needs ("Benodigdheden"): what each kar needs per
 # season (StockMaster_kar_requirement). This is the single entry point for
-# that table, so Altsien Select's future Products wizard step can reuse it
-# the same way it reuses module_2/plan_kar_service.py — no separate copy of
-# the data in module-8.
+# that table: StockMaster's "Benodigdheden" screen and Altsien Select's
+# Products wizard step both write through it — no separate copy of the data
+# in module-8. The response shapes both show are built in stock_queries.py.
 
 from collections.abc import Iterable
 from dataclasses import dataclass

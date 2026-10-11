@@ -71,7 +71,9 @@ from app.modules.module_4.stock_queries import (
     build_kar_detail,
     build_kar_summaries,
     build_order_needs,
+    build_previous_requirements,
     build_product_stock,
+    build_requirement_responses,
     count_below_minimum,
     list_documents,
 )
@@ -99,7 +101,6 @@ from app.schemas.stockmaster import (
     MyPermissionsResponse,
     NamedItem,
     OrderNeedResponse,
-    PreviousRequirementLine,
     PreviousRequirementsResponse,
     ProductStockResponse,
     ReasonResponse,
@@ -577,10 +578,17 @@ def get_product_image(
 
 # --- Inboeken from Excel ------------------------------------------------------
 # Same right as Inboeken itself; nothing is booked here — the upload only
-# returns basket lines for the booking panel.
+# returns basket lines for the booking panel. "Benodigdheden" uses the same
+# template and upload to fill a kar's needs list, so its create/edit right
+# opens them too (still nothing is stored until that screen saves).
 
 MAX_BOOK_IN_IMPORT_BYTES = 5 * 1024 * 1024  # 5 MB — a product list is far smaller.
-require_book_in = require_any_screen_permission((STOCK_SCREEN, "create"), (ORDER_NEEDS_SCREEN, "create"))
+require_book_in = require_any_screen_permission(
+    (STOCK_SCREEN, "create"),
+    (ORDER_NEEDS_SCREEN, "create"),
+    (REQUIREMENTS_SCREEN, "create"),
+    (REQUIREMENTS_SCREEN, "edit"),
+)
 
 
 @router.get("/book-in-import/template")
@@ -893,25 +901,7 @@ def get_load_list_pdf(
 
 def _requirement_responses(db: Session, season_id: int, kar_id: int) -> list[RequirementResponse]:
     """A kar's needs with product names, bins and what's in the kar now."""
-    detail_lines = {line.product_id: line for line in build_kar_detail(db, _get_kar_or_404(db, kar_id), season_id).lines}
-    result = []
-    for row in requirement_service.list_requirements(db, season_id, kar_id):
-        line = detail_lines.get(row.product_id)
-        product = db.get(Product, row.product_id)
-        result.append(
-            RequirementResponse(
-                product_id=row.product_id,
-                product_name=product.name if product else str(row.product_id),
-                bin_label=line.bin_label if line else None,
-                quantity=row.quantity,
-                comment=row.comment,
-                in_kar=line.in_kar if line else 0,
-                updated_by_name=row.updated_by_name,
-                updated_at=row.updated_at,
-            )
-        )
-    result.sort(key=lambda item: item.product_name.lower())
-    return result
+    return build_requirement_responses(db, season_id, _get_kar_or_404(db, kar_id))
 
 
 @router.get("/requirements", response_model=list[RequirementResponse])
@@ -963,22 +953,7 @@ def get_previous_requirements(
     """Last season's needs of the same kar ("Kopieer van vorig seizoen"),
     with what's already listed this season.
     """
-    season = get_season_or_404(db, season_id)
-    previous, rows = requirement_service.previous_season_requirements(db, season, kar_id)
-    current = {row.product_id: row.quantity for row in requirement_service.list_requirements(db, season.id, kar_id)}
-    lines = []
-    for row in rows:
-        product = db.get(Product, row.product_id)
-        lines.append(
-            PreviousRequirementLine(
-                product_id=row.product_id,
-                product_name=product.name if product else str(row.product_id),
-                quantity=row.quantity,
-                current_quantity=current.get(row.product_id),
-            )
-        )
-    lines.sort(key=lambda item: item.product_name.lower())
-    return PreviousRequirementsResponse(season_name=previous.name if previous else None, lines=lines)
+    return build_previous_requirements(db, get_season_or_404(db, season_id), kar_id)
 
 
 # --- Te bestellen ------------------------------------------------------------------

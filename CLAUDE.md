@@ -85,7 +85,7 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   defaulted from the product's new `stock_return_to`) and closes it. A kar with an open trip can't be
   loaded/unloaded/counted. What didn't come back is the team's consumption on the KPI page.
 - **Kar needs** (`StockMaster_kar_requirement`, per season + kar) only through `module_4/requirement_service.py`
-  — Altsien Select's Products wizard step should reuse it later (no module-8 copy of the data). They pre-fill
+  — Altsien Select's Products wizard step reuses it (no module-8 copy of the data, see "Altsien Select"). They pre-fill
   "Kar laden", drive the kar cards' "18 / 20" and "Te bestellen" (needs − free − in kars).
 - **Inboeken from a TagScan scan** (`module_4/tagscan_book_in.py`): waiting TagScan lines with action "Book In" become
   basket lines per scanned file (each distinct EPC = 1 piece of its tag's *current* product; unknown tag / no product
@@ -122,9 +122,16 @@ tables, `backend/app/modules/module_8/screens.py`).
 - **Copy from last season**: steps listed in `COPYABLE_STEPS` (`module_8/previous_season.py`) get a panel
   above them with last season's values line by line (checkbox each, select all, "Copy"). "Last season" is the
   season whose name sorts right before the current one; festivals are matched by name ignoring case, 4-digit
-  years and punctuation. Copying only adds/updates, never removes and never marks the step done. Offered now on
-  delivery locations, team leads and special requests; add products there once that step is real.
-- Products and walkie-talkies are placeholder steps until their own modules exist.
+  years and punctuation. Copying only adds/updates, never removes and never marks the step done. Offered on
+  delivery locations, team leads and special requests (products has its own per-kar copy, see below).
+- **Products** (step 4) = StockMaster's kar needs of the team's kars, written only through
+  `module_4/requirement_service.py`. Module-8 serves its own endpoints for it (`/wizard/{team}/products/...`,
+  `/products-import`, `/products/{id}/image`) gated by the wizard screen, team scope and season lock, so a Kernlid
+  needs no StockMaster rights; StockMaster error codes pass through unchanged. The UI is the same
+  `components/module-4/kar-requirements-list.tsx` as StockMaster's "Benodigdheden" screen (each passes its own
+  `KarRequirementsApi`); its per-kar "copy from last season" replaces `COPYABLE_STEPS`. Done = at least one line on
+  one of the team's kars; emptying every list un-marks the step. Ploegfiche (screen + PDF) lists them per kar.
+- Walkie-talkies is a placeholder step until its own module exists.
 - **Ploegverantwoordelijken** (team leads, per team + season, not RWCrew users) live in MasterData's
   `MasterData_team_responsible`, managed on module-9's `masterdata.team-responsibles` screen (Teams >
   Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both

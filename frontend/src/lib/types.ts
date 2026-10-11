@@ -1592,6 +1592,15 @@ export interface AltsienSelectTeamState {
   requests: AltsienSelectSpecialRequest[];
   /** The team's responsible people ("Ploegverantwoordelijken") this season. */
   responsibles: TeamResponsible[];
+  /** The products each of the team's kars needs this season (step 4). */
+  kar_requirements: AltsienSelectKarRequirements[];
+}
+
+/** The needs of one kar of the team this season (StockMaster's kar needs). */
+export interface AltsienSelectKarRequirements {
+  kar_id: number;
+  kar_nummer: string;
+  lines: { product_id: number; product_name: string; quantity: number; comment: string | null }[];
 }
 
 /** One special-request status (Altsien Select's MasterData). */

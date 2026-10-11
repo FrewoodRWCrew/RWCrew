@@ -91,3 +91,14 @@ def test_import_needs_the_book_in_right(client: TestClient, world: StockWorld, m
 
     assert client.get(f"{BASE}/book-in-import/template").status_code == 403
     assert _upload(client, [[world.lader.id, "Walkie-lader", None, 1]]).status_code == 403
+
+
+def test_requirements_editors_may_use_the_import(client: TestClient, world: StockWorld, make_user, db_session: Session) -> None:
+    # "Benodigdheden" fills a kar's needs list from the same template.
+    planner = make_role(db_session, "Planner", {"stockmaster.requirements": (True, True, False, False)})
+    make_user("planner@example.com", planner)
+    login(client, "planner@example.com")
+
+    assert client.get(f"{BASE}/book-in-import/template").status_code == 200
+    body = _upload(client, [[world.lader.id, "Walkie-lader", None, 4]]).json()
+    assert body["lines"] == [{"product_id": world.lader.id, "quantity": 4}]

@@ -3,7 +3,7 @@
 // Altsien Select's "Ploegfiche": pick a team (and season), and see everything
 // chosen for it in the Ploeg Wizard on one screen — team info, the progress
 // of every wizard step, the karren KarManagement assigned to the team, the festivals with their delivery locations, the
-// products and walkie-talkies (placeholders until those modules exist) and
+// products each kar needs, the walkie-talkies (a placeholder until that module exists) and
 // the special requests with their status and the organisation's answer.
 // The "PDF" button opens the same overview as a printable PDF with the
 // Altsien logo (built by the backend, module_8/ploegfiche_pdf.py).
@@ -13,7 +13,13 @@ import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import { altsienSelectPloegfichePdfUrl, getAltsienSelectPloegfiche, listAltsienSelectTeams } from "@/lib/api";
-import type { AltsienSelectTeamKar, AltsienSelectTeamState, AltsienSelectTeamSummary, Season } from "@/lib/types";
+import type {
+  AltsienSelectKarRequirements,
+  AltsienSelectTeamKar,
+  AltsienSelectTeamState,
+  AltsienSelectTeamSummary,
+  Season,
+} from "@/lib/types";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -240,7 +246,7 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
         </CardContent>
       </Card>
     ),
-    products: <PlaceholderCard key="products"title={stepText({ key: "products", label: "Products" }).title} />,
+    products: <ProductsCard key="products" karRequirements={state.kar_requirements} />,
     special_requests: (
       <Card key="special_requests">
         <CardHeader>
@@ -385,6 +391,63 @@ function KarrenCard({ karren }: { karren: AltsienSelectTeamKar[] }) {
             </Table>
           </div>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+/** Step 4: per kar of the team, the products it needs this season
+ * (StockMaster's kar needs), each kar with its own small table. */
+function ProductsCard({ karRequirements }: { karRequirements: AltsienSelectKarRequirements[] }) {
+  const t = useTranslations("altsienSelect.ploegfiche");
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("productsTitle")}</CardTitle>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {karRequirements.length === 0 && <p className="text-sm text-muted-foreground">{t("noKarren")}</p>}
+        {karRequirements.map((kar) => (
+          <div key={kar.kar_id} className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-baseline gap-3">
+              <span className="font-semibold">{kar.kar_nummer}</span>
+              {kar.lines.length > 0 && (
+                <span className="text-sm text-muted-foreground">
+                  {t("productsTotal", {
+                    products: kar.lines.length,
+                    pieces: kar.lines.reduce((sum, line) => sum + line.quantity, 0),
+                  })}
+                </span>
+              )}
+            </div>
+            {kar.lines.length === 0 ? (
+              <p className="text-sm text-muted-foreground">{t("noProducts")}</p>
+            ) : (
+              <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProduct")}</TableHead>
+                      <TableHead className="sticky top-0 z-20 w-28 bg-background text-right font-bold underline">
+                        {t("columnQuantity")}
+                      </TableHead>
+                      <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnComment")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {kar.lines.map((line) => (
+                      <TableRow key={line.product_id}>
+                        <TableCell className="font-medium">{line.product_name}</TableCell>
+                        <TableCell className="text-right tabular-nums">{line.quantity}</TableCell>
+                        <TableCell className="text-muted-foreground">{line.comment ?? "—"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </div>
+        ))}
       </CardContent>
     </Card>
   );

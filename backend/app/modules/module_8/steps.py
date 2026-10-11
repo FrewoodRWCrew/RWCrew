@@ -18,7 +18,9 @@ from dataclasses import dataclass
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
+from app.db.models.stockmaster_kar_requirement import StockMasterKarRequirement
 from app.db.models.team_festival import TeamFestival
 from app.db.models.team_responsible import TeamResponsible
 
@@ -96,6 +98,34 @@ def _check_ploegverantwoordelijken(db: Session, season_id: int, team_id: int) ->
     return None
 
 
+def team_kar_ids(db: Session, team_id: int) -> set[int]:
+    """The kars KarManagement currently assigned to the team (step 4)."""
+    return set(db.scalars(select(KarTrackerKar.id).where(KarTrackerKar.team_id == team_id)).all())
+
+
+def count_team_requirements(db: Session, season_id: int, team_id: int) -> int:
+    """How many kar-need lines (StockMaster_kar_requirement) the team's
+    kars have this season.
+    """
+    kar_ids = team_kar_ids(db, team_id)
+    if not kar_ids:
+        return 0
+    return db.scalar(
+        select(func.count())
+        .select_from(StockMasterKarRequirement)
+        .where(StockMasterKarRequirement.season_id == season_id, StockMasterKarRequirement.kar_id.in_(kar_ids))
+    ) or 0
+
+
+def _check_products(db: Session, season_id: int, team_id: int) -> str | None:
+    """Step 4 is done once at least one of the team's kars needs at least
+    one product this season.
+    """
+    if not count_team_requirements(db, season_id, team_id):
+        return "Add at least one product first"
+    return None
+
+
 STEP_DEFINITIONS: list[StepDefinition] = [
     StepDefinition(key="festivals", label="Festivals", sort_order=1, completion_check=_check_festivals),
     StepDefinition(
@@ -107,8 +137,8 @@ STEP_DEFINITIONS: list[StepDefinition] = [
         sort_order=3,
         completion_check=_check_ploegverantwoordelijken,
     ),
-    # Placeholder until the products module exists.
-    StepDefinition(key="products", label="Products", sort_order=4, placeholder=True),
+    # The kar needs of StockMaster (module-4), per kar of the team.
+    StepDefinition(key="products", label="Products", sort_order=4, completion_check=_check_products),
     StepDefinition(key="special_requests", label="Special requests", sort_order=5),
     # Placeholder until the walkie-talkie module exists.
     StepDefinition(key="walkies", label="Walkie-talkies", sort_order=6, placeholder=True),

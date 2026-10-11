@@ -134,12 +134,12 @@ def test_changing_festivals_reopens_the_location_step(
 
 
 def test_placeholder_step_can_be_marked_done_and_reopened(as_kernlid: TestClient, world: AltsienWorld) -> None:
-    done = _complete(as_kernlid, world, "products")
+    done = _complete(as_kernlid, world, "walkies")
     assert done.status_code == 200
-    assert [item["step_key"] for item in done.json()["progress"]] == ["products"]
+    assert [item["step_key"] for item in done.json()["progress"]] == ["walkies"]
 
     reopened = as_kernlid.delete(
-        f"{BASE}/wizard/{world.own_team.id}/steps/products/complete?season_id={world.season.id}"
+        f"{BASE}/wizard/{world.own_team.id}/steps/walkies/complete?season_id={world.season.id}"
     )
     assert reopened.json()["progress"] == []
 

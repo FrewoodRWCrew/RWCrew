@@ -21,13 +21,17 @@ from app.db.models.altsien_select_user_role import AltsienSelectUserRole
 from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
+from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.module import Module
+from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.db.models.warehouse import Warehouse
 from app.modules.module_8.screens import sync_screens
 
 
@@ -116,6 +120,36 @@ def world(db_session: Session) -> AltsienWorld:
         module, season, festival_a, festival_b, own_team, other_team, location,
         kernlid_role, organisation_role, *statuses,
     )
+
+
+@dataclass
+class ProductsWorld:
+    """Kars and products for the Products step (StockMaster's kar needs)."""
+
+    lader: Product
+    tape: Product
+    own_kar: KarTrackerKar
+    own_kar_2: KarTrackerKar
+    other_kar: KarTrackerKar
+
+
+@pytest.fixture()
+def products_world(db_session: Session, world: AltsienWorld) -> ProductsWorld:
+    """Two products, two kars of own_team and one of other_team."""
+    warehouse = Warehouse(name="Hal A")
+    status = KarTrackerKarStatus(name="Beschikbaar")
+    db_session.add_all([warehouse, status])
+    db_session.flush()
+    lader = Product(name="Walkie-lader", warehouse_id=warehouse.id, warehouse_location="B-12")
+    tape = Product(name="Tape", warehouse_id=warehouse.id, warehouse_location="A-01", is_consumable=True)
+    db_session.add_all([lader, tape])
+    db_session.flush()
+    own_kar = KarTrackerKar(kar_nummer="K101", status_id=status.id, team_id=world.own_team.id, transport_type_id=lader.id)
+    own_kar_2 = KarTrackerKar(kar_nummer="K102", status_id=status.id, team_id=world.own_team.id, transport_type_id=lader.id)
+    other_kar = KarTrackerKar(kar_nummer="K900", status_id=status.id, team_id=world.other_team.id, transport_type_id=lader.id)
+    db_session.add_all([own_kar, own_kar_2, other_kar])
+    db_session.commit()
+    return ProductsWorld(lader, tape, own_kar, own_kar_2, other_kar)
 
 
 @pytest.fixture()

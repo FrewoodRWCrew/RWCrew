@@ -2,8 +2,8 @@
 # was chosen in the Ploeg Wizard for one team in one season, laid out as a
 # friendly one-stop overview for the organisation — Altsien logo header,
 # team info, the karren assigned to the team, a progress overview of every wizard step, the festivals with
-# their delivery locations, the team leads (Ploegverantwoordelijken), and the
-# special requests with their status.
+# their delivery locations, the team leads (Ploegverantwoordelijken), the
+# products each kar needs, and the special requests with their status.
 #
 # Uses fpdf2 (pure Python, see CLAUDE.md's Python 3.14 gotcha), the same
 # library and conventions as module_3/intervention_request_pdf.py. The
@@ -86,6 +86,12 @@ LABELS = {
         "status": "Status",
         "organisation_note": "Antwoord organisatie",
         "no_requests": "Er zijn geen speciale aanvragen.",
+        "products_heading": "Producten per kar",
+        "product": "Product",
+        "quantity": "Aantal",
+        "comment": "Opmerking",
+        "no_products": "Nog geen producten opgegeven.",
+        "products_total": "{products} producten, {pieces} stuks",
         "placeholder": "Deze gegevens worden later ingevuld via een aparte module.",
         "generated": "Gegenereerd op {date}",
         "page": "Pagina {page}/{pages}",
@@ -136,6 +142,12 @@ LABELS = {
         "status": "Status",
         "organisation_note": "Organisation's answer",
         "no_requests": "There are no special requests.",
+        "products_heading": "Products per cart",
+        "product": "Product",
+        "quantity": "Quantity",
+        "comment": "Comment",
+        "no_products": "No products added yet.",
+        "products_total": "{products} products, {pieces} pieces",
         "placeholder": "This will be filled in later through a separate module.",
         "generated": "Generated on {date}",
         "page": "Page {page}/{pages}",
@@ -475,6 +487,54 @@ def _render_requests(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
     pdf.ln(2)
 
 
+def _render_products(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
+    """Per kar of the team: a small heading (kar number + totals) and a
+    zebra table of the products it needs this season (StockMaster's kar needs).
+    """
+    _section_heading(pdf, labels["products_heading"])
+    if not state.kar_requirements:
+        _muted_line(pdf, labels["no_karren"])
+        return
+
+    for kar in state.kar_requirements:
+        # Keep a kar's heading together with at least its first rows.
+        if pdf.get_y() > pdf.h - 40:
+            pdf.add_page()
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(*TEXT_DARK)
+        pieces = sum(line.quantity for line in kar.lines)
+        totals = labels["products_total"].format(products=len(kar.lines), pieces=pieces) if kar.lines else ""
+        pdf.cell(40, 7, _pdf_text(kar.kar_nummer))
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(*MUTED_TEXT)
+        pdf.cell(0, 7, _pdf_text(totals), new_x="LMARGIN", new_y="NEXT")
+        if not kar.lines:
+            _muted_line(pdf, labels["no_products"])
+            continue
+
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(*TEXT_DARK)
+        pdf.set_draw_color(*BORDER_COLOR)
+        pdf.set_line_width(0.2)
+        with pdf.table(
+            col_widths=(85, 25, 70),
+            headings_style=_table_heading_style(),
+            cell_fill_color=ZEBRA_FILL,
+            cell_fill_mode="ROWS",
+            borders_layout="HORIZONTAL_LINES",
+            line_height=6.5,
+            padding=2,
+            text_align=("LEFT", "RIGHT", "LEFT"),
+        ) as table:
+            table.row([labels["product"], labels["quantity"], labels["comment"]])
+            for line in kar.lines:
+                row = table.row()
+                row.cell(_pdf_text(line.product_name))
+                row.cell(str(line.quantity), style=FontFace(emphasis="BOLD"))
+                row.cell(_pdf_text(line.comment or "-"))
+        pdf.ln(3)
+
+
 def _render_placeholder(pdf: FPDF, heading: str, labels: dict) -> None:
     """A section whose content comes from a module that doesn't exist yet."""
     _section_heading(pdf, heading)
@@ -502,7 +562,7 @@ def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
     step_renderers = {
         "festivals": lambda: _render_festivals(pdf, state, labels),
         "ploegverantwoordelijken": lambda: _render_responsibles(pdf, state, labels),
-        "products": lambda: _render_placeholder(pdf, labels["steps"]["products"], labels),
+        "products": lambda: _render_products(pdf, state, labels),
         "special_requests": lambda: _render_requests(pdf, state, labels),
         "walkies": lambda: _render_placeholder(pdf, labels["steps"]["walkies"], labels),
     }

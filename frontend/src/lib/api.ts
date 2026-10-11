@@ -2035,6 +2035,68 @@ export function setAltsienSelectStepComplete(
   );
 }
 
+// --- Products step (StockMaster's kar needs of the team's kars) ---
+
+/** Every product with its stock: the Products step's search and pictures. */
+export function getAltsienSelectProductsCatalog(teamId: number): Promise<StockMasterProductStock[]> {
+  return apiFetch<StockMasterProductStock[]>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/catalog`);
+}
+
+/** The team's kars with their loading progress against this season's needs. */
+export function listAltsienSelectProductsKars(teamId: number, seasonId: number): Promise<StockMasterKarSummary[]> {
+  return apiFetch<StockMasterKarSummary[]>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/kars?season_id=${seasonId}`);
+}
+
+export function getAltsienSelectRequirements(
+  teamId: number,
+  seasonId: number,
+  karId: number,
+): Promise<StockMasterRequirement[]> {
+  return apiFetch<StockMasterRequirement[]>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/requirements?season_id=${seasonId}&kar_id=${karId}`,
+  );
+}
+
+export function saveAltsienSelectRequirements(
+  teamId: number,
+  seasonId: number,
+  karId: number,
+  lines: StockMasterRequirementInput[],
+): Promise<StockMasterRequirement[]> {
+  return apiFetch<StockMasterRequirement[]>(`${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/requirements`, {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, kar_id: karId, lines }),
+  });
+}
+
+export function getAltsienSelectPreviousRequirements(
+  teamId: number,
+  seasonId: number,
+  karId: number,
+): Promise<StockMasterPreviousRequirements> {
+  return apiFetch<StockMasterPreviousRequirements>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/requirements/previous?season_id=${seasonId}&kar_id=${karId}`,
+  );
+}
+
+/** StockMaster's Inboeken Excel template, served by Altsien Select. */
+export function altsienSelectProductsTemplateUrl(): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/products-import/template`;
+}
+
+/** Reads a filled-in template into product lines — nothing is stored. */
+export function importAltsienSelectProducts(file: File): Promise<StockMasterBookInImport> {
+  return uploadBookInExcel(`${ALTSIEN_SELECT_BASE}/products-import`, file);
+}
+
+export function altsienSelectProductImageUrl(productId: number, updatedAt: string | null): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/products/${productId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
+}
+
+export function altsienSelectLoadListPdfUrl(teamId: number, karId: number, seasonId: number, locale: string): string {
+  return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/wizard/${teamId}/products/kars/${karId}/load-list/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
 /** Last season's values for one wizard step ("copy from last season"). */
 export function getAltsienSelectPreviousSeason(
   teamId: number,
@@ -2248,10 +2310,16 @@ export function stockMasterBookInTemplateUrl(): string {
  * Reads a filled-in Inboeken Excel into basket lines — nothing is booked.
  * Plain fetch with FormData (the browser sets the multipart Content-Type).
  */
-export async function importStockMasterBookIn(file: File): Promise<StockMasterBookInImport> {
+export function importStockMasterBookIn(file: File): Promise<StockMasterBookInImport> {
+  return uploadBookInExcel(`${STOCKMASTER_BASE}/book-in-import`, file);
+}
+
+/** POSTs a filled-in Inboeken Excel to `path` and returns its product lines
+ *  (shared by StockMaster and Altsien Select's Products step). */
+async function uploadBookInExcel(path: string, file: File): Promise<StockMasterBookInImport> {
   const formData = new FormData();
   formData.append("file", file);
-  const response = await fetchWithRefresh(`${API_BASE_URL}${STOCKMASTER_BASE}/book-in-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${path}`, {
     method: "POST",
     credentials: "include",
     body: formData,

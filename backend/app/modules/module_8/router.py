@@ -17,7 +17,7 @@ from datetime import datetime, timezone
 from typing import Literal
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
 from sqlalchemy import delete, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -34,14 +34,31 @@ from app.db.models.altsien_select_user_role import AltsienSelectUserRole
 from app.db.models.festival import Festival
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.module import Module
+from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team_festival import TeamFestival
 from app.db.models.team_responsible import TeamResponsible
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
+from app.modules.module_4 import requirement_service
+from app.modules.module_4.booking_import import (
+    BookInImportFileError,
+    build_book_in_template_xlsx,
+    parse_book_in_xlsx,
+)
+from app.modules.module_4.stock_pdfs import build_load_list_pdf
+from app.modules.module_4.stock_queries import (
+    build_kar_detail,
+    build_kar_summaries,
+    build_previous_requirements,
+    build_product_stock,
+    build_requirement_responses,
+)
+from app.modules.module_4.stock_service import StockError
 from app.modules.module_8.dashboard import build_dashboard
 from app.modules.module_8.deps import (
     MODULE_KEY,
@@ -67,7 +84,7 @@ from app.modules.module_8.service import (
     list_steps,
     selected_festivals_of,
 )
-from app.modules.module_8.steps import STEPS_BY_KEY, selected_festival_ids
+from app.modules.module_8.steps import STEPS_BY_KEY, count_team_requirements, selected_festival_ids, team_kar_ids
 from app.modules.module_9.team_responsible_service import (
     apply_team_responsible_fields,
     reopen_step_if_no_responsibles,
@@ -102,6 +119,14 @@ from app.schemas.altsien_select import (
 )
 from app.schemas.kartracker import KarTrackerGroundplanResponse
 from app.schemas.masterdata import SeasonResponse
+from app.schemas.stockmaster import (
+    BookInImportResponse,
+    KarSummaryResponse,
+    PreviousRequirementsResponse,
+    ProductStockResponse,
+    RequirementResponse,
+    RequirementsSaveRequest,
+)
 
 router = APIRouter(prefix="/api/modules/module-8", tags=["Altsien Select"])
 
@@ -875,6 +900,168 @@ def delete_responsible(
     db.commit()
 
 
+# --- Products (kar needs, from the wizard) -----------------------------------
+# Step 4 edits StockMaster's kar needs (StockMaster_kar_requirement) of the
+# team's kars — the same rows StockMaster's "Benodigdheden" screen shows —
+# only through module_4/requirement_service.py. Altsien Select users don't
+# necessarily have StockMaster access, so the lookups it needs are served
+# from here too, gated by this module's own wizard screen, team scope and
+# season lock. StockMaster errors keep their "code|param" detail, so the
+# frontend translates them with StockMaster's own texts.
+
+MAX_PRODUCTS_IMPORT_BYTES = 5 * 1024 * 1024  # 5 MB, the same limit as StockMaster's Inboeken upload.
+
+
+def _get_team_kar(db: Session, team_id: int, kar_id: int) -> KarTrackerKar:
+    """Load one kar that is assigned to the given team, or 404."""
+    kar = db.get(KarTrackerKar, kar_id)
+    if kar is None or kar.team_id != team_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="kar_not_found")
+    return kar
+
+
+@router.get("/wizard/{team_id}/products/catalog", response_model=list[ProductStockResponse])
+def get_products_catalog(
+    team_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> list[ProductStockResponse]:
+    """Every product with its stock — the step's product search and pictures."""
+    get_team_in_scope(db, current_user, team_id)
+    return build_product_stock(db)
+
+
+@router.get("/products/{product_id}/image")
+def get_product_image(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_wizard_or_ploegfiche_view),
+) -> Response:
+    """A product's picture (from MasterData) for the step's product list."""
+    product = db.get(Product, product_id)
+    if product is None or product.image_data is None or product.image_content_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product has no image")
+    return Response(content=product.image_data, media_type=product.image_content_type)
+
+
+@router.get("/wizard/{team_id}/products/kars", response_model=list[KarSummaryResponse])
+def get_products_kars(
+    team_id: int,
+    season_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> list[KarSummaryResponse]:
+    """The team's kars with their loading progress against this season's needs."""
+    season = get_season_or_404(db, season_id)
+    team = get_team_in_scope(db, current_user, team_id)
+    kar_ids = team_kar_ids(db, team.id)
+    return [kar for kar in build_kar_summaries(db, season.id) if kar.kar_id in kar_ids]
+
+
+@router.get("/wizard/{team_id}/products/requirements", response_model=list[RequirementResponse])
+def get_products_requirements(
+    team_id: int,
+    season_id: int,
+    kar_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> list[RequirementResponse]:
+    """What one kar of the team needs this season."""
+    season = get_season_or_404(db, season_id)
+    team = get_team_in_scope(db, current_user, team_id)
+    return build_requirement_responses(db, season.id, _get_team_kar(db, team.id, kar_id))
+
+
+@router.put("/wizard/{team_id}/products/requirements", response_model=list[RequirementResponse])
+def save_products_requirements(
+    team_id: int,
+    payload: RequirementsSaveRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> list[RequirementResponse]:
+    """Save a kar's complete list of needs for the season (the wizard's
+    "edit" right covers adding, changing and removing lines). When the
+    team has no lines left at all, the step is no longer done.
+    """
+    season, team = _load_for_change(db, current_user, team_id, payload.season_id)
+    kar = _get_team_kar(db, team.id, payload.kar_id)
+    lines = [
+        requirement_service.RequirementLine(line.product_id, line.quantity, line.comment) for line in payload.lines
+    ]
+    try:
+        changes = requirement_service.plan_changes(db, season.id, kar.id, lines)
+        requirement_service.apply_changes(db, current_user, season, kar.id, changes)
+    except StockError as error:
+        db.rollback()
+        raise HTTPException(status_code=error.status_code, detail=error.detail) from error
+    if not count_team_requirements(db, season.id, team.id):
+        clear_step(db, season.id, team.id, "products")
+    db.commit()
+    return build_requirement_responses(db, season.id, kar)
+
+
+@router.get("/wizard/{team_id}/products/requirements/previous", response_model=PreviousRequirementsResponse)
+def get_products_previous_requirements(
+    team_id: int,
+    season_id: int,
+    kar_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> PreviousRequirementsResponse:
+    """Last season's needs of the same kar, to copy line by line."""
+    season = get_season_or_404(db, season_id)
+    team = get_team_in_scope(db, current_user, team_id)
+    return build_previous_requirements(db, season, _get_team_kar(db, team.id, kar_id).id)
+
+
+@router.get("/wizard/{team_id}/products/kars/{kar_id}/load-list/pdf")
+def get_products_load_list_pdf(
+    team_id: int,
+    kar_id: int,
+    season_id: int,
+    locale: Literal["nl", "en"] = "nl",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "view")),
+) -> Response:
+    """The Laadlijst of one kar of the team for one season (StockMaster's PDF)."""
+    season = get_season_or_404(db, season_id)
+    team = get_team_in_scope(db, current_user, team_id)
+    kar = _get_team_kar(db, team.id, kar_id)
+    content = build_load_list_pdf(build_kar_detail(db, kar, season.id), season.name, locale, current_user.display_name)
+    return _inline_pdf(content, f"Laadlijst {kar.kar_nummer} {season.name}.pdf")
+
+
+@router.get("/products-import/template")
+def download_products_template(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> Response:
+    """StockMaster's Inboeken Excel template, pre-filled with every product."""
+    return Response(
+        content=build_book_in_template_xlsx(db),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="inboeken-template.xlsx"'},
+    )
+
+
+@router.post("/products-import", response_model=BookInImportResponse)
+def import_products(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
+) -> BookInImportResponse:
+    """Read a filled-in template into product lines; nothing is stored until
+    the step saves its list.
+    """
+    contents = file.file.read(MAX_PRODUCTS_IMPORT_BYTES + 1)
+    if len(contents) > MAX_PRODUCTS_IMPORT_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="import_too_large")
+    try:
+        return parse_book_in_xlsx(db, contents)
+    except BookInImportFileError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="import_unreadable") from None
+
+
 # --- Special requests (from the wizard) -----------------------------------
 
 
@@ -995,10 +1182,14 @@ def get_ploegfiche_pdf(
     season = get_season_or_404(db, season_id)
     team = get_team_in_scope(db, current_user, team_id)
     pdf_bytes = build_ploegfiche_pdf(build_team_state(db, current_user, season, team), locale)
-    filename = f"Ploegfiche {team.name} {season.name}.pdf"
+    return _inline_pdf(pdf_bytes, f"Ploegfiche {team.name} {season.name}.pdf")
+
+
+def _inline_pdf(content: bytes, filename: str) -> Response:
+    """A PDF opened inline in a new browser tab (print or save from there)."""
     ascii_fallback = filename.encode("ascii", "replace").decode("ascii").replace("\\", "_").replace('"', "_")
     return Response(
-        content=pdf_bytes,
+        content=content,
         media_type="application/pdf",
         headers={"Content-Disposition": f"inline; filename=\"{ascii_fallback}\"; filename*=UTF-8''{quote(filename)}"},
     )

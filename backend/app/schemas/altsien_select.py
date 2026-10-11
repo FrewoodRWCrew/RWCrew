@@ -79,6 +79,25 @@ class TeamKarResponse(BaseModel):
     transport_type: str | None
 
 
+class KarRequirementLineResponse(BaseModel):
+    """One product a kar of the team needs this season (step 4)."""
+
+    product_id: int
+    product_name: str
+    quantity: int
+    comment: str | None
+
+
+class TeamKarRequirementsResponse(BaseModel):
+    """The needs of one kar of the team this season — StockMaster's
+    StockMaster_kar_requirement rows, shown on the Ploegfiche.
+    """
+
+    kar_id: int
+    kar_nummer: str
+    lines: list[KarRequirementLineResponse]
+
+
 class FestivalChoiceResponse(BaseModel):
     """One active festival of the season, whether the team is active there,
     and (if so) the delivery location chosen for it.
@@ -185,6 +204,8 @@ class TeamStateResponse(BaseModel):
     requests: list[SpecialRequestResponse]
     # The team's responsible people ("Ploegverantwoordelijken") this season.
     responsibles: list[TeamResponsibleResponse]
+    # The products each of the team's kars needs this season (step 4).
+    kar_requirements: list[TeamKarRequirementsResponse]
 
 
 class SaveFestivalsRequest(BaseModel):

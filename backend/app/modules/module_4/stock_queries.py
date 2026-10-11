@@ -30,7 +30,12 @@ from app.db.models.stockmaster_reason import StockMasterReason
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
 from app.db.models.warehouse import Warehouse
-from app.modules.module_4.requirement_service import needs_per_product, requirements_by_kar
+from app.modules.module_4.requirement_service import (
+    list_requirements,
+    needs_per_product,
+    previous_season_requirements,
+    requirements_by_kar,
+)
 from app.modules.module_4.stock_service import BOOK_OUT, REVERSED, dispatched_lines, open_trip_of
 from app.schemas.stockmaster import (
     CountSheetLine,
@@ -46,7 +51,10 @@ from app.schemas.stockmaster import (
     NamedItem,
     NamedQuantity,
     OrderNeedResponse,
+    PreviousRequirementLine,
+    PreviousRequirementsResponse,
     ProductStockResponse,
+    RequirementResponse,
     TripResponse,
 )
 
@@ -311,6 +319,55 @@ def build_kar_detail(db: Session, kar: KarTrackerKar, season_id: int | None) -> 
         dispatched=dispatched,
         festivals=festivals,
     )
+
+
+# --- Kar needs (Benodigdheden) ---------------------------------------------
+# Shared by StockMaster's own "Benodigdheden" screen and Altsien Select's
+# Products wizard step, so both show exactly the same lines.
+
+
+def build_requirement_responses(db: Session, season_id: int, kar: KarTrackerKar) -> list[RequirementResponse]:
+    """A kar's needs with product names, bins and what's in the kar now."""
+    detail_lines = {line.product_id: line for line in build_kar_detail(db, kar, season_id).lines}
+    result = []
+    for row in list_requirements(db, season_id, kar.id):
+        line = detail_lines.get(row.product_id)
+        product = db.get(Product, row.product_id)
+        result.append(
+            RequirementResponse(
+                product_id=row.product_id,
+                product_name=product.name if product else str(row.product_id),
+                bin_label=line.bin_label if line else None,
+                quantity=row.quantity,
+                comment=row.comment,
+                in_kar=line.in_kar if line else 0,
+                updated_by_name=row.updated_by_name,
+                updated_at=row.updated_at,
+            )
+        )
+    result.sort(key=lambda item: item.product_name.lower())
+    return result
+
+
+def build_previous_requirements(db: Session, season: Season, kar_id: int) -> PreviousRequirementsResponse:
+    """Last season's needs of the same kar ("Kopieer van vorig seizoen"),
+    each with what's already listed this season.
+    """
+    previous, rows = previous_season_requirements(db, season, kar_id)
+    current = {row.product_id: row.quantity for row in list_requirements(db, season.id, kar_id)}
+    lines = []
+    for row in rows:
+        product = db.get(Product, row.product_id)
+        lines.append(
+            PreviousRequirementLine(
+                product_id=row.product_id,
+                product_name=product.name if product else str(row.product_id),
+                quantity=row.quantity,
+                current_quantity=current.get(row.product_id),
+            )
+        )
+    lines.sort(key=lambda item: item.product_name.lower())
+    return PreviousRequirementsResponse(season_name=previous.name if previous else None, lines=lines)
 
 
 # --- Booking history -------------------------------------------------------

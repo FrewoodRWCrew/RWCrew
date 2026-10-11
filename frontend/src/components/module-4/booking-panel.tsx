@@ -26,7 +26,7 @@
 // - ?kar=<id> and ?product=<id> from the buttons on the other screens.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileSpreadsheet, FileText, ListPlus, Package, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
+import { FileSpreadsheet, FileText, ListPlus, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -42,7 +42,6 @@ import {
   reverseStockMasterBooking,
   stockMasterBookingPdfUrl,
   stockMasterBookInTemplateUrl,
-  stockMasterProductImageUrl,
 } from "@/lib/api";
 import type {
   Season,
@@ -64,6 +63,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ProcessFlow, isProcessFlowAction } from "@/components/module-4/process-flow";
+import { ProductThumb } from "@/components/module-4/product-thumb";
 import { KarSearch, ProductSearch, SelectedKar } from "@/components/module-4/stock-pickers";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import {
@@ -1216,31 +1216,16 @@ function BookingSummary({
           stays in view on long baskets. */}
       {rows.length > 0 && (
         <ul className="max-h-72 divide-y overflow-y-auto text-sm">
-          {rows.map((row) => {
-            const product = productsById.get(row.id);
-            return (
-              <li key={row.id} className="flex items-center gap-3 py-1.5">
-                {/* The picture, or a placeholder icon so every row stays aligned. */}
-                <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40">
-                  {product?.has_image ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- authenticated API image, not a static asset
-                    <img
-                      src={stockMasterProductImageUrl(row.id, product.image_updated_at)}
-                      alt={row.name}
-                      loading="lazy"
-                      className="size-full object-contain"
-                    />
-                  ) : (
-                    <Package className="size-4 text-muted-foreground" />
-                  )}
-                </div>
-                <span className="min-w-0 flex-1 truncate" title={row.name}>
-                  {row.name}
-                </span>
-                <span className="font-semibold tabular-nums">{row.quantity}</span>
-              </li>
-            );
-          })}
+          {rows.map((row) => (
+            <li key={row.id} className="flex items-center gap-3 py-1.5">
+              {/* The picture, or a placeholder icon so every row stays aligned. */}
+              <ProductThumb productId={row.id} name={row.name} product={productsById.get(row.id)} />
+              <span className="min-w-0 flex-1 truncate" title={row.name}>
+                {row.name}
+              </span>
+              <span className="font-semibold tabular-nums">{row.quantity}</span>
+            </li>
+          ))}
         </ul>
       )}
     </div>

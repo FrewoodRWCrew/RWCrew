@@ -16,6 +16,7 @@ from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.product import Product
 from app.db.models.season import Season
+from app.db.models.stockmaster_kar_requirement import StockMasterKarRequirement
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
 from app.db.models.team_kernlid import TeamKernlid
@@ -28,10 +29,12 @@ from app.modules.module_9.team_responsible_service import list_team_responsibles
 from app.schemas.altsien_select import (
     AfleverlocatieOptionResponse,
     FestivalChoiceResponse,
+    KarRequirementLineResponse,
     SpecialRequestResponse,
     StepProgressResponse,
     StepResponse,
     TeamInfoResponse,
+    TeamKarRequirementsResponse,
     TeamResponsibleResponse,
     TeamKarResponse,
     TeamStateResponse,
@@ -245,6 +248,29 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
         ).all()
     ]
 
+    # What each of those karren needs this season (step 4, stored in
+    # StockMaster's kar needs), products sorted by name.
+    requirement_lines: dict[int, list[KarRequirementLineResponse]] = {}
+    if karren:
+        for row, product_name in db.execute(
+            select(StockMasterKarRequirement, Product.name)
+            .join(Product, Product.id == StockMasterKarRequirement.product_id)
+            .where(
+                StockMasterKarRequirement.season_id == season.id,
+                StockMasterKarRequirement.kar_id.in_([kar.id for kar in karren]),
+            )
+            .order_by(func.lower(Product.name))
+        ).all():
+            requirement_lines.setdefault(row.kar_id, []).append(
+                KarRequirementLineResponse(
+                    product_id=row.product_id, product_name=product_name, quantity=row.quantity, comment=row.comment
+                )
+            )
+    kar_requirements = [
+        TeamKarRequirementsResponse(kar_id=kar.id, kar_nummer=kar.kar_nummer, lines=requirement_lines.get(kar.id, []))
+        for kar in karren
+    ]
+
     # Which steps are done, by whom.
     progress_rows = db.execute(
         select(AltsienSelectStepProgress, User.display_name)
@@ -280,6 +306,7 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
             TeamResponsibleResponse.model_validate(row, from_attributes=True)
             for row in list_team_responsibles(db, season.id, team.id)
         ],
+        kar_requirements=kar_requirements,
     )
 
 

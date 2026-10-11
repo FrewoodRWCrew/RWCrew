@@ -1426,7 +1426,11 @@
       },
       "products": {
         "title": "Products",
-        "description": "Which products must be delivered, and how many?"
+        "description": "Which products must each cart of the team carry, and how many? Pick a cart and build its list — the same list StockMaster uses to load the cart.",
+        "chooseKar": "Cart",
+        "noKars": "No carts are assigned to this team in KarManagement yet.",
+        "loadKarsFailed": "Could not load the team's carts.",
+        "chooseKarHint": "Pick a cart to see and change its products."
       },
       "special_requests": {
         "title": "Special requests",
@@ -1555,7 +1559,13 @@
       "columnResponsibleName": "Name",
       "columnResponsibleEmail": "Email",
       "columnResponsiblePhone": "Telephone number",
-      "columnResponsibleComments": "Comments"
+      "columnResponsibleComments": "Comments",
+      "productsTitle": "Products per cart",
+      "noProducts": "No products added yet.",
+      "columnProduct": "Product",
+      "columnQuantity": "Quantity",
+      "columnComment": "Comment",
+      "productsTotal": "{products} products, {pieces} pieces"
     },
     "followUp": {
       "title": "Request follow-up",
@@ -1980,7 +1990,9 @@
       "previousTitle": "Copy from last season ({season})",
       "selectAll": "Select all",
       "now": "now {count}",
-      "copy": "Copy"
+      "copy": "Copy",
+      "importHint": "Download the template, fill in the quantity column and upload it: products already in the list get the file's quantity, new ones are added. Then save.",
+      "importSkipped": "{count, plural, one {# product not changed} other {# products not changed}}: you don't have the rights for that."
     },
     "orderNeeds": {
       "title": "To order",

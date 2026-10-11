@@ -4,10 +4,11 @@
 # the current season. Copying only adds or updates — it never removes a
 # current choice and never marks the step as done.
 #
-# To offer this on another wizard step (e.g. products, once that module
-# exists): write a list_lines + copy_lines pair below and register it in
+# To offer this on another wizard step: write a list_lines + copy_lines pair below and register it in
 # COPYABLE_STEPS under the step's key. The wizard then shows the panel for
-# that step automatically (StepResponse.copy_from_previous).
+# that step automatically (StepResponse.copy_from_previous). The Products
+# step doesn't use this: its kar list (StockMaster's) has its own per-kar
+# "copy from last season" panel.
 
 import re
 from collections.abc import Callable

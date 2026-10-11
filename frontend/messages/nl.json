@@ -1426,7 +1426,11 @@
       },
       "products": {
         "title": "Producten",
-        "description": "Welke producten moeten er geleverd worden, en hoeveel?"
+        "description": "Welke producten moet elke kar van de ploeg meekrijgen, en hoeveel? Kies een kar en stel haar lijst samen — dezelfde lijst waarmee StockMaster de kar laadt.",
+        "chooseKar": "Kar",
+        "noKars": "Er zijn in KarManagement nog geen karren aan deze ploeg toegewezen.",
+        "loadKarsFailed": "De karren van de ploeg konden niet geladen worden.",
+        "chooseKarHint": "Kies een kar om haar producten te bekijken en te wijzigen."
       },
       "special_requests": {
         "title": "Speciale aanvragen",
@@ -1555,7 +1559,13 @@
       "columnResponsibleName": "Naam",
       "columnResponsibleEmail": "E-mail",
       "columnResponsiblePhone": "Telefoonnummer",
-      "columnResponsibleComments": "Opmerkingen"
+      "columnResponsibleComments": "Opmerkingen",
+      "productsTitle": "Producten per kar",
+      "noProducts": "Nog geen producten opgegeven.",
+      "columnProduct": "Product",
+      "columnQuantity": "Aantal",
+      "columnComment": "Opmerking",
+      "productsTotal": "{products} producten, {pieces} stuks"
     },
     "followUp": {
       "title": "Opvolging aanvragen",
@@ -1980,7 +1990,9 @@
       "previousTitle": "Kopieer van vorig seizoen ({season})",
       "selectAll": "Alles selecteren",
       "now": "nu {count}",
-      "copy": "Kopiëren"
+      "copy": "Kopiëren",
+      "importHint": "Download de template, vul de kolom quantity in en upload hem: producten die al in de lijst staan krijgen het aantal uit het bestand, nieuwe worden toegevoegd. Daarna nog opslaan.",
+      "importSkipped": "{count, plural, one {# product niet aangepast} other {# producten niet aangepast}}: daarvoor heb je geen rechten."
     },
     "orderNeeds": {
       "title": "Te bestellen",
