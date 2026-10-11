@@ -69,6 +69,10 @@ class TagHeaderData(Base):
     # comment_column() for how that column is recognised.
     csv_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # "CSV Comment": every distinct non-empty value of the CSV's "Comment"
+    # column in this file, in CSV order, joined with " / ".
+    csv_comment_cell: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # The file's overall processing status ("new"/"loaded"/"cancelled"),
     # derived from its lines' own process_status every time one of them is
     # processed or cancelled — see app/modules/module_1/line_processing.py.

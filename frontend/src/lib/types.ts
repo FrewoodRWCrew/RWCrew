@@ -328,6 +328,8 @@ export interface RfidTag {
   notes_3: string | null;
   notes_4: string | null;
   notes_5: string | null;
+  /** "CSV Comment": the latest "Comment" cell scanned for this tag (read-only). */
+  csv_comment_cell: string | null;
 }
 
 /** The fields sent to create or fully update an RFID tag. */
@@ -490,6 +492,8 @@ export interface TagHeaderDataEntry {
   action: string | null;
   // The CSV's free-text "product / comments" column (first non-empty).
   csv_comment: string | null;
+  /** "CSV Comment": exactly the CSV's "Comment" column (file: distinct values joined with " / "). */
+  csv_comment_cell: string | null;
   // The distinct kar numbers of its lines' matched tags, comma-separated.
   kar_nummers: string | null;
   // The file's overall processing status, derived from its lines' own.
@@ -533,6 +537,8 @@ export interface TagLineDataEntry {
   action: string | null;
   // The CSV's "product / comments" cell, or its file's value.
   csv_comment: string | null;
+  /** "CSV Comment": exactly the CSV's "Comment" column (file: distinct values joined with " / "). */
+  csv_comment_cell: string | null;
   rfid_tag_id: number | null;
   // The matched tag's product id (snapshot), for the link to its fiche.
   assigned_product_id: number | null;

@@ -18,6 +18,8 @@ from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
 from app.modules.module_1.file_browser import get_source_root
 from app.modules.module_1.tag_line_data import (
+    apply_comment_to_tag,
+    joined_comments,
     match_scanner,
     match_tag,
     parse_csv_rows,
@@ -118,6 +120,8 @@ def _build_line_rows(
             mode=row["mode"] or header_mode,
             action=row["action"] or header_action,
             csv_comment=row["csv_comment"] or header_csv_comment,
+            # "CSV Comment": only the row's own cell, never the file's value.
+            csv_comment_cell=row["csv_comment_cell"],
             # Every freshly scanned line waits for its action to be carried
             # out — see line_processing.py.
             process_status="new",
@@ -200,6 +204,7 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
             mode=header_mode,
             action=header_action,
             csv_comment=header_csv_comment,
+            csv_comment_cell=joined_comments([row["csv_comment_cell"] for row in parsed_rows]),
             # Waiting for its lines' actions — except a file with no data
             # lines at all, which has nothing left to do.
             process_status="new" if parsed_rows else "loaded",
@@ -244,6 +249,13 @@ def scan_unreaded_tags(db: Session) -> tuple[list[TagHeaderDataScanFileResult], 
                 header_csv_comment=header_csv_comment,
             )
         )
+        # Every registered tag scanned in this file takes over its line's
+        # "CSV Comment" (CSV order, so the file's last value for an EPC wins;
+        # files run in name order, so a later file overrides an earlier one).
+        for row in parsed_rows:
+            tag = tags_by_epc.get(row["epc"])
+            if tag is not None:
+                apply_comment_to_tag(tag, row["csv_comment_cell"])
         db.commit()
 
         try:

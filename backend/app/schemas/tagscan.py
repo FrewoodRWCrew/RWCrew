@@ -182,6 +182,8 @@ class RfidTagResponse(BaseModel):
     notes_3: str | None
     notes_4: str | None
     notes_5: str | None
+    # "CSV Comment": the latest "Comment" cell scanned for this tag (read-only).
+    csv_comment_cell: str | None = None
 
 
 class RfidTagCreateRequest(BaseModel):
@@ -441,6 +443,8 @@ class TagHeaderDataResponse(BaseModel):
     action: str | None
     # The CSV's free-text "product / comments" column (first non-empty).
     csv_comment: str | None
+    # "CSV Comment": the distinct values of the CSV's "Comment" column, " / "-joined.
+    csv_comment_cell: str | None = None
     # The distinct kar numbers of its lines' matched tags, comma-separated.
     kar_nummers: str | None = None
     # The file's overall processing status, derived from its lines' own.
@@ -492,6 +496,8 @@ class TagLineDataResponse(BaseModel):
     action: str | None
     # The CSV's "product / comments" cell, or its file's value.
     csv_comment: str | None
+    # "CSV Comment": exactly this line's own cell of the CSV's "Comment" column.
+    csv_comment_cell: str | None = None
     rfid_tag_id: int | None
     # The matched tag's product id (snapshot), for the link to its fiche.
     assigned_product_id: int | None

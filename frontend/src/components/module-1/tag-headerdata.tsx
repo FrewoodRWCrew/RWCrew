@@ -87,6 +87,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
   const [modeFilter, setModeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [karFilter, setKarFilter] = useState("");
+  const [csvCommentFilter, setCsvCommentFilter] = useState("");
   const [processStatusFilter, setProcessStatusFilter] = useState(ALL_VALUE);
   const [processCommentFilter, setProcessCommentFilter] = useState("");
 
@@ -102,6 +103,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
       if (!textMatches(entry.mode ?? "", modeFilter)) return false;
       if (!textMatches(entry.action ?? "", actionFilter)) return false;
       if (!textMatches(entry.kar_nummers ?? "", karFilter)) return false;
+      if (!textMatches(entry.csv_comment_cell ?? "", csvCommentFilter)) return false;
       if (processStatusFilter !== ALL_VALUE && entry.process_status !== processStatusFilter) return false;
       if (!textMatches(entry.process_comment ?? "", processCommentFilter)) return false;
       return true;
@@ -123,6 +125,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
     modeFilter,
     actionFilter,
     karFilter,
+    csvCommentFilter,
     processStatusFilter,
     processCommentFilter,
   ]);
@@ -200,6 +203,7 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnScannerType")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAction")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCsvComment")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnFilename")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProcessComment")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCreatedAt")}</TableHead>
@@ -261,6 +265,15 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                   className="h-8 w-full min-w-28 font-normal"
                   value={karFilter}
                   onChange={(event) => setKarFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterCsvComment")}
+                  placeholder={t("filterCsvComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={csvCommentFilter}
+                  onChange={(event) => setCsvCommentFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
@@ -351,6 +364,8 @@ export function TagHeaderData({ initialEntries }: TagHeaderDataProps) {
                 <TableCell>{entry.action}</TableCell>
                 {/* Every kar number found among the file's lines. */}
                 <TableCell>{entry.kar_nummers}</TableCell>
+                {/* Every distinct value of the CSV's "Comment" column. */}
+                <TableCell>{entry.csv_comment_cell}</TableCell>
                 <TableCell className="font-medium">
                   <Link
                     href={`/modules/module-1/tag-linedata?filename=${encodeURIComponent(entry.filename)}`}

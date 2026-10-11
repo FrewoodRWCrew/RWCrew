@@ -225,6 +225,37 @@ def comment_column(fieldnames: list[str] | None) -> str | None:
     return None
 
 
+# The CSV column read into "CSV Comment" (csv_comment_cell): only a column
+# with exactly this name (any case, surrounding spaces ignored).
+COLUMN_COMMENT = "Comment"
+
+
+def exact_comment_column(fieldnames: list[str] | None) -> str | None:
+    """The CSV's own header name of its "Comment" column, or None when the
+    file has no such column. Unlike comment_column(), nothing is guessed.
+    """
+    for name in fieldnames or []:
+        if name and name.strip().lower() == COLUMN_COMMENT.lower():
+            return name
+    return None
+
+
+def joined_comments(values: list[str | None]) -> str | None:
+    """A file's "CSV Comment": its distinct non-empty values in order,
+    joined with " / " — None when there are none.
+    """
+    distinct = list(dict.fromkeys(value for value in values if value))
+    return " / ".join(distinct) or None
+
+
+def apply_comment_to_tag(tag: RfidTag, value: str | None) -> None:
+    """Copy a scanned line's "CSV Comment" onto its tag — only a non-empty
+    value, so a scan without a comment never wipes the one already there.
+    """
+    if value:
+        tag.csv_comment_cell = value
+
+
 def _parse_int(value: str | None) -> int | None:
     """Best-effort int parsing — a blank or non-numeric cell becomes None
     rather than aborting the whole row.
@@ -274,6 +305,7 @@ def parse_csv_rows(file: Path) -> list[dict]:
         # exact row in the source file.
         reader = csv.DictReader(handle)
         csv_comment_column = comment_column(reader.fieldnames)
+        csv_comment_cell_column = exact_comment_column(reader.fieldnames)
         for line_number, row in enumerate(reader, start=2):
             epc = (row.get(COLUMN_EPC) or "").strip()
             if not epc:
@@ -291,6 +323,9 @@ def parse_csv_rows(file: Path) -> list[dict]:
                     "action": (row.get(COLUMN_ACTION) or "").strip() or None,
                     "csv_comment": (
                         (row.get(csv_comment_column) or "").strip() or None if csv_comment_column else None
+                    ),
+                    "csv_comment_cell": (
+                        (row.get(csv_comment_cell_column) or "").strip() or None if csv_comment_cell_column else None
                     ),
                 }
             )

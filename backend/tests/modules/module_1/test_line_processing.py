@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 from app.db.models.rfid_tag import RfidTag
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
+from app.modules.module_1.csv_comment_backfill import backfill_csv_comment_cells
 from app.modules.module_1.screens import sync_screens
 from tests.modules.module_1.test_line_data import (
     REAL_HEADER,
@@ -350,3 +351,103 @@ def test_scan_stores_the_csv_product_comment_column(client: TestClient, db_sessi
     assert headers["named.csv"].csv_comment == "Spare kar wheels"
     pending = {row["epc"]: row for row in client.get(f"{BASE}/line-data/pending").json()}
     assert pending["E2CCC"]["csv_comment"] == "Walkie-talkie"
+
+
+def test_scan_fills_csv_comment_cell_from_the_comment_column_only(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    # "CSV Comment" reads only the column named "Comment": the unrelated last
+    # column is ignored, an empty cell stays empty (no fallback to the file),
+    # and a registered tag takes over its line's value.
+    _create_tag(db_session, epc_uid="E2AAA", csv_comment_cell="Old comment")
+    _create_tag(db_session, epc_uid="E2BBB", csv_comment_cell="Keep me")
+    (scan_dirs / "Unreaded Tags" / "a.csv").write_bytes(
+        (
+            REAL_HEADER.strip()
+            + ",Mode,Action,Comment,Info\n"
+            + "Scan_01,E2AAA,78,1,92,10:36:07,PROD,Assignment,Wheels,x\n"
+            + "Scan_01,E2BBB,78,1,92,10:36:07,PROD,Assignment,,y\n"
+            + "Scan_01,E2CCC,78,1,92,10:36:07,PROD,Assignment,Wheels,z\n"
+            + "Scan_01,E2DDD,78,1,92,10:36:07,PROD,Assignment,Walkie,z\n"
+        ).encode()
+    )
+    # No "Comment" column at all: nothing, even though the last column is free text.
+    (scan_dirs / "Unreaded Tags" / "b.csv").write_bytes(
+        (REAL_HEADER.strip() + ",Mode,Action,Info\n" + "Scan_01,E2EEE,78,1,92,10:36:07,PROD,Assignment,x\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+
+    client.post(f"{BASE}/header-data/scan")
+
+    lines = _lines_by_epc(db_session)
+    assert lines["E2AAA"].csv_comment_cell == "Wheels"
+    assert lines["E2BBB"].csv_comment_cell is None
+    assert lines["E2EEE"].csv_comment_cell is None
+    headers = {row["filename"]: row for row in client.get(f"{BASE}/header-data").json()}
+    assert headers["a.csv"]["csv_comment_cell"] == "Wheels / Walkie"
+    assert headers["b.csv"]["csv_comment_cell"] is None
+    line_json = {row["epc"]: row for row in client.get(f"{BASE}/line-data").json()}
+    assert line_json["E2AAA"]["csv_comment_cell"] == "Wheels"
+    tags = {row["epc_uid"]: row for row in client.get(f"{BASE}/tags").json()}
+    assert tags["E2AAA"]["csv_comment_cell"] == "Wheels"
+    assert tags["E2BBB"]["csv_comment_cell"] == "Keep me"
+
+
+def test_assignment_copies_csv_comment_cell_onto_the_new_tag(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    product = _create_product(db_session, name="KBC Lint")
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (REAL_HEADER.strip() + ",Mode,Action,Comment\n" + "Scan_01,E2AAA,78,1,92,10:36:07,PROD,Assignment,Wheels\n").encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post(f"{BASE}/header-data/scan")
+
+    client.post(
+        f"{BASE}/line-data/pending/process",
+        json={"files": [{"header_data_id": _header_id(db_session, "scan.csv"), "product_id": product.id}]},
+    )
+
+    db_session.expire_all()
+    tag = db_session.scalar(select(RfidTag).where(RfidTag.epc_uid == "E2AAA"))
+    assert tag.csv_comment_cell == "Wheels"
+
+
+def test_backfill_fills_csv_comment_cell_from_the_archived_csv(
+    client: TestClient, db_session: Session, scan_dirs: Path
+) -> None:
+    (scan_dirs / "Unreaded Tags" / "scan.csv").write_bytes(
+        (
+            REAL_HEADER.strip()
+            + ",Mode,Action,Comment\n"
+            + "Scan_01,E2AAA,78,1,92,10:36:07,PROD,Inventory,Wheels\n"
+            + "Scan_01,E2BBB,78,1,92,10:36:07,PROD,Inventory,\n"
+        ).encode()
+    )
+    sync_screens(db_session)
+    _admin_client(client, db_session)
+    client.post(f"{BASE}/header-data/scan")
+    # Pretend the data was scanned before the field existed, and the tag was
+    # registered afterwards (so no line is linked to it).
+    for line in db_session.scalars(select(TagLineData)).all():
+        line.csv_comment_cell = None
+    for header in db_session.scalars(select(TagHeaderData)).all():
+        header.csv_comment_cell = None
+    db_session.commit()
+    _create_tag(db_session, epc_uid="E2AAA")
+
+    result = backfill_csv_comment_cells(db_session)
+    db_session.commit()
+
+    assert (result.files_read, result.lines_filled, result.tags_filled, result.missing_files) == (1, 1, 1, [])
+    lines = _lines_by_epc(db_session)
+    assert lines["E2AAA"].csv_comment_cell == "Wheels"
+    assert lines["E2BBB"].csv_comment_cell is None
+    assert db_session.scalar(select(TagHeaderData.csv_comment_cell)) == "Wheels"
+    assert db_session.scalar(select(RfidTag.csv_comment_cell)) == "Wheels"
+
+    # A second run finds nothing left to do.
+    again = backfill_csv_comment_cells(db_session)
+    assert (again.files_read, again.lines_filled, again.tags_filled) == (0, 0, 0)

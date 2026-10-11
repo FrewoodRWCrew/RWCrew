@@ -28,7 +28,7 @@ from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
 from app.db.models.tag_header_data import TagHeaderData
 from app.db.models.tag_line_data import TagLineData
-from app.modules.module_1.tag_line_data import match_tag, preload_tag_lookup
+from app.modules.module_1.tag_line_data import apply_comment_to_tag, match_tag, preload_tag_lookup
 from app.schemas.tagscan import LineProcessRowResult
 
 PROCESS_NEW = "new"
@@ -64,6 +64,9 @@ def _process_assignment(db: Session, line: TagLineData, context: ProcessContext)
 
     epc = line.epc.strip()
     existing = db.scalar(select(RfidTag).where(RfidTag.epc_uid == epc))
+    # An existing tag gets the line's "CSV Comment" too, whatever happens below.
+    if existing is not None:
+        apply_comment_to_tag(existing, line.csv_comment_cell)
 
     if existing is None:
         db.add(
@@ -76,6 +79,8 @@ def _process_assignment(db: Session, line: TagLineData, context: ProcessContext)
                 batch_number=line.batch_number,
                 last_reader_id=line.scanner_name or line.scanner,
                 last_location=line.scanner_location,
+                # The line's "CSV Comment" goes along onto the new tag.
+                csv_comment_cell=line.csv_comment_cell,
             )
         )
         db.flush()

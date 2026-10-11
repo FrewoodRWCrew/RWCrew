@@ -59,6 +59,11 @@ class TagLineData(Base):
     # or the file's value (TagHeaderData.csv_comment) when that cell is empty.
     csv_comment: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # "CSV Comment": exactly this row's own cell of the CSV column named
+    # "Comment" (any case) — no guessing from other columns, no fallback to
+    # the file's value. Null when the CSV has no such column or it's empty.
+    csv_comment_cell: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     # Which registered tag this EPC matched, if any — null means "no_match".
     rfid_tag_id: Mapped[int | None] = mapped_column(ForeignKey("Tagscan_rfid_tag.id"), nullable=True)
 

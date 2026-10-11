@@ -72,6 +72,7 @@ type SortableColumn =
   | "mode"
   | "action"
   | "kar_nummer"
+  | "csv_comment_cell"
   | "epc"
   | "rssi"
   | "antenna"
@@ -189,6 +190,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
   const [modeFilter, setModeFilter] = useState("");
   const [actionFilter, setActionFilter] = useState("");
   const [karFilter, setKarFilter] = useState("");
+  const [csvCommentFilter, setCsvCommentFilter] = useState("");
   const [epcFilter, setEpcFilter] = useState("");
   const [rssiFilter, setRssiFilter] = useState("");
   const [antennaFilter, setAntennaFilter] = useState("");
@@ -230,6 +232,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
       if (!textMatches(entry.mode, modeFilter)) return false;
       if (!textMatches(entry.action, actionFilter)) return false;
       if (!textMatches(entry.kar_nummer, karFilter)) return false;
+      if (!textMatches(entry.csv_comment_cell, csvCommentFilter)) return false;
       if (!textMatches(entry.epc, epcFilter)) return false;
       if (!textMatches(entry.rssi, rssiFilter)) return false;
       if (!textMatches(entry.antenna, antennaFilter)) return false;
@@ -257,6 +260,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
     modeFilter,
     actionFilter,
     karFilter,
+    csvCommentFilter,
     epcFilter,
     rssiFilter,
     antennaFilter,
@@ -428,6 +432,8 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             )}
           </span>
         </TableCell>
+        {/* The line's own cell of the CSV's "Comment" column. */}
+        <TableCell>{entry.csv_comment_cell}</TableCell>
         <TableCell>
           {/* Opens the product's fiche in MasterData > Producten. */}
           {entry.assigned_product_id !== null && entry.assigned_product_name ? (
@@ -492,7 +498,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
           <Fragment key={block.key}>
             {block.entries.map((entry) => renderEntryRow(entry))}
             <TableRow className="bg-muted/50 hover:bg-muted/50">
-              <TableCell colSpan={24} className="font-semibold">
+              <TableCell colSpan={25} className="font-semibold">
                 {t("subtotalLabel", {
                   product: block.product,
                   filename: block.filename,
@@ -508,7 +514,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             {/* The kar header row: KarTracker's purple, a thick top border
                 and a truck icon, so each kar stands out. */}
             <TableRow className={cn("border-t-4 border-t-purple-500 hover:bg-transparent", KAR_ACCENT_CLASS)}>
-              <TableCell colSpan={24} className="py-2 font-bold">
+              <TableCell colSpan={25} className="py-2 font-bold">
                 <span className="inline-flex items-center gap-2">
                   <Truck className="size-4" />
                   {t("karGroupLabel", {
@@ -594,6 +600,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
               <SortableHeader
                 label={t("columnKar")}
                 column="kar_nummer"
+                activeColumn={sortColumn}
+                direction={sortDirection}
+                onSort={handleSort}
+                disabled={isGrouped}
+                className="sticky top-0 z-20 bg-background"
+              />
+              <SortableHeader
+                label={t("columnCsvComment")}
+                column="csv_comment_cell"
                 activeColumn={sortColumn}
                 direction={sortDirection}
                 onSort={handleSort}
@@ -824,6 +839,15 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                   className="h-8 w-full min-w-28 font-normal"
                   value={karFilter}
                   onChange={(event) => setKarFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterCsvComment")}
+                  placeholder={t("filterCsvComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={csvCommentFilter}
+                  onChange={(event) => setCsvCommentFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">

@@ -65,3 +65,8 @@ class RfidTag(Base):
     notes_3: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes_4: Mapped[str | None] = mapped_column(Text, nullable=True)
     notes_5: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # "CSV Comment": the latest non-empty "Comment" cell of a scanned CSV line
+    # with this EPC (or of the line that created the tag). Filled by TagScan
+    # itself, never by the edit form; an empty cell never clears it.
+    csv_comment_cell: Mapped[str | None] = mapped_column(Text, nullable=True)

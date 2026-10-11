@@ -128,6 +128,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
   const [statusFilter, setStatusFilter] = useState(ALL_VALUE);
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [karFilter, setKarFilter] = useState(ALL_VALUE);
+  const [csvCommentFilter, setCsvCommentFilter] = useState("");
   const [serialNumberFilter, setSerialNumberFilter] = useState("");
   const [dateRegisteredFilter, setDateRegisteredFilter] = useState("");
   const [dateAssignedFilter, setDateAssignedFilter] = useState("");
@@ -157,6 +158,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
       if (statusFilter !== ALL_VALUE && tag.status !== statusFilter) return false;
       if (productFilter !== ALL_VALUE && String(tag.assigned_product_id ?? "") !== productFilter) return false;
       if (karFilter !== ALL_VALUE && String(tag.kar_id ?? "") !== karFilter) return false;
+      if (!textMatches(tag.csv_comment_cell, csvCommentFilter)) return false;
       if (!textMatches(tag.assigned_serial_number, serialNumberFilter)) return false;
       if (!textMatches(formatDate(tag.date_registered), dateRegisteredFilter)) return false;
       if (!textMatches(tag.date_assigned, dateAssignedFilter)) return false;
@@ -178,6 +180,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
     statusFilter,
     productFilter,
     karFilter,
+    csvCommentFilter,
     serialNumberFilter,
     dateRegisteredFilter,
     dateAssignedFilter,
@@ -270,6 +273,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedProduct")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCsvComment")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateRegistered")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateAssigned")}</TableHead>
@@ -366,6 +370,15 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                     ))}
                   </SelectContent>
                 </Select>
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterCsvComment")}
+                  placeholder={t("filterCsvComment")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={csvCommentFilter}
+                  onChange={(event) => setCsvCommentFilter(event.target.value)}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -501,6 +514,8 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                 <TableCell className="text-muted-foreground">{t(`status.${tag.status}`)}</TableCell>
                 <TableCell className="text-muted-foreground">{productLabelFor(tag.assigned_product_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{karLabelFor(tag.kar_id)}</TableCell>
+                {/* Filled by TagScan from scanned CSVs' "Comment" column — not editable. */}
+                <TableCell className="text-muted-foreground">{tag.csv_comment_cell}</TableCell>
                 <TableCell className="text-muted-foreground">{tag.assigned_serial_number}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(tag.date_registered)}
