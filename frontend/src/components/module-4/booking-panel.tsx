@@ -20,26 +20,34 @@
 // - Kar terug: what left with the kar, each line going back into the kar or
 //   to free stock as the product is set up, so only differences are typed;
 // - Inboeken from "Te bestellen": ?prefill=<product>:<qty>,...;
+// - Inboeken from a TagScan scan: ?tagscan=<file ids> (from the "scans
+//   waiting" dialog) puts those files' "Book In" lines in the basket, like
+//   the Excel upload; the booking then marks those scan lines "loaded";
 // - ?kar=<id> and ?product=<id> from the buttons on the other screens.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileText, ListPlus, PackageOpen, Trash2 } from "lucide-react";
+import { FileSpreadsheet, FileText, ListPlus, Package, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Link } from "@/i18n/navigation";
+import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
   createStockMasterBooking,
   getStockMasterKar,
   getStockMasterLookups,
   getStockMasterStock,
+  importStockMasterBookIn,
   listStockMasterKars,
+  listStockMasterTagscanBookIn,
   reverseStockMasterBooking,
   stockMasterBookingPdfUrl,
+  stockMasterBookInTemplateUrl,
+  stockMasterProductImageUrl,
 } from "@/lib/api";
 import type {
   Season,
   StockMasterAction,
+  StockMasterBookInImport,
   StockMasterDocument,
   StockMasterKarDetail,
   StockMasterKarSummary,
@@ -64,6 +72,7 @@ import {
   hasRight,
   stockErrorMessage,
 } from "@/components/module-4/stockmaster-common";
+import { openTagscanBookInDialog } from "@/components/module-4/tagscan-book-in-banner";
 
 interface BookingPanelProps {
   action: Exclude<StockMasterAction, "count">;
@@ -79,6 +88,25 @@ interface BasketLine {
   destination?: "kar" | "free";
   /** Only on "Kar terug": how many left with the kar. */
   dispatched?: number;
+}
+
+/** A scanned line that couldn't go into the basket (Inboeken from a scan). */
+interface ScanProblem {
+  lineId: number;
+  filename: string;
+  lineNumber: number;
+  detail: string;
+}
+
+/** Add imported lines (Excel or scan) to the basket, summing a product already there. */
+function mergeIntoBasket(current: BasketLine[], imported: { product_id: number; quantity: number }[]): BasketLine[] {
+  const merged = [...current];
+  for (const line of imported) {
+    const index = merged.findIndex((existing) => existing.productId === line.product_id);
+    if (index >= 0) merged[index] = { ...merged[index], quantity: merged[index].quantity + line.quantity };
+    else merged.push({ productId: line.product_id, quantity: line.quantity });
+  }
+  return merged;
 }
 
 /** "Before → after" of one place a line touches. */
@@ -97,6 +125,8 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const tAction = useTranslations(`stockMaster.actions.${action}`);
   const locale = useLocale();
   const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
   const seasonId = useStockMasterSeasonId(seasons);
   const season = seasons.find((item) => item.id === seasonId) ?? null;
 
@@ -125,6 +155,18 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const [pendingQuantity, setPendingQuantity] = useState("1");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [lastBooking, setLastBooking] = useState<StockMasterDocument | null>(null);
+  // Inboeken from Excel: busy flag, and the rows of the last upload that couldn't be used.
+  const [isImporting, setIsImporting] = useState(false);
+  const [importErrors, setImportErrors] = useState<StockMasterBookInImport["errors"]>([]);
+  const importInputRef = useRef<HTMLInputElement>(null);
+  // Inboeken from a TagScan scan: the scan lines the basket came from (sent
+  // with the booking, which marks them "loaded"), their file names, and the
+  // scanned lines that couldn't be used.
+  const [scanLineIds, setScanLineIds] = useState<number[]>([]);
+  const [scanFilenames, setScanFilenames] = useState<string[]>([]);
+  const [scanProblems, setScanProblems] = useState<ScanProblem[]>([]);
+  // The ?tagscan= value already loaded, so it's used only once.
+  const scanParamUsed = useRef<string | null>(null);
   // The kar whose needs/contents were already put in the basket.
   const prefilledForKar = useRef<number | null>(null);
 
@@ -341,6 +383,79 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     window.setTimeout(() => searchRef.current?.focus(), 0);
   }
 
+  /** Inboeken from Excel: the file's lines go into the basket (adding to a
+   *  product already there); nothing is booked until the person confirms. */
+  async function importExcel(file: File) {
+    setIsImporting(true);
+    try {
+      const result = await importStockMasterBookIn(file);
+      setLines((current) => mergeIntoBasket(current, result.lines));
+      setImportErrors(result.errors);
+      if (result.lines.length > 0) toast.success(t("booking.importAdded", { count: result.lines.length }));
+      else toast.info(t("booking.importAdded", { count: 0 }));
+    } catch (error) {
+      toast.error(stockErrorMessage(t, error));
+    } finally {
+      setIsImporting(false);
+    }
+  }
+
+  /** Inboeken from a TagScan scan: ?tagscan=<file ids> puts those files'
+   *  waiting "Book In" lines in the basket (once per value), then drops
+   *  the parameter from the address so a reload doesn't add them again. */
+  const scanParam = action === "book_in" ? searchParams.get("tagscan") : null;
+  useEffect(() => {
+    if (!scanParam || scanParam === "open" || scanParamUsed.current === scanParam) return;
+    scanParamUsed.current = scanParam;
+    const headerIds = new Set(scanParam.split(",").map(Number).filter(Boolean));
+
+    listStockMasterTagscanBookIn()
+      .then((files) => {
+        // Only files not linked yet: the same scan never goes in twice.
+        const chosen = files.filter(
+          (file) => headerIds.has(file.header_data_id) && !scanFilenames.includes(file.filename),
+        );
+        const imported = chosen.flatMap((file) => file.lines);
+        setLines((current) => mergeIntoBasket(current, imported));
+        setScanLineIds((current) => [...current, ...chosen.flatMap((file) => file.line_ids)]);
+        setScanFilenames((current) => [...current, ...chosen.map((file) => file.filename)]);
+        setScanProblems((current) => [
+          ...current,
+          ...chosen.flatMap((file) =>
+            file.problems.map((problem) => ({
+              lineId: problem.line_id,
+              filename: file.filename,
+              lineNumber: problem.line_number,
+              detail: problem.detail,
+            })),
+          ),
+        ]);
+        const productCount = new Set(imported.map((line) => line.product_id)).size;
+        if (productCount > 0) toast.success(t("booking.scanAdded", { count: productCount }));
+        else toast.info(t("booking.scanAdded", { count: 0 }));
+      })
+      .catch((error) => toast.error(stockErrorMessage(t, error)))
+      .finally(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        params.delete("tagscan");
+        const query = params.toString();
+        router.replace(query ? `${pathname}?${query}` : pathname);
+      });
+  }, [scanParam, scanFilenames, searchParams, router, pathname, t]);
+
+  /** Stop linking the basket to the scan: its lines stay waiting in TagScan. */
+  function dropScanLink() {
+    setScanLineIds([]);
+    setScanFilenames([]);
+    setScanProblems([]);
+  }
+
+  /** One problem row of the upload as readable text ("code|param" → translation). */
+  function importErrorText(detail: string): string {
+    const [code, param = ""] = detail.split("|");
+    return t.has(`booking.importErrors.${code}`) ? t(`booking.importErrors.${code}`, { p1: param }) : detail;
+  }
+
   function updateLine(productId: number, changes: Partial<BasketLine>) {
     setLines((current) => current.map((line) => (line.productId === productId ? { ...line, ...changes } : line)));
   }
@@ -404,6 +519,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
         reference: reference.trim() || null,
         reason_id: reasonId,
         comment: comment.trim() || null,
+        tagscan_line_ids: action === "book_in" ? scanLineIds : [],
         lines: usesBasket
           ? activeLines
               .filter((line) => action !== "kar_return" || line.quantity > 0)
@@ -416,6 +532,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
       });
       // Start the next booking with a clean basket.
       setLines([]);
+      dropScanLink();
       setReference("");
       setComment("");
       setReasonId(null);
@@ -475,7 +592,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
 
       {seasonLocked && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t("errors.season_closed")}</p>}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="flex flex-col gap-6">
           {/* The kar (kar actions), or the source (Uitboeken). */}
           {isKarAction && (
@@ -596,6 +713,120 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
                 </div>
                 <p className="text-xs text-muted-foreground">{t("booking.keyboardHint")}</p>
 
+                {/* Inboeken from Excel: download the template, upload it filled in → basket. */}
+                {action === "book_in" && (
+                  <div className="flex flex-col gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <a
+                        href={stockMasterBookInTemplateUrl()}
+                        download
+                        className={buttonVariants({
+                          variant: "outline",
+                          size: "sm",
+                        })}
+                      >
+                        <FileSpreadsheet />
+                        {t("booking.importTemplate")}
+                      </a>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => importInputRef.current?.click()}
+                        disabled={isImporting}
+                      >
+                        <Upload />
+                        {t("booking.importUpload")}
+                      </Button>
+                      {/* Inboeken from a TagScan scan: opens the "scans waiting" dialog. */}
+                      <Button variant="outline" size="sm" onClick={openTagscanBookInDialog}>
+                        <ScanLine />
+                        {t("booking.scanLoad")}
+                      </Button>
+                      <input
+                        ref={importInputRef}
+                        type="file"
+                        accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+                        className="hidden"
+                        onChange={(event) => {
+                          const file = event.target.files?.[0];
+                          // Cleared right away so the same file can be uploaded again after fixing it.
+                          event.target.value = "";
+                          if (file) void importExcel(file);
+                        }}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">{t("booking.importHint")}</p>
+                    {/* The scan(s) this basket came from; booking marks their lines "loaded". */}
+                    {scanFilenames.length > 0 && (
+                      <div className="flex w-fit items-center gap-2 rounded-md border bg-muted/50 px-3 py-1 text-sm">
+                        <ScanLine className="size-4 text-muted-foreground" />
+                        <span>
+                          {t("booking.scanFrom", {
+                            files: scanFilenames.join(", "),
+                          })}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={dropScanLink}
+                          aria-label={t("booking.scanDrop")}
+                          title={t("booking.scanDrop")}
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    )}
+                    {scanProblems.length > 0 && (
+                      <div className="rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:text-orange-300">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-semibold">{t("booking.scanErrorsTitle")}</span>
+                          <button
+                            type="button"
+                            onClick={() => setScanProblems([])}
+                            aria-label={t("booking.importClose")}
+                          >
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                        <ul className="mt-1 list-disc pl-5">
+                          {scanProblems.map((problem) => (
+                            <li key={problem.lineId}>
+                              {t("booking.scanErrorRow", {
+                                file: problem.filename,
+                                row: problem.lineNumber,
+                                message: importErrorText(problem.detail),
+                              })}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {importErrors.length > 0 && (
+                      <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="font-semibold">{t("booking.importErrorsTitle")}</span>
+                          <button
+                            type="button"
+                            onClick={() => setImportErrors([])}
+                            aria-label={t("booking.importClose")}
+                          >
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                        <ul className="mt-1 list-disc pl-5">
+                          {importErrors.map((error) => (
+                            <li key={`${error.row_number}-${error.detail}`}>
+                              {t("booking.importErrorRow", {
+                                row: error.row_number,
+                                message: importErrorText(error.detail),
+                              })}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <BasketTable
                   action={action}
                   lines={lines}
@@ -657,7 +888,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
                 <Textarea id="booking-comment" value={comment} onChange={(event) => setComment(event.target.value)} rows={2} />
               </div>
 
-              <BookingSummary action={action} lines={activeLines} detail={karDetail} />
+              <BookingSummary action={action} lines={activeLines} detail={karDetail} productsById={productsById} />
 
               <Button size="lg" onClick={() => void handleSubmit()} disabled={!canSubmit}>
                 {tAction("confirm")}
@@ -941,29 +1172,77 @@ function DispatchContents({ detail }: { detail: StockMasterKarDetail }) {
   );
 }
 
-/** "3 producten · 12 stuks" above the confirm button. */
+/** "3 producten · 12 stuks" above the confirm button, followed by each product (picture, name, quantity). */
 function BookingSummary({
   action,
   lines,
   detail,
+  productsById,
 }: {
   action: StockMasterAction;
   lines: BasketLine[];
   detail: StockMasterKarDetail | null;
+  productsById: Map<number, StockMasterProductStock>;
 }) {
   const t = useTranslations("stockMaster.booking");
-  if (action === "kar_dispatch") {
-    const contents = detail?.lines.filter((line) => line.in_kar > 0) ?? [];
-    return (
-      <p className="text-sm">
-        {t("summary", { products: contents.length, pieces: contents.reduce((sum, line) => sum + line.in_kar, 0) })}
-      </p>
-    );
-  }
-  const counted = lines.filter((line) => line.quantity > 0);
+
+  // "Kar vertrekt" books the kar's whole contents, so list those; otherwise the basket lines with a quantity.
+  const rows =
+    action === "kar_dispatch"
+      ? (detail?.lines ?? [])
+          .filter((line) => line.in_kar > 0)
+          .map((line) => ({
+            id: line.product_id,
+            name: line.name,
+            quantity: line.in_kar,
+          }))
+      : lines
+          .filter((line) => line.quantity > 0)
+          .map((line) => ({
+            id: line.productId,
+            name: productsById.get(line.productId)?.name ?? "",
+            quantity: line.quantity,
+          }));
+
   return (
-    <p className="text-sm">
-      {t("summary", { products: counted.length, pieces: counted.reduce((sum, line) => sum + line.quantity, 0) })}
-    </p>
+    <div className="flex flex-col gap-1">
+      <p className="text-sm">
+        {t("summary", {
+          products: rows.length,
+          pieces: rows.reduce((sum, row) => sum + row.quantity, 0),
+        })}
+      </p>
+      {/* One row per product, webshop-style with a small picture; capped in height so the confirm button
+          stays in view on long baskets. */}
+      {rows.length > 0 && (
+        <ul className="max-h-72 divide-y overflow-y-auto text-sm">
+          {rows.map((row) => {
+            const product = productsById.get(row.id);
+            return (
+              <li key={row.id} className="flex items-center gap-3 py-1.5">
+                {/* The picture, or a placeholder icon so every row stays aligned. */}
+                <div className="flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-md border bg-muted/40">
+                  {product?.has_image ? (
+                    // eslint-disable-next-line @next/next/no-img-element -- authenticated API image, not a static asset
+                    <img
+                      src={stockMasterProductImageUrl(row.id, product.image_updated_at)}
+                      alt={row.name}
+                      loading="lazy"
+                      className="size-full object-contain"
+                    />
+                  ) : (
+                    <Package className="size-4 text-muted-foreground" />
+                  )}
+                </div>
+                <span className="min-w-0 flex-1 truncate" title={row.name}>
+                  {row.name}
+                </span>
+                <span className="font-semibold tabular-nums">{row.quantity}</span>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
   );
 }

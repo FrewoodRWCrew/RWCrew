@@ -1,6 +1,7 @@
 // This layout wraps every StockMaster page with the module's own left-hand
 // menu (see components/module-4/stockmaster-sidebar.tsx) and the orange
-// minimum-stock banner, the same way Altsien Select's own layout.tsx does
+// minimum-stock banner and the teal "scans waiting to be booked in" banner
+// (TagScan lines with the action "Book In"), the same way Altsien Select's own layout.tsx does
 // for module-8, plus the "Help bij dit scherm" link to the manual's chapter
 // about the open screen (see components/shared/module-help.tsx).
 
@@ -10,6 +11,8 @@ import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { StockMasterMyPermissions } from "@/lib/types";
 import { MinimumStockBanner } from "@/components/module-4/minimum-stock-banner";
 import { StockMasterSidebar } from "@/components/module-4/stockmaster-sidebar";
+import { canBook } from "@/components/module-4/stockmaster-common";
+import { TagscanBookInBanner } from "@/components/module-4/tagscan-book-in-banner";
 import { STOCKMASTER_HELP_ROUTES } from "@/components/module-4/stockmaster-help";
 import { ScreenHelpButton } from "@/components/shared/module-help";
 
@@ -44,6 +47,7 @@ export default async function StockMasterLayout({ children }: StockMasterLayoutP
       <div className="min-w-0 flex-1 p-6">
         <ScreenHelpButton moduleKey="module-4" routes={STOCKMASTER_HELP_ROUTES} className="-mt-4 mb-1" />
         <MinimumStockBanner canOpen={permissions.viewable_screen_keys.includes("stockmaster.stock")} />
+        <TagscanBookInBanner canOpen={canBook(permissions, "book_in")} />
         {children}
       </div>
     </div>

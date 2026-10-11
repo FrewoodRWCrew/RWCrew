@@ -80,6 +80,8 @@ Goods arrive (delivery, purchase) and go to the **free stock** on their fixed lo
 
 > Blocked products can't be booked in. When a whole order arrives, start from **To order**: the quantities are then already filled in.
 
+**From a scan.** TagScan lines with the action **Book In** show up in a teal bar at the top of every StockMaster screen (and on the start page). Click **Review** (or **Load from scan** on Book in): per scanned file you see the products and quantities — every tag counts as one piece of the product it is linked to in TagManagement. **Load into Inboeken** puts them in the booking list; check them and confirm as usual. Only then are the scanned lines marked as processed. Lines with an unknown tag or a tag without product stay waiting: link the tag in TagManagement and load again, or cancel the line with a reason.
+
 ## [kar-load | stockmaster.kars] 2. Load cart
 Fill a cart from the free stock (or from another cart).
 

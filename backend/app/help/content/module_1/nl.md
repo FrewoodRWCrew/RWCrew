@@ -41,6 +41,7 @@ Gescande regels met een actie (bv. **Assignment**: tags aanmaken voor een produc
 
 - Een regel die je niet wil verwerken, **annuleer** je met een reden (verplicht). Hij krijgt dan de status Geannuleerd.
 - Een tag die al een product heeft, wordt nooit gewijzigd.
+- Regels met de actie **Book In** worden hier ook geteld, maar ingeboekt via StockMaster (**Open Inboeken** in hun bestandsblok); **Alles verwerken** laat ze ongemoeid.
 - Om te verwerken heb je het recht **Wijzigen** op Tag Regelgegevens én **Aanmaken** op TagBeheer nodig (er worden tags aangemaakt). Annuleren kan met Wijzigen op Tag Regelgegevens.
 
 ## [files | tagscan.dashboard] CSV Bron Bestanden

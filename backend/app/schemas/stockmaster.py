@@ -103,6 +103,59 @@ class ProductStockResponse(BaseModel):
     kars: list[KarQuantity]
     # Consumable with a minimum, and its total stock below that minimum.
     below_minimum: bool
+    # The product's optional picture (MasterData): whether there is one, and
+    # when it last changed (added to its URL so a new picture isn't cached).
+    has_image: bool
+    image_updated_at: datetime | None
+
+
+class BookInImportLine(BaseModel):
+    """One basket line read from an uploaded Inboeken Excel."""
+
+    product_id: int
+    quantity: int
+
+
+class BookInImportError(BaseModel):
+    """A row of the uploaded Excel that couldn't be used: "code|param"."""
+
+    row_number: int
+    detail: str
+
+
+class BookInImportResponse(BaseModel):
+    """The basket lines from an uploaded Inboeken Excel, plus its problem rows."""
+
+    lines: list[BookInImportLine]
+    errors: list[BookInImportError]
+
+
+class TagscanBookInProblem(BaseModel):
+    """A scanned "Book In" line that can't be booked yet: "code|param"."""
+
+    line_id: int
+    line_number: int
+    epc: str
+    detail: str
+
+
+class TagscanBookInFile(BaseModel):
+    """One scanned file's waiting "Book In" lines as basket lines (product +
+    number of distinct tags), the line ids they came from, and its problem lines.
+    """
+
+    header_data_id: int
+    filename: str
+    scanned_at: datetime
+    line_ids: list[int]
+    lines: list[BookInImportLine]
+    problems: list[TagscanBookInProblem]
+
+
+class TagscanBookInCountResponse(BaseModel):
+    """How many scanned "Book In" lines are waiting (StockMaster's banner)."""
+
+    count: int
 
 
 class AlertsResponse(BaseModel):
@@ -209,6 +262,9 @@ class BookingRequest(BaseModel):
     reason_id: int | None = None
     comment: str | None = None
     lines: list[BookingLineRequest] = []
+    # Inboeken from a TagScan scan: the scanned lines the basket came from,
+    # marked "loaded" together with the booking.
+    tagscan_line_ids: list[int] = []
 
 
 class ReverseRequest(BaseModel):

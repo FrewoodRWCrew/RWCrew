@@ -3,15 +3,17 @@
 # alongside Season. Its columns match the fields on the "Producten"
 # edit screen provided as a reference (naam/Type/Magazijn/Magazijn
 # locatie/Categorie/Consumeerbaar/Blokkeer/Is logistiek product/Limiet/
-# Beschrijving) — everything except image upload, which is a later step.
+# Beschrijving) plus one optional picture per product.
 #
 # Type/Magazijn/Categorie/Limiet used to be plain text, but now that those
 # four lists are managed as their own lookup screens (ProductType,
 # Warehouse, ProductCategory, ProductLimit), they're foreign keys into
 # those tables instead.
 
-from sqlalchemy import Boolean, ForeignKey, Integer, String, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, Text
+from sqlalchemy.orm import Mapped, deferred, mapped_column
 
 from app.core.database import Base
 
@@ -51,3 +53,17 @@ class Product(Base):
     # minimum stock below which StockMaster warns that it's time to reorder.
     stock_return_to: Mapped[str] = mapped_column(String(10), default="kar", server_default="kar", nullable=False)
     min_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # The product's optional picture, stored as bytes in Postgres like
+    # KarTracker's ground plans (there is no file storage in this app).
+    # The bytes are deferred, so loading products for a list never pulls
+    # them in — only the image endpoint reads them.
+    image_data: Mapped[bytes | None] = deferred(mapped_column(LargeBinary, nullable=True))
+    image_content_type: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    # When the picture last changed, used as a cache-busting "?v=" on its URL.
+    image_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    @property
+    def has_image(self) -> bool:
+        """Whether a picture has been uploaded (checked without loading its bytes)."""
+        return self.image_content_type is not None

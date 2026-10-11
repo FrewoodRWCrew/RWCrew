@@ -17,12 +17,13 @@ import { getModuleTranslationKey } from "@/lib/module-theme";
 const MOBILE_MODULE_KEY = "module-10";
 
 const TAGSCAN_MODULE_KEY = "module-1";
+const STOCKMASTER_MODULE_KEY = "module-4";
 
-/** How many TagScan lines are waiting to be processed, or null when the
- * count can't be fetched — a failing count must never break this page.
+/** A waiting-work count, or null when it can't be fetched — a failing
+ * count must never break this page.
  */
-function fetchTagscanPendingCount(): Promise<number | null> {
-  return serverApiFetch<TagPendingActionsCount>("/api/modules/module-1/line-data/pending/count")
+function fetchPendingCount(path: string): Promise<number | null> {
+  return serverApiFetch<TagPendingActionsCount>(path)
     .then((result) => result.count)
     .catch(() => null);
 }
@@ -43,7 +44,16 @@ export default async function LandingPage() {
   const accessibleModuleKeys = new Set(user?.accessible_module_keys ?? []);
 
   // Waiting work, only asked for modules this user can open.
-  const tagscanPendingCount = accessibleModuleKeys.has(TAGSCAN_MODULE_KEY) ? await fetchTagscanPendingCount() : null;
+  const [tagscanPendingCount, stockMasterPendingCount] = await Promise.all([
+    // TagScan lines waiting for their action (Assignment, Book In...).
+    accessibleModuleKeys.has(TAGSCAN_MODULE_KEY)
+      ? fetchPendingCount("/api/modules/module-1/line-data/pending/count")
+      : null,
+    // Scanned "Book In" lines waiting to be booked in with StockMaster.
+    accessibleModuleKeys.has(STOCKMASTER_MODULE_KEY)
+      ? fetchPendingCount("/api/modules/module-4/tagscan-book-in/count")
+      : null,
+  ]);
   const pendingWorkItems: PendingWorkItem[] = [];
   if (tagscanPendingCount) {
     pendingWorkItems.push({
@@ -52,6 +62,15 @@ export default async function LandingPage() {
       text: t("pendingWork.tagscan", { count: tagscanPendingCount }),
       // Opens TagScan with its waiting-actions dialog already open.
       href: "/modules/module-1?pending=open",
+    });
+  }
+  if (stockMasterPendingCount) {
+    pendingWorkItems.push({
+      key: STOCKMASTER_MODULE_KEY,
+      moduleKey: STOCKMASTER_MODULE_KEY,
+      text: t("pendingWork.stockmaster", { count: stockMasterPendingCount }),
+      // Opens Inboeken with the "scans waiting" dialog already open.
+      href: "/modules/module-4/book-in?tagscan=open",
     });
   }
   const accessibleModules = modules

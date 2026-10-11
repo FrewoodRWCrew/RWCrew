@@ -1,6 +1,6 @@
 // MasterData's "Products" screen: a table of products with add/change/
 // delete, matching the field set of the reference "Producten" edit
-// screen (minus image upload, a later step) — see ProductsManagement for
+// screen (including the product picture) — see ProductsManagement for
 // the actual UI.
 
 import { getTranslations } from "next-intl/server";

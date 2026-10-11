@@ -52,7 +52,8 @@
     "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access.",
     "pendingWork": {
       "tagscan": "TagScan: {count, plural, one {# line is} other {# lines are}} waiting to be processed",
-      "open": "Review"
+      "open": "Review",
+      "stockmaster": "StockMaster: {count, plural, one {# scanned piece is} other {# scanned pieces are}} waiting to be booked in"
     }
   },
   "sidebar": {
@@ -581,7 +582,9 @@
       "productMissingHint": "Choose a product for every file.",
       "fileLineCount": "{count, plural, one {# line} other {# lines}}",
       "columnCsvComment": "Product / comments (CSV)",
-      "csvCommentLabel": "CSV product / comments"
+      "csvCommentLabel": "CSV product / comments",
+      "bookInInStockMaster": "Book In: booked in via StockMaster",
+      "openStockMaster": "Open Inboeken"
     },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
@@ -841,6 +844,12 @@
       "title": "Products",
       "description": "Manage the list of products used throughout the app.",
       "columnName": "Name",
+      "columnImage": "Picture",
+      "imageLabel": "Picture",
+      "removeImage": "Remove picture",
+      "imageHint": "PNG, JPEG or WebP, up to 5 MB.",
+      "imageTooLarge": "The picture is larger than 5 MB.",
+      "imageUploadFailed": "The product was saved, but the picture wasn't. {detail}",
       "columnType": "Type",
       "columnWarehouse": "Warehouse",
       "columnCategory": "Category",
@@ -1789,6 +1798,8 @@
       "generic": "Something went wrong. Please try again.",
       "loadFailed": "The data couldn't be loaded.",
       "not_allowed": "You don't have the right to do this.",
+      "import_unreadable": "This file can't be read. Use the Excel template (.xlsx).",
+      "import_too_large": "This file is too large (max. 5 MB).",
       "insufficient_stock": "Not enough {p1}: there are only {p2} in {p3}.",
       "kar_out": "Cart {p1} is out — book 'Cart returns' first.",
       "kar_not_out": "Cart {p1} is in the warehouse — it has to leave first.",
@@ -1816,7 +1827,8 @@
       "reason_not_found": "This reason no longer exists.",
       "team_not_found": "This team no longer exists.",
       "festival_not_found": "This festival no longer exists.",
-      "trip_not_found": "This cart's trip wasn't found."
+      "trip_not_found": "This cart's trip wasn't found.",
+      "tagscan_already_booked": "These scanned lines were already booked in or cancelled in the meantime. Load the scan again."
     },
     "booking": {
       "quantityTooLow": "Enter a whole quantity from 1.",
@@ -1833,6 +1845,20 @@
       "quantityLabel": "Quantity",
       "addLine": "Add",
       "fillMissing": "Fill in what's missing",
+      "importTemplate": "Excel template",
+      "importUpload": "Upload Excel",
+      "importHint": "Download the template, fill in the quantity column and upload it: the products go into the list below, then you confirm yourself.",
+      "importAdded": "{count, plural, =0 {No products with a quantity found} one {# product added} other {# products added}}",
+      "importErrorsTitle": "Rows of the Excel file that were not used",
+      "importErrorRow": "Row {row}: {message}",
+      "importClose": "Close",
+      "importErrors": {
+        "unknown_product": "product \"{p1}\" not found",
+        "ambiguous_product": "several products are called \"{p1}\" — fill in product_id",
+        "bad_quantity": "quantity \"{p1}\" is not a whole number",
+        "unknown_tag": "tag {p1} is not registered in TagManagement",
+        "no_product": "tag {p1} has no product"
+      },
       "unloadEverything": "Unload everything",
       "keyboardHint": "Tip: type a product, Enter, type the quantity, Enter. Ctrl+Enter confirms the booking.",
       "teamLabel": "Team",
@@ -1862,7 +1888,13 @@
       "leavesWithKar": "This leaves with the cart",
       "karEmpty": "The cart is empty: it leaves without contents.",
       "stillMissing": "Note: the cart still misses {count, plural, one {# piece} other {# pieces}} of its needs.",
-      "summary": "{products, plural, one {# product} other {# products}} · {pieces, plural, one {# piece} other {# pieces}}"
+      "summary": "{products, plural, one {# product} other {# products}} · {pieces, plural, one {# piece} other {# pieces}}",
+      "scanLoad": "Load from scan",
+      "scanFrom": "From scan: {files}",
+      "scanDrop": "Don't link to the scan",
+      "scanErrorsTitle": "Scanned lines that were not used (they stay waiting)",
+      "scanErrorRow": "{file}, line {row}: {message}",
+      "scanAdded": "{count, plural, =0 {No bookable products in the scan} one {# product added from the scan} other {# products added from the scan}}"
     },
     "count": {
       "modeFree": "Free stock",
@@ -2070,6 +2102,30 @@
       "newUserPasswordLabel": "Temporary password (only needed for a brand-new account)",
       "userSaved": "Access granted.",
       "userSaveFailed": "Failed to grant access."
+    },
+    "tagscanBookIn": {
+      "bannerText": "{count, plural, one {# scanned line (Book In) is} other {# scanned lines (Book In) are}} waiting to be booked in.",
+      "bannerOpen": "Review",
+      "dialogTitle": "Scans waiting to be booked in",
+      "dialogDescription": "TagScan lines with the action \"Book In\", per scanned file. Every tag counts as one piece of the product it is assigned to in TagManagement. \"Load into Inboeken\" puts them in the Inboeken basket; they are only booked when you confirm there. Lines with an unknown tag or a tag without product stay waiting: register the tag and load again, or cancel the line (a reason is required).",
+      "loading": "Loading...",
+      "nothingWaiting": "No scans are waiting.",
+      "loadFailed": "Failed to load the waiting scans.",
+      "scannedAt": "Scanned {date}",
+      "columnProduct": "Product",
+      "columnQuantity": "Quantity",
+      "columnActions": "Actions",
+      "problemsTitle": "Not bookable yet ({count})",
+      "noBookableLines": "No bookable tags in this file.",
+      "loadFile": "Load into Inboeken",
+      "loadAll": "Load all into Inboeken ({count})",
+      "cancelButton": "Cancel",
+      "cancelReason": "Reason for cancelling",
+      "confirmCancel": "Confirm",
+      "back": "Back",
+      "commentRequired": "Please enter a reason.",
+      "lineCancelled": "Line cancelled.",
+      "cancelFailed": "Failed to cancel the line."
     }
   },
   "karTracker": {

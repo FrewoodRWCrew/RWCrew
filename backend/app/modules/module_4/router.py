@@ -15,7 +15,7 @@ from datetime import date
 from typing import Literal
 from urllib.parse import quote
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -33,12 +33,18 @@ from app.db.models.stockmaster_role import StockMasterRole
 from app.db.models.stockmaster_role_permission import StockMasterRolePermission
 from app.db.models.stockmaster_screen import StockMasterScreen
 from app.db.models.stockmaster_user_role import StockMasterUserRole
+from app.db.models.tag_line_data import TagLineData
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
 from app.help.routes import register_help_route
 from app.modules.module_4 import requirement_service, stock_service
+from app.modules.module_4.booking_import import (
+    BookInImportFileError,
+    build_book_in_template_xlsx,
+    parse_book_in_xlsx,
+)
 from app.modules.module_4.deps import (
     MODULE_KEY,
     ensure_season_editable,
@@ -69,10 +75,18 @@ from app.modules.module_4.stock_queries import (
     count_below_minimum,
     list_documents,
 )
-from app.modules.module_4.stock_service import BookingLine, CountLine, StockError
+from app.modules.module_1.line_processing import cancel_line_processing
+from app.modules.module_4.stock_service import BookingLine, BookingOrigin, CountLine, StockError
+from app.modules.module_4.tagscan_book_in import (
+    count_waiting_lines,
+    get_waiting_line,
+    list_waiting_files,
+    mark_lines_booked,
+)
 from app.schemas.masterdata import SeasonResponse
 from app.schemas.stockmaster import (
     AlertsResponse,
+    BookInImportResponse,
     BookingRequest,
     CountSheetLine,
     CreateOrGrantUserRequest,
@@ -100,8 +114,11 @@ from app.schemas.stockmaster import (
     ScreenResponse,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    TagscanBookInCountResponse,
+    TagscanBookInFile,
     UserSummaryResponse,
 )
+from app.schemas.tagscan import LineProcessCancelRequest
 
 router = APIRouter(prefix="/api/modules/module-4", tags=["StockMaster"])
 
@@ -542,6 +559,99 @@ def get_stock(
     return build_product_stock(db)
 
 
+@router.get("/products/{product_id}/image")
+def get_product_image(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> Response:
+    """A product's picture (from MasterData) for the booking panel's basket.
+    Its own endpoint because module-9's needs MasterData rights, which most
+    StockMaster users don't have.
+    """
+    product = db.get(Product, product_id)
+    if product is None or product.image_data is None or product.image_content_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product has no image")
+    return Response(content=product.image_data, media_type=product.image_content_type)
+
+
+# --- Inboeken from Excel ------------------------------------------------------
+# Same right as Inboeken itself; nothing is booked here — the upload only
+# returns basket lines for the booking panel.
+
+MAX_BOOK_IN_IMPORT_BYTES = 5 * 1024 * 1024  # 5 MB — a product list is far smaller.
+require_book_in = require_any_screen_permission((STOCK_SCREEN, "create"), (ORDER_NEEDS_SCREEN, "create"))
+
+
+@router.get("/book-in-import/template")
+def download_book_in_template(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_book_in),
+) -> Response:
+    """The Inboeken Excel template, pre-filled with every bookable product."""
+    return Response(
+        content=build_book_in_template_xlsx(db),
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": 'attachment; filename="inboeken-template.xlsx"'},
+    )
+
+
+@router.post("/book-in-import", response_model=BookInImportResponse)
+def import_book_in(
+    file: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_book_in),
+) -> BookInImportResponse:
+    """Read a filled-in template into basket lines (and its problem rows)."""
+    contents = file.file.read(MAX_BOOK_IN_IMPORT_BYTES + 1)
+    if len(contents) > MAX_BOOK_IN_IMPORT_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="import_too_large")
+    try:
+        return parse_book_in_xlsx(db, contents)
+    except BookInImportFileError:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="import_unreadable") from None
+
+
+# --- Inboeken from a TagScan scan ---------------------------------------------
+# Scanned "Book In" lines that are still waiting, as basket lines per file
+# (see tagscan_book_in.py). Nothing is booked here; the booking itself marks
+# the lines "loaded".
+
+
+@router.get("/tagscan-book-in/count", response_model=TagscanBookInCountResponse)
+def count_tagscan_book_in(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> TagscanBookInCountResponse:
+    """How many scanned "Book In" lines are waiting — plain module access,
+    since the banner showing it appears on every StockMaster screen.
+    """
+    return TagscanBookInCountResponse(count=count_waiting_lines(db))
+
+
+@router.get("/tagscan-book-in", response_model=list[TagscanBookInFile])
+def list_tagscan_book_in(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_book_in),
+) -> list[TagscanBookInFile]:
+    """Every scanned file with waiting "Book In" lines, as basket lines."""
+    return list_waiting_files(db)
+
+
+@router.post("/tagscan-book-in/lines/{line_id}/cancel", status_code=status.HTTP_204_NO_CONTENT)
+def cancel_tagscan_book_in_line(
+    line_id: int,
+    payload: LineProcessCancelRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_book_in),
+) -> Response:
+    """Skip one waiting "Book In" line for good, with the user's reason."""
+    if get_waiting_line(db, line_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line not found")
+    cancel_line_processing(db, line_id, payload.comment.strip())
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
 @router.get("/alerts", response_model=AlertsResponse)
 def get_alerts(
     db: Session = Depends(get_db),
@@ -617,10 +727,23 @@ def create_booking(
     lines = [BookingLine(line.product_id, line.quantity, line.destination) for line in payload.lines]
     try:
         if payload.action == "book_in":
+            # From a TagScan scan: remember the scan file (when there's one)
+            # and mark its lines "loaded" in this same transaction.
+            origin = None
+            if payload.tagscan_line_ids:
+                header_ids = {
+                    line.header_data_id
+                    for line in db.scalars(select(TagLineData).where(TagLineData.id.in_(payload.tagscan_line_ids)))
+                }
+                origin = BookingOrigin(
+                    source="tagscan", tagscan_header_id=next(iter(header_ids)) if len(header_ids) == 1 else None
+                )
             document = stock_service.book_in(
                 db, current_user, season, lines,
-                reference=payload.reference, reason_id=payload.reason_id, comment=payload.comment,
+                reference=payload.reference, reason_id=payload.reason_id, comment=payload.comment, origin=origin,
             )
+            if payload.tagscan_line_ids:
+                mark_lines_booked(db, payload.tagscan_line_ids, document)
         elif payload.action == "book_out":
             document = stock_service.book_out(
                 db, current_user, season, lines,

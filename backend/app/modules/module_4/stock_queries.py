@@ -149,6 +149,8 @@ def build_product_stock(db: Session) -> list[ProductStockResponse]:
                 total=total,
                 kars=kars,
                 below_minimum=_is_below_minimum(product, total),
+                has_image=product.has_image,
+                image_updated_at=product.image_updated_at,
             )
         )
     return result

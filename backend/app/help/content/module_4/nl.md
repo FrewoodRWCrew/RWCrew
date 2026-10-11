@@ -80,6 +80,8 @@ Goederen komen binnen (levering, aankoop) en gaan naar de **vrije voorraad** op 
 
 > Geblokkeerde producten kunnen niet ingeboekt worden. Komt een volledige bestelling binnen, start dan vanuit **Te bestellen**: de aantallen staan dan al klaar.
 
+**Vanuit een scan.** TagScan-lijnen met de actie **Book In** verschijnen in een groenblauwe balk bovenaan elk StockMaster-scherm (en op de startpagina). Klik op **Bekijken** (of op **Laden uit scan** bij Inboeken): per gescand bestand zie je de producten en aantallen — elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. **Laden in Inboeken** zet ze in de boekingslijst; controleer en bevestig zoals gewoonlijk. Pas dan worden de gescande lijnen als verwerkt gemarkeerd. Lijnen met een onbekende tag of een tag zonder product blijven wachten: koppel de tag in TagManagement en laad opnieuw, of annuleer de lijn met een reden.
+
 ## [kar-load | stockmaster.kars] 2. Kar laden
 Vul een kar vanuit de vrije voorraad (of vanuit een andere kar).
 

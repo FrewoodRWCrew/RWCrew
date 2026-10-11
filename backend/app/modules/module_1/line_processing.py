@@ -12,6 +12,11 @@
 # lines with any other action simply stay "new" until their own handler
 # exists.
 #
+# "Book In" lines are the exception: they're waiting work too (counted in
+# TagScan's banner), but StockMaster carries them out — they fill its
+# Inboeken basket (module_4/tagscan_book_in.py), so this module never
+# processes them itself.
+#
 # Kept free of FastAPI/routing concerns (mirrors tag_import.py), so it's
 # easy to unit test on its own.
 
@@ -102,21 +107,38 @@ def _process_assignment(db: Session, line: TagLineData, context: ProcessContext)
     return "exists", f"Tag already assigned to {other_name} — not changed"
 
 
+# Lowercased CSV "Action" spellings that mean "book these pieces in" —
+# handled by StockMaster's Inboeken, not by a handler here.
+BOOK_IN_ACTIONS = ("book in", "book_in", "bookin", "book-in")
+
+
+def is_book_in_action(action: str | None) -> bool:
+    """Whether a line's free-text CSV action is "Book In" (any spelling above)."""
+    return action is not None and action.strip().lower() in BOOK_IN_ACTIONS
+
+
 # Lowercased CSV "Action" value → the handler that carries it out.
 PROCESSABLE_ACTIONS: dict[str, Callable[[Session, TagLineData, ProcessContext], tuple[str, str]]] = {
     ACTION_ASSIGNMENT: _process_assignment,
 }
 
 
-def _pending_filter():
-    """The WHERE clause for "waiting to be processed": still "new", and an
-    action this module knows how to carry out (compared ignoring case and
-    surrounding spaces, since it's free text typed on the scanner side).
+def pending_filter(actions):
+    """The WHERE clause for "waiting to be processed": still "new", and one
+    of the given (lowercased) actions — compared ignoring case and
+    surrounding spaces, since it's free text typed on the scanner side.
     """
     return (
         TagLineData.process_status == PROCESS_NEW,
-        func.lower(func.trim(TagLineData.action)).in_(list(PROCESSABLE_ACTIONS)),
+        func.lower(func.trim(TagLineData.action)).in_(list(actions)),
     )
+
+
+def _pending_filter():
+    """TagScan's waiting lines: an action with a handler here, or "Book In"
+    (waiting for StockMaster).
+    """
+    return pending_filter([*PROCESSABLE_ACTIONS, *BOOK_IN_ACTIONS])
 
 
 def count_pending_lines(db: Session) -> int:
@@ -196,7 +218,12 @@ def process_pending_lines(db: Session, product_by_header: dict[int, Product]) ->
     line rolls back only itself, stays "new" with the error as its comment,
     and never stops the rest.
     """
-    pending = [(line, filename) for line, filename in list_pending_lines(db) if line.header_data_id in product_by_header]
+    # Only lines with a handler here — "Book In" lines wait for StockMaster.
+    pending = [
+        (line, filename)
+        for line, filename in list_pending_lines(db)
+        if line.header_data_id in product_by_header and line.action.strip().lower() in PROCESSABLE_ACTIONS
+    ]
 
     results: list[LineProcessRowResult] = []
     touched_header_ids: set[int] = set()

@@ -130,6 +130,8 @@ import type {
   Warehouse,
   WarehouseImportResponse,
   ZoneImportResponse,
+  StockMasterBookInImport,
+  StockMasterTagscanBookInFile,
   StockMasterCountSheetLine,
   StockMasterDashboard,
   StockMasterDocument,
@@ -532,6 +534,41 @@ export function updateProduct(productId: number, payload: ProductInput): Promise
 
 export function deleteProduct(productId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/products/${productId}`, { method: "DELETE" });
+}
+
+/**
+ * Sets or replaces a product's picture. Uses a plain fetch instead of
+ * apiFetch, same reason as the ground plan upload: the browser must set its
+ * own multipart Content-Type (with boundary).
+ */
+export async function uploadProductImage(productId: number, image: File): Promise<Product> {
+  const formData = new FormData();
+  formData.append("image", image);
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/products/${productId}/image`, {
+    method: "PUT",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as Product;
+}
+
+/** Removes a product's picture; the product itself stays. */
+export function deleteProductImage(productId: number): Promise<Product> {
+  return apiFetch<Product>(`/api/modules/module-9/products/${productId}/image`, { method: "DELETE" });
+}
+
+/** A product picture's direct URL, for use as an <img> source. The cookie
+ * login goes along automatically (same site); `updatedAt` busts the browser
+ * cache when the picture is replaced. */
+export function productImageUrl(productId: number, updatedAt: string | null): string {
+  return `${API_BASE_URL}/api/modules/module-9/products/${productId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
 }
 
 // --- Product types (module-9's "masterdata.product-types" screen) -------
@@ -2202,6 +2239,51 @@ export function getStockMasterStock(): Promise<StockMasterProductStock[]> {
   return apiFetch<StockMasterProductStock[]>(`${STOCKMASTER_BASE}/stock`);
 }
 
+/** The Inboeken Excel template (every bookable product, quantity left empty). */
+export function stockMasterBookInTemplateUrl(): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/book-in-import/template`;
+}
+
+/**
+ * Reads a filled-in Inboeken Excel into basket lines — nothing is booked.
+ * Plain fetch with FormData (the browser sets the multipart Content-Type).
+ */
+export async function importStockMasterBookIn(file: File): Promise<StockMasterBookInImport> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await fetchWithRefresh(`${API_BASE_URL}${STOCKMASTER_BASE}/book-in-import`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as StockMasterBookInImport;
+}
+
+/** How many scanned TagScan "Book In" lines are waiting (StockMaster's banner). */
+export function getStockMasterTagscanBookInCount(): Promise<{ count: number }> {
+  return apiFetch<{ count: number }>(`${STOCKMASTER_BASE}/tagscan-book-in/count`);
+}
+
+/** Every scanned file with waiting "Book In" lines, as basket lines. */
+export function listStockMasterTagscanBookIn(): Promise<StockMasterTagscanBookInFile[]> {
+  return apiFetch<StockMasterTagscanBookInFile[]>(`${STOCKMASTER_BASE}/tagscan-book-in`);
+}
+
+/** Skip one waiting "Book In" line for good, with a reason. */
+export function cancelStockMasterTagscanBookInLine(lineId: number, comment: string): Promise<void> {
+  return apiFetch<void>(`${STOCKMASTER_BASE}/tagscan-book-in/lines/${lineId}/cancel`, {
+    method: "POST",
+    body: JSON.stringify({ comment }),
+  });
+}
+
 export function getStockMasterAlerts(): Promise<{ below_minimum_count: number }> {
   return apiFetch<{ below_minimum_count: number }>(`${STOCKMASTER_BASE}/alerts`);
 }
@@ -2311,6 +2393,12 @@ export function updateStockMasterReason(reasonId: number, payload: StockMasterRe
 
 export function deleteStockMasterReason(reasonId: number): Promise<void> {
   return apiFetch<void>(`${STOCKMASTER_BASE}/reasons/${reasonId}`, { method: "DELETE" });
+}
+
+/** A product picture through StockMaster (no MasterData rights needed), for use
+ * as an <img> source; `updatedAt` busts the browser cache when it is replaced. */
+export function stockMasterProductImageUrl(productId: number, updatedAt: string | null): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/products/${productId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
 }
 
 // PDFs open in a new browser tab (print or save from there).

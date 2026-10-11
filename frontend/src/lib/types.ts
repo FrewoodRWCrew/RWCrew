@@ -195,6 +195,10 @@ export interface Product {
   stock_return_to: "kar" | "free";
   /** StockMaster: minimum stock of a consumable (reorder alert). */
   min_stock: number | null;
+  /** Whether a picture has been uploaded for this product. */
+  has_image: boolean;
+  /** When the picture last changed — added to its URL so a new picture isn't cached. */
+  image_updated_at: string | null;
 }
 
 /** The fields sent to create or fully update a product. */
@@ -1699,6 +1703,36 @@ export interface StockMasterProductStock {
   total: number;
   kars: StockMasterKarQuantity[];
   below_minimum: boolean;
+  /** Whether the product has a picture (MasterData). */
+  has_image: boolean;
+  /** When the picture last changed — added to its URL so a new picture isn't cached. */
+  image_updated_at: string | null;
+}
+
+/** What an uploaded Inboeken Excel turned into: basket lines, plus the rows
+ *  that couldn't be used (detail = "code|param", see booking.importErrors). */
+export interface StockMasterBookInImport {
+  lines: { product_id: number; quantity: number }[];
+  errors: { row_number: number; detail: string }[];
+}
+
+/** A scanned "Book In" line that can't be booked yet ("code|param" detail). */
+export interface StockMasterTagscanBookInProblem {
+  line_id: number;
+  line_number: number;
+  epc: string;
+  detail: string;
+}
+
+/** One scanned file's waiting "Book In" lines, as basket lines. */
+export interface StockMasterTagscanBookInFile {
+  header_data_id: number;
+  filename: string;
+  scanned_at: string;
+  /** The scan lines the basket lines came from (sent along with the booking). */
+  line_ids: number[];
+  lines: { product_id: number; quantity: number }[];
+  problems: StockMasterTagscanBookInProblem[];
 }
 
 export interface StockMasterTrip {
@@ -1773,6 +1807,8 @@ export interface StockMasterBookingInput {
   reason_id?: number | null;
   comment?: string | null;
   lines: StockMasterBookingLineInput[];
+  /** Inboeken from a TagScan scan: the scanned lines the basket came from. */
+  tagscan_line_ids?: number[];
 }
 
 export interface StockMasterMovement {

@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.stockmaster_document import StockMasterDocument
 from app.db.models.stockmaster_movement import StockMasterMovement
-from tests.modules.module_4.conftest import BASE, StockWorld, book, stock_of
+from tests.modules.module_4.conftest import BASE, StockWorld, book, login, stock_of
 
 
 def _ten_laders_spread(client: TestClient, world: StockWorld) -> None:
@@ -267,3 +267,29 @@ def test_product_and_kar_with_stock_cannot_be_deleted(
 
     assert product_delete.status_code == 400
     assert kar_delete.status_code == 400
+
+
+def test_product_picture_is_served_to_stockmaster_users(
+    as_warehouse: TestClient, world: StockWorld, db_session: Session
+) -> None:
+    # Without a picture: the stock line says so and the image is a 404.
+    assert stock_of(as_warehouse, world.lader.id)["has_image"] is False
+    assert as_warehouse.get(f"{BASE}/products/{world.lader.id}/image").status_code == 404
+
+    # A picture uploaded in MasterData is visible without any MasterData rights.
+    world.lader.image_data = b"\x89PNG fake"
+    world.lader.image_content_type = "image/png"
+    db_session.commit()
+
+    assert stock_of(as_warehouse, world.lader.id)["has_image"] is True
+    response = as_warehouse.get(f"{BASE}/products/{world.lader.id}/image")
+    assert response.status_code == 200
+    assert response.content == b"\x89PNG fake"
+    assert response.headers["content-type"] == "image/png"
+
+
+def test_product_picture_needs_module_access(client: TestClient, world: StockWorld, make_user) -> None:
+    make_user("outsider@example.com", world.full_role, access=False)
+    login(client, "outsider@example.com")
+
+    assert client.get(f"{BASE}/products/{world.lader.id}/image").status_code == 403

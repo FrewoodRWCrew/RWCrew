@@ -4,8 +4,10 @@
 # same one built for TagScan (see app/modules/module_1/router.py) — plus
 # the Season screen, its first actual piece of master data.
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -13,6 +15,7 @@ from app.core.database import get_db
 from app.core.security import hash_password
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.festival import Festival
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -23,6 +26,7 @@ from app.db.models.stockmaster_movement import StockMasterMovement
 from app.db.models.product_category import ProductCategory
 from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
+from app.db.models.rfid_tag import RfidTag
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_kernlid import TeamKernlid
@@ -1178,8 +1182,111 @@ def delete_product(
             detail="This product has stock bookings in StockMaster and can't be deleted (block it instead)",
         )
 
+    # KarTracker kars use a product as their transport type, and TagScan
+    # RFID tags can be assigned to one — refuse with a clear message rather
+    # than letting the database's foreign key turn it into a 500.
+    used_by_kars = db.scalar(select(func.count(KarTrackerKar.id)).where(KarTrackerKar.transport_type_id == product_id))
+    if used_by_kars:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"This product is the transport type of {used_by_kars} kar(s) in KarTracker and can't be deleted (block it instead)",
+        )
+    used_by_tags = db.scalar(select(func.count(RfidTag.id)).where(RfidTag.assigned_product_id == product_id))
+    if used_by_tags:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"This product is assigned to {used_by_tags} RFID tag(s) in TagScan and can't be deleted (block it instead)",
+        )
+
     db.delete(product)
     db.commit()
+
+
+# ---- Product picture -------------------------------------------------------
+# One optional picture per product, uploaded separately from the JSON
+# create/update above (the screen saves the fields first, then the picture).
+# Stored as bytes in Postgres, the same way as KarTracker's ground plans.
+
+ALLOWED_PRODUCT_IMAGE_CONTENT_TYPES = {"image/png", "image/jpeg", "image/webp"}
+MAX_PRODUCT_IMAGE_BYTES = 5 * 1024 * 1024  # 5 MB — plenty for a product photo.
+
+
+def _get_product_or_404(db: Session, product_id: int) -> Product:
+    """Load one product or answer 404."""
+    product = db.get(Product, product_id)
+    if product is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
+    return product
+
+
+def _require_product_image_change(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_module_access),
+) -> User:
+    """Changing a picture needs "edit" on Products, or "create" — so a role
+    that may only add products can still attach a picture to a new one.
+    """
+    if not (
+        user_can(db, current_user, "masterdata.products", "edit")
+        or user_can(db, current_user, "masterdata.products", "create")
+    ):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Not allowed to edit on masterdata.products")
+    return current_user
+
+
+@router.get("/products/{product_id}/image")
+def get_product_image(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.products", "view")),
+) -> Response:
+    """One product's raw picture bytes, for direct use as an <img> source."""
+    product = _get_product_or_404(db, product_id)
+    if product.image_data is None or product.image_content_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product has no image")
+    return Response(content=product.image_data, media_type=product.image_content_type)
+
+
+@router.put("/products/{product_id}/image", response_model=ProductResponse)
+def upload_product_image(
+    product_id: int,
+    image: UploadFile = File(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(_require_product_image_change),
+) -> Product:
+    """Set or replace a product's picture (PNG, JPEG or WebP, up to 5 MB)."""
+    product = _get_product_or_404(db, product_id)
+
+    if image.content_type not in ALLOWED_PRODUCT_IMAGE_CONTENT_TYPES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be PNG, JPEG or WebP")
+    # Read one byte past the limit so an oversized picture is detected
+    # without ever buffering an unbounded upload into memory.
+    contents = image.file.read(MAX_PRODUCT_IMAGE_BYTES + 1)
+    if len(contents) > MAX_PRODUCT_IMAGE_BYTES:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image must be smaller than 5 MB")
+
+    product.image_data = contents
+    product.image_content_type = image.content_type
+    product.image_updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(product)
+    return product
+
+
+@router.delete("/products/{product_id}/image", response_model=ProductResponse)
+def delete_product_image(
+    product_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.products", "edit")),
+) -> Product:
+    """Remove a product's picture; the product itself stays."""
+    product = _get_product_or_404(db, product_id)
+    product.image_data = None
+    product.image_content_type = None
+    product.image_updated_at = datetime.now(timezone.utc)
+    db.commit()
+    db.refresh(product)
+    return product
 
 
 @router.get("/product-types", response_model=list[ProductTypeResponse])

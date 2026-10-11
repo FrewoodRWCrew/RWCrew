@@ -52,7 +52,8 @@
     "noAccess": "Je hebt nog geen toegang tot een module. Vraag de beheerder om je toegang te geven.",
     "pendingWork": {
       "tagscan": "TagScan: {count, plural, one {# lijn wacht} other {# lijnen wachten}} op verwerking",
-      "open": "Bekijken"
+      "open": "Bekijken",
+      "stockmaster": "StockMaster: {count, plural, one {# gescand stuk wacht} other {# gescande stuks wachten}} om ingeboekt te worden"
     }
   },
   "sidebar": {
@@ -581,7 +582,9 @@
       "productMissingHint": "Kies een product voor elk bestand.",
       "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}",
       "columnCsvComment": "Product / opmerkingen (CSV)",
-      "csvCommentLabel": "CSV product / opmerkingen"
+      "csvCommentLabel": "CSV product / opmerkingen",
+      "bookInInStockMaster": "Book In: wordt ingeboekt via StockMaster",
+      "openStockMaster": "Open Inboeken"
     },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
@@ -841,6 +844,12 @@
       "title": "Producten",
       "description": "Beheer de lijst van producten die in de app gebruikt worden.",
       "columnName": "Naam",
+      "columnImage": "Foto",
+      "imageLabel": "Foto",
+      "removeImage": "Foto verwijderen",
+      "imageHint": "PNG, JPEG of WebP, maximaal 5 MB.",
+      "imageTooLarge": "De foto is groter dan 5 MB.",
+      "imageUploadFailed": "Het product is bewaard, maar de foto niet. {detail}",
       "columnType": "Type",
       "columnWarehouse": "Magazijn",
       "columnCategory": "Categorie",
@@ -1789,6 +1798,8 @@
       "generic": "Er is iets misgegaan. Probeer het opnieuw.",
       "loadFailed": "De gegevens konden niet geladen worden.",
       "not_allowed": "Je hebt geen recht om dit te doen.",
+      "import_unreadable": "Dit bestand kan niet gelezen worden. Gebruik de Excel-template (.xlsx).",
+      "import_too_large": "Dit bestand is te groot (max. 5 MB).",
       "insufficient_stock": "Niet genoeg {p1}: er zijn er maar {p2} in {p3}.",
       "kar_out": "Kar {p1} is onderweg — boek eerst 'Kar terug'.",
       "kar_not_out": "Kar {p1} staat in het magazijn — die moet eerst vertrekken.",
@@ -1816,7 +1827,8 @@
       "reason_not_found": "Deze reden bestaat niet meer.",
       "team_not_found": "Deze ploeg bestaat niet meer.",
       "festival_not_found": "Dit festival bestaat niet meer.",
-      "trip_not_found": "De rit van deze kar werd niet gevonden."
+      "trip_not_found": "De rit van deze kar werd niet gevonden.",
+      "tagscan_already_booked": "Deze gescande lijnen werden intussen al ingeboekt of geannuleerd. Laad de scan opnieuw."
     },
     "booking": {
       "quantityTooLow": "Vul een heel aantal vanaf 1 in.",
@@ -1833,6 +1845,20 @@
       "quantityLabel": "Aantal",
       "addLine": "Toevoegen",
       "fillMissing": "Vul aan met wat ontbreekt",
+      "importTemplate": "Excel-template",
+      "importUpload": "Excel opladen",
+      "importHint": "Download de template, vul de kolom quantity in en laad het bestand op: de producten komen in de lijst hieronder, je bevestigt daarna zelf.",
+      "importAdded": "{count, plural, =0 {Geen producten met een aantal gevonden} one {# product toegevoegd} other {# producten toegevoegd}}",
+      "importErrorsTitle": "Niet gebruikte rijen uit het Excel-bestand",
+      "importErrorRow": "Rij {row}: {message}",
+      "importClose": "Sluiten",
+      "importErrors": {
+        "unknown_product": "product \"{p1}\" niet gevonden",
+        "ambiguous_product": "meerdere producten heten \"{p1}\" — vul product_id in",
+        "bad_quantity": "aantal \"{p1}\" is geen geheel getal",
+        "unknown_tag": "tag {p1} is niet geregistreerd in TagManagement",
+        "no_product": "tag {p1} heeft geen product"
+      },
       "unloadEverything": "Alles uitladen",
       "keyboardHint": "Tip: typ een product, Enter, typ het aantal, Enter. Ctrl+Enter bevestigt de boeking.",
       "teamLabel": "Ploeg",
@@ -1862,7 +1888,13 @@
       "leavesWithKar": "Dit vertrekt met de kar",
       "karEmpty": "De kar is leeg: hij vertrekt zonder inhoud.",
       "stillMissing": "Let op: de kar mist nog {count, plural, one {# stuk} other {# stuks}} van zijn benodigdheden.",
-      "summary": "{products, plural, one {# product} other {# producten}} · {pieces, plural, one {# stuk} other {# stuks}}"
+      "summary": "{products, plural, one {# product} other {# producten}} · {pieces, plural, one {# stuk} other {# stuks}}",
+      "scanLoad": "Laden uit scan",
+      "scanFrom": "Uit scan: {files}",
+      "scanDrop": "Niet aan de scan koppelen",
+      "scanErrorsTitle": "Niet gebruikte gescande lijnen (die blijven wachten)",
+      "scanErrorRow": "{file}, lijn {row}: {message}",
+      "scanAdded": "{count, plural, =0 {Geen inboekbare producten in de scan} one {# product toegevoegd uit de scan} other {# producten toegevoegd uit de scan}}"
     },
     "count": {
       "modeFree": "Vrije voorraad",
@@ -2070,6 +2102,30 @@
       "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
       "userSaved": "Toegang gegeven.",
       "userSaveFailed": "Geven van toegang is mislukt."
+    },
+    "tagscanBookIn": {
+      "bannerText": "{count, plural, one {# gescande lijn (Book In) wacht} other {# gescande lijnen (Book In) wachten}} om ingeboekt te worden.",
+      "bannerOpen": "Bekijken",
+      "dialogTitle": "Scans die wachten om ingeboekt te worden",
+      "dialogDescription": "TagScan-lijnen met de actie \"Book In\", per gescand bestand. Elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. \"Laden in Inboeken\" zet ze in de mand van Inboeken; ze worden pas geboekt als je daar bevestigt. Lijnen met een onbekende tag of een tag zonder product blijven wachten: registreer de tag en laad opnieuw, of annuleer de lijn (reden verplicht).",
+      "loading": "Laden...",
+      "nothingWaiting": "Er wachten geen scans.",
+      "loadFailed": "De wachtende scans konden niet geladen worden.",
+      "scannedAt": "Gescand {date}",
+      "columnProduct": "Product",
+      "columnQuantity": "Aantal",
+      "columnActions": "Acties",
+      "problemsTitle": "Nog niet inboekbaar ({count})",
+      "noBookableLines": "Geen inboekbare tags in dit bestand.",
+      "loadFile": "Laden in Inboeken",
+      "loadAll": "Alles laden in Inboeken ({count})",
+      "cancelButton": "Annuleren",
+      "cancelReason": "Reden van annulering",
+      "confirmCancel": "Bevestigen",
+      "back": "Terug",
+      "commentRequired": "Geef een reden op.",
+      "lineCancelled": "Lijn geannuleerd.",
+      "cancelFailed": "De lijn kon niet geannuleerd worden."
     }
   },
   "karTracker": {

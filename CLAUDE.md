@@ -87,6 +87,12 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
 - **Kar needs** (`StockMaster_kar_requirement`, per season + kar) only through `module_4/requirement_service.py`
   — Altsien Select's Products wizard step should reuse it later (no module-8 copy of the data). They pre-fill
   "Kar laden", drive the kar cards' "18 / 20" and "Te bestellen" (needs − free − in kars).
+- **Inboeken from a TagScan scan** (`module_4/tagscan_book_in.py`): waiting TagScan lines with action "Book In" become
+  basket lines per scanned file (each distinct EPC = 1 piece of its tag's *current* product; unknown tag / no product
+  = problem lines that stay `new`). Teal banner on every StockMaster screen (`tagscan-book-in-banner.tsx`) + a pill on
+  the landing page; "Load into Inboeken" → `book-in?tagscan=<header ids>`. The booking request carries
+  `tagscan_line_ids`; `mark_lines_booked` marks them `loaded` in the booking's transaction (refuses with
+  `tagscan_already_booked` if any is no longer waiting) and the document gets `source="tagscan"`.
 - **Minimum stock** = MasterData product `min_stock` (consumables only) → orange banner in the module layout.
 - Seasons: the module's own dropdown (`?season=`); bookings in a closed season need "edit" on the
   `stockmaster.closedseason` switch-screen. MasterData/KarTracker refuse deleting a product with stock history
@@ -137,6 +143,9 @@ Lines start `new` at scan time; the file's status is derived from its lines
   that product, fills the product in on a registered tag without one, and never changes a tag that already has a
   product. **Adding an action** = one `_process_<action>(db, line, context)` returning `(outcome, comment)` + a dict
   entry (extend `ProcessContext` for extra user input); lines with an action without a handler simply stay `new`.
+- **`Book In` lines** (`BOOK_IN_ACTIONS`: "book in"/"book_in"/"bookin"/"book-in") count as waiting in TagScan's banner
+  but are never processed there: StockMaster books them in (see "StockMaster" below). TagScan's dialog links them to
+  Inboeken and leaves them out of "Process all".
 - Waiting lines (`new` + action with a handler) show as a banner in TagScan's own soft blue (`module-theme.ts`) above every TagScan screen
   (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
   `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines

@@ -8,6 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
+from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -15,6 +17,7 @@ from app.db.models.masterdata_user_role import MasterDataUserRole
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.product_category import ProductCategory
+from app.db.models.rfid_tag import RfidTag
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
@@ -260,3 +263,120 @@ def test_deleting_a_missing_product_returns_404(client: TestClient, db_session: 
     response = client.delete("/api/modules/module-9/products/999")
 
     assert response.status_code == 404
+
+
+# ---- Product picture --------------------------------------------------------
+
+PNG_BYTES = b"\x89PNG\r\n\x1a\n" + b"fake-png-body"
+
+
+def _login_super_admin(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+
+def test_upload_and_read_back_a_product_image(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    product = _create_product(db_session)
+
+    # A new product has no picture yet.
+    assert client.get("/api/modules/module-9/products").json()[0]["has_image"] is False
+    assert client.get(f"/api/modules/module-9/products/{product.id}/image").status_code == 404
+
+    response = client.put(
+        f"/api/modules/module-9/products/{product.id}/image",
+        files={"image": ("photo.png", PNG_BYTES, "image/png")},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["has_image"] is True
+    assert response.json()["image_updated_at"] is not None
+    image = client.get(f"/api/modules/module-9/products/{product.id}/image")
+    assert image.status_code == 200
+    assert image.content == PNG_BYTES
+    assert image.headers["content-type"] == "image/png"
+
+
+def test_product_image_must_be_an_image(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    product = _create_product(db_session)
+
+    response = client.put(
+        f"/api/modules/module-9/products/{product.id}/image",
+        files={"image": ("notes.txt", b"hello", "text/plain")},
+    )
+
+    assert response.status_code == 400
+
+
+def test_product_image_must_be_smaller_than_5_mb(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    product = _create_product(db_session)
+
+    response = client.put(
+        f"/api/modules/module-9/products/{product.id}/image",
+        files={"image": ("big.png", b"x" * (5 * 1024 * 1024 + 1), "image/png")},
+    )
+
+    assert response.status_code == 400
+
+
+def test_delete_product_image_keeps_the_product(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    product = _create_product(db_session)
+    client.put(
+        f"/api/modules/module-9/products/{product.id}/image",
+        files={"image": ("photo.png", PNG_BYTES, "image/png")},
+    )
+
+    response = client.delete(f"/api/modules/module-9/products/{product.id}/image")
+
+    assert response.status_code == 200
+    assert response.json()["has_image"] is False
+    assert client.get(f"/api/modules/module-9/products/{product.id}/image").status_code == 404
+    assert len(client.get("/api/modules/module-9/products").json()) == 1
+
+
+def test_create_only_role_can_attach_an_image_but_view_only_cannot(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    creator = _create_user(db_session, email="creator@example.com")
+    viewer = _create_user(db_session, email="viewer@example.com")
+    _grant_module_access(db_session, creator, module)
+    _grant_module_access(db_session, viewer, module)
+    _grant_products_permission(db_session, creator, can_view=True, can_create=True)
+    _grant_products_permission(db_session, viewer, can_view=True)
+    product = _create_product(db_session)
+    upload = {"image": ("photo.png", PNG_BYTES, "image/png")}
+
+    _login(client, "viewer@example.com")
+    assert client.put(f"/api/modules/module-9/products/{product.id}/image", files=upload).status_code == 403
+
+    _login(client, "creator@example.com")
+    assert client.put(f"/api/modules/module-9/products/{product.id}/image", files=upload).status_code == 200
+    # Removing a picture needs "edit".
+    assert client.delete(f"/api/modules/module-9/products/{product.id}/image").status_code == 403
+
+
+def test_product_used_by_a_kar_or_rfid_tag_cannot_be_deleted(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    transport_type = _create_product(db_session, name="Pakket")
+    tagged = _create_product(db_session, name="Lamp")
+    kar_status = KarTrackerKarStatus(name="Beschikbaar")
+    db_session.add(kar_status)
+    db_session.flush()
+    db_session.add(KarTrackerKar(kar_nummer="K1", status_id=kar_status.id, transport_type_id=transport_type.id))
+    db_session.add(RfidTag(epc_uid="EPC1", assigned_product_id=tagged.id))
+    db_session.commit()
+
+    # A clear 400 instead of a database foreign-key error (500).
+    kar_response = client.delete(f"/api/modules/module-9/products/{transport_type.id}")
+    tag_response = client.delete(f"/api/modules/module-9/products/{tagged.id}")
+
+    assert kar_response.status_code == 400
+    assert "KarTracker" in kar_response.json()["detail"]
+    assert tag_response.status_code == 400
+    assert "RFID" in tag_response.json()["detail"]

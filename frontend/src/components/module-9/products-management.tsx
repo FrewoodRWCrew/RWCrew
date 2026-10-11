@@ -3,15 +3,24 @@
 // MasterData's "Products" screen: a table of products with add/change/
 // delete, following the same dialog/table pattern as season-management.tsx
 // — the create/edit dialog covers every field from the reference
-// "Producten" screen except image upload, which is a later step.
+// "Producten" screen, including the product's picture (chosen with a file
+// button, uploaded right after the fields are saved).
 
-import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
+import { ImageOff, Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
-import { ApiError, createProduct, deleteProduct, updateProduct } from "@/lib/api";
+import {
+  ApiError,
+  createProduct,
+  deleteProduct,
+  deleteProductImage,
+  productImageUrl,
+  updateProduct,
+  uploadProductImage,
+} from "@/lib/api";
 import type { Product, ProductCategory, ProductInput, ProductLimit, ProductType, Warehouse } from "@/lib/types";
 import {
   AlertDialog,
@@ -52,6 +61,10 @@ interface ProductsManagementProps {
 // Base UI's Select needs every item to have a non-empty value, so "no
 // selection" is represented by this sentinel string instead of "".
 const NO_SELECTION_VALUE = "none";
+
+// The picture types the backend accepts (it also refuses anything over 5 MB).
+const ACCEPTED_IMAGE_TYPES = "image/png,image/jpeg,image/webp";
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 const EMPTY_FORM: ProductInput = {
   name: "",
@@ -143,6 +156,7 @@ export function ProductsManagement({
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead className="sticky top-0 z-20 w-16 bg-background font-bold underline">{t("columnImage")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnType")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnWarehouse")}</TableHead>
@@ -155,6 +169,19 @@ export function ProductsManagement({
           <TableBody>
             {products.map((product) => (
               <TableRow key={product.id} className="group">
+                <TableCell>
+                  {product.has_image && (
+                    // A plain <img> is needed here: the source is a same-site
+                    // backend URL, not a Next-optimizable asset.
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={productImageUrl(product.id, product.image_updated_at)}
+                      alt={product.name}
+                      loading="lazy"
+                      className="size-10 rounded border object-contain"
+                    />
+                  )}
+                </TableCell>
                 <TableCell className="font-medium">{product.name}</TableCell>
                 <TableCell className="text-muted-foreground">{typeLabelFor(product.type_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{warehouseLabelFor(product.warehouse_id)}</TableCell>
@@ -220,6 +247,36 @@ function ProductFormDialog({
   const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [form, setForm] = useState<ProductInput>(product ? toFormValues(product) : EMPTY_FORM);
+  // The picture picked with the file button (not uploaded until "save"),
+  // and whether the current picture should be removed on save.
+  const [image, setImage] = useState<File | null>(null);
+  const [removeImage, setRemoveImage] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  // Remounts the file input so it is emptied after "remove" or reopening.
+  const [fileInputKey, setFileInputKey] = useState(0);
+
+  // Free a local preview again once it's replaced or the dialog unmounts.
+  useEffect(() => {
+    return () => {
+      if (previewUrl) URL.revokeObjectURL(previewUrl);
+    };
+  }, [previewUrl]);
+
+  // The picture shown in the dialog: the picked file, else the saved one (unless marked for removal).
+  const displayedImageUrl =
+    previewUrl ?? (product?.has_image && !removeImage ? productImageUrl(product.id, product.image_updated_at) : null);
+
+  // Remember the picked file (or none) together with its local preview.
+  function pickImage(file: File | null) {
+    setImage(file);
+    setPreviewUrl(file ? URL.createObjectURL(file) : null);
+  }
+
+  function resetImage() {
+    pickImage(null);
+    setRemoveImage(false);
+    setFileInputKey((key) => key + 1);
+  }
 
   function handleOpenChange(open: boolean) {
     setIsOpen(open);
@@ -227,7 +284,25 @@ function ProductFormDialog({
       // Start from the product's latest known values each time the
       // dialog is opened, in case they changed since last time.
       setForm(product ? toFormValues(product) : EMPTY_FORM);
+      resetImage();
     }
+  }
+
+  function handleImagePicked(file: File | null) {
+    // Refuse a too-large file right away instead of after saving.
+    if (file && file.size > MAX_IMAGE_BYTES) {
+      toast.error(t("imageTooLarge"));
+      setFileInputKey((key) => key + 1);
+      return;
+    }
+    pickImage(file);
+    if (file) setRemoveImage(false);
+  }
+
+  function handleRemoveImage() {
+    pickImage(null);
+    setRemoveImage(true);
+    setFileInputKey((key) => key + 1);
   }
 
   function updateField<K extends keyof ProductInput>(field: K, value: ProductInput[K]) {
@@ -237,7 +312,21 @@ function ProductFormDialog({
   async function handleSubmit() {
     setIsSubmitting(true);
     try {
-      const savedProduct = isEditing ? await updateProduct(product.id, form) : await createProduct(form);
+      let savedProduct = isEditing ? await updateProduct(product.id, form) : await createProduct(form);
+      // Then the picture: upload the picked file, or remove the old one.
+      // The product's fields are already saved even if this step fails.
+      try {
+        if (image) {
+          savedProduct = await uploadProductImage(savedProduct.id, image);
+        } else if (removeImage && savedProduct.has_image) {
+          savedProduct = await deleteProductImage(savedProduct.id);
+        }
+      } catch (imageError) {
+        onSaved(savedProduct);
+        const detail = imageError instanceof ApiError ? imageError.message : "";
+        toast.error(t("imageUploadFailed", { detail }));
+        return;
+      }
       toast.success(isEditing ? t("productUpdated") : t("productCreated"));
       onSaved(savedProduct);
       setIsOpen(false);
@@ -434,6 +523,37 @@ function ProductFormDialog({
               value={form.description ?? ""}
               onChange={(event) => updateField("description", event.target.value)}
             />
+          </div>
+
+          {/* The product's picture: preview, file button and "remove". */}
+          <div className="col-span-2 flex flex-col gap-2">
+            <Label htmlFor="product-image">{t("imageLabel")}</Label>
+            {displayedImageUrl && (
+              // A plain <img> is needed here: the source is a same-site backend
+              // URL (or a local blob: preview), not a Next-optimizable asset.
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={displayedImageUrl}
+                alt={t("imageLabel")}
+                className="max-h-40 w-auto self-start rounded-md border object-contain"
+              />
+            )}
+            <div className="flex items-center gap-2">
+              <Input
+                key={fileInputKey}
+                id="product-image"
+                type="file"
+                accept={ACCEPTED_IMAGE_TYPES}
+                onChange={(event) => handleImagePicked(event.target.files?.[0] ?? null)}
+              />
+              {displayedImageUrl && (
+                <Button type="button" variant="outline" onClick={handleRemoveImage}>
+                  <ImageOff className="size-4" />
+                  {t("removeImage")}
+                </Button>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">{t("imageHint")}</p>
           </div>
         </div>
 

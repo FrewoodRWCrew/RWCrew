@@ -1,8 +1,8 @@
 // The gentle "work is waiting" hint shown just above the landing page's
 // "Overzicht Modules" title: one small pill per module, in that module's
 // own soft colour (see lib/module-theme.ts), for every module that has
-// something waiting for the current user (today only TagScan's waiting
-// actions — see the landing page), with a softly pulsing dot to catch the
+// something waiting for the current user (TagScan's waiting actions and
+// StockMaster's scans waiting to be booked in — see the landing page), with a softly pulsing dot to catch the
 // eye without shouting. Each pill links straight to where the work is done.
 // Rendered on the server; no client JavaScript needed.
 

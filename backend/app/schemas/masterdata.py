@@ -1,7 +1,7 @@
 # Schemas describing MasterData's screens, custom roles, permissions, and
 # the Season screen (the first actual piece of master data it manages).
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -287,6 +287,10 @@ class ProductResponse(BaseModel):
     # the minimum stock of a consumable.
     stock_return_to: Literal["kar", "free"]
     min_stock: int | None
+    # The optional picture: whether there is one, and when it last changed
+    # (the frontend adds it to the image URL so a new picture isn't cached).
+    has_image: bool
+    image_updated_at: datetime | None
 
 
 class ProductCreateRequest(BaseModel):
