@@ -98,7 +98,11 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   `stockmaster.closedseason` switch-screen. MasterData/KarTracker refuse deleting a product with stock history
   or a kar holding stock.
 - PDFs (`module_4/stock_pdfs.py`, house style in `pdf_layout.py` with the TeamKar logo): Laadlijst, Vertrekbon
-  (`/bookings/{id}/pdf` of a dispatch), Bestellijst, Telblad, Boekingsbon.
+  (`/bookings/{id}/pdf` of a dispatch), Bestellijst, Telblad, Boekingsbon. The Laadlijst also exists for several
+  kars in one PDF (`/kars/load-lists/pdf?kar_ids=…`, each kar on its own page) — printed from "Kar laden"'s loading overview
+  (`components/module-4/kar-load-overview.tsx`: per kar the needed product types fully loaded and the pieces, from
+  `KarSummaryResponse`). Kar laden opens on that overview; "Laden" opens the booking panel with `?kar=<id>`
+  (`kar-load-screen.tsx` switches on `?kar=`/`?product=`/`?from=`).
 
 ## Altsien Select (module-8)
 
@@ -198,7 +202,7 @@ accent colour). Today: TagScan (module-1), KarTracker (module-2) and StockMaster
   **Gotcha:** `docker-compose.prod.yml` passes the backend an explicit `environment:` list, so any new
   backend setting must be added there too (and to `.env.test/production.example`) — a value only in the
   server's `.env` never reaches the container. This is why the first test deploy sent no mail.
-- **Intervention Requests (module-3) new-request mail**: every new request — staff screen, public QR form
+- **Interventions (module-3, formerly "Intervention Requests") new-request mail**: every new request — staff screen, public QR form
   *and* phone app — mails the active addresses of `InterventionRequests_mailing_recipient` with the
   delivery-note PDF attached (`module_3/notifications.py` `queue_new_request_mail`, sent as a FastAPI
   background task after the 201). The list is managed on "Instellingen > Mailinglijst"
@@ -210,7 +214,7 @@ accent colour). Today: TagScan (module-1), KarTracker (module-2) and StockMaster
 The phone version of the app is a Progressive Web App served by the same Next.js frontend: `src/app/manifest.ts`
 makes the site installable ("Add to Home Screen"), and the installed app opens `/m`, a separate section that
 shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map) and
-Interventie Aanvragen (Akties list/create/edit, KPI overzicht). No desktop sidebar/topbar, no delete, no PDFs.
+Interventies (Akties list/create/edit, KPI overzicht). No desktop sidebar/topbar, no delete, no PDFs.
 This is the only phone app: there is no native (App Store / Play Store) app, no separate phone API, no Bearer
 tokens and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed
 until October 2026 and was removed entirely; only old login-history rows still mention it, see below.)

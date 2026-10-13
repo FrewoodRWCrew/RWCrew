@@ -236,15 +236,41 @@ def build_load_list_pdf(
     what's already in it and what's still to load, sorted by bin so the
     picker walks the warehouse once.
     """
+    return build_load_lists_pdf([detail], season_name, locale, printed_by)
+
+
+def build_load_lists_pdf(
+    details: list[KarDetailResponse], season_name: str, locale: str, printed_by: str | None
+) -> bytes:
+    """The Laadlijst of several kars in one PDF (Kar laden's "print
+    selected"): each kar starts on a new page, with its own number in the
+    header.
+    """
     labels = _labels(locale)
+    pdf: StockMasterPDF | None = None
+    for detail in details:
+        kar_nummer = detail.kar.kar_nummer
+        subtitle = labels["load_subtitle"].format(kar=kar_nummer, season=season_name)
+        if pdf is None:
+            # The first kar opens the document (and its first page).
+            pdf = StockMasterPDF(
+                labels, title=labels["load_title"], subtitle=subtitle, doc_number=kar_nummer, printed_by=printed_by
+            )
+        else:
+            # The header reads these per page, so set them before the new page.
+            pdf.doc_subtitle = subtitle
+            pdf.doc_number = kar_nummer
+            pdf.add_page()
+        _draw_load_list(pdf, detail, season_name, labels)
+    assert pdf is not None, "at least one kar is needed"
+    return finish(pdf)
+
+
+def _draw_load_list(pdf: StockMasterPDF, detail: KarDetailResponse, season_name: str, labels: dict) -> None:
+    """One kar's Laadlijst from the current page on: QR code, kar info,
+    the table of needed products and a signature box.
+    """
     kar = detail.kar
-    pdf = StockMasterPDF(
-        labels,
-        title=labels["load_title"],
-        subtitle=labels["load_subtitle"].format(kar=kar.kar_nummer, season=season_name),
-        doc_number=kar.kar_nummer,
-        printed_by=printed_by,
-    )
     top = pdf.get_y()
     _qr_block(pdf, kar.kar_nummer)
     info_rows(
@@ -289,7 +315,6 @@ def build_load_list_pdf(
             short = ", ".join(line.name for line in needed_lines if line.missing > line.free_available)
             pdf.multi_cell(0, 5, pdf_text(labels["short_note"].format(products=short)), new_x="LMARGIN", new_y="NEXT")
     signature_boxes(pdf, [labels["loaded_by"]], labels)
-    return finish(pdf)
 
 
 # --- Vertrekbon --------------------------------------------------------------

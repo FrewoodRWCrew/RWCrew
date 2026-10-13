@@ -22,7 +22,7 @@ from app.db.models.user_module_access import UserModuleAccess
 from app.landing.deps import get_current_user
 
 MODULE_KEY = "module-3"
-MODULE_LABEL = "Intervention Requests"
+MODULE_LABEL = "Interventions"
 
 # The four actions a role's permission on a screen can be checked for.
 PermissionAction = Literal["view", "create", "edit", "delete"]

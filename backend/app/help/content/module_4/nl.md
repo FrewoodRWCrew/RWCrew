@@ -85,7 +85,15 @@ Goederen komen binnen (levering, aankoop) en gaan naar de **vrije voorraad** op 
 ## [kar-load | stockmaster.kars] 2. Kar laden
 Vul een kar vanuit de vrije voorraad (of vanuit een andere kar).
 
-1. Kies de kar.
+Kar laden opent op het **Laadoverzicht**: elke kar met benodigdheden in dit seizoen, met hoeveel van zijn producten volledig geladen zijn (de balk wordt groen als alles erin zit) en hoeveel stuks. Vink **Toon alle karren** aan om ook de karren zonder benodigdheden te zien. Typ een karnummer en druk Enter om die kar meteen te openen.
+
+- Klik op **Laden** om het laadscherm van die kar te openen. Met **Terug naar het laadoverzicht** kom je weer in het overzicht.
+- Het documenticoon opent de **Laadlijst** (PDF) van die kar.
+- Vink meerdere karren aan en klik op **Laadlijsten afdrukken** om hun laadlijsten samen in één PDF te krijgen, elke kar op een eigen pagina.
+
+Op het laadscherm staat de kar bovenaan als kop, met hoeveel producten en stuks al geladen zijn. Daaronder staat **Nog te laden** (het mandje) en onderaan **Inhoud in kar**: wat er al in zit, met foto.
+
+1. Open de kar met **Laden** in het overzicht.
 2. Wat de kar volgens zijn **benodigdheden** nog mist, staat al in de lijst. Klik op **Vul aan met wat ontbreekt** als je de lijst opnieuw wil laten vullen.
 3. Pas de aantallen aan als je minder of meer laadt, of voeg andere producten toe.
 4. Kies bij **Van** of het uit de vrije voorraad of uit een andere kar komt.

@@ -187,6 +187,20 @@ def test_requirements_drive_progress_and_order_needs(as_warehouse: TestClient, w
     kars = as_warehouse.get(f"{BASE}/kars", params={"season_id": world.season.id}).json()
     k101 = next(kar for kar in kars if kar["kar_nummer"] == "K101")
     assert (k101["loaded_toward_required"], k101["required_total"]) == (2, 34)
+    assert (k101["loaded_product_count"], k101["required_product_count"]) == (0, 2)
+
+    # Needing only what's already in the kar makes that product type "loaded".
+    as_warehouse.put(
+        f"{BASE}/requirements",
+        json={
+            "season_id": world.season.id,
+            "kar_id": world.k101.id,
+            "lines": [{"product_id": world.lader.id, "quantity": 2}, {"product_id": world.tape.id, "quantity": 30}],
+        },
+    )
+    kars = as_warehouse.get(f"{BASE}/kars", params={"season_id": world.season.id}).json()
+    k101 = next(kar for kar in kars if kar["kar_nummer"] == "K101")
+    assert (k101["loaded_product_count"], k101["required_product_count"]) == (1, 2)
 
     needs = {row["name"]: row for row in as_warehouse.get(f"{BASE}/order-needs", params={"season_id": world.season.id}).json()}
     assert needs["Walkie-lader"]["to_order"] == 0  # 4 needed, 10 in stock
@@ -231,6 +245,7 @@ def test_every_pdf_renders(as_warehouse: TestClient, world: StockWorld) -> None:
 
     urls = [
         f"{BASE}/kars/{world.k101.id}/load-list/pdf?season_id={world.season.id}",
+        f"{BASE}/kars/load-lists/pdf?season_id={world.season.id}&kar_ids={world.k101.id}&kar_ids={world.k043.id}",
         f"{BASE}/bookings/{dispatch['id']}/pdf",
         f"{BASE}/bookings/{booking['id']}/pdf?locale=en",
         f"{BASE}/order-needs/pdf?season_id={world.season.id}",
@@ -242,6 +257,23 @@ def test_every_pdf_renders(as_warehouse: TestClient, world: StockWorld) -> None:
         assert response.status_code == 200, url
         assert response.headers["content-type"] == "application/pdf"
         assert response.content.startswith(b"%PDF")
+
+
+def test_load_lists_pdf_needs_known_kars_and_the_kars_right(
+    client: TestClient, as_warehouse: TestClient, world: StockWorld, make_user, db_session: Session
+) -> None:
+    url = f"{BASE}/kars/load-lists/pdf"
+    # An unknown kar, or no kar at all, is refused.
+    assert as_warehouse.get(url, params={"season_id": world.season.id, "kar_ids": [world.k101.id, 999999]}).status_code == 404
+    assert as_warehouse.get(url, params={"season_id": world.season.id}).status_code == 422
+
+    # Without "view" on the kars or kar-needs screen: forbidden.
+    from tests.modules.module_4.conftest import make_role
+
+    other = make_role(db_session, "Alleen voorraad", {"stockmaster.stock": (True, False, False, False)})
+    make_user("stockonly@example.com", other)
+    login(client, "stockonly@example.com")
+    assert client.get(url, params={"season_id": world.season.id, "kar_ids": [world.k101.id]}).status_code == 403
 
 
 def test_product_and_kar_with_stock_cannot_be_deleted(

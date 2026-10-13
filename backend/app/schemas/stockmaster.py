@@ -196,6 +196,10 @@ class KarSummaryResponse(BaseModel):
     # Loading progress against this season's needs ("18 / 20").
     required_total: int
     loaded_toward_required: int
+    # The same per product type ("5 / 8 producten" on Kar laden's overview):
+    # how many needed products are fully loaded, out of all needed products.
+    required_product_count: int
+    loaded_product_count: int
 
 
 class KarLineResponse(BaseModel):

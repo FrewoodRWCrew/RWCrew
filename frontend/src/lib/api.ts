@@ -2479,6 +2479,12 @@ export function stockMasterLoadListPdfUrl(karId: number, seasonId: number, local
   return `${API_BASE_URL}${STOCKMASTER_BASE}/kars/${karId}/load-list/pdf?season_id=${seasonId}&locale=${locale}`;
 }
 
+/** The Laadlijst of several kars in one PDF (each kar on its own page). */
+export function stockMasterLoadListsPdfUrl(karIds: number[], seasonId: number, locale: string): string {
+  const kars = karIds.map((karId) => `&kar_ids=${karId}`).join("");
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/kars/load-lists/pdf?season_id=${seasonId}&locale=${locale}${kars}`;
+}
+
 export function stockMasterOrderListPdfUrl(
   seasonId: number,
   warehouseId: number | null,

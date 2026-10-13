@@ -215,6 +215,9 @@ def _kar_summary(
         total_quantity=sum(contents.values()),
         required_total=sum(needs.values()),
         loaded_toward_required=sum(min(contents.get(product_id, 0), needed) for product_id, needed in needs.items()),
+        # Per product type: a needed product counts as loaded once the kar holds all of it.
+        required_product_count=len(needs),
+        loaded_product_count=sum(1 for product_id, needed in needs.items() if contents.get(product_id, 0) >= needed),
     )
 
 

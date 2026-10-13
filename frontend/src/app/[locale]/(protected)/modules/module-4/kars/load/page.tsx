@@ -1,8 +1,9 @@
-// StockMaster's "Kar laden": the shared booking panel, pre-set for this
-// action — see BookingPanel. Needs the right to make this booking.
+// StockMaster's "Kar laden": the loading overview of every kar, or the
+// shared booking panel for one kar — see KarLoadScreen. Needs the right to
+// make this booking.
 
 import { getTranslations } from "next-intl/server";
-import { BookingPanel } from "@/components/module-4/booking-panel";
+import { KarLoadScreen } from "@/components/module-4/kar-load-screen";
 import { canBook } from "@/components/module-4/stockmaster-common";
 import { loadStockMasterPage } from "@/components/module-4/stockmaster-page-data";
 
@@ -13,5 +14,5 @@ export default async function Page() {
     return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
   }
 
-  return <BookingPanel action="kar_load" seasons={data.seasons} permissions={data.permissions} />;
+  return <KarLoadScreen seasons={data.seasons} permissions={data.permissions} />;
 }

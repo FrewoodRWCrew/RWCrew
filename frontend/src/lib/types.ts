@@ -1768,6 +1768,9 @@ export interface StockMasterKarSummary {
   total_quantity: number;
   required_total: number;
   loaded_toward_required: number;
+  // The same per product type: needed products fully loaded / all needed products.
+  required_product_count: number;
+  loaded_product_count: number;
 }
 
 export interface StockMasterKarLine {

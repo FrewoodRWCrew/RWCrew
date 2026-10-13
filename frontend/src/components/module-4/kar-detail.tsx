@@ -23,7 +23,7 @@ import type { Season, StockMasterAction, StockMasterDocument, StockMasterKarDeta
 import { cn } from "@/lib/utils";
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { KarContentsTable } from "@/components/module-4/kar-contents-table";
 import { KarStatusBadge } from "@/components/module-4/stock-pickers";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import { ACTION_PATHS, STOCKMASTER_BASE, canBook, hasRight } from "@/components/module-4/stockmaster-common";
@@ -144,55 +144,7 @@ export function KarDetail({ karId, seasons, permissions }: KarDetailProps) {
         </Card>
       )}
 
-      {!kar.is_out && (
-        <div className="flex flex-col gap-2">
-          <h2 className="text-lg font-semibold">
-            {t("kars.contentsTitle")}
-            {kar.required_total > 0 && (
-              <span className="ml-3 text-sm font-normal text-muted-foreground">
-                {t("kars.loaded")}: {kar.loaded_toward_required} / {kar.required_total}
-              </span>
-            )}
-          </h2>
-          {detail.lines.length === 0 ? (
-            <p className="text-sm text-muted-foreground">{t("kars.emptyKar")}</p>
-          ) : (
-            <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("common.product")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("common.bin")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("kars.needed")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("kars.inKar")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("kars.missing")}</TableHead>
-                    <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("kars.freeAvailable")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {detail.lines.map((line) => (
-                    <TableRow key={line.product_id}>
-                      <TableCell className="font-medium">{line.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{line.bin_label ?? t("common.noBin")}</TableCell>
-                      <TableCell className="text-right tabular-nums">{line.required || ""}</TableCell>
-                      <TableCell className="text-right tabular-nums">{line.in_kar}</TableCell>
-                      <TableCell
-                        className={cn(
-                          "text-right font-semibold tabular-nums",
-                          line.missing > 0 && (line.missing > line.free_available ? "text-destructive" : "text-orange-700 dark:text-orange-300"),
-                        )}
-                      >
-                        {line.missing > 0 ? line.missing : line.surplus > 0 ? t("kars.surplus", { count: line.surplus }) : ""}
-                      </TableCell>
-                      <TableCell className="text-right tabular-nums text-muted-foreground">{line.free_available}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          )}
-        </div>
-      )}
+      {!kar.is_out && <KarContentsTable detail={detail} />}
 
       {canSeeBookings && (
         <div className="flex flex-col gap-2">

@@ -1110,7 +1110,7 @@
     }
   },
   "interventionRequests": {
-    "moduleTitle": "Intervention Requests",
+    "moduleTitle": "Interventions",
     "actionsGroup": "Actions",
     "masterDataGroup": "MasterData",
     "settingsGroup": "Settings",
@@ -1282,7 +1282,7 @@
     },
     "roles": {
       "title": "Roles",
-      "description": "Create Intervention Requests roles and decide what each one can do on every screen.",
+      "description": "Create Interventions roles and decide what each one can do on every screen.",
       "tableName": "Name",
       "tableActions": "Actions",
       "newRole": "New role",
@@ -1313,7 +1313,7 @@
     },
     "users": {
       "title": "Users",
-      "description": "Everyone with access to Intervention Requests, and their current role.",
+      "description": "Everyone with access to Interventions, and their current role.",
       "userTableName": "Name",
       "userTableEmail": "Email address",
       "userTableRole": "Role",
@@ -1321,8 +1321,8 @@
       "roleAssigned": "Role updated.",
       "roleAssignFailed": "Failed to update the role.",
       "newUser": "New user",
-      "newUserTitle": "Give someone access to Intervention Requests",
-      "newUserDescription": "If this email doesn't exist yet, an account is created for it. Either way, access is granted to Intervention Requests only.",
+      "newUserTitle": "Give someone access to Interventions",
+      "newUserDescription": "If this email doesn't exist yet, an account is created for it. Either way, access is granted to Interventions only.",
       "emailLabel": "Email address",
       "newUserNameLabel": "Name (only needed for a brand-new account)",
       "newUserPasswordLabel": "Temporary password (only needed for a brand-new account)",
@@ -1939,6 +1939,30 @@
       "noKars": "Not in carts.",
       "history": "History",
       "totals": "Total ({count, plural, one {# product} other {# products}})"
+    },
+    "karLoad": {
+      "toLoadTitle": "Still to load",
+      "contentsTitle": "Contents of the cart",
+      "emptyKar": "The cart is still empty.",
+      "picture": "Picture"
+    },
+    "karLoadOverview": {
+      "description": "How far each cart is loaded for this season. Click Load to fill a cart, or tick carts to print their load lists.",
+      "back": "Back to the loading overview",
+      "showAll": "Show all carts",
+      "printSelected": "Print load lists ({count})",
+      "selectAll": "Tick all carts",
+      "columnKar": "Cart",
+      "columnProducts": "Products loaded",
+      "columnPieces": "Pieces loaded",
+      "columnActions": "Actions",
+      "productsCount": "{done}/{total} products",
+      "piecesCount": "{done}/{total} pieces",
+      "noNeeds": "No needs",
+      "noTeam": "No team",
+      "load": "Load",
+      "loadList": "Load list (PDF)",
+      "empty": "No carts with needs this season."
     },
     "kars": {
       "title": "Carts",

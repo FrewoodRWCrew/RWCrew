@@ -61,6 +61,7 @@ from app.modules.module_4.stock_pdfs import (
     build_count_sheet_pdf,
     build_dispatch_pdf,
     build_load_list_pdf,
+    build_load_lists_pdf,
     build_order_list_pdf,
 )
 from app.modules.module_4.stock_queries import (
@@ -894,6 +895,26 @@ def get_load_list_pdf(
     kar = _get_kar_or_404(db, kar_id)
     content = build_load_list_pdf(build_kar_detail(db, kar, season.id), season.name, locale, current_user.display_name)
     return _pdf_response(content, f"Laadlijst {kar.kar_nummer} {season.name}.pdf")
+
+
+@router.get("/kars/load-lists/pdf")
+def get_load_lists_pdf(
+    season_id: int,
+    kar_ids: list[int] = Query(min_length=1, max_length=200),
+    locale: Locale = "nl",
+    db: Session = Depends(get_db),
+    current_user: User = Depends(
+        require_any_screen_permission((KARS_SCREEN, "view"), (REQUIREMENTS_SCREEN, "view"))
+    ),
+) -> Response:
+    """The Laadlijst of several kars in one PDF (ticked on Kar laden's
+    overview), in kar-number order, each kar on its own page.
+    """
+    season = get_season_or_404(db, season_id)
+    kars = sorted({kar_id: _get_kar_or_404(db, kar_id) for kar_id in kar_ids}.values(), key=lambda kar: kar.kar_nummer)
+    details = [build_kar_detail(db, kar, season.id) for kar in kars]
+    content = build_load_lists_pdf(details, season.name, locale, current_user.display_name)
+    return _pdf_response(content, f"Laadlijsten {season.name}.pdf")
 
 
 # --- Kar needs (Benodigdheden) -------------------------------------------------

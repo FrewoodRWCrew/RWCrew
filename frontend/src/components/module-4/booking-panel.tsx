@@ -24,9 +24,13 @@
 //   waiting" dialog) puts those files' "Book In" lines in the basket, like
 //   the Excel upload; the booking then marks those scan lines "loaded";
 // - ?kar=<id> and ?product=<id> from the buttons on the other screens.
+//
+// Kar laden opens on a loading overview of every kar (kar-load-overview.tsx,
+// switched by kar-load-screen.tsx); its "Laden" button opens this panel
+// with ?kar=<id>, and a link here leads back to that overview.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { FileSpreadsheet, FileText, ListPlus, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, FileText, ListPlus, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -62,11 +66,13 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
+import { KarContentsSection, KarLoadHeader } from "@/components/module-4/kar-load-sections";
 import { ProcessFlow, isProcessFlowAction } from "@/components/module-4/process-flow";
 import { ProductThumb } from "@/components/module-4/product-thumb";
 import { KarSearch, ProductSearch, SelectedKar } from "@/components/module-4/stock-pickers";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import {
+  ACTION_PATHS,
   STOCKMASTER_BASE,
   announceStockChanged,
   hasRight,
@@ -178,6 +184,8 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const fromKar = kars.find((kar) => kar.kar_id === fromKarId) ?? null;
   const karDetail =
     isKarAction && loadedKarDetail !== null && loadedKarDetail.kar.kar_id === karId ? loadedKarDetail : null;
+  // Kar laden with a chosen kar: the kar shows as a header with its contents and what's still to load.
+  const showsKarLoadHeader = action === "kar_load" && karDetail !== null;
   const canUndo = hasRight(permissions, "bookings", "delete");
   const canSeeBookings = hasRight(permissions, "bookings", "view");
   const seasonLocked =
@@ -584,6 +592,16 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
 
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
+          {/* Kar laden: back to the loading overview of every kar. */}
+          {action === "kar_load" && (
+            <Link
+              href={`${STOCKMASTER_BASE}${ACTION_PATHS.kar_load}${seasonId ? `?season=${seasonId}` : ""}`}
+              className="mb-1 inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              {t("karLoadOverview.back")}
+            </Link>
+          )}
           <h1 className="text-2xl font-bold tracking-tight underline">{tAction("title")}</h1>
           <p className="text-muted-foreground">{tAction("description")}</p>
         </div>
@@ -592,16 +610,32 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
 
       {seasonLocked && <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">{t("errors.season_closed")}</p>}
 
+      {/* Kar laden: the kar as a header on top (refreshed after every booking). */}
+      {showsKarLoadHeader && karDetail && <KarLoadHeader detail={karDetail} onClear={() => chooseKar(null)} />}
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        <div className="flex flex-col gap-6">
-          {/* The kar (kar actions), or the source (Uitboeken). */}
-          {isKarAction && (
+        {/* Kar laden: the source and basket are "what's still to load", above "Inhoud in kar",
+            framed like the kar header but on a plain background. */}
+        <div
+          className={cn(
+            "flex flex-col gap-6",
+            showsKarLoadHeader && "self-start rounded-xl border-2 border-primary/40 bg-background px-5 py-4",
+          )}
+        >
+          {showsKarLoadHeader && <h2 className="-mb-4 text-lg font-semibold">{t("karLoad.toLoadTitle")}</h2>}
+          {/* The kar (kar actions; on Kar laden only until one is chosen,
+              the header above shows it then), or the source (Uitboeken). */}
+          {isKarAction && (!showsKarLoadHeader || (selectedKar !== null && karDisabled(selectedKar))) && (
             <div className="flex flex-col gap-2">
-              <Label htmlFor="booking-kar">{t("booking.karLabel")}</Label>
-              {selectedKar ? (
-                <SelectedKar kar={selectedKar} onClear={() => chooseKar(null)} />
-              ) : (
-                <KarSearch id="booking-kar" kars={kars} onSelect={chooseKar} isDisabled={karDisabled} autoFocus />
+              {!showsKarLoadHeader && (
+                <>
+                  <Label htmlFor="booking-kar">{t("booking.karLabel")}</Label>
+                  {selectedKar ? (
+                    <SelectedKar kar={selectedKar} onClear={() => chooseKar(null)} />
+                  ) : (
+                    <KarSearch id="booking-kar" kars={kars} onSelect={chooseKar} isDisabled={karDisabled} autoFocus />
+                  )}
+                </>
               )}
               {selectedKar && karDisabled(selectedKar) && (
                 <p className="text-sm text-destructive">
@@ -643,8 +677,9 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
           )}
 
           {usesBasket && (!isKarAction || selectedKar) && (
-            <Card>
-              <CardContent className="flex flex-col gap-4">
+            // Inside Kar laden's frame the card draws no ring or padding of its own.
+            <Card className={cn(showsKarLoadHeader && "bg-transparent py-0 ring-0")}>
+              <CardContent className={cn("flex flex-col gap-4", showsKarLoadHeader && "px-0")}>
                 <div className="flex flex-wrap items-end gap-3">
                   <div className="flex min-w-64 flex-1 flex-col gap-2">
                     <Label htmlFor="booking-product">{t("booking.productLabel")}</Label>
@@ -937,6 +972,9 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
           )}
         </div>
       </div>
+
+      {/* Kar laden: what's already in the kar, under "Nog te laden" (refreshed after every booking). */}
+      {showsKarLoadHeader && karDetail && <KarContentsSection detail={karDetail} productsById={productsById} />}
     </div>
   );
 }
@@ -1051,6 +1089,9 @@ function BasketTable({ action, lines, productsById, placeChanges, lineProblem, o
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead className="sticky top-0 z-20 w-14 bg-background">
+              <span className="sr-only">{t("karLoad.picture")}</span>
+            </TableHead>
             <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("booking.productLabel")}</TableHead>
             {isReturn && (
               <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">{t("booking.dispatched")}</TableHead>
@@ -1075,6 +1116,10 @@ function BasketTable({ action, lines, productsById, placeChanges, lineProblem, o
             const notReturned = isReturn ? (line.dispatched ?? 0) - line.quantity : 0;
             return (
               <TableRow key={line.productId} className="group">
+                {/* The product's picture (or a placeholder), webshop-style. */}
+                <TableCell>
+                  <ProductThumb productId={product.product_id} name={product.name} product={product} />
+                </TableCell>
                 <TableCell>
                   <div className="font-medium">{product.name}</div>
                   <div className="text-xs text-muted-foreground">{product.bin_label ?? t("common.noBin")}</div>

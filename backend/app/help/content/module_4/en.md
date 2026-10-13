@@ -85,7 +85,15 @@ Goods arrive (delivery, purchase) and go to the **free stock** on their fixed lo
 ## [kar-load | stockmaster.kars] 2. Load cart
 Fill a cart from the free stock (or from another cart).
 
-1. Choose the cart.
+Load cart opens on the **Loading overview**: every cart with needs this season, with how many of its products are fully loaded (the bar turns green when everything is in) and how many pieces. Tick **Show all carts** to also see the carts without needs. Type a cart number and press Enter to open that cart right away.
+
+- Click **Load** to open the loading screen of that cart. **Back to the loading overview** takes you back to the overview.
+- The document icon opens that cart's **Load list** (PDF).
+- Tick several carts and click **Print load lists** to get their load lists together in one PDF, each cart on its own page.
+
+On the loading screen the cart is shown at the top as a header, with how many products and pieces are already loaded. Below it is **Still to load** (the basket), and at the bottom **Contents of the cart**: what's already in it, with pictures.
+
+1. Open the cart with **Load** in the overview.
 2. What the cart still misses according to its **needs** is already in the list. Click **Fill in what's missing** to fill the list again.
 3. Change the quantities if you load fewer or more, or add other products.
 4. Choose under **From** whether it comes from the free stock or from another cart.

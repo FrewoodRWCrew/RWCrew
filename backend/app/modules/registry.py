@@ -44,7 +44,7 @@ class ModuleDefinition:
 _MODULE_NAMES = {
     "module-1": "TagScan",
     "module-2": "KarTracker",
-    "module-3": "Intervention Requests",
+    "module-3": "Interventions",
     "module-4": "StockMaster",
     "module-8": "Altsien Select",
     "module-9": "MasterData",

@@ -36,7 +36,7 @@ def _create_intervention_requests_module(db_session: Session) -> Module:
     module = db_session.scalar(select(Module).where(Module.key == "module-3"))
     if module is not None:
         return module
-    module = Module(key="module-3", name="Intervention Requests", sort_order=3)
+    module = Module(key="module-3", name="Interventions", sort_order=3)
     db_session.add(module)
     db_session.commit()
     db_session.refresh(module)

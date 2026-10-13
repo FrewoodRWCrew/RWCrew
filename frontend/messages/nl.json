@@ -1110,7 +1110,7 @@
     }
   },
   "interventionRequests": {
-    "moduleTitle": "Interventie Aanvragen",
+    "moduleTitle": "Interventies",
     "actionsGroup": "Akties",
     "masterDataGroup": "MasterData",
     "settingsGroup": "Instellingen",
@@ -1282,7 +1282,7 @@
     },
     "roles": {
       "title": "Rollen",
-      "description": "Maak rollen aan voor Interventie Aanvragen en bepaal wat elke rol mag doen op elk scherm.",
+      "description": "Maak rollen aan voor Interventies en bepaal wat elke rol mag doen op elk scherm.",
       "tableName": "Naam",
       "tableActions": "Acties",
       "newRole": "Nieuwe rol",
@@ -1313,7 +1313,7 @@
     },
     "users": {
       "title": "Gebruikers",
-      "description": "Iedereen met toegang tot Interventie Aanvragen, en hun huidige rol.",
+      "description": "Iedereen met toegang tot Interventies, en hun huidige rol.",
       "userTableName": "Naam",
       "userTableEmail": "E-mailadres",
       "userTableRole": "Rol",
@@ -1321,8 +1321,8 @@
       "roleAssigned": "Rol bijgewerkt.",
       "roleAssignFailed": "Bijwerken van rol is mislukt.",
       "newUser": "Nieuwe gebruiker",
-      "newUserTitle": "Toegang geven tot Interventie Aanvragen",
-      "newUserDescription": "Als dit e-mailadres nog niet bestaat, wordt er een account voor aangemaakt. In beide gevallen wordt enkel toegang tot Interventie Aanvragen gegeven.",
+      "newUserTitle": "Toegang geven tot Interventies",
+      "newUserDescription": "Als dit e-mailadres nog niet bestaat, wordt er een account voor aangemaakt. In beide gevallen wordt enkel toegang tot Interventies gegeven.",
       "emailLabel": "E-mailadres",
       "newUserNameLabel": "Naam (enkel nodig voor een nieuw account)",
       "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
@@ -1939,6 +1939,30 @@
       "noKars": "Niet in karren.",
       "history": "Geschiedenis",
       "totals": "Totaal ({count, plural, one {# product} other {# producten}})"
+    },
+    "karLoad": {
+      "toLoadTitle": "Nog te laden",
+      "contentsTitle": "Inhoud in kar",
+      "emptyKar": "De kar is nog leeg.",
+      "picture": "Foto"
+    },
+    "karLoadOverview": {
+      "description": "Hoe ver elke kar geladen is voor dit seizoen. Klik op Laden om een kar te vullen, of vink karren aan om hun laadlijsten af te drukken.",
+      "back": "Terug naar het laadoverzicht",
+      "showAll": "Toon alle karren",
+      "printSelected": "Laadlijsten afdrukken ({count})",
+      "selectAll": "Alle karren aanvinken",
+      "columnKar": "Kar",
+      "columnProducts": "Producten geladen",
+      "columnPieces": "Stuks geladen",
+      "columnActions": "Acties",
+      "productsCount": "{done}/{total} producten",
+      "piecesCount": "{done}/{total} stuks",
+      "noNeeds": "Geen benodigdheden",
+      "noTeam": "Geen ploeg",
+      "load": "Laden",
+      "loadList": "Laadlijst (PDF)",
+      "empty": "Geen karren met benodigdheden in dit seizoen."
     },
     "kars": {
       "title": "Karren",
