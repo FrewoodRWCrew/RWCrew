@@ -189,8 +189,16 @@ export interface Product {
   is_consumable: boolean;
   is_blocked: boolean;
   is_logistics_product: boolean;
+  /** "Tag Managed": this product is followed by RFID tags. */
+  is_tag_managed: boolean;
   limit_id: number | null;
+  /** "Limietwaarde": the value of the chosen Limiet (null = not set, always null without a Limiet). */
+  limit_value: number | null;
+  /** "Maximum initiële stock": most pieces in a kar not yet "Geleverd" in KarTracker (null = no maximum). */
+  max_initial_stock: number | null;
   description: string | null;
+  /** Cost of one piece in euro (null = unknown). */
+  cost: number | null;
   /** StockMaster: where returned goods go on "Kar terug". */
   stock_return_to: "kar" | "free";
   /** StockMaster: minimum stock of a consumable (reorder alert). */
@@ -211,8 +219,12 @@ export interface ProductInput {
   is_consumable?: boolean;
   is_blocked?: boolean;
   is_logistics_product?: boolean;
+  is_tag_managed?: boolean;
   limit_id?: number | null;
+  limit_value?: number | null;
+  max_initial_stock?: number | null;
   description?: string | null;
+  cost?: number | null;
   stock_return_to?: "kar" | "free";
   min_stock?: number | null;
 }
@@ -1782,9 +1794,35 @@ export interface StockMasterKarLine {
   missing: number;
   surplus: number;
   free_available: number;
+  /** Pieces that left with this kar on "Kar vertrekt" this season and didn't come back. */
+  consumed_outside: number;
   is_consumable: boolean;
   is_blocked: boolean;
   stock_return_to: "kar" | "free";
+  /** What the kar's Altsien Select row may get (the flow diagram, worked out by the backend). */
+  entitled: number;
+  entitlement_trace: StockMasterEntitlementTrace | null;
+}
+
+/** How a Kar laden row's entitlement was worked out (backend module_4/delivery_entitlement.py):
+ *  the values used and the path of flow-diagram nodes taken. */
+export interface StockMasterEntitlementTrace {
+  requested: number;
+  is_blocked: boolean;
+  is_logistics_product: boolean;
+  limit_name: string | null;
+  limit_kind: "unlimited" | "automatic" | "percentage" | "assigned";
+  limit_value: number | null;
+  total_stock: number;
+  season_demand: number;
+  share_percent: number | null;
+  kar_status: string | null;
+  is_delivered: boolean;
+  max_initial_stock: number | null;
+  cap_used_by_other_row: number;
+  before_cap: number;
+  entitled: number;
+  path: string[];
 }
 
 export interface StockMasterDispatchedLine {
@@ -1795,11 +1833,24 @@ export interface StockMasterDispatchedLine {
   stock_return_to: "kar" | "free";
 }
 
+/** A product asked for by hand on Kar laden (a "Manueel" row), stored per season + kar. */
+export interface StockMasterManualRequest {
+  id: number;
+  product_id: number;
+  name: string;
+  quantity: number;
+  /** What this Manueel row may get (the flow diagram, worked out by the backend). */
+  entitled: number;
+  entitlement_trace: StockMasterEntitlementTrace | null;
+}
+
 export interface StockMasterKarDetail {
   kar: StockMasterKarSummary;
   lines: StockMasterKarLine[];
   dispatched: StockMasterDispatchedLine[];
   festivals: StockMasterNamedItem[];
+  /** The products asked for by hand this season (Kar laden's "Manueel" rows). */
+  manual_requests: StockMasterManualRequest[];
 }
 
 export interface StockMasterBookingLineInput {

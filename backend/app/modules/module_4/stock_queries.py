@@ -20,6 +20,7 @@ from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.product import Product
 from app.db.models.product_category import ProductCategory
+from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
 from app.db.models.season import Season
 from app.db.models.stockmaster_balance import StockMasterBalance
@@ -36,16 +37,20 @@ from app.modules.module_4.requirement_service import (
     previous_season_requirements,
     requirements_by_kar,
 )
+from app.modules.module_4.delivery_entitlement import delivery_entitlement
+from app.modules.module_4.manual_request_service import list_manual_requests, manual_requests_by_kar
 from app.modules.module_4.stock_service import BOOK_OUT, REVERSED, dispatched_lines, open_trip_of
 from app.schemas.stockmaster import (
     CountSheetLine,
     DashboardResponse,
     DispatchedLineResponse,
     DocumentResponse,
+    EntitlementTrace,
     KarDetailResponse,
     KarLineResponse,
     KarQuantity,
     KarSummaryResponse,
+    ManualRequestResponse,
     MonthActionCount,
     MovementResponse,
     NamedItem,
@@ -203,6 +208,9 @@ def _kar_summary(
     trip: StockMasterKarTrip | None,
 ) -> KarSummaryResponse:
     """One kar card: what's in it, and how far it's loaded against its needs."""
+    # A kar that's out is measured against what left with it (its balance is empty then):
+    # its "Kar vertrekt" plus the follow-up deliveries.
+    loaded = dispatched_lines(db, trip) if trip else contents
     return KarSummaryResponse(
         kar_id=kar.id,
         kar_nummer=kar.kar_nummer,
@@ -214,11 +222,30 @@ def _kar_summary(
         product_count=len(contents),
         total_quantity=sum(contents.values()),
         required_total=sum(needs.values()),
-        loaded_toward_required=sum(min(contents.get(product_id, 0), needed) for product_id, needed in needs.items()),
+        loaded_toward_required=sum(min(loaded.get(product_id, 0), needed) for product_id, needed in needs.items()),
         # Per product type: a needed product counts as loaded once the kar holds all of it.
         required_product_count=len(needs),
-        loaded_product_count=sum(1 for product_id, needed in needs.items() if contents.get(product_id, 0) >= needed),
+        loaded_product_count=sum(1 for product_id, needed in needs.items() if loaded.get(product_id, 0) >= needed),
     )
+
+
+def _with_manual(needs: dict[int, int], manual: dict[int, int]) -> dict[int, int]:
+    """A kar's needs plus its manual requests per product: what its loading progress
+    ("2/3 producten", "13/15 stuks") is measured against.
+    """
+    total = dict(needs)
+    for product_id, quantity in manual.items():
+        total[product_id] = total.get(product_id, 0) + quantity
+    return total
+
+
+def _season_demand(db: Session, season_id: int) -> dict[int, int]:
+    """{product_id: pieces asked this season over all kars}: kar needs plus manual requests."""
+    demand = needs_per_product(db, season_id)
+    for kar_manual in manual_requests_by_kar(db, season_id).values():
+        for product_id, quantity in kar_manual.items():
+            demand[product_id] = demand.get(product_id, 0) + quantity
+    return demand
 
 
 def _open_trips(db: Session) -> dict[int, StockMasterKarTrip]:
@@ -233,12 +260,14 @@ def build_kar_summaries(db: Session, season_id: int | None) -> list[KarSummaryRe
     """Every kar of KarTracker as a card, with this season's loading progress."""
     stock = load_stock(db)
     needs = requirements_by_kar(db, season_id) if season_id else {}
+    manual = manual_requests_by_kar(db, season_id) if season_id else {}
     team_names = _names(db, Team, Team.name)
     status_names = _names(db, KarTrackerKarStatus, KarTrackerKarStatus.name)
     trips = _open_trips(db)
     return [
         _kar_summary(
-            db, kar, stock.kar_contents(kar.id), needs.get(kar.id, {}), team_names, status_names, trips.get(kar.id)
+            db, kar, stock.kar_contents(kar.id), _with_manual(needs.get(kar.id, {}), manual.get(kar.id, {})),
+            team_names, status_names, trips.get(kar.id),
         )
         for kar in db.scalars(select(KarTrackerKar).order_by(KarTrackerKar.kar_nummer)).all()
     ]
@@ -255,14 +284,48 @@ def build_kar_detail(db: Session, kar: KarTrackerKar, season_id: int | None) -> 
     status_names = _names(db, KarTrackerKarStatus, KarTrackerKarStatus.name)
     trip = open_trip_of(db, kar.id)
     warehouses = _names(db, Warehouse, Warehouse.name)
+    # What left with this kar this season and didn't come back (consumed outside the warehouse).
+    consumed: dict[int, int] = defaultdict(int)
+    if season_id:
+        for _team_id, product_id, used in _trip_consumption(db, season_id, kar.id):
+            consumed[product_id] += used
 
-    product_ids = set(contents) | set(needs)
-    products = {product.id: product for product in db.scalars(select(Product).where(Product.id.in_(product_ids))).all()}
+    # The products asked for by hand this season (Kar laden's "Manueel" rows).
+    manual = list_manual_requests(db, season_id, kar.id) if season_id else []
+
+    product_ids = set(contents) | set(needs) | set(consumed)
+    # What the flow diagram needs to work out each row's entitlement: the products' Limiet
+    # names, everything asked this season over all kars, and this kar's KarTracker status.
+    limit_names = _names(db, ProductLimit, ProductLimit.name)
+    demand = _season_demand(db, season_id) if season_id else {}
+    kar_status = status_names.get(kar.status_id)
+    manual_quantities = {request.product_id: request.quantity for request in manual}
+    # The manual requests' products are loaded for their names, but get no kar line of their own:
+    # Kar laden shows them on their Manueel row.
+    product_rows = select(Product).where(Product.id.in_(product_ids | {request.product_id for request in manual}))
+    products = {product.id: product for product in db.scalars(product_rows).all()}
+
+    def entitlement(product: Product, requested: int, cap_used: int = 0) -> EntitlementTrace:
+        """The flow diagram for one row of this kar (Altsien Select or Manueel)."""
+        return delivery_entitlement(
+            product,
+            limit_names.get(product.limit_id) if product.limit_id else None,
+            requested,
+            stock.total(product.id),
+            demand.get(product.id, 0),
+            kar_status,
+            cap_used,
+        )
+
+    # The Altsien Select row of each product goes first: a Manueel row only gets what it
+    # left of Maximum initiële stock.
+    kar_traces = {product_id: entitlement(products[product_id], needs.get(product_id, 0)) for product_id in product_ids}
     lines = []
     for product_id in product_ids:
         product = products[product_id]
         in_kar = contents.get(product_id, 0)
         required = needs.get(product_id, 0)
+        trace = kar_traces[product_id]
         lines.append(
             KarLineResponse(
                 product_id=product_id,
@@ -275,9 +338,12 @@ def build_kar_detail(db: Session, kar: KarTrackerKar, season_id: int | None) -> 
                 missing=max(required - in_kar, 0),
                 surplus=max(in_kar - required, 0) if required else 0,
                 free_available=stock.free.get(product_id, 0),
+                consumed_outside=consumed.get(product_id, 0),
                 is_consumable=product.is_consumable,
                 is_blocked=product.is_blocked,
                 stock_return_to=product.stock_return_to,
+                entitled=trace.entitled,
+                entitlement_trace=trace,
             )
         )
     lines.sort(key=lambda line: line.name.lower())
@@ -316,11 +382,29 @@ def build_kar_detail(db: Session, kar: KarTrackerKar, season_id: int | None) -> 
             rows = db.execute(query.order_by(Festival.start_date)).all()
         festivals = [NamedItem(id=festival_id, name=name) for festival_id, name in rows]
 
+    # The Manueel rows, each with its own entitlement (sharing Maximum initiële stock with the Altsien row).
+    manual_rows = []
+    for request in manual:
+        altsien = kar_traces.get(request.product_id)
+        trace = entitlement(products[request.product_id], request.quantity, altsien.entitled if altsien else 0)
+        manual_rows.append(
+            ManualRequestResponse(
+                id=request.id, product_id=request.product_id, name=products[request.product_id].name,
+                quantity=request.quantity, entitled=trace.entitled, entitlement_trace=trace,
+            )
+        )
+
     return KarDetailResponse(
-        kar=_kar_summary(db, kar, contents, needs, team_names, status_names, trip),
+        # The progress counts the manual requests too.
+        kar=_kar_summary(
+            db, kar, contents,
+            _with_manual(needs, manual_quantities),
+            team_names, status_names, trip,
+        ),
         lines=lines,
         dispatched=dispatched,
         festivals=festivals,
+        manual_requests=sorted(manual_rows, key=lambda request: request.name.lower()),
     )
 
 
@@ -630,16 +714,18 @@ def build_count_sheet(
 # --- KPI -------------------------------------------------------------------
 
 
-def _trip_consumption(db: Session, season_id: int) -> list[tuple[int | None, int, int]]:
+def _trip_consumption(db: Session, season_id: int, kar_id: int | None = None) -> list[tuple[int | None, int, int]]:
     """(team_id, product_id, pieces not returned) per closed trip of the
-    season: what left with the kar minus what came back.
+    season: what left with the kar minus what came back. With a kar_id,
+    only that kar's trips (Kar laden's "Reeds in kar buiten magazijn").
     """
     result = []
-    trips = db.scalars(
-        select(StockMasterKarTrip).where(
-            StockMasterKarTrip.season_id == season_id, StockMasterKarTrip.return_document_id.is_not(None)
-        )
-    ).all()
+    query = select(StockMasterKarTrip).where(
+        StockMasterKarTrip.season_id == season_id, StockMasterKarTrip.return_document_id.is_not(None)
+    )
+    if kar_id is not None:
+        query = query.where(StockMasterKarTrip.kar_id == kar_id)
+    trips = db.scalars(query).all()
     for trip in trips:
         left = dispatched_lines(db, trip)
         returned: dict[int, int] = defaultdict(int)

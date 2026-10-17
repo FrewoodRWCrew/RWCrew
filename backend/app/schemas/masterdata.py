@@ -2,6 +2,7 @@
 # the Season screen (the first actual piece of master data it manages).
 
 from datetime import date, datetime
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
@@ -281,8 +282,14 @@ class ProductResponse(BaseModel):
     is_consumable: bool
     is_blocked: bool
     is_logistics_product: bool
+    is_tag_managed: bool
     limit_id: int | None
+    limit_value: int | None
+    # "Maximum initiële stock": most pieces in a kar not yet "Geleverd".
+    max_initial_stock: int | None
     description: str | None
+    # Cost of one piece in euro, sent as a number (not Pydantic's Decimal string).
+    cost: float | None
     # StockMaster (module-4): where returned goods go on "Kar terug", and
     # the minimum stock of a consumable.
     stock_return_to: Literal["kar", "free"]
@@ -294,24 +301,34 @@ class ProductResponse(BaseModel):
 
 
 class ProductCreateRequest(BaseModel):
-    """What's sent to create a brand-new product. Only the name is
-    required — every other field is optional. type_id/warehouse_id/
-    category_id/limit_id, if given, must reference an existing row in the
-    matching lookup table (checked by the endpoint, not here).
+    """What's sent to create a brand-new product. The name, type,
+    warehouse, category, limit (Limiet) and stock_return_to ("na Kar terug") are
+    required (with the "Percentage" limit, its limit_value too) —
+    every other field is optional. type_id/warehouse_id/category_id/limit_id
+    must reference an existing row in the matching lookup table (checked by
+    the endpoint, not here).
     """
 
     name: str = Field(min_length=1, max_length=255)
-    type_id: int | None = None
-    warehouse_id: int | None = None
+    type_id: int
+    warehouse_id: int
     warehouse_location: str | None = Field(default=None, max_length=255)
-    category_id: int | None = None
+    category_id: int
     is_consumable: bool = False
     is_blocked: bool = False
     is_logistics_product: bool = False
-    limit_id: int | None = None
+    is_tag_managed: bool = False
+    limit_id: int
+    # "Limietwaarde": the value of the chosen Limiet, so it belongs to limit_id
+    # (required for the "Percentage" limit, checked by the endpoint).
+    limit_value: int | None = Field(default=None, ge=0)
+    # "Maximum initiële stock": most pieces in a kar not yet "Geleverd" (empty = no maximum).
+    max_initial_stock: int | None = Field(default=None, ge=0)
     description: str | None = None
-    stock_return_to: Literal["kar", "free"] = "kar"
+    stock_return_to: Literal["kar", "free"]
     min_stock: int | None = Field(default=None, ge=0)
+    # Cost of one piece in euro, at most 2 decimals; empty = unknown.
+    cost: Decimal | None = Field(default=None, ge=0, max_digits=10, decimal_places=2)
 
 
 class ProductUpdateRequest(ProductCreateRequest):

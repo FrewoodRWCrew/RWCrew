@@ -27,11 +27,15 @@ from app.db.models.masterdata_screen import MasterDataScreen
 from app.db.models.masterdata_user_role import MasterDataUserRole
 from app.db.models.module import Module
 from app.db.models.product import Product
+from app.db.models.product_category import ProductCategory
+from app.db.models.product_limit import ProductLimit
+from app.db.models.product_type import ProductType
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_location import TeamLocation
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.db.models.warehouse import Warehouse
 from app.modules.module_9.screens import sync_screens
 
 XLSX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
@@ -273,11 +277,30 @@ def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient
     assert header_row == ["id", "name", "location_name", "delivery_method_name", "description", "active"]
 
 
-# --- Product: several optional FK-by-name lookups + booleans, no dup rule --
+# --- Product: required FK-by-name lookups + booleans, no dup rule ----------
+
+# The lookup columns every imported product needs (type, warehouse, category, Limiet).
+_PRODUCT_LOOKUP_HEADER = ["type_name", "warehouse_name", "category_name", "limit_name"]
+_PRODUCT_LOOKUP_CELLS = ["Drinks", "Main", "Bar", "Ongelimiteerd"]
 
 
-def test_product_import_resolves_optional_lookups_and_booleans(client: TestClient, db_session: Session) -> None:
+def _create_product_lookups(db_session: Session) -> None:
+    """The lookup rows _PRODUCT_LOOKUP_CELLS refer to, plus a "Percentage" Limiet."""
+    db_session.add_all(
+        [
+            ProductType(name="Drinks"),
+            Warehouse(name="Main"),
+            ProductCategory(name="Bar"),
+            ProductLimit(name="Ongelimiteerd"),
+            ProductLimit(name="Percentage"),
+        ]
+    )
+    db_session.commit()
+
+
+def test_product_import_resolves_lookups_and_booleans(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
+    _create_product_lookups(db_session)
 
     xlsx_bytes = _build_xlsx(
         [
@@ -293,8 +316,8 @@ def test_product_import_resolves_optional_lookups_and_booleans(client: TestClien
             "description",
         ],
         [
-            ["Water bottles", "", "", "Shelf A1", "", "true", "", "", "", "Case of 24"],
-            ["Bad product", "Nonexistent Type", "", "", "", "", "", "", "", ""],
+            ["Water bottles", "Drinks", "Main", "Shelf A1", "Bar", "true", "", "", "Ongelimiteerd", "Case of 24"],
+            ["Bad product", "Nonexistent Type", "Main", "", "Bar", "", "", "", "Ongelimiteerd", ""],
         ],
     )
     response = client.post(
@@ -313,12 +336,45 @@ def test_product_import_resolves_optional_lookups_and_booleans(client: TestClien
     assert product.warehouse_location == "Shelf A1"
 
 
-def test_product_import_rejects_an_unrecognized_boolean_value(client: TestClient, db_session: Session) -> None:
+def test_product_import_rejects_missing_lookups_percentage_without_value_and_huge_cost(
+    client: TestClient, db_session: Session
+) -> None:
     _login_as_admin(client, db_session)
+    _create_product_lookups(db_session)
 
     xlsx_bytes = _build_xlsx(
-        ["name", "is_consumable"],
-        [["Typo Product", "tru"]],
+        ["name", *_PRODUCT_LOOKUP_HEADER, "limit_value", "cost"],
+        [
+            ["No type", "", "Main", "Bar", "Ongelimiteerd", "", ""],
+            ["No limit", "Drinks", "Main", "Bar", "", "", ""],
+            ["Percentage without value", "Drinks", "Main", "Bar", "Percentage", "", ""],
+            ["Huge cost", "Drinks", "Main", "Bar", "Ongelimiteerd", "", "100000000"],
+            ["Percentage with value", "Drinks", "Main", "Bar", "Percentage", "50", "12.346"],
+        ],
+    )
+    response = client.post(
+        "/api/modules/module-9/product-import", files={"file": ("products.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)}
+    )
+
+    assert response.status_code == 200
+    results = {row["name"]: row for row in response.json()["results"]}
+    assert "type_name" in results["No type"]["detail"]
+    assert "limit_name" in results["No limit"]["detail"]
+    assert "limit_value" in results["Percentage without value"]["detail"]
+    assert "cost" in results["Huge cost"]["detail"]
+    assert results["Percentage with value"]["outcome"] == "created"
+    product = db_session.scalar(select(Product).where(Product.name == "Percentage with value"))
+    assert product.limit_value == 50
+    assert str(product.cost) == "12.35"
+
+
+def test_product_import_rejects_an_unrecognized_boolean_value(client: TestClient, db_session: Session) -> None:
+    _login_as_admin(client, db_session)
+    _create_product_lookups(db_session)
+
+    xlsx_bytes = _build_xlsx(
+        ["name", *_PRODUCT_LOOKUP_HEADER, "is_consumable"],
+        [["Typo Product", *_PRODUCT_LOOKUP_CELLS, "tru"]],
     )
     response = client.post(
         "/api/modules/module-9/product-import", files={"file": ("products.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)}
@@ -333,10 +389,11 @@ def test_product_import_rejects_an_unrecognized_boolean_value(client: TestClient
 
 def test_product_import_allows_duplicate_names(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
+    _create_product_lookups(db_session)
     db_session.add(Product(name="Water bottles"))
     db_session.commit()
 
-    xlsx_bytes = _build_xlsx(["name"], [["Water bottles"]])
+    xlsx_bytes = _build_xlsx(["name", *_PRODUCT_LOOKUP_HEADER], [["Water bottles", *_PRODUCT_LOOKUP_CELLS]])
     response = client.post(
         "/api/modules/module-9/product-import", files={"file": ("products.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)}
     )

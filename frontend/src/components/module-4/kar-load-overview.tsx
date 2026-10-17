@@ -72,9 +72,8 @@ export function KarLoadOverview({ seasons, permissions }: KarLoadOverviewProps) 
   // Enter on an exact kar number (or the only match) opens that kar.
   function handleSearchKey(event: React.KeyboardEvent<HTMLInputElement>) {
     if (event.key !== "Enter") return;
-    const loadable = visible.filter((kar) => !kar.is_out);
-    const exact = loadable.find((kar) => kar.kar_nummer.toLowerCase() === needle);
-    const target = exact ?? (loadable.length === 1 ? loadable[0] : null);
+    const exact = visible.find((kar) => kar.kar_nummer.toLowerCase() === needle);
+    const target = exact ?? (visible.length === 1 ? visible[0] : null);
     if (target) openKar(target);
   }
 
@@ -228,15 +227,13 @@ export function KarLoadOverview({ seasons, permissions }: KarLoadOverviewProps) 
                     </TableCell>
                     <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                       <div className="flex items-center justify-end gap-2">
-                        {/* A kar that's out can't be loaded: show where it is instead. */}
-                        {kar.is_out ? (
-                          <KarStatusBadge isOut />
-                        ) : (
-                          <Button size="sm" onClick={() => openKar(kar)}>
-                            <Play className="size-4" />
-                            {tOverview("load")}
-                          </Button>
-                        )}
+                        {/* A kar that's out shows where it is, and can still be opened: loading it
+                            then is a follow-up delivery to the festival. */}
+                        {kar.is_out && <KarStatusBadge isOut />}
+                        <Button size="sm" onClick={() => openKar(kar)}>
+                          <Play className="size-4" />
+                          {tOverview("load")}
+                        </Button>
                         {hasNeeds && seasonId !== null && (
                           <a
                             href={stockMasterLoadListPdfUrl(kar.kar_id, seasonId, locale)}

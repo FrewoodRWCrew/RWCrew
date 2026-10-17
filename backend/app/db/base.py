@@ -52,6 +52,7 @@ from app.db.models.season import Season  # noqa: F401
 from app.db.models.stockmaster_balance import StockMasterBalance  # noqa: F401
 from app.db.models.stockmaster_document import StockMasterDocument  # noqa: F401
 from app.db.models.stockmaster_kar_requirement import StockMasterKarRequirement  # noqa: F401
+from app.db.models.stockmaster_kar_manual_request import StockMasterKarManualRequest  # noqa: F401
 from app.db.models.stockmaster_kar_trip import StockMasterKarTrip  # noqa: F401
 from app.db.models.stockmaster_movement import StockMasterMovement  # noqa: F401
 from app.db.models.stockmaster_reason import StockMasterReason  # noqa: F401

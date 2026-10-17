@@ -11,8 +11,9 @@
 # those tables instead.
 
 from datetime import datetime
+from decimal import Decimal
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, LargeBinary, String, Text
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, LargeBinary, Numeric, String, Text, false
 from sqlalchemy.orm import Mapped, deferred, mapped_column
 
 from app.core.database import Base
@@ -37,13 +38,25 @@ class Product(Base):
     warehouse_location: Mapped[str | None] = mapped_column(String(255), nullable=True)
     category_id: Mapped[int | None] = mapped_column(ForeignKey("MasterData_product_category.id"), nullable=True)
 
-    # The three checkboxes on the reference screen.
+    # The checkboxes on the reference screen.
     is_consumable: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_blocked: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     is_logistics_product: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # "Tag Managed": this product is followed by RFID tags (TagScan).
+    is_tag_managed: Mapped[bool] = mapped_column(Boolean, default=False, server_default=false(), nullable=False)
 
     # "Limiet" on the reference screen — selected from the Limiet lookup screen.
     limit_id: Mapped[int | None] = mapped_column(ForeignKey("MasterData_product_limit.id"), nullable=True)
+    # "Limietwaarde": the value of the chosen Limiet (e.g. the most pieces of
+    # this product a kar starts the season with) — only kept while a Limiet is
+    # chosen. Used by StockMaster's delivery entitlement (Percentage = the %),
+    # see app/modules/module_4/delivery_entitlement.py.
+    limit_value: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    # "Maximum initiële stock": the most pieces of this product a kar may
+    # hold as long as its KarTracker status isn't "Geleverd" — independent of
+    # the Limiet above. Caps StockMaster's delivery entitlement on Kar laden
+    # (app/modules/module_4/delivery_entitlement.py).
+    max_initial_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -53,6 +66,9 @@ class Product(Base):
     # minimum stock below which StockMaster warns that it's time to reorder.
     stock_return_to: Mapped[str] = mapped_column(String(10), default="kar", server_default="kar", nullable=False)
     min_stock: Mapped[int | None] = mapped_column(Integer, nullable=True)
+
+    # The cost of one piece, in euro — optional (empty = unknown).
+    cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
 
     # The product's optional picture, stored as bytes in Postgres like
     # KarTracker's ground plans (there is no file storage in this app).

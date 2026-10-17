@@ -67,7 +67,7 @@ Elke kar als een kaart: het karnummer, de ploeg, of hij **in het magazijn** of *
 
 ![Het overzicht van de karren](kars.png)
 
-> Een kar die onderweg is, kan je niet laden, uitladen of tellen. Boek eerst **Kar terug**.
+> Een kar die onderweg is, kan je niet uitladen of tellen. Boek eerst **Kar terug**. Laden is dan een nalevering (zie "2. Kar laden").
 
 ## [book-in | stockmaster.stock] 1. Inboeken
 Goederen komen binnen (levering, aankoop) en gaan naar de **vrije voorraad** op hun vaste locatie.
@@ -91,13 +91,22 @@ Kar laden opent op het **Laadoverzicht**: elke kar met benodigdheden in dit seiz
 - Het documenticoon opent de **Laadlijst** (PDF) van die kar.
 - Vink meerdere karren aan en klik op **Laadlijsten afdrukken** om hun laadlijsten samen in één PDF te krijgen, elke kar op een eigen pagina.
 
-Op het laadscherm staat de kar bovenaan als kop, met hoeveel producten en stuks al geladen zijn. Daaronder staat **Nog te laden** (het mandje) en onderaan **Inhoud in kar**: wat er al in zit, met foto.
+Op het laadscherm staat de kar bovenaan als kop, met hoeveel producten en stuks al geladen zijn. Daaronder staat **Karinhoud**: één tabel met elk product van de kar. Beweeg over een kolomtitel voor de uitleg.
+
+- **Bron**: waar de vraag vandaan komt (Altsien Select of Manueel).
+- **Gevraagd door Vereniging**, **Initieel Toegekend door Altsien kernlid**: de aantallen van het gekozen seizoen.
+- **Beschikbaar in vrije voorraad**, **Reeds in kar**, **Reeds in kar buiten magazijn** (wat met de kar vertrok en niet terugkwam) en **Op dit moment beschikbaar voor levering**.
+- **Op dit moment beschikbaar voor levering** volgt de regels van het product in MasterData: **Blokkeer** geeft 0, een **logistiek product** krijgt wat gevraagd is, en anders beslist de **Limiet**: *Ongelimiteerd* en *Toegewezen aantal* geven wat gevraagd is, *Percentage* geeft dat percentage (Limietwaarde) ervan, en *Automatisch* geeft wat gevraagd is zolang er genoeg voorraad is voor alle karren, anders hetzelfde percentage voor elke kar (voorraad ÷ alles wat gevraagd is). Afgerond naar beneden. Zolang de kar in KarTracker niet **Geleverd** is, krijgt ze bij Automatisch (bij tekort), Percentage en Toegewezen aantal nooit meer dan de **Maximum initiële stock** (samen over haar lijnen van dat product). Het resultaat is nooit meer dan wat er fysiek is. Klik op het icoon naast het getal om de berekening als stroomschema te zien, met de waarden van die lijn.
+- **Nu te leveren**: wat je nu laadt, en **Voor → na**: de voorraad per plaats vóór en na de boeking.
 
 1. Open de kar met **Laden** in het overzicht.
-2. Wat de kar volgens zijn **benodigdheden** nog mist, staat al in de lijst. Klik op **Vul aan met wat ontbreekt** als je de lijst opnieuw wil laten vullen.
-3. Pas de aantallen aan als je minder of meer laadt, of voeg andere producten toe.
-4. Kies bij **Van** of het uit de vrije voorraad of uit een andere kar komt.
-5. Klik op **Bevestigen: kar laden**.
+2. Vink de lijnen aan die je wil laden (of alles met het vakje bovenaan) en klik op **Vul aan met wat ontbreekt**: **Nu te leveren** wordt ingevuld. Je kan het aantal ook zelf typen.
+3. Een ander product nodig? Klik op **Manueel product toevoegen**, zoek het product en geef het aantal: het komt op een eigen lijn met Bron "Manueel", ook als het product al een lijn van Altsien Select heeft. Die lijn wordt bewaard voor deze kar en dit seizoen en blijft staan na het laden, tot je ze verwijdert.
+4. **Verwijder geselecteerde** haalt aangevinkte manuele lijnen weg en zet de andere terug op 0.
+5. Kies bij **Van** of het uit de vrije voorraad of uit een andere kar komt.
+6. Vul eventueel **Referentie** en **Opmerking** in en klik op **Bevestigen: kar laden** (of Ctrl+Enter).
+
+Een kar die **onderweg** is (na Kar vertrekt), kan je ook openen met **Laden**. Wat je dan bevestigt, is een **nalevering** naar het festival: het gaat uit de vrije voorraad, telt mee met wat met de kar vertrok en wordt bij **Kar terug** voorgesteld. "Reeds in kar" toont dan wat met de kar vertrok.
 
 ![Kar laden](kar-load.png)
 

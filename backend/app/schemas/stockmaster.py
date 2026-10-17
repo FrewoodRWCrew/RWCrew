@@ -202,6 +202,33 @@ class KarSummaryResponse(BaseModel):
     loaded_product_count: int
 
 
+class EntitlementTrace(BaseModel):
+    """How a Kar laden row's entitlement was worked out (module_4/delivery_entitlement.py):
+    the values used and the path of flow-diagram nodes taken, so the screen can draw it.
+    """
+
+    requested: int
+    is_blocked: bool
+    is_logistics_product: bool
+    limit_name: str | None
+    # unlimited / automatic / percentage / assigned.
+    limit_kind: str
+    limit_value: int | None
+    # Free stock + what's in kars, and everything asked this season over all kars (Automatisch).
+    total_stock: int
+    season_demand: int
+    # Automatisch when short: stock ÷ demand; Percentage: Limietwaarde.
+    share_percent: float | None
+    kar_status: str | None
+    is_delivered: bool
+    max_initial_stock: int | None
+    # Maximum initiële stock already given to the kar's other row of this product.
+    cap_used_by_other_row: int
+    before_cap: int
+    entitled: int
+    path: list[str]
+
+
 class KarLineResponse(BaseModel):
     """One product on the kar detail: in the kar versus needed."""
 
@@ -213,9 +240,14 @@ class KarLineResponse(BaseModel):
     missing: int
     surplus: int
     free_available: int
+    # Pieces that left with this kar on "Kar vertrekt" this season and didn't come back.
+    consumed_outside: int = 0
     is_consumable: bool
     is_blocked: bool
     stock_return_to: str
+    # What the kar's Altsien Select row may get (the flow diagram), with how it was worked out.
+    entitled: int = 0
+    entitlement_trace: EntitlementTrace | None = None
 
 
 class DispatchedLineResponse(BaseModel):
@@ -228,6 +260,26 @@ class DispatchedLineResponse(BaseModel):
     stock_return_to: str
 
 
+class ManualRequestResponse(BaseModel):
+    """One product asked for by hand on Kar laden (a "Manueel" row)."""
+
+    id: int
+    product_id: int
+    name: str
+    quantity: int
+    # What this Manueel row may get (the flow diagram), with how it was worked out.
+    entitled: int = 0
+    entitlement_trace: EntitlementTrace | None = None
+
+
+class ManualRequestCreateRequest(BaseModel):
+    """"Manueel product toevoegen": ask for more pieces of a product for a kar."""
+
+    season_id: int
+    product_id: int
+    quantity: int = Field(ge=1)
+
+
 class KarDetailResponse(BaseModel):
     """Everything the kar detail and the kar booking panels need."""
 
@@ -236,6 +288,8 @@ class KarDetailResponse(BaseModel):
     dispatched: list[DispatchedLineResponse]
     # The festivals the kar's team works this season (for "Kar vertrekt").
     festivals: list[NamedItem]
+    # The products asked for by hand this season (Kar laden's "Manueel" rows).
+    manual_requests: list[ManualRequestResponse] = []
 
 
 # --- Bookings --------------------------------------------------------------

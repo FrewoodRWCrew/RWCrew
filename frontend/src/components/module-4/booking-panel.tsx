@@ -27,7 +27,11 @@
 //
 // Kar laden opens on a loading overview of every kar (kar-load-overview.tsx,
 // switched by kar-load-screen.tsx); its "Laden" button opens this panel
-// with ?kar=<id>, and a link here leads back to that overview.
+// with ?kar=<id>, and a link here leads back to that overview. With a kar
+// chosen, Kar laden shows the kar as a header and ONE table of its products
+// (kar-load-table.tsx) with a compact reference/comment/confirm bar above
+// it; "Nu te leveren" starts at 0 and is typed, or filled for the checked
+// rows by "Vul aan met wat ontbreekt"; products are added by hand in a pop-up.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ArrowLeft, FileSpreadsheet, FileText, ListPlus, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
@@ -36,7 +40,9 @@ import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { Link, usePathname, useRouter } from "@/i18n/navigation";
 import {
+  addStockMasterManualRequest,
   createStockMasterBooking,
+  deleteStockMasterManualRequest,
   getStockMasterKar,
   getStockMasterLookups,
   getStockMasterStock,
@@ -61,12 +67,21 @@ import type {
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
-import { KarContentsSection, KarLoadHeader } from "@/components/module-4/kar-load-sections";
+import { KarLoadHeader } from "@/components/module-4/kar-load-sections";
+import {
+  KarLoadTable,
+  buildKarLoadRows,
+  fillCheckedRows,
+  karLoadRowKey,
+  type KarLoadRow,
+  type KarLoadSource,
+} from "@/components/module-4/kar-load-table";
 import { ProcessFlow, isProcessFlowAction } from "@/components/module-4/process-flow";
 import { ProductThumb } from "@/components/module-4/product-thumb";
 import { KarSearch, ProductSearch, SelectedKar } from "@/components/module-4/stock-pickers";
@@ -94,6 +109,9 @@ interface BasketLine {
   destination?: "kar" | "free";
   /** Only on "Kar terug": how many left with the kar. */
   dispatched?: number;
+  /** Only on Kar laden: "manual" for a Manueel row; none for the product's kar-need row. A product
+   *  can have one line of each, booked together. */
+  source?: KarLoadSource;
 }
 
 /** A scanned line that couldn't go into the basket (Inboeken from a scan). */
@@ -175,6 +193,9 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const scanParamUsed = useRef<string | null>(null);
   // The kar whose needs/contents were already put in the basket.
   const prefilledForKar = useRef<number | null>(null);
+  // Kar laden: the checked rows of the table (row keys) and the "Manueel product toevoegen" pop-up.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(() => new Set());
+  const [isManualOpen, setIsManualOpen] = useState(false);
 
   const searchRef = useRef<HTMLInputElement>(null);
   const quantityRef = useRef<HTMLInputElement>(null);
@@ -186,6 +207,11 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     isKarAction && loadedKarDetail !== null && loadedKarDetail.kar.kar_id === karId ? loadedKarDetail : null;
   // Kar laden with a chosen kar: the kar shows as a header with its contents and what's still to load.
   const showsKarLoadHeader = action === "kar_load" && karDetail !== null;
+  // Kar laden: the rows of the "Karinhoud" table (needs, manual products, kar contents).
+  const karRows = useMemo(
+    () => (action === "kar_load" && karDetail ? buildKarLoadRows(karDetail, lines, productsById) : []),
+    [action, karDetail, lines, productsById],
+  );
   const canUndo = hasRight(permissions, "bookings", "delete");
   const canSeeBookings = hasRight(permissions, "bookings", "view");
   const seasonLocked =
@@ -207,12 +233,14 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
           const product = products.find((item) => item.product_id === productParam);
           if (product) {
             setPendingProduct(product);
+            // On Kar laden the product entry lives in the "Manueel product toevoegen" pop-up.
+            if (action === "kar_load") setIsManualOpen(true);
             window.setTimeout(() => quantityRef.current?.select(), 50);
           }
         }
       })
       .catch(() => toast.error(t("errors.loadFailed")));
-  }, [t, searchParams]);
+  }, [t, searchParams, action]);
 
   useEffect(() => {
     reloadStock();
@@ -231,22 +259,15 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     reloadKars();
   }, [reloadKars]);
 
-  /** Pre-fill the basket once per chosen kar: the missing needs on Kar
-   *  laden (only while the basket is empty), what left with the kar on Kar
-   *  terug, and the kar's team/festival on Kar vertrekt. */
+  /** Pre-fill the basket once per chosen kar: what left with the kar on Kar
+   *  terug, and the kar's team/festival on Kar vertrekt. (Kar laden starts
+   *  with "Nu te leveren" at 0: it's typed or filled with "Vul aan met wat
+   *  ontbreekt".) */
   const prefillFor = useCallback(
     (detail: StockMasterKarDetail) => {
       if (prefilledForKar.current === detail.kar.kar_id) return;
       prefilledForKar.current = detail.kar.kar_id;
-      if (action === "kar_load" && fromKarId === null) {
-        setLines((current) =>
-          current.length > 0
-            ? current
-            : detail.lines
-                .filter((line) => line.missing > 0 && !line.is_blocked)
-                .map((line) => ({ productId: line.product_id, quantity: line.missing })),
-        );
-      } else if (action === "kar_return") {
+      if (action === "kar_return") {
         setLines(
           detail.dispatched.map((line) => ({
             productId: line.product_id,
@@ -260,7 +281,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
         setFestivalId(detail.festivals.length === 1 ? detail.festivals[0].id : null);
       }
     },
-    [action, fromKarId],
+    [action],
   );
 
   const reloadKarDetail = useCallback(() => {
@@ -276,6 +297,18 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   useEffect(() => {
     reloadKarDetail();
   }, [reloadKarDetail]);
+
+  // Kar laden: another season in the dropdown means other needs, so the table starts over
+  // (manual pieces and checks included). Not on the first render, so ?prefill=/?product= stay.
+  // Adjusted while rendering (React's pattern for state that follows a changed value).
+  const [linesSeasonId, setLinesSeasonId] = useState(seasonId);
+  if (linesSeasonId !== seasonId) {
+    setLinesSeasonId(seasonId);
+    if (action === "kar_load") {
+      setLines([]);
+      setSelectedIds(new Set());
+    }
+  }
 
   // --- Availability and preview ---------------------------------------------
 
@@ -313,7 +346,13 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
       }
       case "kar_load": {
         const source = fromKarId !== null ? kar(fromKarId, fromKar?.kar_nummer) : free;
-        const target = kar(karId, selectedKar?.kar_nummer);
+        // A kar that's out: the pieces join what left with it (a follow-up delivery).
+        const target = selectedKar?.is_out
+          ? {
+              label: t("karLoad.onTheWay", { kar: selectedKar.kar_nummer }),
+              before: karDetail?.dispatched.find((item) => item.product_id === product.product_id)?.quantity ?? 0,
+            }
+          : kar(karId, selectedKar?.kar_nummer);
         return [
           { ...source, after: source.before - quantity },
           { ...target, after: target.before + quantity },
@@ -357,9 +396,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
 
   function choosePendingProduct(product: StockMasterProductStock) {
     setPendingProduct(product);
-    // On Kar laden, suggest what the kar still misses.
-    const missing = karDetail?.lines.find((line) => line.product_id === product.product_id)?.missing;
-    setPendingQuantity(String(action === "kar_load" && missing ? missing : 1));
+    setPendingQuantity("1");
     window.setTimeout(() => quantityRef.current?.select(), 0);
   }
 
@@ -368,6 +405,14 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     const quantity = Number.parseInt(pendingQuantity, 10);
     if (!Number.isFinite(quantity) || quantity < (action === "kar_return" ? 0 : 1)) {
       toast.error(t("booking.quantityTooLow"));
+      return;
+    }
+    // Kar laden: a manual product is stored as a manual request of the kar (season + kar) and
+    // shows as its own "Manueel" row (also when the product has a kar-need row: the Bron
+    // differs). It raises that row's "Gevraagd", not "Nu te leveren" (typed or filled by
+    // "Vul aan met wat ontbreekt"). Then the pop-up closes.
+    if (action === "kar_load") {
+      void addManualRequest(pendingProduct, quantity);
       return;
     }
     setLines((current) => {
@@ -472,13 +517,80 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     setLines((current) => current.filter((line) => line.productId !== productId));
   }
 
+  /** Kar laden: set "Nu te leveren" of rows (by row key), adding a row's basket line when it has none yet. */
+  function setRowQuantities(quantities: Map<string, number>) {
+    setLines((current) => {
+      const lineKey = (line: BasketLine) => karLoadRowKey(line.productId, line.source);
+      const updated = current.map((line) =>
+        quantities.has(lineKey(line)) ? { ...line, quantity: quantities.get(lineKey(line)) ?? 0 } : line,
+      );
+      const existing = new Set(current.map(lineKey));
+      const added = karRows
+        .filter((row) => quantities.has(row.key) && !existing.has(row.key))
+        .map((row) => ({ productId: row.productId, quantity: quantities.get(row.key) ?? 0, source: row.lineSource }));
+      return [...updated, ...added];
+    });
+  }
+
+  /** Kar laden: "Vul aan met wat ontbreekt" fills the checked rows (see fillCheckedRows). */
   function fillMissing() {
-    if (!karDetail) return;
-    setLines(
-      karDetail.lines
-        .filter((line) => line.missing > 0 && !line.is_blocked)
-        .map((line) => ({ productId: line.product_id, quantity: line.missing })),
+    setRowQuantities(fillCheckedRows(karRows, selectedIds));
+  }
+
+  /** Kar laden: store a manual request ("Manueel product toevoegen"), then show it. */
+  async function addManualRequest(product: StockMasterProductStock, quantity: number) {
+    if (karId === null || seasonId === null) return;
+    try {
+      await addStockMasterManualRequest(karId, { season_id: seasonId, product_id: product.product_id, quantity });
+      toast.success(t("karLoad.manualAdded", { quantity, name: product.name }));
+      setPendingProduct(null);
+      setPendingQuantity("1");
+      setIsManualOpen(false);
+      reloadKarDetail();
+    } catch (error) {
+      // The pop-up stays open so the person can correct it.
+      toast.error(stockErrorMessage(t, error));
+    }
+  }
+
+  /** Kar laden: delete the stored manual requests of these Manueel rows, and their
+   *  "Nu te leveren" and checks with them. */
+  async function removeManualRows(rows: KarLoadRow[]) {
+    if (karId === null) return;
+    const keys = new Set(rows.map((row) => row.key));
+    try {
+      for (const row of rows) {
+        if (row.requestId !== null) await deleteStockMasterManualRequest(karId, row.requestId);
+      }
+    } catch (error) {
+      toast.error(stockErrorMessage(t, error));
+    }
+    setLines((current) => current.filter((line) => !keys.has(karLoadRowKey(line.productId, line.source))));
+    setSelectedIds((current) => new Set([...current].filter((key) => !keys.has(key))));
+    reloadKarDetail();
+  }
+
+  /** Kar laden: "Verwijder geselecteerde": checked Manueel rows are deleted, the other checked
+   *  rows go back to 0 (they hold a need or kar contents). */
+  function removeSelected() {
+    const manualRows = karRows.filter((row) => row.source === "manual" && selectedIds.has(row.key));
+    const resetKeys = new Set(
+      karRows.filter((row) => row.source !== "manual" && selectedIds.has(row.key)).map((row) => row.key),
     );
+    setLines((current) =>
+      current.map((line) => (resetKeys.has(karLoadRowKey(line.productId, line.source)) ? { ...line, quantity: 0 } : line)),
+    );
+    setSelectedIds(new Set());
+    if (manualRows.length > 0) void removeManualRows(manualRows);
+  }
+
+  function toggleRow(key: string, checked: boolean) {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) next.add(key);
+      else next.delete(key);
+      return next;
+    });
   }
 
   function fillEverything() {
@@ -493,6 +605,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   function chooseKar(kar: StockMasterKarSummary | null) {
     setKarId(kar?.kar_id ?? null);
     prefilledForKar.current = null;
+    setSelectedIds(new Set());
     // Return lines belong to one kar; other baskets stay.
     if (action === "kar_return" || action === "kar_unload") setLines([]);
   }
@@ -502,7 +615,16 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const reasons = (lookups?.reasons ?? []).filter(
     (reason) => reason.applies_to === null || reason.applies_to === action,
   );
-  const activeLines = action === "kar_return" ? lines : lines.filter((line) => line.quantity > 0);
+  // The lines that get booked. On Kar laden a product can be on two rows (kar need + Manueel):
+  // they're booked, checked and previewed as one line per product.
+  const positiveLines = lines.filter((line) => line.quantity > 0);
+  const activeLines =
+    action === "kar_return" ? lines : action === "kar_load" ? totalPerProduct(positiveLines) : positiveLines;
+  // Kar laden: a table row's product with its total "Nu te leveren" over all its rows (for the checks and preview).
+  const productTotal = (row: KarLoadRow): BasketLine => ({
+    productId: row.productId,
+    quantity: activeLines.find((line) => line.productId === row.productId)?.quantity ?? 0,
+  });
   const problems = activeLines.some((line) => {
     const product = productsById.get(line.productId);
     return !product || lineProblem(line, product) !== null;
@@ -540,6 +662,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
       });
       // Start the next booking with a clean basket.
       setLines([]);
+      setSelectedIds(new Set());
       dropScanLink();
       setReference("");
       setComment("");
@@ -583,7 +706,240 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   // --- Rendering --------------------------------------------------------------
 
   // Which kars can be picked for this action.
-  const karDisabled = (kar: StockMasterKarSummary) => (action === "kar_return" ? !kar.is_out : kar.is_out);
+  // (Kar laden takes a kar that's out too: that's a follow-up delivery to the festival.)
+  const karDisabled = (kar: StockMasterKarSummary) =>
+    action === "kar_return" ? !kar.is_out : action === "kar_load" ? false : kar.is_out;
+
+  // The product entry row (product, quantity, add, fill up) and its keyboard hint. On Kar laden it
+  // sits in the "Manueel product toevoegen" pop-up; elsewhere on top of the basket card.
+  const productEntry = (
+    <>
+      <div className="flex flex-wrap items-end gap-3">
+        <div className="flex min-w-64 flex-1 flex-col gap-2">
+          <Label htmlFor="booking-product">{t("booking.productLabel")}</Label>
+          {pendingProduct ? (
+            <div className="flex h-8 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+              <span className="font-medium">{pendingProduct.name}</span>
+              <span className="text-muted-foreground">{pendingProduct.bin_label}</span>
+              <button
+                type="button"
+                className="ml-auto text-xs text-muted-foreground underline"
+                onClick={() => {
+                  setPendingProduct(null);
+                  window.setTimeout(() => searchRef.current?.focus(), 0);
+                }}
+              >
+                {t("booking.otherProduct")}
+              </button>
+            </div>
+          ) : (
+            <ProductSearch
+              id="booking-product"
+              ref={searchRef}
+              products={stock}
+              onSelect={choosePendingProduct}
+              blockBlocked={action === "book_in" || action === "kar_load"}
+              karId={action === "kar_load" ? (fromKarId ?? karId) : karId}
+              autoFocus={!isKarAction}
+            />
+          )}
+        </div>
+        <div className="flex w-28 flex-col gap-2">
+          <Label htmlFor="booking-quantity">{t("booking.quantityLabel")}</Label>
+          <Input
+            id="booking-quantity"
+            ref={quantityRef}
+            type="number"
+            min={action === "kar_return" ? 0 : 1}
+            step={1}
+            inputMode="numeric"
+            value={pendingQuantity}
+            disabled={!pendingProduct}
+            onChange={(event) => setPendingQuantity(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
+                event.preventDefault();
+                addPendingLine();
+              }
+            }}
+          />
+        </div>
+        <Button variant="outline" onClick={addPendingLine} disabled={!pendingProduct}>
+          <ListPlus />
+          {t("booking.addLine")}
+        </Button>
+        {action === "kar_unload" && karDetail && (
+          <Button variant="outline" onClick={fillEverything}>
+            <PackageOpen />
+            {t("booking.unloadEverything")}
+          </Button>
+        )}
+      </div>
+      <p className="text-xs text-muted-foreground">{t("booking.keyboardHint")}</p>
+    </>
+  );
+
+  // The booking's details (team/festival, reason, reference, comment), the summary and the confirm button
+  // (side column; Kar laden has its own compact bar, karLoadBar).
+  const bookingDetails = (
+    <>
+      {action === "kar_dispatch" && (
+        <>
+          <NamedSelect
+            id="booking-team"
+            label={t("booking.teamLabel")}
+            value={teamId}
+            items={lookups?.teams ?? []}
+            emptyLabel={t("booking.noTeam")}
+            onChange={setTeamId}
+          />
+          <NamedSelect
+            id="booking-festival"
+            label={t("booking.festivalLabel")}
+            value={festivalId}
+            items={karDetail?.festivals ?? []}
+            emptyLabel={t("booking.noFestival")}
+            onChange={setFestivalId}
+          />
+        </>
+      )}
+      {action === "book_out" && (
+        <NamedSelect
+          id="booking-reason"
+          label={`${t("booking.reasonLabel")} *`}
+          value={reasonId}
+          items={reasons}
+          emptyLabel={t("booking.chooseReason")}
+          onChange={setReasonId}
+        />
+      )}
+      {(action === "book_in" || action === "book_out" || action === "kar_load" || action === "kar_dispatch") && (
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="booking-reference">
+            {action === "book_in" ? t("booking.deliveryNoteLabel") : t("booking.referenceLabel")}
+          </Label>
+          <Input id="booking-reference" value={reference} onChange={(event) => setReference(event.target.value)} />
+        </div>
+      )}
+      <div className="flex flex-col gap-2">
+        <Label htmlFor="booking-comment">{t("booking.commentLabel")}</Label>
+        <Textarea id="booking-comment" value={comment} onChange={(event) => setComment(event.target.value)} rows={2} />
+      </div>
+
+      <BookingSummary action={action} lines={activeLines} detail={karDetail} productsById={productsById} />
+
+      <Button size="lg" onClick={() => void handleSubmit()} disabled={!canSubmit}>
+        {tAction("confirm")}
+      </Button>
+      {missingReason && <p className="text-xs text-muted-foreground">{t("errors.reason_required")}</p>}
+      <p className="text-xs text-muted-foreground">{t("booking.confirmHint")}</p>
+    </>
+  );
+
+  // Kar laden: load from free stock (default) or from another kar in the warehouse. On the
+  // kar's own screen it sits in the "Karinhoud" title row, with its label inline.
+  const loadSourceSelect = (
+    <SourceSelect
+      id="booking-from"
+      label={t("booking.fromLabel")}
+      value={fromKarId}
+      kars={kars.filter((kar) => !kar.is_out && kar.kar_id !== karId && kar.total_quantity > 0)}
+      onChange={(value) => {
+        setFromKarId(value);
+        // Another source: the quantities start over; on Kar laden the manual products stay.
+        setLines((current) => (action === "kar_load" ? current.map((line) => ({ ...line, quantity: 0 })) : []));
+      }}
+      inline={showsKarLoadHeader}
+    />
+  );
+
+  // Kar laden: "Manueel product toevoegen" as a pop-up (the product entry inside); it closes
+  // after "Toevoegen" and a toast confirms the product.
+  const manualAddDialog = (
+    <Dialog
+      open={isManualOpen}
+      onOpenChange={(open) => {
+        setIsManualOpen(open);
+        if (open) window.setTimeout(() => searchRef.current?.focus(), 50);
+      }}
+    >
+      <DialogTrigger render={<Button variant="outline" disabled={seasonLocked} />}>
+        <ListPlus />
+        {t("karLoad.manualAddTitle")}
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-2xl">
+        <DialogHeader>
+          <DialogTitle>{t("karLoad.manualAddTitle")}</DialogTitle>
+        </DialogHeader>
+        <div className="flex flex-col gap-3">
+          {productEntry}
+        </div>
+        <DialogFooter>
+          <DialogClose render={<Button variant="outline" />}>{t("karLoad.close")}</DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+
+  // Kar laden: reference, comment and the confirm button in one row above the table; the
+  // "stored under your name" and Ctrl+Enter hints are in the button's tooltip.
+  const karLoadBar = (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="flex w-48 flex-col gap-1.5">
+        <Label htmlFor="booking-reference">{t("booking.referenceLabel")}</Label>
+        <Input id="booking-reference" value={reference} onChange={(event) => setReference(event.target.value)} />
+      </div>
+      <div className="flex min-w-48 flex-1 flex-col gap-1.5">
+        <Label htmlFor="booking-comment">{t("booking.commentLabel")}</Label>
+        <Input id="booking-comment" value={comment} onChange={(event) => setComment(event.target.value)} />
+      </div>
+      {/* The tooltip sits on a wrapper: a disabled button shows none. */}
+      <span title={`${t("booking.confirmHint")} ${t("karLoad.confirmShortcut")}`}>
+        <Button onClick={() => void handleSubmit()} disabled={!canSubmit}>
+          {tAction("confirm")}
+        </Button>
+      </span>
+    </div>
+  );
+
+  // The last booking made on this screen (PDF, view, undo).
+  const lastBookingCard = lastBooking && (
+    <Card>
+      <CardContent className="flex flex-col gap-2 text-sm">
+        <span className="font-semibold">{t("booking.lastBooking")}</span>
+        <span>
+          {lastBooking.doc_number} · {t(`docTypes.${lastBooking.doc_type}`)} ·{" "}
+          {t("booking.pieces", { count: lastBooking.total_quantity })}
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {(canSeeBookings || lastBooking.doc_type === "kar_dispatch") && (
+            <a
+              href={stockMasterBookingPdfUrl(lastBooking.id, locale)}
+              target="_blank"
+              rel="noreferrer"
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              <FileText />
+              {lastBooking.doc_type === "kar_dispatch" ? t("booking.dispatchNote") : t("booking.bookingNote")}
+            </a>
+          )}
+          {canSeeBookings && (
+            <Link
+              href={`${STOCKMASTER_BASE}/bookings/${lastBooking.id}`}
+              className={buttonVariants({ variant: "outline", size: "sm" })}
+            >
+              {t("booking.viewBooking")}
+            </Link>
+          )}
+          {canUndo && lastBooking.doc_type !== "reversal" && lastBooking.status === "posted" && (
+            <Button variant="ghost" size="sm" onClick={() => void undo(lastBooking)}>
+              {t("booking.undo")}
+            </Button>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="flex flex-col gap-6" onKeyDown={handleKeyDown}>
@@ -613,16 +969,37 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
       {/* Kar laden: the kar as a header on top (refreshed after every booking). */}
       {showsKarLoadHeader && karDetail && <KarLoadHeader detail={karDetail} onClear={() => chooseKar(null)} />}
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_24rem]">
-        {/* Kar laden: the source and basket are "what's still to load", above "Inhoud in kar",
-            framed like the kar header but on a plain background. */}
+      {/* Kar laden has no side column: the booking's details sit in a bar above the table, so the
+          table gets the full width. */}
+      <div className={cn("grid gap-6", !showsKarLoadHeader && "lg:grid-cols-[minmax(0,1fr)_24rem]")}>
+        {/* Kar laden: one "Karinhoud" block, framed like the kar header but on a plain background:
+            the title row with its buttons, the reference/comment/confirm bar and the table. */}
         <div
           className={cn(
             "flex flex-col gap-6",
-            showsKarLoadHeader && "self-start rounded-xl border-2 border-primary/40 bg-background px-5 py-4",
+            showsKarLoadHeader && "min-w-0 gap-4 rounded-xl border-2 border-primary/40 bg-background px-5 py-4",
           )}
         >
-          {showsKarLoadHeader && <h2 className="-mb-4 text-lg font-semibold">{t("karLoad.toLoadTitle")}</h2>}
+          {showsKarLoadHeader && (
+            // Title, with on the right where the products come from, the manual-add pop-up and the
+            // buttons that work on the checked rows ("Vul aan" not when loading from another kar).
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <h2 className="text-lg font-semibold">{t("karLoad.karContentsTitle")}</h2>
+              <div className="flex flex-wrap items-center gap-2">
+                {loadSourceSelect}
+                {manualAddDialog}
+                {fromKarId === null && (
+                  <Button variant="outline" onClick={fillMissing} disabled={selectedIds.size === 0}>
+                    {t("booking.fillMissing")}
+                  </Button>
+                )}
+                <Button variant="outline" onClick={removeSelected} disabled={selectedIds.size === 0 || seasonLocked}>
+                  <Trash2 />
+                  {t("karLoad.removeSelected")}
+                </Button>
+              </div>
+            </div>
+          )}
           {/* The kar (kar actions; on Kar laden only until one is chosen,
               the header above shows it then), or the source (Uitboeken). */}
           {isKarAction && (!showsKarLoadHeader || (selectedKar !== null && karDisabled(selectedKar))) && (
@@ -647,18 +1024,7 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
             </div>
           )}
 
-          {action === "kar_load" && (
-            <SourceSelect
-              id="booking-from"
-              label={t("booking.fromLabel")}
-              value={fromKarId}
-              kars={kars.filter((kar) => !kar.is_out && kar.kar_id !== karId && kar.total_quantity > 0)}
-              onChange={(value) => {
-                setFromKarId(value);
-                setLines([]);
-              }}
-            />
-          )}
+          {action === "kar_load" && !showsKarLoadHeader && loadSourceSelect}
           {action === "book_out" && (
             <SourceSelect
               id="booking-source"
@@ -676,77 +1042,35 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
             <DispatchContents detail={karDetail} />
           )}
 
-          {usesBasket && (!isKarAction || selectedKar) && (
-            // Inside Kar laden's frame the card draws no ring or padding of its own.
-            <Card className={cn(showsKarLoadHeader && "bg-transparent py-0 ring-0")}>
-              <CardContent className={cn("flex flex-col gap-4", showsKarLoadHeader && "px-0")}>
-                <div className="flex flex-wrap items-end gap-3">
-                  <div className="flex min-w-64 flex-1 flex-col gap-2">
-                    <Label htmlFor="booking-product">{t("booking.productLabel")}</Label>
-                    {pendingProduct ? (
-                      <div className="flex h-8 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
-                        <span className="font-medium">{pendingProduct.name}</span>
-                        <span className="text-muted-foreground">{pendingProduct.bin_label}</span>
-                        <button
-                          type="button"
-                          className="ml-auto text-xs text-muted-foreground underline"
-                          onClick={() => {
-                            setPendingProduct(null);
-                            window.setTimeout(() => searchRef.current?.focus(), 0);
-                          }}
-                        >
-                          {t("booking.otherProduct")}
-                        </button>
-                      </div>
-                    ) : (
-                      <ProductSearch
-                        id="booking-product"
-                        ref={searchRef}
-                        products={stock}
-                        onSelect={choosePendingProduct}
-                        blockBlocked={action === "book_in" || action === "kar_load"}
-                        karId={action === "kar_load" ? (fromKarId ?? karId) : karId}
-                        autoFocus={!isKarAction}
-                      />
-                    )}
-                  </div>
-                  <div className="flex w-28 flex-col gap-2">
-                    <Label htmlFor="booking-quantity">{t("booking.quantityLabel")}</Label>
-                    <Input
-                      id="booking-quantity"
-                      ref={quantityRef}
-                      type="number"
-                      min={action === "kar_return" ? 0 : 1}
-                      step={1}
-                      inputMode="numeric"
-                      value={pendingQuantity}
-                      disabled={!pendingProduct}
-                      onChange={(event) => setPendingQuantity(event.target.value)}
-                      onKeyDown={(event) => {
-                        if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
-                          event.preventDefault();
-                          addPendingLine();
-                        }
-                      }}
-                    />
-                  </div>
-                  <Button variant="outline" onClick={addPendingLine} disabled={!pendingProduct}>
-                    <ListPlus />
-                    {t("booking.addLine")}
-                  </Button>
-                  {action === "kar_load" && fromKarId === null && karDetail && (
-                    <Button variant="outline" onClick={fillMissing}>
-                      {t("booking.fillMissing")}
-                    </Button>
-                  )}
-                  {action === "kar_unload" && karDetail && (
-                    <Button variant="outline" onClick={fillEverything}>
-                      <PackageOpen />
-                      {t("booking.unloadEverything")}
-                    </Button>
-                  )}
-                </div>
-                <p className="text-xs text-muted-foreground">{t("booking.keyboardHint")}</p>
+          {/* Kar laden: the reference/comment/confirm bar, then the table of the kar's products. */}
+          {/* Kar laden of a kar that's out: what's confirmed is delivered to the festival afterwards. */}
+          {showsKarLoadHeader && karDetail?.kar.is_out && (
+            <p className="rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-800 dark:text-orange-200">
+              {t("karLoad.deliveryNote", { kar: karDetail.kar.kar_nummer })}
+            </p>
+          )}
+          {showsKarLoadHeader && karLoadBar}
+          {showsKarLoadHeader && (
+            <KarLoadTable
+              rows={karRows}
+              selected={selectedIds}
+              onToggle={toggleRow}
+              onToggleAll={(checked) => setSelectedIds(checked ? new Set(karRows.map((row) => row.key)) : new Set())}
+              onQuantityChange={(row, quantity) => setRowQuantities(new Map([[row.key, quantity]]))}
+              onRemove={(row) => void removeManualRows([row])}
+              lineProblem={(row) => {
+                // Only a product with something to deliver now can have a problem.
+                const total = productTotal(row);
+                return row.product && total.quantity > 0 ? lineProblem(total, row.product) : null;
+              }}
+              placeChanges={(row) => (row.product ? placeChanges(productTotal(row), row.product) : [])}
+            />
+          )}
+
+          {usesBasket && !showsKarLoadHeader && (!isKarAction || selectedKar) && (
+            <Card>
+              <CardContent className="flex flex-col gap-4">
+                {productEntry}
 
                 {/* Inboeken from Excel: download the template, upload it filled in → basket. */}
                 {action === "book_in" && (
@@ -876,107 +1200,28 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
           )}
         </div>
 
-        {/* Side column: the booking's details and the confirm button. */}
-        <div className="flex flex-col gap-4">
-          <Card>
-            <CardContent className="flex flex-col gap-4">
-              {action === "kar_dispatch" && (
-                <>
-                  <NamedSelect
-                    id="booking-team"
-                    label={t("booking.teamLabel")}
-                    value={teamId}
-                    items={lookups?.teams ?? []}
-                    emptyLabel={t("booking.noTeam")}
-                    onChange={setTeamId}
-                  />
-                  <NamedSelect
-                    id="booking-festival"
-                    label={t("booking.festivalLabel")}
-                    value={festivalId}
-                    items={karDetail?.festivals ?? []}
-                    emptyLabel={t("booking.noFestival")}
-                    onChange={setFestivalId}
-                  />
-                </>
-              )}
-              {action === "book_out" && (
-                <NamedSelect
-                  id="booking-reason"
-                  label={`${t("booking.reasonLabel")} *`}
-                  value={reasonId}
-                  items={reasons}
-                  emptyLabel={t("booking.chooseReason")}
-                  onChange={setReasonId}
-                />
-              )}
-              {(action === "book_in" || action === "book_out" || action === "kar_load" || action === "kar_dispatch") && (
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="booking-reference">
-                    {action === "book_in" ? t("booking.deliveryNoteLabel") : t("booking.referenceLabel")}
-                  </Label>
-                  <Input id="booking-reference" value={reference} onChange={(event) => setReference(event.target.value)} />
-                </div>
-              )}
-              <div className="flex flex-col gap-2">
-                <Label htmlFor="booking-comment">{t("booking.commentLabel")}</Label>
-                <Textarea id="booking-comment" value={comment} onChange={(event) => setComment(event.target.value)} rows={2} />
-              </div>
-
-              <BookingSummary action={action} lines={activeLines} detail={karDetail} productsById={productsById} />
-
-              <Button size="lg" onClick={() => void handleSubmit()} disabled={!canSubmit}>
-                {tAction("confirm")}
-              </Button>
-              {missingReason && <p className="text-xs text-muted-foreground">{t("errors.reason_required")}</p>}
-              <p className="text-xs text-muted-foreground">{t("booking.confirmHint")}</p>
-            </CardContent>
-          </Card>
-
-          {lastBooking && (
+        {/* Side column: the booking's details and the confirm button (on Kar laden they sit in the bar above the table). */}
+        {!showsKarLoadHeader && (
+          <div className="flex flex-col gap-4">
             <Card>
-              <CardContent className="flex flex-col gap-2 text-sm">
-                <span className="font-semibold">{t("booking.lastBooking")}</span>
-                <span>
-                  {lastBooking.doc_number} · {t(`docTypes.${lastBooking.doc_type}`)} ·{" "}
-                  {t("booking.pieces", { count: lastBooking.total_quantity })}
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {(canSeeBookings || lastBooking.doc_type === "kar_dispatch") && (
-                    <a
-                      href={stockMasterBookingPdfUrl(lastBooking.id, locale)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      <FileText />
-                      {lastBooking.doc_type === "kar_dispatch" ? t("booking.dispatchNote") : t("booking.bookingNote")}
-                    </a>
-                  )}
-                  {canSeeBookings && (
-                    <Link
-                      href={`${STOCKMASTER_BASE}/bookings/${lastBooking.id}`}
-                      className={buttonVariants({ variant: "outline", size: "sm" })}
-                    >
-                      {t("booking.viewBooking")}
-                    </Link>
-                  )}
-                  {canUndo && lastBooking.doc_type !== "reversal" && lastBooking.status === "posted" && (
-                    <Button variant="ghost" size="sm" onClick={() => void undo(lastBooking)}>
-                      {t("booking.undo")}
-                    </Button>
-                  )}
-                </div>
-              </CardContent>
+              <CardContent className="flex flex-col gap-4">{bookingDetails}</CardContent>
             </Card>
-          )}
-        </div>
+            {lastBookingCard}
+          </div>
+        )}
       </div>
 
-      {/* Kar laden: what's already in the kar, under "Nog te laden" (refreshed after every booking). */}
-      {showsKarLoadHeader && karDetail && <KarContentsSection detail={karDetail} productsById={productsById} />}
+      {/* Kar laden: the last booking at the bottom of the page. */}
+      {showsKarLoadHeader && lastBookingCard && <div className="lg:w-96">{lastBookingCard}</div>}
     </div>
   );
+}
+
+/** Kar laden: one line per product, summing its rows (kar need + Manueel). */
+function totalPerProduct(lines: BasketLine[]): BasketLine[] {
+  const totals = new Map<number, number>();
+  for (const line of lines) totals.set(line.productId, (totals.get(line.productId) ?? 0) + line.quantity);
+  return [...totals].map(([productId, quantity]) => ({ productId, quantity }));
 }
 
 /** "?prefill=12:5,13:2" (from Te bestellen) as basket lines. */
@@ -995,13 +1240,15 @@ interface SourceSelectProps {
   value: number | null;
   kars: StockMasterKarSummary[];
   onChange: (karId: number | null) => void;
+  /** Label left of the dropdown instead of above it. */
+  inline?: boolean;
 }
 
 /** "Van": free stock (default) or a kar standing in the warehouse. */
-function SourceSelect({ id, label, value, kars, onChange }: SourceSelectProps) {
+function SourceSelect({ id, label, value, kars, onChange, inline = false }: SourceSelectProps) {
   const t = useTranslations("stockMaster");
   return (
-    <div className="flex max-w-sm flex-col gap-2">
+    <div className={cn("flex max-w-sm gap-2", inline ? "items-center" : "flex-col")}>
       <Label htmlFor={id}>{label}</Label>
       <Select
         value={value === null ? FREE_SOURCE : String(value)}

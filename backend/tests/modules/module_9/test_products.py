@@ -17,6 +17,8 @@ from app.db.models.masterdata_user_role import MasterDataUserRole
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.product_category import ProductCategory
+from app.db.models.product_limit import ProductLimit
+from app.db.models.product_type import ProductType
 from app.db.models.rfid_tag import RfidTag
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -90,6 +92,24 @@ def _create_product(db_session: Session, *, name: str = "KBC Lint") -> Product:
     return product
 
 
+def _required_fields(db_session: Session) -> dict:
+    """The fields every create/update must send besides the name: a type,
+    warehouse, category and limit (created here) and "na Kar terug"."""
+    product_type = ProductType(name="Gereedschap type")
+    warehouse = Warehouse(name="Hoofdmagazijn")
+    category = ProductCategory(name="Algemeen")
+    limit = ProductLimit(name="Ongelimiteerd")
+    db_session.add_all([product_type, warehouse, category, limit])
+    db_session.commit()
+    return {
+        "type_id": product_type.id,
+        "warehouse_id": warehouse.id,
+        "category_id": category.id,
+        "limit_id": limit.id,
+        "stock_return_to": "kar",
+    }
+
+
 def _login(client: TestClient, email: str) -> None:
     client.post("/api/auth/login", json={"email": email, "password": "password123"})
 
@@ -136,9 +156,10 @@ def test_super_admin_can_manage_products_without_an_explicit_role(client: TestCl
     module = _create_masterdata_module(db_session)
     admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     _grant_module_access(db_session, admin, module)
+    required = _required_fields(db_session)
     _login(client, "admin@example.com")
 
-    response = client.post("/api/modules/module-9/products", json={"name": "KBC Lint"})
+    response = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", **required})
 
     assert response.status_code == 201
     body = response.json()
@@ -152,9 +173,10 @@ def test_view_only_products_permission_cannot_create_a_product(client: TestClien
     user = _create_user(db_session, email="viewer@example.com")
     _grant_module_access(db_session, user, module)
     _grant_products_permission(db_session, user, can_view=True)
+    required = _required_fields(db_session)
     _login(client, "viewer@example.com")
 
-    response = client.post("/api/modules/module-9/products", json={"name": "KBC Lint"})
+    response = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", **required})
 
     assert response.status_code == 403
 
@@ -164,33 +186,97 @@ def test_create_product_with_full_field_set(client: TestClient, db_session: Sess
     module = _create_masterdata_module(db_session)
     admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     _grant_module_access(db_session, admin, module)
+    product_type = ProductType(name="Verbruik")
     warehouse = Warehouse(name="Uitleendienst")
     category = ProductCategory(name="Gereedschap")
-    db_session.add_all([warehouse, category])
+    limit = ProductLimit(name="Max initiële stock per kar")
+    db_session.add_all([product_type, warehouse, category, limit])
     db_session.commit()
+    db_session.refresh(product_type)
     db_session.refresh(warehouse)
     db_session.refresh(category)
+    db_session.refresh(limit)
     _login(client, "admin@example.com")
 
     response = client.post(
         "/api/modules/module-9/products",
         json={
             "name": "KBC Lint",
+            "type_id": product_type.id,
             "warehouse_id": warehouse.id,
             "warehouse_location": "4RECHTS",
             "category_id": category.id,
             "is_consumable": True,
             "is_blocked": False,
             "is_logistics_product": False,
+            "is_tag_managed": True,
             "description": "Por rol",
+            "stock_return_to": "free",
+            "cost": 12.5,
+            "limit_id": limit.id,
+            "limit_value": 20,
+            "max_initial_stock": 8,
         },
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert body["type_id"] == product_type.id
     assert body["warehouse_id"] == warehouse.id
     assert body["category_id"] == category.id
     assert body["is_consumable"] is True
+    assert body["is_tag_managed"] is True
+    assert body["stock_return_to"] == "free"
+    assert body["cost"] == 12.5
+    assert body["limit_id"] == limit.id
+    assert body["limit_value"] == 20
+    assert body["max_initial_stock"] == 8
+
+
+def test_type_warehouse_category_and_stock_return_are_required(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    required = _required_fields(db_session)
+    product = _create_product(db_session)
+
+    # Leaving out any one of the four required fields is refused, on create and update.
+    for field in required:
+        payload = {"name": "KBC Lint", **{key: value for key, value in required.items() if key != field}}
+        assert client.post("/api/modules/module-9/products", json=payload).status_code == 422
+        assert client.put(f"/api/modules/module-9/products/{product.id}", json=payload).status_code == 422
+
+
+def test_product_cost_must_not_be_negative_and_can_be_cleared(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    required = _required_fields(db_session)
+
+    negative = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", **required, "cost": -1})
+    negative_max = client.post(
+        "/api/modules/module-9/products", json={"name": "KBC Lint", **required, "limit_value": -1}
+    )
+    negative_initial = client.post(
+        "/api/modules/module-9/products", json={"name": "KBC Lint", **required, "max_initial_stock": -1}
+    )
+    created = client.post(
+        "/api/modules/module-9/products",
+        json={"name": "KBC Lint", **required, "cost": 3.99, "limit_value": 5, "max_initial_stock": 4},
+    )
+    product_id = created.json()["id"]
+    cleared = client.put(
+        f"/api/modules/module-9/products/{product_id}",
+        json={"name": "KBC Lint", **required, "cost": None, "is_tag_managed": True},
+    )
+
+    assert negative.status_code == 422
+    assert negative_max.status_code == 422
+    assert negative_initial.status_code == 422
+    assert created.json()["cost"] == 3.99
+    assert created.json()["limit_value"] == 5
+    assert created.json()["max_initial_stock"] == 4
+    assert created.json()["is_tag_managed"] is False
+    assert cleared.status_code == 200
+    assert cleared.json()["cost"] is None
+    assert cleared.json()["max_initial_stock"] is None
+    assert cleared.json()["is_tag_managed"] is True
 
 
 def test_list_products_ordered_by_name(client: TestClient, db_session: Session) -> None:
@@ -214,11 +300,12 @@ def test_super_admin_can_update_a_product(client: TestClient, db_session: Sessio
     admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     _grant_module_access(db_session, admin, module)
     product = _create_product(db_session, name="KBC Lint")
+    required = _required_fields(db_session)
     _login(client, "admin@example.com")
 
     response = client.put(
         f"/api/modules/module-9/products/{product.id}",
-        json={"name": "KBC Lint 2", "is_blocked": True},
+        json={"name": "KBC Lint 2", "is_blocked": True, **required},
     )
 
     assert response.status_code == 200
@@ -232,9 +319,10 @@ def test_updating_a_missing_product_returns_404(client: TestClient, db_session: 
     module = _create_masterdata_module(db_session)
     admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
     _grant_module_access(db_session, admin, module)
+    required = _required_fields(db_session)
     _login(client, "admin@example.com")
 
-    response = client.put("/api/modules/module-9/products/999", json={"name": "Nope"})
+    response = client.put("/api/modules/module-9/products/999", json={"name": "Nope", **required})
 
     assert response.status_code == 404
 
@@ -380,3 +468,29 @@ def test_product_used_by_a_kar_or_rfid_tag_cannot_be_deleted(client: TestClient,
     assert "KarTracker" in kar_response.json()["detail"]
     assert tag_response.status_code == 400
     assert "RFID" in tag_response.json()["detail"]
+
+
+def test_limit_is_required_and_percentage_needs_a_limit_value(client: TestClient, db_session: Session) -> None:
+    _login_super_admin(client, db_session)
+    required = _required_fields(db_session)
+    percentage = ProductLimit(name="Percentage")
+    db_session.add(percentage)
+    db_session.commit()
+    without_limit = {key: value for key, value in required.items() if key != "limit_id"}
+
+    no_limit = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", **without_limit})
+    percentage_without_value = client.post(
+        "/api/modules/module-9/products", json={"name": "KBC Lint", **required, "limit_id": percentage.id}
+    )
+    percentage_with_value = client.post(
+        "/api/modules/module-9/products",
+        json={"name": "KBC Lint", **required, "limit_id": percentage.id, "limit_value": 50},
+    )
+    # Other limits don't need a value.
+    other_without_value = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", **required})
+
+    assert no_limit.status_code == 422
+    assert percentage_without_value.status_code == 422
+    assert percentage_with_value.status_code == 201
+    assert percentage_with_value.json()["limit_value"] == 50
+    assert other_without_value.status_code == 201

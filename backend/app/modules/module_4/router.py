@@ -39,7 +39,7 @@ from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.db.models.warehouse import Warehouse
 from app.help.routes import register_help_route
-from app.modules.module_4 import requirement_service, stock_service
+from app.modules.module_4 import manual_request_service, requirement_service, stock_service
 from app.modules.module_4.booking_import import (
     BookInImportFileError,
     build_book_in_template_xlsx,
@@ -98,6 +98,8 @@ from app.schemas.stockmaster import (
     DocumentResponse,
     KarDetailResponse,
     KarSummaryResponse,
+    ManualRequestCreateRequest,
+    ManualRequestResponse,
     LookupsResponse,
     MyPermissionsResponse,
     NamedItem,
@@ -693,6 +695,63 @@ def get_kar_detail(
     festivals — for the kar detail and the kar booking panels.
     """
     return build_kar_detail(db, _get_kar_or_404(db, kar_id), season_id)
+
+
+def _ensure_can_load_kars(db: Session, user: User) -> None:
+    """Manual requests are part of Kar laden: they need the same right as booking it."""
+    if not user_can(db, user, ACTION_SCREENS["kar_load"], "create"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="not_allowed")
+
+
+@router.post(
+    "/kars/{kar_id}/manual-requests",
+    response_model=list[ManualRequestResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+def add_manual_request(
+    kar_id: int,
+    payload: ManualRequestCreateRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_module_access),
+) -> list[ManualRequestResponse]:
+    """"Manueel product toevoegen" on Kar laden: ask for more pieces of a
+    product for this kar in the season (added to its existing manual request).
+    Answers with the kar's manual requests of that season.
+    """
+    _ensure_can_load_kars(db, current_user)
+    season = get_season_or_404(db, payload.season_id)
+    ensure_season_editable(db, current_user, season)
+    kar = _get_kar_or_404(db, kar_id)
+    try:
+        manual_request_service.add_manual_request(
+            db, current_user, season, kar_id, payload.product_id, payload.quantity
+        )
+        db.commit()
+    except StockError as error:
+        raise _stock_error(db, error) from error
+    return build_kar_detail(db, kar, season.id).manual_requests
+
+
+@router.delete("/kars/{kar_id}/manual-requests/{request_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_manual_request(
+    kar_id: int,
+    request_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_module_access),
+) -> Response:
+    """Remove a manual request (its "Manueel" row on Kar laden). Refused in a
+    closed season, like adding one.
+    """
+    _ensure_can_load_kars(db, current_user)
+    _get_kar_or_404(db, kar_id)
+    try:
+        request = manual_request_service.get_manual_request(db, kar_id, request_id)
+        ensure_season_editable(db, current_user, get_season_or_404(db, request.season_id))
+        manual_request_service.delete_manual_request(db, request)
+        db.commit()
+    except StockError as error:
+        raise _stock_error(db, error) from error
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 # --- KPI ---------------------------------------------------------------------

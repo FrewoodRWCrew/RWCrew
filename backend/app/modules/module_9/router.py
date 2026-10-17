@@ -165,6 +165,9 @@ from app.schemas.masterdata import (
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
+# The product Limiet (matched by name, ignoring case) that needs a Limietwaarde.
+PERCENTAGE_LIMIT_NAME = "percentage"
+
 router = APIRouter(prefix="/api/modules/module-9", tags=["MasterData"])
 
 
@@ -1107,19 +1110,25 @@ def list_products(
 
 
 def _validate_product_lookup_ids(db: Session, payload: ProductCreateRequest | ProductUpdateRequest) -> None:
-    """Make sure any type_id/warehouse_id/category_id/limit_id given
-    actually exists, the same way set_user_role() below checks role_id
-    exists before assigning it — otherwise a bad id would only surface as
-    an opaque foreign-key IntegrityError instead of a clear 404.
+    """Make sure the type_id/warehouse_id/category_id (always given) and
+    limit_id (optional) actually exist, the same way set_user_role() below
+    checks role_id exists before assigning it — otherwise a bad id would
+    only surface as an opaque foreign-key IntegrityError instead of a clear 404.
     """
-    if payload.type_id is not None and db.get(ProductType, payload.type_id) is None:
+    if db.get(ProductType, payload.type_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product type not found")
-    if payload.warehouse_id is not None and db.get(Warehouse, payload.warehouse_id) is None:
+    if db.get(Warehouse, payload.warehouse_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Warehouse not found")
-    if payload.category_id is not None and db.get(ProductCategory, payload.category_id) is None:
+    if db.get(ProductCategory, payload.category_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product category not found")
-    if payload.limit_id is not None and db.get(ProductLimit, payload.limit_id) is None:
+    product_limit = db.get(ProductLimit, payload.limit_id)
+    if product_limit is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product limit not found")
+    # The "Percentage" limit means nothing without its percentage: the Limietwaarde is required then.
+    if product_limit.name.strip().lower() == PERCENTAGE_LIMIT_NAME and payload.limit_value is None:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail="A limit value is required for the Percentage limit"
+        )
 
 
 @router.post("/products", response_model=ProductResponse, status_code=status.HTTP_201_CREATED)

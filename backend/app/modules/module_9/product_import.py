@@ -13,6 +13,7 @@
 # there is no "already exists" rejection here.
 
 import io
+from decimal import Decimal, InvalidOperation
 
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font
@@ -37,9 +38,16 @@ TEMPLATE_COLUMNS = [
     "is_consumable",
     "is_blocked",
     "is_logistics_product",
+    "is_tag_managed",
     "limit_name",
+    "limit_value",
+    "max_initial_stock",
     "description",
+    "cost",
 ]
+
+# The product Limiet (matched by name, ignoring case) that needs a Limietwaarde — same as router.py.
+PERCENTAGE_LIMIT_NAME = "percentage"
 
 
 def build_product_template_xlsx() -> bytes:
@@ -88,6 +96,40 @@ def _parse_bool_cell(column_name: str, value: object) -> bool:
     if normalized in _FALSE_CELL_VALUES:
         return False
     raise ValueError(f'{column_name} "{text}" is not recognized — use "true"/"false", "1"/"0", or "yes"/"no"')
+
+
+def _parse_non_negative_int_cell(column_name: str, value: object) -> int | None:
+    """Blank means "not set". Otherwise a whole number of 0 or more —
+    anything else is rejected as an error."""
+    text = _cell_text(value)
+    if text is None:
+        return None
+    try:
+        number = Decimal(text.replace(",", "."))
+    except InvalidOperation:
+        raise ValueError(f'{column_name} "{text}" is not a number') from None
+    if not number.is_finite() or number < 0 or number != number.to_integral_value():
+        raise ValueError(f'{column_name} "{text}" must be a whole number of 0 or more')
+    return int(number)
+
+
+def _parse_cost_cell(value: object) -> Decimal | None:
+    """Blank means "unknown". Otherwise a number of euro, not negative,
+    rounded to cents — anything else is rejected as an error."""
+    text = _cell_text(value)
+    if text is None:
+        return None
+    try:
+        cost = Decimal(text.replace(",", "."))
+    except InvalidOperation:
+        raise ValueError(f'cost "{text}" is not a number') from None
+    if not cost.is_finite() or cost < 0:
+        raise ValueError(f'cost "{text}" must be 0 or more')
+    # The column holds 10 digits with 2 decimals: refuse what doesn't fit (before
+    # quantize, which would raise on a huge number instead of this row error).
+    if cost >= Decimal("100000000"):
+        raise ValueError(f'cost "{text}" must be less than 100000000')
+    return cost.quantize(Decimal("0.01"))
 
 
 def _resolve_type_id(db: Session, type_name: str | None) -> int | None:
@@ -157,7 +199,18 @@ def import_products_from_xlsx(db: Session, file_bytes: bytes) -> list[ProductImp
         try:
             if name is None:
                 raise ValueError("name is required")
+            # The same fields the Products screen requires (type, warehouse, category, Limiet).
+            for required_column in ("type_name", "warehouse_name", "category_name", "limit_name"):
+                if _cell_text(cell(row, required_column)) is None:
+                    raise ValueError(f"{required_column} is required")
 
+            # Resolved first: the Limietwaarde below depends on it.
+            limit_name = _cell_text(cell(row, "limit_name"))
+            limit_id = _resolve_limit_id(db, limit_name)
+            limit_value = _parse_non_negative_int_cell("limit_value", cell(row, "limit_value"))
+            # The "Percentage" Limiet means nothing without its percentage (same rule as the screen).
+            if limit_name.lower() == PERCENTAGE_LIMIT_NAME and limit_value is None:
+                raise ValueError("limit_value is required for the Percentage limit")
             new_product = Product(
                 name=name,
                 type_id=_resolve_type_id(db, _cell_text(cell(row, "type_name"))),
@@ -167,8 +220,12 @@ def import_products_from_xlsx(db: Session, file_bytes: bytes) -> list[ProductImp
                 is_consumable=_parse_bool_cell("is_consumable", cell(row, "is_consumable")),
                 is_blocked=_parse_bool_cell("is_blocked", cell(row, "is_blocked")),
                 is_logistics_product=_parse_bool_cell("is_logistics_product", cell(row, "is_logistics_product")),
-                limit_id=_resolve_limit_id(db, _cell_text(cell(row, "limit_name"))),
+                is_tag_managed=_parse_bool_cell("is_tag_managed", cell(row, "is_tag_managed")),
+                limit_id=limit_id,
+                limit_value=limit_value,
+                max_initial_stock=_parse_non_negative_int_cell("max_initial_stock", cell(row, "max_initial_stock")),
                 description=_cell_text(cell(row, "description")),
+                cost=_parse_cost_cell(cell(row, "cost")),
             )
             db.add(new_product)
 
@@ -212,8 +269,12 @@ def export_products_to_xlsx(db: Session) -> bytes:
                 product.is_consumable,
                 product.is_blocked,
                 product.is_logistics_product,
+                product.is_tag_managed,
                 limits.get(product.limit_id, "") if product.limit_id is not None else "",
+                product.limit_value,
+                product.max_initial_stock,
                 product.description,
+                float(product.cost) if product.cost is not None else None,
             ]
         )
 

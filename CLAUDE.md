@@ -83,7 +83,11 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
 - **Kar stock only exists in the warehouse**: "Kar vertrekt" books the kar's whole contents out and opens a
   `StockMaster_kar_trip`; "Kar terug" books the returned lines into the kar or to free stock (per line,
   defaulted from the product's new `stock_return_to`) and closes it. A kar with an open trip can't be
-  loaded/unloaded/counted. What didn't come back is the team's consumption on the KPI page.
+  unloaded/counted. What didn't come back is the team's consumption on the KPI page.
+- **Follow-up delivery ("nalevering")**: Kar laden of a kar with an open trip books free (or a warehouse kar) →
+  `external` with `StockMaster_document.trip_id` = the trip; `dispatched_lines(trip)` adds those posted deliveries,
+  so Kar terug, consumption and an out kar's progress count them. Undoing "Kar vertrekt" is refused
+  (`kar_has_deliveries`) while such deliveries exist.
 - **Kar needs** (`StockMaster_kar_requirement`, per season + kar) only through `module_4/requirement_service.py`
   — Altsien Select's Products wizard step reuses it (no module-8 copy of the data, see "Altsien Select"). They pre-fill
   "Kar laden", drive the kar cards' "18 / 20" and "Te bestellen" (needs − free − in kars).
@@ -93,6 +97,20 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   the landing page; "Load into Inboeken" → `book-in?tagscan=<header ids>`. The booking request carries
   `tagscan_line_ids`; `mark_lines_booked` marks them `loaded` in the booking's transaction (refuses with
   `tagscan_already_booked` if any is no longer waiting) and the document gets `source="tagscan"`.
+- **Kar laden's "Karinhoud" table** (`components/module-4/kar-load-table.tsx`): one row per product + Bron; rows from
+  the kar needs ("Altsien Select") plus **manual requests** (`StockMaster_kar_manual_request`, per season + kar +
+  product, written only by `module_4/manual_request_service.py`, `POST/DELETE /kars/{id}/manual-requests`, same right
+  as booking Kar laden). What a manual request already got is not stored: it's what the kar holds (or consumed
+  outside this season) beyond its need. Both rows of a product are booked as one line. Manual requests count in the
+  kar's loading progress (`build_kar_summaries`) and the season demand for *Automatisch*, but not in the kar needs,
+  Laadlijst or "Te bestellen".
+- **"Op dit moment beschikbaar voor levering"** (Kar laden) = the organisation's flow diagram, worked out only in
+  `module_4/delivery_entitlement.py` (Blokkeer → 0, logistiek product → asked, then the product's Limiet, matched by
+  *name*: Ongelimiteerd/Automatisch/Percentage/Toegewezen aantal; Maximum initiële stock caps until the kar's KarTracker
+  status is "Geleverd", shared by a kar's Altsien + Manueel row). `build_kar_detail` sends `entitled` + an
+  `entitlement_trace` (values + path of diagram nodes) per kar line and manual request; the frontend's
+  `availableForDelivery` only caps it by the physical stock, and `availability-flow-dialog.tsx` draws the trace
+  (icon next to each row's value). A new diagram node needs a path key in both files.
 - **Minimum stock** = MasterData product `min_stock` (consumables only) → orange banner in the module layout.
 - Seasons: the module's own dropdown (`?season=`); bookings in a closed season need "edit" on the
   `stockmaster.closedseason` switch-screen. MasterData/KarTracker refuse deleting a product with stock history

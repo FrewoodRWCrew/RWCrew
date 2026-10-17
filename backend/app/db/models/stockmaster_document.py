@@ -52,6 +52,18 @@ class StockMasterDocument(Base):
     )
     from_kar_nummer: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
+    # "Kar laden" of a kar that's out (a follow-up delivery to the festival):
+    # the kar's open trip, so the delivered pieces count as having left with
+    # the kar (Kar terug, consumption). use_alter: the trip table points back
+    # at its dispatch document.
+    trip_id: Mapped[int | None] = mapped_column(
+        ForeignKey(
+            "StockMaster_kar_trip.id", ondelete="SET NULL", use_alter=True, name="fk_StockMaster_document_trip_id"
+        ),
+        index=True,
+        nullable=True,
+    )
+
     # Where a dispatched kar goes (Kar vertrekt / Kar terug).
     team_id: Mapped[int | None] = mapped_column(ForeignKey("MasterData_team.id", ondelete="SET NULL"), nullable=True)
     festival_id: Mapped[int | None] = mapped_column(

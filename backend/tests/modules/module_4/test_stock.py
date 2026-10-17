@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.models.season import Season
 from app.db.models.stockmaster_document import StockMasterDocument
 from app.db.models.stockmaster_movement import StockMasterMovement
 from tests.modules.module_4.conftest import BASE, StockWorld, book, login, stock_of
@@ -90,8 +91,8 @@ def test_dispatch_books_the_contents_out_and_return_books_back_in(as_warehouse: 
     assert dispatch.json()["team_name"] == "Chiro Werchter"  # defaulted from KarTracker
     assert stock_of(as_warehouse, world.lader.id)["total"] == 7
 
-    # While out, the kar can't be loaded.
-    refused = book(as_warehouse, world, "kar_load", [(world.lader.id, 1)], kar_id=world.k043.id)
+    # While out, the kar can't be unloaded (loading it is a follow-up delivery, see below).
+    refused = book(as_warehouse, world, "kar_unload", [(world.lader.id, 1)], kar_id=world.k043.id)
     assert refused.json()["detail"] == "kar_out|K043"
     detail = as_warehouse.get(f"{BASE}/kars/{world.k043.id}", params={"season_id": world.season.id}).json()
     assert detail["kar"]["is_out"] is True
@@ -112,6 +113,78 @@ def test_dispatch_books_the_contents_out_and_return_books_back_in(as_warehouse: 
     kpi = as_warehouse.get(f"{BASE}/dashboard", params={"season_id": world.season.id}).json()
     assert kpi["consumption_per_team"] == [{"name": "Chiro Werchter", "quantity": 4}]
     assert kpi["kars_out"] == 0
+
+
+def test_loading_a_kar_that_is_out_is_a_delivery_to_the_festival(as_warehouse: TestClient, world: StockWorld) -> None:
+    book(as_warehouse, world, "book_in", [(world.tape.id, 20)])
+    book(as_warehouse, world, "kar_load", [(world.tape.id, 6)], kar_id=world.k043.id)
+    dispatch = book(as_warehouse, world, "kar_dispatch", kar_id=world.k043.id).json()
+
+    def detail() -> dict:
+        return as_warehouse.get(f"{BASE}/kars/{world.k043.id}", params={"season_id": world.season.id}).json()
+
+    # Loading the kar while it's out: 2 tape go from free stock straight out, with the kar.
+    delivery = book(as_warehouse, world, "kar_load", [(world.tape.id, 2)], kar_id=world.k043.id)
+    assert delivery.status_code == 201
+    tape = stock_of(as_warehouse, world.tape.id)
+    assert (tape["free"], tape["in_kars"]) == (12, 0)
+    assert {line["name"]: line["quantity"] for line in detail()["dispatched"]} == {"Tape": 8}
+
+    # Undoing "Kar vertrekt" would leave the delivery without its trip: refused.
+    refused = as_warehouse.post(f"{BASE}/bookings/{dispatch['id']}/reverse", json={})
+    assert refused.json()["detail"] == "kar_has_deliveries|K043"
+
+    # Undoing the delivery puts the pieces back in free stock and off the kar's trip.
+    assert as_warehouse.post(f"{BASE}/bookings/{delivery.json()['id']}/reverse", json={}).status_code == 201
+    assert stock_of(as_warehouse, world.tape.id)["free"] == 14
+    assert {line["name"]: line["quantity"] for line in detail()["dispatched"]} == {"Tape": 6}
+
+    # Deliver again, then the kar comes back with 3: the other 5 count as consumed outside.
+    second = book(as_warehouse, world, "kar_load", [(world.tape.id, 2)], kar_id=world.k043.id).json()
+    book(as_warehouse, world, "kar_return", [(world.tape.id, 3, "kar")], kar_id=world.k043.id)
+    lines = {line["name"]: line for line in detail()["lines"]}
+    assert (lines["Tape"]["in_kar"], lines["Tape"]["consumed_outside"]) == (3, 5)
+
+    # The delivery is part of that "Kar terug" now: undoing it waits until the return is undone.
+    refused = as_warehouse.post(f"{BASE}/bookings/{second['id']}/reverse", json={})
+    assert refused.json()["detail"] == "kar_already_returned|K043"
+
+
+def test_delivery_to_an_out_kar_must_be_in_the_season_of_its_trip(
+    as_warehouse: TestClient, world: StockWorld, db_session: Session
+) -> None:
+    other_season = Season(name="2027", periode_open=True)
+    db_session.add(other_season)
+    db_session.commit()
+    book(as_warehouse, world, "book_in", [(world.tape.id, 5)])
+    book(as_warehouse, world, "kar_dispatch", kar_id=world.k043.id)
+
+    refused = book(as_warehouse, world, "kar_load", [(world.tape.id, 1)], kar_id=world.k043.id, season_id=other_season.id)
+
+    assert refused.json()["detail"] == "trip_other_season|K043"
+
+
+def test_kar_detail_shows_what_was_consumed_outside_the_warehouse(as_warehouse: TestClient, world: StockWorld) -> None:
+    book(as_warehouse, world, "book_in", [(world.tape.id, 20)])
+    book(as_warehouse, world, "kar_load", [(world.tape.id, 6)], kar_id=world.k043.id)
+    book(as_warehouse, world, "kar_load", [(world.tape.id, 5)], kar_id=world.k101.id)
+
+    def consumed(kar_id: int, season_id: int) -> dict[str, int]:
+        detail = as_warehouse.get(f"{BASE}/kars/{kar_id}", params={"season_id": season_id}).json()
+        return {line["name"]: line["consumed_outside"] for line in detail["lines"]}
+
+    # K043 leaves with 6 tape and only 2 come back: 4 consumed outside.
+    book(as_warehouse, world, "kar_dispatch", kar_id=world.k043.id)
+    # While the trip is still open (contents out with the kar), nothing counts as consumed yet.
+    assert consumed(world.k043.id, world.season.id) == {}
+    book(as_warehouse, world, "kar_return", [(world.tape.id, 2, "kar")], kar_id=world.k043.id)
+    # K101 leaves too but stays out: its open trip doesn't count.
+    book(as_warehouse, world, "kar_dispatch", kar_id=world.k101.id)
+
+    assert consumed(world.k043.id, world.season.id) == {"Tape": 4}
+    assert consumed(world.k101.id, world.season.id) == {}
+    # Another season knows nothing of this trip.
+    assert consumed(world.k043.id, world.closed_season.id) == {"Tape": 0}
 
 
 def test_count_books_only_the_differences(as_warehouse: TestClient, world: StockWorld) -> None:

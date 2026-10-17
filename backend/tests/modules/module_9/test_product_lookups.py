@@ -205,7 +205,22 @@ def test_creating_a_product_with_an_unknown_lookup_id_returns_404(
     _grant_module_access(db_session, admin, module)
     _login(client, "admin@example.com")
 
-    response = client.post("/api/modules/module-9/products", json={"name": "KBC Lint", field_name: 999})
+    # Every required lookup exists, except the one under test points at a missing id.
+    product_type = ProductType(name="Type A")
+    warehouse = Warehouse(name="Magazijn A")
+    category = ProductCategory(name="Categorie A")
+    limit = ProductLimit(name="Limiet A")
+    db_session.add_all([product_type, warehouse, category, limit])
+    db_session.commit()
+    payload = {
+        "name": "KBC Lint",
+        "type_id": product_type.id,
+        "warehouse_id": warehouse.id,
+        "category_id": category.id,
+        "limit_id": limit.id,
+        "stock_return_to": "kar",
+    }
+    response = client.post("/api/modules/module-9/products", json={**payload, field_name: 999})
 
     assert response.status_code == 404
 

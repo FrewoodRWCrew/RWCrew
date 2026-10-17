@@ -14,7 +14,10 @@
 # Kar stock only exists while the kar is in the warehouse: "Kar vertrekt"
 # books its whole contents out and opens a StockMaster_kar_trip; "Kar terug"
 # books what came back in (into the kar or straight to free stock) and
-# closes the trip. A kar with an open trip can't be loaded or unloaded.
+# closes the trip. A kar with an open trip can't be unloaded or counted, but
+# it can still be loaded: that's a follow-up delivery to the festival
+# ("nalevering"), booked straight out to "external" and linked to the trip,
+# so it counts as having left with the kar.
 #
 # The functions below don't depend on a web request (the user and season
 # are passed in) and never commit: the caller commits once everything
@@ -404,11 +407,17 @@ def load_kar(
     comment: str | None = None,
     origin: BookingOrigin | None = None,
 ) -> StockMasterDocument:
-    """Kar laden: from free stock (or from another kar) into a kar."""
+    """Kar laden: from free stock (or from another kar) into a kar. When the
+    kar is out (open trip), it's a follow-up delivery to the festival: the
+    pieces go straight out ("external") and are linked to the trip.
+    """
     merged = _merge_lines(lines)
     _ensure_not_blocked(db, merged)
     kar = get_kar(db, kar_id)
-    ensure_kar_in_warehouse(db, kar)
+    trip = open_trip_of(db, kar.id)
+    # A follow-up delivery belongs to the season of the trip it joins.
+    if trip is not None and trip.season_id != season.id:
+        raise StockError("trip_other_season", kar.kar_nummer)
     source_kar = None
     if from_kar_id is not None:
         if from_kar_id == kar_id:
@@ -427,10 +436,14 @@ def load_kar(
         from_kar_nummer=source_kar.kar_nummer if source_kar else None,
         reference=reference,
         comment=comment,
+        trip_id=trip.id if trip else None,
     )
     from_bucket = KAR if source_kar else FREE
+    # Out kar: the pieces leave the warehouse; otherwise they go into the kar.
+    to_bucket, to_kar_id = (EXTERNAL, None) if trip else (KAR, kar.id)
     _post_moves(
-        db, document, user, _moves_for(merged, from_bucket, source_kar.id if source_kar else None, KAR, kar.id)
+        db, document, user,
+        _moves_for(merged, from_bucket, source_kar.id if source_kar else None, to_bucket, to_kar_id),
     )
     return document
 
@@ -513,11 +526,25 @@ def dispatch_kar(
     return document
 
 
+def _trip_deliveries(db: Session, trip: StockMasterKarTrip) -> list[int]:
+    """Ids of the posted (not undone) follow-up deliveries to a kar on this trip."""
+    return list(
+        db.scalars(
+            select(StockMasterDocument.id).where(
+                StockMasterDocument.trip_id == trip.id, StockMasterDocument.status == POSTED
+            )
+        ).all()
+    )
+
+
 def dispatched_lines(db: Session, trip: StockMasterKarTrip) -> dict[int, int]:
-    """{product_id: quantity} that left with the kar on this trip."""
+    """{product_id: quantity} that left with the kar on this trip: its
+    "Kar vertrekt" plus the follow-up deliveries while it was out.
+    """
+    document_ids = [trip.dispatch_document_id, *_trip_deliveries(db, trip)]
     rows = db.execute(
         select(StockMasterMovement.product_id, StockMasterMovement.quantity).where(
-            StockMasterMovement.document_id == trip.dispatch_document_id
+            StockMasterMovement.document_id.in_(document_ids)
         )
     ).all()
     result: dict[int, int] = {}
@@ -679,6 +706,9 @@ def reverse_document(
         )
         if trip_to_remove is None or trip_to_remove.return_document_id is not None:
             raise StockError("kar_already_returned", document.kar_nummer or "")
+        # Deliveries sent after the kar would be left without their trip: undo those first.
+        if _trip_deliveries(db, trip_to_remove):
+            raise StockError("kar_has_deliveries", document.kar_nummer or "")
     elif document.doc_type == KAR_RETURN:
         trip_to_reopen = db.scalar(
             select(StockMasterKarTrip).where(StockMasterKarTrip.return_document_id == document.id)
@@ -693,6 +723,11 @@ def reverse_document(
         )
         if latest_trip is None or latest_trip.id != trip_to_reopen.id:
             raise StockError("kar_left_again", document.kar_nummer or "")
+    elif document.trip_id is not None:
+        # A follow-up delivery is counted in its trip's "Kar terug": undo that return first.
+        delivery_trip = db.get(StockMasterKarTrip, document.trip_id)
+        if delivery_trip is not None and delivery_trip.return_document_id is not None:
+            raise StockError("kar_already_returned", document.kar_nummer or "")
 
     original_moves = db.scalars(
         select(StockMasterMovement).where(StockMasterMovement.document_id == document.id)

@@ -139,6 +139,7 @@ import type {
   StockMasterDocumentPage,
   StockMasterBookingInput,
   StockMasterKarDetail,
+  StockMasterManualRequest,
   StockMasterKarSummary,
   StockMasterLookups,
   StockMasterOrderNeed,
@@ -2368,6 +2369,23 @@ export function getStockMasterKar(karId: number, seasonId: number | null): Promi
   return apiFetch<StockMasterKarDetail>(
     `${STOCKMASTER_BASE}/kars/${karId}${stockMasterQuery({ season_id: seasonId })}`,
   );
+}
+
+/** Kar laden's "Manueel product toevoegen": ask for more pieces of a product for a kar
+ *  in a season (stored, added to an existing request); answers with the kar's manual requests. */
+export function addStockMasterManualRequest(
+  karId: number,
+  payload: { season_id: number; product_id: number; quantity: number },
+): Promise<StockMasterManualRequest[]> {
+  return apiFetch<StockMasterManualRequest[]>(`${STOCKMASTER_BASE}/kars/${karId}/manual-requests`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Remove a kar's manual request (its "Manueel" row on Kar laden). */
+export function deleteStockMasterManualRequest(karId: number, requestId: number): Promise<void> {
+  return apiFetch<void>(`${STOCKMASTER_BASE}/kars/${karId}/manual-requests/${requestId}`, { method: "DELETE" });
 }
 
 /** Make one booking; always stored under the logged-in user (server-side). */

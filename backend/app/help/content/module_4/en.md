@@ -67,7 +67,7 @@ Every cart as a card: the cart number, the team, whether it is **in the warehous
 
 ![The carts overview](kars.png)
 
-> A cart that is out can't be loaded, unloaded or counted. Book **Cart returns** first.
+> A cart that is out can't be unloaded or counted. Book **Cart returns** first. Loading it is a follow-up delivery (see "2. Load cart").
 
 ## [book-in | stockmaster.stock] 1. Book in
 Goods arrive (delivery, purchase) and go to the **free stock** on their fixed location.
@@ -91,13 +91,22 @@ Load cart opens on the **Loading overview**: every cart with needs this season, 
 - The document icon opens that cart's **Load list** (PDF).
 - Tick several carts and click **Print load lists** to get their load lists together in one PDF, each cart on its own page.
 
-On the loading screen the cart is shown at the top as a header, with how many products and pieces are already loaded. Below it is **Still to load** (the basket), and at the bottom **Contents of the cart**: what's already in it, with pictures.
+On the loading screen the cart is shown at the top as a header, with how many products and pieces are already loaded. Below it is **Cart contents**: one table with every product of the cart. Hover over a column title for its explanation.
+
+- **Source**: where the request comes from (Altsien Select or Manual).
+- **Requested by club**, **Initially granted by Altsien core member**: the quantities of the chosen season.
+- **Available in free stock**, **Already in cart**, **Already in cart outside warehouse** (what left with the cart and didn't come back) and **Available for delivery now**.
+- **Available for delivery now** follows the product's rules in MasterData: **Blocked** gives 0, a **logistics product** gets what was requested, and otherwise the **Limit** decides: *Unlimited* and *Assigned quantity* give what was requested, *Percentage* gives that percentage (Limit value) of it, and *Automatic* gives what was requested as long as there's enough stock for every cart, otherwise the same percentage for every cart (stock ÷ everything requested). Rounded down. As long as the cart isn't **Geleverd** in KarTracker, Automatic (when short), Percentage and Assigned quantity never give it more than the **Maximum initial stock** (over its lines of that product together). The result is never more than what's physically there. Click the icon next to the number to see the calculation as a flow chart, with that line's values.
+- **To deliver now**: what you load now, and **Before → after**: the stock per place before and after the booking.
 
 1. Open the cart with **Load** in the overview.
-2. What the cart still misses according to its **needs** is already in the list. Click **Fill in what's missing** to fill the list again.
-3. Change the quantities if you load fewer or more, or add other products.
-4. Choose under **From** whether it comes from the free stock or from another cart.
-5. Click **Confirm: load cart**.
+2. Tick the lines you want to load (or all of them with the box at the top) and click **Fill in what's missing**: **To deliver now** is filled in. You can also type the quantity yourself.
+3. Need another product? Click **Add a product manually**, search the product and enter the quantity: it gets its own line with Source "Manual", even when the product already has an Altsien Select line. That line is saved for this cart and season and stays after loading, until you remove it.
+4. **Remove selected** removes ticked manual lines and sets the others back to 0.
+5. Choose under **From** whether it comes from the free stock or from another cart.
+6. Fill in **Reference** and **Comment** if needed and click **Confirm: load cart** (or Ctrl+Enter).
+
+A cart that is **on the way** (after Cart leaves) can also be opened with **Load**. What you confirm then is a **follow-up delivery** to the festival: it comes from the free stock, counts with what left with the cart and is suggested on **Cart returns**. "Already in cart" then shows what left with the cart.
 
 ![Load cart](kar-load.png)
 
