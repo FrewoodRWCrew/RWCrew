@@ -432,6 +432,22 @@ class PlanKarResponse(BaseModel):
     season_id: int
     team_id: int
     rows: list[PlanKarFestivalRow]
+    # True when the team picked no festivals in Altsien Select yet, so every
+    # active festival of the season is listed instead.
+    uses_all_festivals: bool = False
+
+
+class PlanKarOverviewRow(BaseModel):
+    """One kar on the "Plan a kar" overview: its team and how many of that
+    team's festivals already have a delivery location."""
+
+    kar_id: int
+    kar_nummer: str
+    team_id: int
+    team_name: str
+    festival_count: int
+    planned_count: int
+    uses_all_festivals: bool
 
 
 class PlanKarSaveRow(BaseModel):

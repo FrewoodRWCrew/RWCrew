@@ -1,10 +1,10 @@
-// KarTracker's "Plan a kar" screen: per team, pick the delivery location
-// (afleverlocatie) for every active festival of the selected season — see
-// PlanKar for the actual UI. The team and location dropdown lists are
-// fetched here; the matrix itself is loaded client-side once a team is
-// chosen (it depends on the season picked in the header, which only the
-// browser knows). The ground plans are fetched here too, for the map of
-// chosen locations below the matrix.
+// KarTracker's "Plan a kar" screen: an overview of every kar with its team's
+// planning progress, and per team the delivery location (afleverlocatie) for
+// each of its festivals of the selected season — see PlanKarScreen for the
+// switch between both. The teams and location dropdown list are fetched here;
+// the overview and matrix are loaded client-side (they depend on the season
+// picked in the header, which only the browser knows). The ground plans are
+// fetched here too, for the map of chosen locations below the matrix.
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
@@ -13,7 +13,7 @@ import type {
   KarTrackerPlanKarAfleverlocatieOption,
   KarTrackerPlanKarOption,
 } from "@/lib/types";
-import { PlanKar } from "@/components/module-2/plan-kar";
+import { PlanKarScreen } from "@/components/module-2/plan-kar-screen";
 
 export default async function PlanKarPage() {
   const tErrors = await getTranslations("errors");
@@ -34,5 +34,5 @@ export default async function PlanKarPage() {
     throw error;
   }
 
-  return <PlanKar teams={teams} afleverlocaties={afleverlocaties} groundplans={groundplans} />;
+  return <PlanKarScreen teams={teams} afleverlocaties={afleverlocaties} groundplans={groundplans} />;
 }

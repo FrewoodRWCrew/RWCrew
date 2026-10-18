@@ -79,7 +79,7 @@ from app.modules.module_2.leverdatum_import import (
     export_leverdata_to_xlsx,
     import_leverdata_from_xlsx,
 )
-from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
+from app.modules.module_2.plan_kar_service import festivals_by_team, festivals_for_team, upsert_plan_kar_rows
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.modules.module_2.kar_status_import import (
     build_kar_status_template_xlsx,
@@ -124,6 +124,7 @@ from app.schemas.kartracker import (
     PlanKarAfleverlocatieOption,
     PlanKarFestivalRow,
     PlanKarOption,
+    PlanKarOverviewRow,
     PlanKarResponse,
     PlanKarSaveRequest,
     RoleCreateRequest,
@@ -1024,6 +1025,56 @@ def list_plan_kar_afleverlocaties(
     ]
 
 
+@router.get("/plan-kar/overview", response_model=list[PlanKarOverviewRow])
+def get_plan_kar_overview(
+    season_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.plankar", "view")),
+) -> list[PlanKarOverviewRow]:
+    """The screen's overview: every kar of an active team, with how many of
+    that team's festivals already have a delivery location this season.
+    Locations are saved per team, so kars of one team share their figures.
+    """
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+
+    all_festivals, per_team = festivals_by_team(db, season_id)
+
+    # Every saved (team, festival) pair of the season.
+    planned: dict[int, set[int]] = {}
+    for team_id, festival_id in db.execute(
+        select(KarTrackerKarAfleverlocatie.team_id, KarTrackerKarAfleverlocatie.festival_id).where(
+            KarTrackerKarAfleverlocatie.season_id == season_id
+        )
+    ).all():
+        planned.setdefault(team_id, set()).add(festival_id)
+
+    # Kars without a team, or of an inactive team, can't be planned.
+    kars = db.execute(
+        select(KarTrackerKar.id, KarTrackerKar.kar_nummer, Team.id.label("team_id"), Team.name.label("team_name"))
+        .join(Team, Team.id == KarTrackerKar.team_id)
+        .where(Team.active.is_(True))
+        .order_by(KarTrackerKar.kar_nummer)
+    ).all()
+
+    rows: list[PlanKarOverviewRow] = []
+    for kar in kars:
+        # The team's own festivals, or every active one while it picked none.
+        festival_ids = {festival.id for festival in per_team.get(kar.team_id, all_festivals)}
+        rows.append(
+            PlanKarOverviewRow(
+                kar_id=kar.id,
+                kar_nummer=kar.kar_nummer,
+                team_id=kar.team_id,
+                team_name=kar.team_name,
+                festival_count=len(festival_ids),
+                planned_count=len(festival_ids & planned.get(kar.team_id, set())),
+                uses_all_festivals=kar.team_id not in per_team,
+            )
+        )
+    return rows
+
+
 @router.get("/plan-kar", response_model=PlanKarResponse)
 def get_plan_kar(
     season_id: int,
@@ -1039,25 +1090,28 @@ def get_plan_kar(
     if db.get(Team, team_id) is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
-    # Outer join so festivals without a saved assignment still get a row.
-    rows = db.execute(
-        select(Festival.id, Festival.name, KarTrackerKarAfleverlocatie.afleverlocatie_id)
-        .outerjoin(
-            KarTrackerKarAfleverlocatie,
-            (KarTrackerKarAfleverlocatie.festival_id == Festival.id)
-            & (KarTrackerKarAfleverlocatie.season_id == season_id)
-            & (KarTrackerKarAfleverlocatie.team_id == team_id),
-        )
-        .where(Festival.season_id == season_id, Festival.active.is_(True))
-        .order_by(Festival.start_date, Festival.name)
-    ).all()
+    # The team's own festivals (or every active one while it picked none).
+    festivals, uses_all = festivals_for_team(db, season_id, team_id)
+
+    # What was already saved for this team, keyed by festival.
+    saved = dict(
+        db.execute(
+            select(KarTrackerKarAfleverlocatie.festival_id, KarTrackerKarAfleverlocatie.afleverlocatie_id).where(
+                KarTrackerKarAfleverlocatie.season_id == season_id,
+                KarTrackerKarAfleverlocatie.team_id == team_id,
+            )
+        ).all()
+    )
 
     return PlanKarResponse(
         season_id=season_id,
         team_id=team_id,
+        uses_all_festivals=uses_all,
         rows=[
-            PlanKarFestivalRow(festival_id=row.id, festival_name=row.name, afleverlocatie_id=row.afleverlocatie_id)
-            for row in rows
+            PlanKarFestivalRow(
+                festival_id=festival.id, festival_name=festival.name, afleverlocatie_id=saved.get(festival.id)
+            )
+            for festival in festivals
         ],
     )
 

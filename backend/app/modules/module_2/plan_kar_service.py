@@ -2,12 +2,55 @@
 # delivers to at each festival of a season (KarTracker_kar_afleverlocaties).
 # Used by KarTracker's own "Plan a kar" screen (module_2/router.py) and by
 # Altsien Select's Ploeg Wizard (module_8/router.py), so both screens always
-# write the exact same rows in the exact same way.
+# write the exact same rows in the exact same way. Also decides which
+# festivals a team has to plan (its own ones, see festivals_for_team).
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.db.models.festival import Festival
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
+from app.db.models.team_festival import TeamFestival
+
+
+def festivals_by_team(db: Session, season_id: int) -> tuple[list[Festival], dict[int, list[Festival]]]:
+    """All active festivals of the season (in calendar order), plus per team
+    the active festivals it picked in Altsien Select (MasterData_team_festival).
+    Teams that picked none are simply missing from the dict.
+    """
+    festivals = list(
+        db.scalars(
+            select(Festival)
+            .where(Festival.season_id == season_id, Festival.active.is_(True))
+            .order_by(Festival.start_date, Festival.name)
+        ).all()
+    )
+    active_ids = {festival.id for festival in festivals}
+
+    # One query for every team's picks of this season; inactive festivals drop out.
+    picked: dict[int, set[int]] = {}
+    for team_id, festival_id in db.execute(
+        select(TeamFestival.team_id, TeamFestival.festival_id).where(TeamFestival.season_id == season_id)
+    ).all():
+        if festival_id in active_ids:
+            picked.setdefault(team_id, set()).add(festival_id)
+
+    # Keep the calendar order of the full list.
+    per_team = {
+        team_id: [festival for festival in festivals if festival.id in ids] for team_id, ids in picked.items()
+    }
+    return festivals, per_team
+
+
+def festivals_for_team(db: Session, season_id: int, team_id: int) -> tuple[list[Festival], bool]:
+    """The festivals a team has to plan a delivery location for: the ones it
+    picked in Altsien Select or, while it picked none yet, every active
+    festival of the season. The flag says whether that fallback was used.
+    """
+    festivals, per_team = festivals_by_team(db, season_id)
+    if team_id in per_team:
+        return per_team[team_id], False
+    return festivals, True
 
 
 def upsert_plan_kar_rows(

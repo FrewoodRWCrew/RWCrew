@@ -171,6 +171,10 @@ tables, `backend/app/modules/module_8/screens.py`).
   `components/module-4/kar-requirements-list.tsx` as StockMaster's "Benodigdheden" screen (each passes its own
   `KarRequirementsApi`); its per-kar "copy from last season" replaces `COPYABLE_STEPS`. Done = at least one line on
   one of the team's kars; emptying every list un-marks the step. Ploegfiche (screen + PDF) lists them per kar.
+- KarTracker's **Plan een kar** (`components/module-2/plan-kar-screen.tsx`) opens on a per-kar overview
+  (`GET /plan-kar/overview`, kars of active teams, "x/y festivals" per team); `?team=<id>` opens the team's matrix.
+  Both count only the festivals the team picked in the wizard (`MasterData_team_festival`), falling back to every
+  active festival while it picked none (`module_2/plan_kar_service.py` `festivals_for_team`).
 - Walkie-talkies is a placeholder step until its own module exists.
 - **Ploegverantwoordelijken** (team leads, per team + season, not RWCrew users) live in MasterData's
   `MasterData_team_responsible`, managed on module-9's `masterdata.team-responsibles` screen (Teams >

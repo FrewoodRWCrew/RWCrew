@@ -1192,6 +1192,19 @@ export interface KarTrackerPlanKar {
   season_id: number;
   team_id: number;
   rows: KarTrackerPlanKarRow[];
+  /** True when the team picked no festivals in Altsien Select yet: every active festival is listed. */
+  uses_all_festivals: boolean;
+}
+
+/** One kar on the "Plan a kar" overview, with its team's planning progress (shared by the team's kars). */
+export interface KarTrackerPlanKarOverviewRow {
+  kar_id: number;
+  kar_nummer: string;
+  team_id: number;
+  team_name: string;
+  festival_count: number;
+  planned_count: number;
+  uses_all_festivals: boolean;
 }
 
 /** KarTracker's landing dashboard ("KPI Overview"). The plan_kar fields are null without a season. */

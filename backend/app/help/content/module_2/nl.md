@@ -69,12 +69,14 @@ Een kaart met de **karren**, **afleverlocaties** en **distributiepunten** die ee
 > Iets zonder coördinaten staat wel in de lijst ("Geen locatie"), maar niet op de kaart. Vul de breedte- en lengtegraad aan op het scherm van dat gegeven.
 
 ## [plan-kar | kartracker.plankar] Plan a kar
-Kies per ploeg de afleverlocatie voor elk actief festival van het jaartal.
+Kies per ploeg de afleverlocatie voor elk festival van het jaartal.
+
+Het scherm opent op een **overzicht van alle karren** (van actieve ploegen): per kar zie je hoeveel festivals van zijn ploeg al een afleverlocatie hebben (bv. "2/3 festivals", groen zodra alles ingevuld is). Afleverlocaties horen bij de ploeg, dus alle karren van dezelfde ploeg tonen hetzelfde cijfer. Er tellen enkel de festivals die de ploeg in Altsien Select koos; koos ze er nog geen, dan tellen alle actieve festivals.
 
 1. Kies bovenaan in de kopbalk een **open jaartal**.
-2. Kies een **team**.
+2. Zoek een kar (karnummer of ploeg) en klik op **Plannen**.
 3. Kies per festival de **afleverlocatie** (of "Geen afleverlocatie").
-4. Klik op **Opslaan**.
+4. Klik op **Opslaan** en daarna op **Terug naar overzicht**.
 
 Onder de tabel toont de **kaart afleverlocaties** waar de gekozen locaties liggen, eventueel met het grondplan.
 

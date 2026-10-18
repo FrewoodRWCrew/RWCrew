@@ -13,11 +13,15 @@ from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_distributiepunt import KarTrackerDistributiepunt
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan
+from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
+from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.kartracker_zone import KarTrackerZone
+from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
+from app.db.models.team_festival import TeamFestival
 from app.modules.module_2.screens import sync_screens
 from tests.modules.module_2.conftest import (
     create_kartracker_module,
@@ -359,3 +363,88 @@ def test_plankar_viewer_can_read_the_ground_plans(client: TestClient, db_session
     assert image.content == b"png-bytes"
     # Reading is all a Plan a kar user gets: managing plans stays with the Grondplan screen.
     assert client.delete(f"/api/modules/module-2/groundplans/{plan.id}").status_code == 403
+
+
+def _create_kar(db_session: Session, kar_nummer: str, *, team_id: int | None) -> KarTrackerKar:
+    status = db_session.scalar(select(KarTrackerKarStatus)) or KarTrackerKarStatus(name="Terug in Magazijn")
+    product = db_session.scalar(select(Product)) or Product(name="Box")
+    db_session.add_all([status, product])
+    db_session.commit()
+    kar = KarTrackerKar(kar_nummer=kar_nummer, status_id=status.id, transport_type_id=product.id, team_id=team_id)
+    db_session.add(kar)
+    db_session.commit()
+    return kar
+
+
+def _pick_festivals(db_session: Session, season: Season, team: Team, *festivals: Festival) -> None:
+    """Link the team to festivals, as Altsien Select's wizard step 1 does."""
+    for festival in festivals:
+        db_session.add(TeamFestival(season_id=season.id, team_id=team.id, festival_id=festival.id))
+    db_session.commit()
+
+
+def test_matrix_lists_only_the_festivals_the_team_picked(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+    season = _create_season(db_session)
+    team = _create_team(db_session)
+    alpha = _create_festival(db_session, season_id=season.id, name="Alpha Fest", start_date="2026-07-01")
+    _create_festival(db_session, season_id=season.id, name="Beta Fest", start_date="2026-08-01")
+    _pick_festivals(db_session, season, team, alpha)
+
+    body = client.get("/api/modules/module-2/plan-kar", params={"season_id": season.id, "team_id": team.id}).json()
+
+    assert [row["festival_name"] for row in body["rows"]] == ["Alpha Fest"]
+    assert body["uses_all_festivals"] is False
+
+
+def test_overview_counts_planned_festivals_per_kar(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+    season = _create_season(db_session)
+    picker = _create_team(db_session, name="Picker")
+    fallback = _create_team(db_session, name="Fallback")
+    dormant = _create_team(db_session, name="Dormant", active=False)
+    alpha = _create_festival(db_session, season_id=season.id, name="Alpha Fest", start_date="2026-07-01")
+    beta = _create_festival(db_session, season_id=season.id, name="Beta Fest", start_date="2026-08-01")
+    _create_festival(db_session, season_id=season.id, name="Gamma Fest", start_date="2026-09-01")
+    _pick_festivals(db_session, season, picker, alpha, beta)
+    gate = _create_location(db_session)
+    _create_kar(db_session, "B002", team_id=picker.id)
+    _create_kar(db_session, "B001", team_id=picker.id)
+    _create_kar(db_session, "K001", team_id=fallback.id)
+    _create_kar(db_session, "K002", team_id=None)
+    _create_kar(db_session, "K003", team_id=dormant.id)
+    client.put(
+        "/api/modules/module-2/plan-kar",
+        json={"season_id": season.id, "team_id": picker.id, "rows": [{"festival_id": alpha.id, "afleverlocatie_id": gate.id}]},
+    )
+
+    response = client.get("/api/modules/module-2/plan-kar/overview", params={"season_id": season.id})
+
+    assert response.status_code == 200
+    rows = [
+        (row["kar_nummer"], row["team_name"], row["planned_count"], row["festival_count"], row["uses_all_festivals"])
+        for row in response.json()
+    ]
+    # Kars of one team share its figures; no team / inactive team is left out;
+    # a team that picked no festivals counts every active one.
+    assert rows == [
+        ("B001", "Picker", 1, 2, False),
+        ("B002", "Picker", 1, 2, False),
+        ("K001", "Fallback", 0, 3, True),
+    ]
+
+
+def test_overview_needs_the_plankar_screen_and_a_known_season(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+    assert client.get("/api/modules/module-2/plan-kar/overview", params={"season_id": 999}).status_code == 404
+
+    client.cookies.clear()
+    module = create_kartracker_module(db_session)
+    user = create_user(db_session, email="member@example.com")
+    grant_module_access(db_session, user, module)
+    role = create_role_with_permissions(db_session, name="Map Viewer", screen_key="kartracker.karmap", can_view=True)
+    db_session.add(KarTrackerUserRole(user_id=user.id, role_id=role.id))
+    db_session.commit()
+    login(client, "member@example.com")
+
+    assert client.get("/api/modules/module-2/plan-kar/overview", params={"season_id": 1}).status_code == 403

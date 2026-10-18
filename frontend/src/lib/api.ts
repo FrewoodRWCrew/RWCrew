@@ -68,6 +68,7 @@ import type {
   KarTrackerPlanKar,
   KarTrackerPlanKarAfleverlocatieOption,
   KarTrackerPlanKarOption,
+  KarTrackerPlanKarOverviewRow,
   KarTrackerPlanKarSaveInput,
   KarTrackerRole,
   KarTrackerScreen,
@@ -1450,7 +1451,12 @@ export function getKarTrackerDashboard(seasonId: number | null): Promise<KarTrac
   return apiFetch<KarTrackerDashboardStats>(`/api/modules/module-2/dashboard${query}`);
 }
 
-/** The matrix (active festivals of the season + saved locations) for one team. */
+/** Every kar of an active team with how many of its team's festivals have a delivery location. */
+export function getPlanKarOverview(seasonId: number): Promise<KarTrackerPlanKarOverviewRow[]> {
+  return apiFetch<KarTrackerPlanKarOverviewRow[]>(`/api/modules/module-2/plan-kar/overview?season_id=${seasonId}`);
+}
+
+/** The matrix (the team's festivals of the season + saved locations) for one team. */
 export function getPlanKar(seasonId: number, teamId: number): Promise<KarTrackerPlanKar> {
   return apiFetch<KarTrackerPlanKar>(`/api/modules/module-2/plan-kar?season_id=${seasonId}&team_id=${teamId}`);
 }

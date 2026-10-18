@@ -69,12 +69,14 @@ A map with the **karren**, **delivery locations** and **distribution points** th
 > Something without coordinates is in the list ("No location") but not on the map. Fill in the latitude and longitude on that item's own screen.
 
 ## [plan-kar | kartracker.plankar] Plan a kar
-Choose per team the delivery location for every active festival of the year.
+Choose per team the delivery location for every festival of the year.
+
+The screen opens on an **overview of every kar** (of active teams): per kar you see how many of its team's festivals already have a delivery location (e.g. "2/3 festivals", green once everything is filled in). Delivery locations belong to the team, so all kars of the same team show the same figure. Only the festivals the team picked in Altsien Select count; if it picked none yet, every active festival counts.
 
 1. Pick an **open year** at the top in the header.
-2. Choose a **team**.
+2. Search a kar (kar number or team) and click **Plan**.
 3. Choose the **delivery location** per festival (or "No delivery location").
-4. Click **Save**.
+4. Click **Save**, then **Back to overview**.
 
 Below the table, the **delivery locations map** shows where the chosen locations are, optionally with the ground plan.
 
