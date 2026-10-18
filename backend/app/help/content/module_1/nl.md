@@ -57,7 +57,7 @@ De mappen en bestanden op de server zoals de scanners ze aanleveren, met een voo
 > Verwijderen haalt het bestand definitief van de server. Een bestand dat al geregistreerd is, blijft wel in Tag Headergegevens staan. Daarvoor heb je het recht **Verwijderen** op dit scherm nodig.
 
 ## [header-data | tagscan.tag-headerdata] Tag Headergegevens
-Elk gescand CSV-bestand op één lijn: de bestandsnaam, wanneer het geregistreerd werd, het aantal regels, de scanner (naam, type, locatie, technologie), de modus, de actie en de verwerkingsstatus.
+Elk gescand CSV-bestand op één lijn: de bestandsnaam, wanneer het geregistreerd werd, het aantal regels, de scanner (naam, type, locatie, technologie), de modus, de actie, de **karnummers** van zijn regels, de **CSV Comment** (de Comment-cellen van het bestand samen), de verwerkingsstatus en het commentaar bij de verwerking.
 
 1. Klik op **Scannen** om de nieuwe bestanden in Unreaded Tags meteen te verwerken. De scanlog toont per bestand: **Geregistreerd**, **Al geregistreerd** of **Fout**.
 2. Zoek met de filters onder de kolomtitels, bv. op bestandsnaam, scanner of verwerkingsstatus.
@@ -69,7 +69,7 @@ Elk gescand CSV-bestand op één lijn: de bestandsnaam, wanneer het geregistreer
 > Scannen kan enkel met het recht **Aanmaken** op dit scherm, verwijderen met **Verwijderen**.
 
 ## [line-data | tagscan.tag-linedata] Tag Regelgegevens
-Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne, aantal, laatst gezien, product, serienummer, karnummer, fabrikant, batchnummer, matchstatus en verwerking.
+Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne, aantal, laatst gezien, product, serienummer, karnummer, fabrikant, batchnummer, **CSV Comment** (de Comment-cel van die regel), matchstatus, verwerking en **Commentaar** (bv. de reden van een annulering).
 
 1. Zoek met de filters onder de kolomtitels, bv. op EPC, product, scanner of status.
 2. Klik op **Groeperen per product** om per bestand en product een subtotaal te zien, of op **Groeperen per kar** om de regels van elk bestand met een kar (een tag met karnummer) onder die kar te zien (dit staat standaard aan). Klik op een EPC, product of karnummer om die tag, productfiche of kar meteen te openen.
@@ -81,7 +81,7 @@ Elke gescande CSV-regel, aangevuld met de tag uit TagBeheer: EPC, RSSI, antenne,
 > **Geen match** betekent dat de EPC (nog) niet in TagBeheer staat. Voeg de tag toe in TagBeheer of via een Assignment, en klik daarna op **Synchro**.
 
 ## [tag-management | tagscan.tag-management] TagBeheer
-Het register van alle RFID-tags: EPC / UID, status, toegewezen product en serienummer, karnummer (de kar uit KarTracker waarop de tag hangt), data, laatste lezing en locatie, fabrikant, batchnummer en vijf notitievelden.
+Het register van alle RFID-tags: EPC / UID, status, toegewezen product en serienummer, karnummer (de kar uit KarTracker waarop de tag hangt), data, laatste lezing en locatie, fabrikant, batchnummer, vijf notitievelden en **CSV Comment**: de laatste Comment uit een gescande CSV met deze EPC. Die vult TagScan zelf in; je kan ze niet wijzigen.
 
 1. Klik op **Nieuwe tag** om een tag te registreren. Vul minstens de **EPC / UID** in.
 2. Klik bij een tag op **Wijzigen** om bv. het product, het serienummer, het karnummer of de **status** aan te passen (Actief, Inactief, Verloren, Beschadigd, Uit dienst).
@@ -90,7 +90,7 @@ Het register van alle RFID-tags: EPC / UID, status, toegewezen product en serien
 
 ![TagBeheer](tag-management.png)
 
-> Veel tags tegelijk registreren of wijzigen? Gebruik een Excel-bestand in **Data Upload/Download**.
+> Klik je in Tag Regelgegevens op een EPC, dan opent TagBeheer meteen het formulier van die tag. Veel tags tegelijk registreren of wijzigen? Gebruik een Excel-bestand in **Data Upload/Download**.
 
 ## [scanners | tagscan.scanners] Scanners
 Het register van de fysieke RFID-scanners die de CSV-bestanden maken: naam, type, technologie, locatie, beschrijving en drie infovelden.
@@ -113,7 +113,7 @@ Tags en scanners in bulk importeren en exporteren met Excel, één tegel per tab
 
 ![Data Upload/Download](data-upload.png)
 
-> Een bestaande EPC / UID of scannernaam wordt **bijgewerkt**, niet dubbel aangemaakt. De API-sleutel van een scanner blijft behouden. Uploaden kan enkel met het recht **Aanmaken** op dit scherm.
+> Een bestaande EPC / UID of scannernaam wordt **bijgewerkt**, niet dubbel aangemaakt. Kolommen die niet in je bestand staan, blijven ongewijzigd (een oud sjabloon zonder bv. kar_nummer wist dus niets). De kolom **csv_comment** in de export is enkel ter info en wordt bij het uploaden genegeerd. De API-sleutel van een scanner blijft behouden. Uploaden kan enkel met het recht **Aanmaken** op dit scherm.
 
 ## [roles | tagscan.roles] Rollen
 Een rol bepaalt wat iemand in TagScan mag doen, per scherm: **Bekijken**, **Aanmaken**, **Wijzigen** en **Verwijderen**.

@@ -27,6 +27,8 @@ MODULE_ACCENTS: dict[str, tuple[int, int, int]] = {
     "module-2": (147, 51, 234),  # purple
     "module-3": (234, 88, 12),  # orange
     "module-4": (13, 148, 136),  # teal
+    "module-5": (220, 38, 38),  # red
+    "module-6": (79, 70, 229),  # indigo
     "module-8": (192, 38, 211),  # fuchsia
     "module-9": (8, 145, 178),  # cyan
 }

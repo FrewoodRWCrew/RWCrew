@@ -29,6 +29,8 @@ const CONTENT_DIR = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 // needs and stock (change these when the local database is rebuilt).
 const SEASON = process.env.HELP_SHOTS_SEASON ?? "1";
 const KAR = process.env.HELP_SHOTS_KAR ?? "36";
+// A team with choices in Altsien Select, for its Ploegfiche.
+const TEAM = process.env.HELP_SHOTS_TEAM ?? "1";
 
 // Per module: the page to open, the file to write and, optionally, the name
 // of a button to click first (e.g. to load a list) or a "prepare" step that
@@ -80,6 +82,42 @@ const SHOTS = {
     { file: "reasons.png", path: "/modules/module-4/settings/reasons" },
     { file: "roles.png", path: "/modules/module-4/access-rights/roles" },
     { file: "users.png", path: "/modules/module-4/access-rights/users" },
+  ],
+  "module-3": [
+    { file: "overview.png", path: "/modules/module-3" },
+    { file: "requests.png", path: "/modules/module-3/intervention-requests" },
+    { file: "statuses.png", path: "/modules/module-3/intervention-statuses" },
+    { file: "teamkar.png", path: "/modules/module-3/teamkar" },
+    { file: "mailing-list.png", path: "/modules/module-3/settings/mailing-list" },
+    { file: "roles.png", path: "/modules/module-3/access-rights/roles" },
+    { file: "users.png", path: "/modules/module-3/access-rights/users" },
+  ],
+  "module-8": [
+    { file: "overview.png", path: `/modules/module-8?season=${SEASON}` },
+    { file: "wizard.png", path: `/modules/module-8/ploeg-wizard?season=${SEASON}` },
+    { file: "ploegfiche.png", path: `/modules/module-8/ploegfiche?season=${SEASON}&team=${TEAM}` },
+    { file: "requests.png", path: `/modules/module-8/requests?season=${SEASON}` },
+    { file: "statuses.png", path: "/modules/module-8/request-statuses" },
+    { file: "roles.png", path: "/modules/module-8/access-rights/roles" },
+    { file: "users.png", path: "/modules/module-8/access-rights/users" },
+  ],
+  "module-9": [
+    { file: "overview.png", path: "/modules/module-9" },
+    { file: "season.png", path: "/modules/module-9/season" },
+    { file: "festival.png", path: "/modules/module-9/festival" },
+    { file: "teams.png", path: "/modules/module-9/teams" },
+    { file: "team-responsibles.png", path: "/modules/module-9/teams/responsibles" },
+    { file: "team-location.png", path: "/modules/module-9/teams/location" },
+    { file: "delivery-method.png", path: "/modules/module-9/teams/delivery-method" },
+    { file: "team-tasks.png", path: "/modules/module-9/teams/tasks" },
+    { file: "products.png", path: "/modules/module-9/products" },
+    { file: "product-types.png", path: "/modules/module-9/products/types" },
+    { file: "warehouses.png", path: "/modules/module-9/products/warehouses" },
+    { file: "product-categories.png", path: "/modules/module-9/products/categories" },
+    { file: "product-limits.png", path: "/modules/module-9/products/limits" },
+    { file: "data-upload.png", path: "/modules/module-9/data-upload-download" },
+    { file: "roles.png", path: "/modules/module-9/access-rights/roles" },
+    { file: "users.png", path: "/modules/module-9/access-rights/users" },
   ],
 };
 

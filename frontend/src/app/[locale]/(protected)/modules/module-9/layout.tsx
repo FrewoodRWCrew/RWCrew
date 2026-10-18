@@ -2,12 +2,16 @@
 // access-rights/) with MasterData's own left-hand menu, the same way
 // TagScan's own layout.tsx does for module-1 — see
 // components/module-9/masterdata-sidebar.tsx for what shows in it and why.
+// Above every page sits the "Help bij dit scherm" link to the manual's
+// chapter about the open screen (see components/shared/module-help.tsx).
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
 import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { MasterDataMyPermissions } from "@/lib/types";
 import { MasterDataSidebar } from "@/components/module-9/masterdata-sidebar";
+import { MASTERDATA_HELP_ROUTES } from "@/components/module-9/masterdata-help";
+import { ScreenHelpButton } from "@/components/shared/module-help";
 
 interface MasterDataLayoutProps {
   children: React.ReactNode;
@@ -38,7 +42,10 @@ export default async function MasterDataLayout({ children }: MasterDataLayoutPro
     // this module's own accent colour — see getModuleAccentStyle().
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-9")}>
       <MasterDataSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
-      <div className="min-w-0 flex-1 p-6">{children}</div>
+      <div className="min-w-0 flex-1 p-6">
+        <ScreenHelpButton moduleKey="module-9" routes={MASTERDATA_HELP_ROUTES} className="-mt-4 mb-1" />
+        {children}
+      </div>
     </div>
   );
 }

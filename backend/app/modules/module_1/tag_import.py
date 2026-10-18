@@ -11,7 +11,11 @@
 # back one result per row (created/updated/error), never a partial
 # exception. A row whose epc_uid already exists is UPDATED (upsert),
 # rather than rejected as a duplicate, so re-exporting/editing/
-# re-uploading the same tags is the expected workflow.
+# re-uploading the same tags is the expected workflow. Only the columns
+# present in the uploaded header are applied: a file made from an older
+# template (e.g. without "kar_nummer") or a trimmed sheet leaves the
+# missing fields of an existing tag untouched, and a new tag gets the
+# model's defaults for them.
 
 import io
 from datetime import date, datetime
@@ -51,6 +55,12 @@ TEMPLATE_COLUMNS = [
     "notes_4",
     "notes_5",
 ]
+
+# Extra columns only in the export, after the template's: read-only info a
+# person may want to see, but that the import never applies (it looks
+# columns up by name, so they're simply ignored on re-upload). "csv_comment"
+# is the tag's "CSV Comment", filled by TagScan from scanned CSVs only.
+EXPORT_ONLY_COLUMNS = ["csv_comment"]
 
 ALLOWED_STATUSES = {"active", "inactive", "lost", "damaged", "retired"}
 
@@ -149,6 +159,15 @@ def _resolve_kar_id(db: Session, kar_nummer: str | None) -> int | None:
     return kar.id
 
 
+def _parse_status(value: str | None) -> str:
+    """An empty status cell means "active"; anything else must be one of
+    the five allowed values (matched ignoring case)."""
+    status_value = (value or "active").lower()
+    if status_value not in ALLOWED_STATUSES:
+        raise ValueError(f'Invalid status "{status_value}"')
+    return status_value
+
+
 def import_tags_from_xlsx(db: Session, file_bytes: bytes) -> list[RfidTagImportRowResult]:
     """Apply every row of an uploaded XLSX workbook's active sheet,
     returning one result per row. Row numbers match the actual
@@ -181,26 +200,30 @@ def import_tags_from_xlsx(db: Session, file_bytes: bytes) -> list[RfidTagImportR
             if epc_uid is None:
                 raise ValueError("epc_uid is required")
 
-            status_value = (_cell_text(cell(row, "status")) or "active").lower()
-            if status_value not in ALLOWED_STATUSES:
-                raise ValueError(f'Invalid status "{status_value}"')
-
+            # Every template column but the key: its model field and how its
+            # cell is parsed. Only the columns this file actually has are
+            # applied, so a missing column never clears an existing value.
+            parsers = {
+                "status": ("status", lambda value: _parse_status(_cell_text(value))),
+                "product_name": ("assigned_product_id", lambda value: _resolve_product_id(db, _cell_text(value))),
+                "kar_nummer": ("kar_id", lambda value: _resolve_kar_id(db, _cell_text(value))),
+                "assigned_serial_number": ("assigned_serial_number", _cell_text),
+                "date_assigned": ("date_assigned", _parse_date_cell),
+                "last_read_at": ("last_read_at", _parse_datetime_cell),
+                "last_reader_id": ("last_reader_id", _cell_text),
+                "last_location": ("last_location", _cell_text),
+                "manufacturer": ("manufacturer", _cell_text),
+                "batch_number": ("batch_number", _cell_text),
+                "notes_1": ("notes_1", _cell_text),
+                "notes_2": ("notes_2", _cell_text),
+                "notes_3": ("notes_3", _cell_text),
+                "notes_4": ("notes_4", _cell_text),
+                "notes_5": ("notes_5", _cell_text),
+            }
             fields = {
-                "status": status_value,
-                "assigned_product_id": _resolve_product_id(db, _cell_text(cell(row, "product_name"))),
-                "kar_id": _resolve_kar_id(db, _cell_text(cell(row, "kar_nummer"))),
-                "assigned_serial_number": _cell_text(cell(row, "assigned_serial_number")),
-                "date_assigned": _parse_date_cell(cell(row, "date_assigned")),
-                "last_read_at": _parse_datetime_cell(cell(row, "last_read_at")),
-                "last_reader_id": _cell_text(cell(row, "last_reader_id")),
-                "last_location": _cell_text(cell(row, "last_location")),
-                "manufacturer": _cell_text(cell(row, "manufacturer")),
-                "batch_number": _cell_text(cell(row, "batch_number")),
-                "notes_1": _cell_text(cell(row, "notes_1")),
-                "notes_2": _cell_text(cell(row, "notes_2")),
-                "notes_3": _cell_text(cell(row, "notes_3")),
-                "notes_4": _cell_text(cell(row, "notes_4")),
-                "notes_5": _cell_text(cell(row, "notes_5")),
+                field: parse(cell(row, column))
+                for column, (field, parse) in parsers.items()
+                if column in column_index
             }
 
             existing = db.scalar(select(RfidTag).where(RfidTag.epc_uid == epc_uid))
@@ -231,7 +254,8 @@ def export_tags_to_xlsx(db: Session) -> bytes:
     workbook = Workbook()
     sheet = workbook.active
     sheet.title = "Tags"
-    sheet.append(TEMPLATE_COLUMNS)
+    export_columns = [*TEMPLATE_COLUMNS, *EXPORT_ONLY_COLUMNS]
+    sheet.append(export_columns)
     for cell in sheet[1]:
         cell.font = Font(bold=True)
 
@@ -259,10 +283,11 @@ def export_tags_to_xlsx(db: Session) -> bytes:
             "notes_3": tag.notes_3,
             "notes_4": tag.notes_4,
             "notes_5": tag.notes_5,
+            "csv_comment": tag.csv_comment_cell,
         }
-        sheet.append([values[column] for column in TEMPLATE_COLUMNS])
+        sheet.append([values[column] for column in export_columns])
 
-    for index, column in enumerate(TEMPLATE_COLUMNS, start=1):
+    for index, column in enumerate(export_columns, start=1):
         sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 14)
 
     buffer = io.BytesIO()

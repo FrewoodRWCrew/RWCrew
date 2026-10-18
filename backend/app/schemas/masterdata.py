@@ -488,10 +488,11 @@ class TeamUpdateRequest(TeamCreateRequest):
 
 
 # --- Data Upload/Download: bulk XLSX import/export, one row-result pair
-# per master-data table, mirroring KarTracker's KarImportRowResult/
-# KarStatusImportRowResult (app/schemas/kartracker.py). None of these have
-# an "updated" outcome — a row naming something that already exists is
-# rejected as an error instead of being upserted, same rule as KarTracker.
+# per master-data table. A row with an existing "id" is "updated", one
+# without is "created"; the link tables (team ↔ task/Kernlid/festival) report
+# a link that already existed as "unchanged" — see module_9/xlsx_common.py.
+
+ImportOutcome = Literal["created", "updated", "unchanged", "error"]
 
 
 class SeasonImportRowResult(BaseModel):
@@ -499,7 +500,7 @@ class SeasonImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -514,7 +515,7 @@ class ProductTypeImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -529,7 +530,7 @@ class WarehouseImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -544,7 +545,7 @@ class ProductCategoryImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -559,7 +560,7 @@ class ProductLimitImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -574,7 +575,7 @@ class TeamLocationImportRowResult(BaseModel):
 
     row_number: int
     location: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -589,7 +590,7 @@ class DeliveryMethodImportRowResult(BaseModel):
 
     row_number: int
     delivery_method: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -604,7 +605,7 @@ class TeamTaskImportRowResult(BaseModel):
 
     row_number: int
     team_tasks: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -619,7 +620,7 @@ class FestivalImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -634,7 +635,7 @@ class ProductImportRowResult(BaseModel):
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -646,13 +647,13 @@ class ProductImportResponse(BaseModel):
 
 class TeamImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk team import. Only
-    Team's scalar fields (name/location/delivery method/description) are
-    imported — task/kernlid links are not part of this bulk tool.
+    Team's own fields (name/location/delivery method/description/active)
+    — its links have their own imports below.
     """
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: ImportOutcome
     detail: str | None
 
 
@@ -660,3 +661,21 @@ class TeamImportResponse(BaseModel):
     """The full outcome of a bulk team import — one result per row, in order."""
 
     results: list[TeamImportRowResult]
+
+
+class TeamLinkImportRowResult(BaseModel):
+    """What happened to one row of an uploaded bulk import of a team link
+    (tasks per team, Kernleden per team, festivals per team) or of a
+    Ploegverantwoordelijke. `key` is how the row reads, e.g. "Team A — Opbouw".
+    """
+
+    row_number: int
+    key: str | None
+    outcome: ImportOutcome
+    detail: str | None
+
+
+class TeamLinkImportResponse(BaseModel):
+    """The full outcome of such a bulk import — one result per row, in order."""
+
+    results: list[TeamLinkImportRowResult]

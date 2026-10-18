@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
+import { ModuleHelpMenuLink } from "@/components/shared/module-help";
 
 interface InterventionRequestsSidebarProps {
   viewableScreenKeys: string[];
@@ -138,6 +139,8 @@ export function InterventionRequestsSidebar({ viewableScreenKeys }: Intervention
           )}
         </>
       )}
+
+      <ModuleHelpMenuLink moduleKey="module-3" />
     </nav>
   );
 }

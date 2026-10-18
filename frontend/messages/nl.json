@@ -1041,80 +1041,108 @@
       "chooseFileLabel": "Excel-bestand",
       "uploadButton": "Uploaden",
       "importFailed": "Importeren van het Excel-bestand is mislukt.",
-      "importSummary": "{created} aangemaakt, {errors} overgeslagen.",
+      "importSummary": "{created} aangemaakt, {updated} bijgewerkt, {unchanged} al aanwezig, {errors} overgeslagen.",
       "importColumnRow": "Rij",
       "importColumnOutcome": "Resultaat",
       "importColumnDetail": "Detail",
       "importOutcome": {
         "created": "Aangemaakt",
+        "updated": "Bijgewerkt",
+        "unchanged": "Al aanwezig",
         "error": "Fout"
       },
       "exportLabel": "Exporteren",
       "season": {
         "tileTitle": "Jaartallen",
-        "dialogDescription": "Download een sjabloon om nieuwe jaartallen voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om jaartallen voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst. De kolom periode_open (ja/nee) bepaalt of Altsien Kernleden hun keuzes voor dat jaar nog mogen wijzigen.",
         "importColumnKey": "Naam",
         "exportButton": "Jaartallen downloaden"
       },
       "products": {
         "tileTitle": "Producten",
-        "dialogDescription": "Download een sjabloon om nieuwe producten voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om producten voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst. min_stock is de minimum stock (verbruiksgoederen, oranje balk in StockMaster); stock_return_to is \"kar\" of \"free\": waar het product heen gaat bij Kar terug.",
         "importColumnKey": "Naam",
         "exportButton": "Producten downloaden"
       },
       "productTypes": {
         "tileTitle": "Type",
-        "dialogDescription": "Download een sjabloon om nieuwe types voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om types voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Naam",
         "exportButton": "Types downloaden"
       },
       "warehouses": {
         "tileTitle": "Magazijnen",
-        "dialogDescription": "Download een sjabloon om nieuwe magazijnen voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om magazijnen voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Naam",
         "exportButton": "Magazijnen downloaden"
       },
       "productCategories": {
         "tileTitle": "Categorieën",
-        "dialogDescription": "Download een sjabloon om nieuwe categorieën voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om categorieën voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Naam",
         "exportButton": "Categorieën downloaden"
       },
       "productLimits": {
         "tileTitle": "Limieten",
-        "dialogDescription": "Download een sjabloon om nieuwe limieten voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om limieten voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Naam",
         "exportButton": "Limieten downloaden"
       },
       "festival": {
         "tileTitle": "Festivals",
-        "dialogDescription": "Download een sjabloon om nieuwe festivals voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om festivals voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Naam",
         "exportButton": "Festivals downloaden"
       },
       "teams": {
         "tileTitle": "Ploegen",
-        "dialogDescription": "Download een sjabloon om nieuwe teams voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst. Bevat enkel naam, locatie, leverwijze, beschrijving en actief (ja/nee) — taken en kernleden blijven beheerd op het Teams-scherm zelf.",
+        "dialogDescription": "Download een sjabloon om teams voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst. Bevat enkel de gegevens van het team zelf; taken, kernleden, festivals en ploegverantwoordelijken hebben hun eigen tegel.",
         "importColumnKey": "Naam",
         "exportButton": "Teams downloaden"
       },
       "teamLocation": {
         "tileTitle": "Team Locatie",
-        "dialogDescription": "Download een sjabloon om nieuwe teamlocaties voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om teamlocaties voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Locatie",
         "exportButton": "Teamlocaties downloaden"
       },
       "deliveryMethod": {
         "tileTitle": "Leverwijze",
-        "dialogDescription": "Download een sjabloon om nieuwe leverwijzes voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om leverwijzes voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Leverwijze",
         "exportButton": "Leverwijzes downloaden"
       },
       "teamTasks": {
         "tileTitle": "Team Taken",
-        "dialogDescription": "Download een sjabloon om nieuwe teamtaken voor te bereiden, upload het om ze in bulk aan te maken, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om teamtaken voor te bereiden, upload het om ze in bulk aan te maken of bij te werken, of exporteer de volledige lijst.",
         "importColumnKey": "Teamtaak",
         "exportButton": "Teamtaken downloaden"
+      },
+      "idHint": "Een rij met een id (de eerste kolom van de export) wijzigt dat record, een rij zonder id maakt een nieuw aan. Kolommen die niet in het bestand staan, blijven ongewijzigd. Exporteer, pas aan en upload opnieuw om in bulk te wijzigen.",
+      "linkHint": "Uploaden voegt enkel koppelingen toe: een koppeling die al bestaat, wordt overgeslagen als \"Al aanwezig\". Verwijderen doe je op het scherm zelf.",
+      "teamTaskLinks": {
+        "tileTitle": "Taken per ploeg",
+        "dialogDescription": "Welke taken elke ploeg heeft: één rij per koppeling met team_name en team_task (namen zoals op de schermen).",
+        "importColumnKey": "Ploeg — taak",
+        "exportButton": "Taken per ploeg downloaden"
+      },
+      "teamKernleden": {
+        "tileTitle": "Kernleden per ploeg",
+        "dialogDescription": "Welke Altsien Kernleden bij elke ploeg horen (en die ploeg dus zien in Altsien Select): één rij per koppeling met team_name en user_email. De gebruiker moet als Altsien Kernlid aangeduid zijn.",
+        "importColumnKey": "Ploeg — kernlid",
+        "exportButton": "Kernleden per ploeg downloaden"
+      },
+      "teamFestivals": {
+        "tileTitle": "Festivals per ploeg",
+        "dialogDescription": "Op welke festivals een ploeg actief is per jaar (stap 1 van de Ploeg Wizard): één rij met season_name, team_name en festival_name. Enkel actieve festivals van dat jaar; een nieuw festival zet de stap Afleverlocaties terug open.",
+        "importColumnKey": "Jaar — ploeg — festival",
+        "exportButton": "Festivals per ploeg downloaden"
+      },
+      "teamResponsibles": {
+        "tileTitle": "Ploegverantwoordelijken",
+        "dialogDescription": "De verantwoordelijken per ploeg en jaar: id, season_name, team_name, name, email, phone en comments. Naam, een geldig e-mailadres en telefoon zijn verplicht.",
+        "importColumnKey": "Ploeg — naam",
+        "exportButton": "Ploegverantwoordelijken downloaden"
       }
     }
   },
@@ -1687,6 +1715,124 @@
       "columnOrder": "Volgorde",
       "orderLabel": "Volgorde",
       "orderHelp": "De status met de laagste volgorde is de beginstatus van elke nieuwe aanvraag."
+    }
+  },
+  "atelier": {
+    "moduleTitle": "Atelier",
+    "accessRights": "Toegangsrechten",
+    "landing": {
+      "title": "KPI overzicht",
+      "description": "Uitgifte en inname van werkkledij (T-shirts, hoodies, ...) tijdens de festivaldagen.",
+      "comingSoonTitle": "Deze module is nog in opbouw",
+      "comingSoon": "Het uitgeven en terugnemen van kledij, de stockopvolging en het opvolgen van elk kledingstuk via RFID (TagScan) volgen in een volgende fase. Rollen en gebruikers kan je nu al instellen."
+    },
+    "roles": {
+      "title": "Rollen",
+      "description": "Maak rollen aan voor Atelier en bepaal wat elke rol mag doen op elk scherm.",
+      "tableName": "Naam",
+      "tableActions": "Acties",
+      "newRole": "Nieuwe rol",
+      "createRoleTitle": "Nieuwe rol aanmaken",
+      "createRoleDescription": "Voeg een nieuwe rol toe. Je kan de rechten achteraf instellen.",
+      "nameLabel": "Naam van de rol",
+      "roleCreated": "Rol aangemaakt.",
+      "createRoleFailed": "Aanmaken van rol is mislukt.",
+      "change": "Wijzigen",
+      "renameRoleTitle": "Naam van rol wijzigen",
+      "roleRenamed": "Rol hernoemd.",
+      "renameRoleFailed": "Hernoemen van rol is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Rol verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert de rol \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt, en werkt enkel als niemand deze rol nog heeft.",
+      "roleDeleted": "Rol verwijderd.",
+      "deleteRoleFailed": "Verwijderen van rol is mislukt.",
+      "permissions": "Rechten",
+      "permissionsTitle": "Rechten voor {name}",
+      "permissionsDescription": "Bepaal wat deze rol mag doen op elk scherm.",
+      "screenColumn": "Scherm",
+      "viewColumn": "Bekijken",
+      "createColumn": "Aanmaken",
+      "editColumn": "Wijzigen",
+      "deleteColumn": "Verwijderen",
+      "permissionsSaved": "Rechten opgeslagen.",
+      "permissionsSaveFailed": "Opslaan van rechten is mislukt."
+    },
+    "users": {
+      "title": "Gebruikers",
+      "description": "Iedereen met toegang tot Atelier, en hun huidige rol.",
+      "userTableName": "Naam",
+      "userTableEmail": "E-mailadres",
+      "userTableRole": "Rol",
+      "noRole": "— Geen rol —",
+      "roleAssigned": "Rol bijgewerkt.",
+      "roleAssignFailed": "Bijwerken van rol is mislukt.",
+      "newUser": "Nieuwe gebruiker",
+      "newUserTitle": "Toegang geven tot Atelier",
+      "newUserDescription": "Als dit e-mailadres nog niet bestaat, wordt er een account voor aangemaakt. In beide gevallen wordt enkel toegang tot Atelier gegeven.",
+      "emailLabel": "E-mailadres",
+      "newUserNameLabel": "Naam (enkel nodig voor een nieuw account)",
+      "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
+      "userSaved": "Toegang gegeven.",
+      "userSaveFailed": "Geven van toegang is mislukt."
+    }
+  },
+  "walkies": {
+    "moduleTitle": "Walkies",
+    "accessRights": "Toegangsrechten",
+    "landing": {
+      "title": "KPI overzicht",
+      "description": "Beheer van de walkie-talkies die tijdens het festival gebruikt worden.",
+      "comingSoonTitle": "Deze module is nog in opbouw",
+      "comingSoon": "De schermen om de walkie-talkies op te volgen volgen in een volgende fase. Rollen en gebruikers kan je nu al instellen."
+    },
+    "roles": {
+      "title": "Rollen",
+      "description": "Maak rollen aan voor Walkies en bepaal wat elke rol mag doen op elk scherm.",
+      "tableName": "Naam",
+      "tableActions": "Acties",
+      "newRole": "Nieuwe rol",
+      "createRoleTitle": "Nieuwe rol aanmaken",
+      "createRoleDescription": "Voeg een nieuwe rol toe. Je kan de rechten achteraf instellen.",
+      "nameLabel": "Naam van de rol",
+      "roleCreated": "Rol aangemaakt.",
+      "createRoleFailed": "Aanmaken van rol is mislukt.",
+      "change": "Wijzigen",
+      "renameRoleTitle": "Naam van rol wijzigen",
+      "roleRenamed": "Rol hernoemd.",
+      "renameRoleFailed": "Hernoemen van rol is mislukt.",
+      "delete": "Verwijderen",
+      "deleteConfirmTitle": "Rol verwijderen?",
+      "deleteConfirmDescription": "Dit verwijdert de rol \"{name}\" definitief. Dit kan niet ongedaan worden gemaakt, en werkt enkel als niemand deze rol nog heeft.",
+      "roleDeleted": "Rol verwijderd.",
+      "deleteRoleFailed": "Verwijderen van rol is mislukt.",
+      "permissions": "Rechten",
+      "permissionsTitle": "Rechten voor {name}",
+      "permissionsDescription": "Bepaal wat deze rol mag doen op elk scherm.",
+      "screenColumn": "Scherm",
+      "viewColumn": "Bekijken",
+      "createColumn": "Aanmaken",
+      "editColumn": "Wijzigen",
+      "deleteColumn": "Verwijderen",
+      "permissionsSaved": "Rechten opgeslagen.",
+      "permissionsSaveFailed": "Opslaan van rechten is mislukt."
+    },
+    "users": {
+      "title": "Gebruikers",
+      "description": "Iedereen met toegang tot Walkies, en hun huidige rol.",
+      "userTableName": "Naam",
+      "userTableEmail": "E-mailadres",
+      "userTableRole": "Rol",
+      "noRole": "— Geen rol —",
+      "roleAssigned": "Rol bijgewerkt.",
+      "roleAssignFailed": "Bijwerken van rol is mislukt.",
+      "newUser": "Nieuwe gebruiker",
+      "newUserTitle": "Toegang geven tot Walkies",
+      "newUserDescription": "Als dit e-mailadres nog niet bestaat, wordt er een account voor aangemaakt. In beide gevallen wordt enkel toegang tot Walkies gegeven.",
+      "emailLabel": "E-mailadres",
+      "newUserNameLabel": "Naam (enkel nodig voor een nieuw account)",
+      "newUserPasswordLabel": "Tijdelijk wachtwoord (enkel nodig voor een nieuw account)",
+      "userSaved": "Toegang gegeven.",
+      "userSaveFailed": "Geven van toegang is mislukt."
     }
   },
   "stockMaster": {

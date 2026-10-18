@@ -1,25 +1,20 @@
-# Bulk XLSX import/export for Products: building the downloadable
-# template, applying an uploaded workbook row by row, and exporting the
-# full list back out. Mirrors KarTracker's kar_import.py's shape most
-# closely of all the MasterData tables — several optional FKs given by
-# name, resolved against their lookup tables on import, plus boolean
-# checkbox columns.
+# Bulk XLSX import/export for Products (MasterData's "Data Upload/Download"
+# screen): the template, the upload and the export, in the same columns.
+# Type, warehouse, category and Limiet are given by name, resolved against
+# their lookup tables ignoring case; yes/no columns accept true/false, 1/0
+# and yes/no.
 #
-# Import is best-effort: every row is validated and applied independently
-# inside its own SAVEPOINT (db.begin_nested()), so one bad row rolls back
-# only itself instead of aborting the whole batch. Product.name has no
-# unique constraint (matching create_product in router.py, which has no
-# IntegrityError handling either) — every valid row is simply inserted,
-# there is no "already exists" rejection here.
+# Same rules as every MasterData import (see xlsx_common.py): a row with an
+# "id" updates that product, a row without one creates a new product.
+# Product names aren't unique (the screen allows two with the same name), so
+# there's no "already exists" check — which is exactly why an export must be
+# re-uploaded with its id column, or every row would become a new product.
+# On an update, a column missing from the sheet leaves that field alone; a
+# new product needs the same fields as the Products screen.
 
-import io
 from decimal import Decimal, InvalidOperation
 
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font
-from openpyxl.utils import get_column_letter
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models.product import Product
@@ -27,9 +22,20 @@ from app.db.models.product_category import ProductCategory
 from app.db.models.product_limit import ProductLimit
 from app.db.models.product_type import ProductType
 from app.db.models.warehouse import Warehouse
+from app.modules.module_9.xlsx_common import (
+    ID_COLUMN,
+    ImportOutcome,
+    RowError,
+    UploadedRow,
+    build_xlsx,
+    find_by_id,
+    read_rows,
+    run_import,
+)
 from app.schemas.masterdata import ProductImportRowResult
 
 TEMPLATE_COLUMNS = [
+    ID_COLUMN,
     "name",
     "type_name",
     "warehouse_name",
@@ -42,30 +48,27 @@ TEMPLATE_COLUMNS = [
     "limit_name",
     "limit_value",
     "max_initial_stock",
+    "min_stock",
+    "stock_return_to",
     "description",
     "cost",
 ]
+SHEET_TITLE = "Products"
+
+# Columns a new product can't do without (the fields the Products screen requires).
+_REQUIRED_ON_CREATE = ("name", "type_name", "warehouse_name", "category_name", "limit_name")
+
+# Where a product goes back to after "Kar terug" (StockMaster): into the kar,
+# or to the free stock. Blank means "kar", the model's default.
+STOCK_RETURN_TO_VALUES = ("kar", "free")
 
 # The product Limiet (matched by name, ignoring case) that needs a Limietwaarde — same as router.py.
 PERCENTAGE_LIMIT_NAME = "percentage"
 
 
 def build_product_template_xlsx() -> bytes:
-    """The downloadable XLSX template: just a bold header row."""
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Products"
-
-    sheet.append(TEMPLATE_COLUMNS)
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-
-    for index, column in enumerate(TEMPLATE_COLUMNS, start=1):
-        sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 18)
-
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
+    """The downloadable XLSX template: just the header row."""
+    return build_xlsx(SHEET_TITLE, TEMPLATE_COLUMNS)
 
 
 def _cell_text(value: object) -> str | None:
@@ -132,6 +135,24 @@ def _parse_cost_cell(value: object) -> Decimal | None:
     return cost.quantize(Decimal("0.01"))
 
 
+def _parse_stock_return_to_cell(value: object) -> str:
+    """The "stock_return_to" cell: "kar" or "free" (ignoring case); blank means "kar"."""
+    text = _cell_text(value)
+    if text is None:
+        return "kar"
+    if text.lower() not in STOCK_RETURN_TO_VALUES:
+        raise ValueError(f'stock_return_to "{text}" is not recognized — use "kar" or "free"')
+    return text.lower()
+
+
+def _required_text(column: str, value: object) -> str:
+    """A text cell that may not be blank."""
+    text = _cell_text(value)
+    if text is None:
+        raise ValueError(f"{column} is required")
+    return text
+
+
 def _resolve_type_id(db: Session, type_name: str | None) -> int | None:
     if type_name is None:
         return None
@@ -169,96 +190,92 @@ def _resolve_limit_id(db: Session, limit_name: str | None) -> int | None:
 
 
 def import_products_from_xlsx(db: Session, file_bytes: bytes) -> list[ProductImportRowResult]:
-    """Apply every row of an uploaded XLSX workbook's active sheet,
-    returning one result per row. Row numbers match the actual
-    spreadsheet row (header is row 1, so data starts at row 2) — matching
-    what a person sees if they open the file themselves.
-    """
-    workbook = load_workbook(io.BytesIO(file_bytes), data_only=True, read_only=True)
-    sheet = workbook.active
-    rows = sheet.iter_rows(values_only=True)
+    """Apply every row of an uploaded workbook, one result per row."""
 
-    header_row = next(rows, None)
-    if header_row is None:
-        return []
-
-    column_index = {str(name).strip().lower(): index for index, name in enumerate(header_row) if name is not None}
-
-    def cell(row: tuple, key: str) -> object:
-        index = column_index.get(key)
-        return row[index] if index is not None and index < len(row) else None
-
-    results: list[ProductImportRowResult] = []
-
-    for row_number, row in enumerate(rows, start=2):
-        if row is None or all(value is None for value in row):
-            continue  # a blank trailing row — nothing to report
-
-        name = _cell_text(cell(row, "name"))
-        savepoint = db.begin_nested()
+    def apply_row(row: UploadedRow) -> tuple[str | None, ImportOutcome]:
+        name = row.text("name")
         try:
-            if name is None:
-                raise ValueError("name is required")
-            # The same fields the Products screen requires (type, warehouse, category, Limiet).
-            for required_column in ("type_name", "warehouse_name", "category_name", "limit_name"):
-                if _cell_text(cell(row, required_column)) is None:
-                    raise ValueError(f"{required_column} is required")
+            product = find_by_id(db, Product, row)
+            if product is None:
+                for column in _REQUIRED_ON_CREATE:
+                    if row.text(column) is None:
+                        raise ValueError(f"{column} is required")
 
-            # Resolved first: the Limietwaarde below depends on it.
-            limit_name = _cell_text(cell(row, "limit_name"))
-            limit_id = _resolve_limit_id(db, limit_name)
-            limit_value = _parse_non_negative_int_cell("limit_value", cell(row, "limit_value"))
-            # The "Percentage" Limiet means nothing without its percentage (same rule as the screen).
-            if limit_name.lower() == PERCENTAGE_LIMIT_NAME and limit_value is None:
+            # Each column's model field and parser — only the columns the
+            # sheet has (on create, the required ones are all there). Type,
+            # warehouse, category and Limiet can't be emptied, like on the screen.
+            parsers = {
+                "name": ("name", lambda value: _required_text("name", value)),
+                "type_name": ("type_id", lambda value: _resolve_type_id(db, _required_text("type_name", value))),
+                "warehouse_name": (
+                    "warehouse_id",
+                    lambda value: _resolve_warehouse_id(db, _required_text("warehouse_name", value)),
+                ),
+                "warehouse_location": ("warehouse_location", _cell_text),
+                "category_name": (
+                    "category_id",
+                    lambda value: _resolve_category_id(db, _required_text("category_name", value)),
+                ),
+                "is_consumable": ("is_consumable", lambda value: _parse_bool_cell("is_consumable", value)),
+                "is_blocked": ("is_blocked", lambda value: _parse_bool_cell("is_blocked", value)),
+                "is_logistics_product": (
+                    "is_logistics_product",
+                    lambda value: _parse_bool_cell("is_logistics_product", value),
+                ),
+                "is_tag_managed": ("is_tag_managed", lambda value: _parse_bool_cell("is_tag_managed", value)),
+                "limit_name": ("limit_id", lambda value: _resolve_limit_id(db, _required_text("limit_name", value))),
+                "limit_value": ("limit_value", lambda value: _parse_non_negative_int_cell("limit_value", value)),
+                "max_initial_stock": (
+                    "max_initial_stock",
+                    lambda value: _parse_non_negative_int_cell("max_initial_stock", value),
+                ),
+                "min_stock": ("min_stock", lambda value: _parse_non_negative_int_cell("min_stock", value)),
+                "stock_return_to": ("stock_return_to", _parse_stock_return_to_cell),
+                "description": ("description", _cell_text),
+                "cost": ("cost", _parse_cost_cell),
+            }
+            fields = {field: parse(row.value(column)) for column, (field, parse) in parsers.items() if row.has(column)}
+
+            # The "Percentage" Limiet means nothing without its percentage
+            # (same rule as the screen) — checked on the values after this row.
+            limit_id = fields.get("limit_id", product.limit_id if product else None)
+            limit_value = fields.get("limit_value", product.limit_value if product else None)
+            limit = db.get(ProductLimit, limit_id) if limit_id is not None else None
+            if limit is not None and limit.name.lower() == PERCENTAGE_LIMIT_NAME and limit_value is None:
                 raise ValueError("limit_value is required for the Percentage limit")
-            new_product = Product(
-                name=name,
-                type_id=_resolve_type_id(db, _cell_text(cell(row, "type_name"))),
-                warehouse_id=_resolve_warehouse_id(db, _cell_text(cell(row, "warehouse_name"))),
-                warehouse_location=_cell_text(cell(row, "warehouse_location")),
-                category_id=_resolve_category_id(db, _cell_text(cell(row, "category_name"))),
-                is_consumable=_parse_bool_cell("is_consumable", cell(row, "is_consumable")),
-                is_blocked=_parse_bool_cell("is_blocked", cell(row, "is_blocked")),
-                is_logistics_product=_parse_bool_cell("is_logistics_product", cell(row, "is_logistics_product")),
-                is_tag_managed=_parse_bool_cell("is_tag_managed", cell(row, "is_tag_managed")),
-                limit_id=limit_id,
-                limit_value=limit_value,
-                max_initial_stock=_parse_non_negative_int_cell("max_initial_stock", cell(row, "max_initial_stock")),
-                description=_cell_text(cell(row, "description")),
-                cost=_parse_cost_cell(cell(row, "cost")),
-            )
-            db.add(new_product)
 
-            savepoint.commit()
-            results.append(ProductImportRowResult(row_number=row_number, name=name, outcome="created", detail=None))
-        except (ValueError, IntegrityError) as error:
-            savepoint.rollback()
-            detail = str(error) if isinstance(error, ValueError) else "This row conflicts with existing data"
-            results.append(ProductImportRowResult(row_number=row_number, name=name, outcome="error", detail=detail))
+            if product is None:
+                db.add(Product(**fields))
+                return name, "created"
+            for field, value in fields.items():
+                setattr(product, field, value)
+            return name or product.name, "updated"
+        except ValueError as error:
+            raise RowError(str(error), name) from None
 
-    db.commit()
-    return results
+    return run_import(
+        read_rows(file_bytes),
+        db,
+        apply_row,
+        lambda row_number, key, outcome, detail: ProductImportRowResult(
+            row_number=row_number, name=key, outcome=outcome, detail=detail
+        ),
+    )
 
 
 def export_products_to_xlsx(db: Session) -> bytes:
-    """Every product as a single-sheet workbook, with its FKs resolved
-    back to names to match the import template's own columns.
-    """
+    """Every product as a workbook, with its lookups resolved back to names
+    to match the template's own columns."""
     types = {product_type.id: product_type.name for product_type in db.scalars(select(ProductType)).all()}
     warehouses = {warehouse.id: warehouse.name for warehouse in db.scalars(select(Warehouse)).all()}
     categories = {category.id: category.name for category in db.scalars(select(ProductCategory)).all()}
     limits = {product_limit.id: product_limit.name for product_limit in db.scalars(select(ProductLimit)).all()}
 
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Products"
-    sheet.append(["id", *TEMPLATE_COLUMNS])
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-
     products = db.scalars(select(Product).order_by(Product.name)).all()
-    for product in products:
-        sheet.append(
+    return build_xlsx(
+        SHEET_TITLE,
+        TEMPLATE_COLUMNS,
+        [
             [
                 product.id,
                 product.name,
@@ -273,14 +290,11 @@ def export_products_to_xlsx(db: Session) -> bytes:
                 limits.get(product.limit_id, "") if product.limit_id is not None else "",
                 product.limit_value,
                 product.max_initial_stock,
+                product.min_stock,
+                product.stock_return_to,
                 product.description,
                 float(product.cost) if product.cost is not None else None,
             ]
-        )
-
-    for index, column in enumerate(["id", *TEMPLATE_COLUMNS], start=1):
-        sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 18)
-
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
+            for product in products
+        ],
+    )

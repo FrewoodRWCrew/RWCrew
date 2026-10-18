@@ -1,84 +1,46 @@
-# Bulk XLSX import/export for Teams: building the downloadable template,
-# applying an uploaded workbook row by row, and exporting the full list
-# back out. Mirrors KarTracker's kar_import.py's shape (FKs given by
-# name, resolved against their lookup tables on import).
+# Bulk XLSX import/export for Teams (MasterData's "Data Upload/Download"
+# screen): the template, the upload and the export, in the same columns.
+# Location and delivery method are given by name, resolved ignoring case.
 #
-# Scope note: this v1 import/export only covers Team's own scalar fields
-# (name, location, delivery method, description). The many-to-many links
-# to Team Tasks and Altsien Kernleden (see _replace_team_task_links /
-# _replace_team_kernlid_links in router.py) are deliberately NOT part of
-# this bulk tool — those stay manageable only via the Teams screen itself.
+# Scope note: this tile only covers Team's own fields (name, location,
+# delivery method, description, active). Its links have tiles of their own:
+# tasks per team (team_team_task_import.py), Kernleden per team
+# (team_kernlid_import.py), festivals per team (team_festival_import.py) and
+# Ploegverantwoordelijken (team_responsible_import.py).
 #
-# Import is best-effort: every row is validated and applied independently
-# inside its own SAVEPOINT (db.begin_nested()), so one bad row rolls back
-# only itself instead of aborting the whole batch. Team.name IS unique
-# (matching create_team in router.py), so a row naming a team that
-# already exists is REJECTED as an error rather than upserted.
+# Same rules as every MasterData import (see xlsx_common.py): a row with an
+# "id" updates that team, a row without one creates a new team, and a name
+# another team already has is a row error (Team.name is unique). On an
+# update, a column missing from the sheet leaves that field alone.
 
-import io
-
-from openpyxl import Workbook, load_workbook
-from openpyxl.styles import Font
-from openpyxl.utils import get_column_letter
 from sqlalchemy import select
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.team import Team
 from app.db.models.team_location import TeamLocation
+from app.modules.module_9.xlsx_common import (
+    ID_COLUMN,
+    ImportOutcome,
+    RowError,
+    UploadedRow,
+    build_xlsx,
+    cell_text,
+    find_by_id,
+    parse_yes_no,
+    read_rows,
+    run_import,
+)
 from app.schemas.masterdata import TeamImportRowResult
 
-TEMPLATE_COLUMNS = ["name", "location_name", "delivery_method_name", "description", "active"]
-
-# Accepted spellings for the optional "active" column, compared lowercase.
-_TRUE_VALUES = {"true", "yes", "ja", "1", "y"}
-_FALSE_VALUES = {"false", "no", "nee", "0", "n"}
+TEMPLATE_COLUMNS = [ID_COLUMN, "name", "location_name", "delivery_method_name", "description", "active"]
+SHEET_TITLE = "Teams"
 
 
 def build_team_template_xlsx() -> bytes:
-    """The downloadable XLSX template: just a bold header row. Deliberately
-    no example data row — since a re-uploaded, unedited row would silently
-    create a real team (import rejects duplicates rather than upserting,
-    so it wouldn't even get caught as "already exists" the first time).
-    """
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Teams"
-
-    sheet.append(TEMPLATE_COLUMNS)
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-
-    for index, column in enumerate(TEMPLATE_COLUMNS, start=1):
-        sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 18)
-
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
-
-
-def _cell_text(value: object) -> str | None:
-    """Empty/blank cells mean "not set"; anything else is stringified and trimmed."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    return text or None
-
-
-def _parse_active_cell(value: object) -> bool:
-    """A blank cell means active (the default); otherwise it must be a recognisable yes/no."""
-    if isinstance(value, bool):
-        return value
-    text = _cell_text(value)
-    if text is None:
-        return True
-    lowered = text.lower()
-    if lowered in _TRUE_VALUES:
-        return True
-    if lowered in _FALSE_VALUES:
-        return False
-    raise ValueError(f'active "{text}" is not a valid yes/no value')
+    """The downloadable XLSX template: just the header row. Deliberately no
+    example row — re-uploaded unedited, it would create a real team."""
+    return build_xlsx(SHEET_TITLE, TEMPLATE_COLUMNS)
 
 
 def _resolve_location_id(db: Session, location_name: str | None) -> int | None:
@@ -102,80 +64,64 @@ def _resolve_delivery_method_id(db: Session, delivery_method_name: str | None) -
 
 
 def import_teams_from_xlsx(db: Session, file_bytes: bytes) -> list[TeamImportRowResult]:
-    """Apply every row of an uploaded XLSX workbook's active sheet,
-    returning one result per row. Row numbers match the actual
-    spreadsheet row (header is row 1, so data starts at row 2) — matching
-    what a person sees if they open the file themselves.
-    """
-    workbook = load_workbook(io.BytesIO(file_bytes), data_only=True, read_only=True)
-    sheet = workbook.active
-    rows = sheet.iter_rows(values_only=True)
+    """Apply every row of an uploaded workbook, one result per row."""
 
-    header_row = next(rows, None)
-    if header_row is None:
-        return []
-
-    column_index = {str(name).strip().lower(): index for index, name in enumerate(header_row) if name is not None}
-
-    def cell(row: tuple, key: str) -> object:
-        index = column_index.get(key)
-        return row[index] if index is not None and index < len(row) else None
-
-    results: list[TeamImportRowResult] = []
-
-    for row_number, row in enumerate(rows, start=2):
-        if row is None or all(value is None for value in row):
-            continue  # a blank trailing row — nothing to report
-
-        name = _cell_text(cell(row, "name"))
-        savepoint = db.begin_nested()
+    def apply_row(row: UploadedRow) -> tuple[str | None, ImportOutcome]:
+        name = row.text("name")
         try:
-            if name is None:
+            team = find_by_id(db, Team, row)
+            if (team is None or row.has("name")) and name is None:
                 raise ValueError("name is required")
 
-            existing = db.scalar(select(Team).where(Team.name == name))
-            if existing is not None:
-                raise ValueError("A team with this name already exists")
+            # The name must stay unique: another team with it is an error.
+            if name is not None:
+                clash = db.scalar(select(Team).where(Team.name == name))
+                if clash is not None and clash is not team:
+                    raise ValueError("A team with this name already exists")
 
-            new_team = Team(
-                name=name,
-                location_id=_resolve_location_id(db, _cell_text(cell(row, "location_name"))),
-                delivery_method_id=_resolve_delivery_method_id(db, _cell_text(cell(row, "delivery_method_name"))),
-                description=_cell_text(cell(row, "description")),
-                active=_parse_active_cell(cell(row, "active")),
-            )
-            db.add(new_team)
+            # Each column's model field and parser — only the columns the sheet has.
+            parsers = {
+                "name": ("name", cell_text),
+                "location_name": ("location_id", lambda value: _resolve_location_id(db, cell_text(value))),
+                "delivery_method_name": (
+                    "delivery_method_id",
+                    lambda value: _resolve_delivery_method_id(db, cell_text(value)),
+                ),
+                "description": ("description", cell_text),
+                "active": ("active", lambda value: parse_yes_no("active", value, default=True)),
+            }
+            fields = {field: parse(row.value(column)) for column, (field, parse) in parsers.items() if row.has(column)}
 
-            savepoint.commit()
-            results.append(TeamImportRowResult(row_number=row_number, name=name, outcome="created", detail=None))
-        except (ValueError, IntegrityError) as error:
-            savepoint.rollback()
-            detail = str(error) if isinstance(error, ValueError) else "This row conflicts with existing data"
-            results.append(TeamImportRowResult(row_number=row_number, name=name, outcome="error", detail=detail))
+            if team is None:
+                db.add(Team(**fields))
+                return name, "created"
+            for field, value in fields.items():
+                setattr(team, field, value)
+            return name or team.name, "updated"
+        except ValueError as error:
+            raise RowError(str(error), name) from None
 
-    db.commit()
-    return results
+    return run_import(
+        read_rows(file_bytes),
+        db,
+        apply_row,
+        lambda row_number, key, outcome, detail: TeamImportRowResult(
+            row_number=row_number, name=key, outcome=outcome, detail=detail
+        ),
+    )
 
 
 def export_teams_to_xlsx(db: Session) -> bytes:
-    """Every team's scalar fields as a single-sheet workbook, with its
-    location/delivery method resolved back to names to match the import
-    template's own columns. Task/kernlid links are not exported — see the
-    scope note at the top of this file.
-    """
+    """Every team's own fields as a workbook, with its location/delivery
+    method resolved back to names to match the template's columns."""
     locations = {location.id: location.location for location in db.scalars(select(TeamLocation)).all()}
     delivery_methods = {method.id: method.delivery_method for method in db.scalars(select(DeliveryMethod)).all()}
 
-    workbook = Workbook()
-    sheet = workbook.active
-    sheet.title = "Teams"
-    sheet.append(["id", *TEMPLATE_COLUMNS])
-    for cell in sheet[1]:
-        cell.font = Font(bold=True)
-
     teams = db.scalars(select(Team).order_by(Team.name)).all()
-    for team in teams:
-        sheet.append(
+    return build_xlsx(
+        SHEET_TITLE,
+        TEMPLATE_COLUMNS,
+        [
             [
                 team.id,
                 team.name,
@@ -184,11 +130,6 @@ def export_teams_to_xlsx(db: Session) -> bytes:
                 team.description,
                 "yes" if team.active else "no",
             ]
-        )
-
-    for index, column in enumerate(["id", *TEMPLATE_COLUMNS], start=1):
-        sheet.column_dimensions[get_column_letter(index)].width = max(len(column) + 2, 18)
-
-    buffer = io.BytesIO()
-    workbook.save(buffer)
-    return buffer.getvalue()
+            for team in teams
+        ],
+    )

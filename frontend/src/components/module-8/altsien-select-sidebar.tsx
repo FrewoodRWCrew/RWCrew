@@ -13,6 +13,7 @@ import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
+import { ModuleHelpMenuLink } from "@/components/shared/module-help";
 
 const BASE = "/modules/module-8";
 
@@ -112,6 +113,8 @@ export function AltsienSelectSidebar({ viewableScreenKeys }: AltsienSelectSideba
           )}
         </>
       )}
+
+      <ModuleHelpMenuLink moduleKey="module-8" />
     </nav>
   );
 }

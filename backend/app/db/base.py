@@ -12,6 +12,10 @@ from app.db.models.altsien_select_screen import AltsienSelectScreen  # noqa: F40
 from app.db.models.altsien_select_special_request import AltsienSelectSpecialRequest  # noqa: F401
 from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress  # noqa: F401
 from app.db.models.altsien_select_user_role import AltsienSelectUserRole  # noqa: F401
+from app.db.models.atelier_role import AtelierRole  # noqa: F401
+from app.db.models.atelier_role_permission import AtelierRolePermission  # noqa: F401
+from app.db.models.atelier_screen import AtelierScreen  # noqa: F401
+from app.db.models.atelier_user_role import AtelierUserRole  # noqa: F401
 from app.db.models.delivery_method import DeliveryMethod  # noqa: F401
 from app.db.models.festival import Festival  # noqa: F401
 from app.db.models.intervention_request import InterventionRequest  # noqa: F401
@@ -77,4 +81,8 @@ from app.db.models.team_team_task import TeamTeamTask  # noqa: F401
 from app.db.models.teamkar_member import TeamKarMember  # noqa: F401
 from app.db.models.user import User  # noqa: F401
 from app.db.models.user_module_access import UserModuleAccess  # noqa: F401
+from app.db.models.walkies_role import WalkiesRole  # noqa: F401
+from app.db.models.walkies_role_permission import WalkiesRolePermission  # noqa: F401
+from app.db.models.walkies_screen import WalkiesScreen  # noqa: F401
+from app.db.models.walkies_user_role import WalkiesUserRole  # noqa: F401
 from app.db.models.warehouse import Warehouse  # noqa: F401

@@ -28,12 +28,14 @@ from app.db.models.team import Team
 from app.db.models.teamkar_member import TeamKarMember
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
+from app.help.routes import register_help_route
 from app.modules.module_3.deps import (
     MODULE_KEY,
     PermissionAction,
     get_user_role,
     require_module_access,
     require_screen_permission,
+    screen_keys_allowed,
     user_can,
 )
 from app.modules.module_3.intervention_request_pdf import build_delivery_note_pdf
@@ -73,6 +75,14 @@ from app.schemas.intervention_requests import (
 )
 
 router = APIRouter(prefix="/api/modules/module-3", tags=["Intervention Requests"])
+
+# GET /help/pdf: the module's manual, with only the screens the user can view.
+register_help_route(
+    router,
+    module_key=MODULE_KEY,
+    require_access=require_module_access,
+    viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
 
 
 def _content_disposition(filename: str) -> str:

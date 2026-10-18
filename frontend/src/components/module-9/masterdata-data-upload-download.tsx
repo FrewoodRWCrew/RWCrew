@@ -8,24 +8,27 @@
 // self-contained under its own components/module-{N}/ folder).
 //
 // Each tile's dialog combines template download / bulk upload / export.
-// None of the eleven tables have an "updated" outcome — a row naming
-// something that already exists (for the tables with a uniqueness rule)
-// is reported as an error, never upserted — see each table's own
-// {table}_import.py on the backend for why. Team's tile only covers its
-// scalar fields (name/location/delivery method/description); its task
-// and Kernleden links are not part of this bulk tool.
+// A row with an existing "id" (the export's first column) updates that
+// record, a row without one creates a new one (see module_9/xlsx_common.py
+// on the backend). Team's tile covers the team's own fields; its links
+// (tasks, Kernleden, festivals, Ploegverantwoordelijken) have tiles of their
+// own, where an upload only adds links ("unchanged" when one already exists).
 
 import { useState } from "react";
 import {
   CalendarRange,
   Gauge,
   Layers,
+  ClipboardList,
+  ContactRound,
   ListChecks,
   MapPin,
   Package,
   PartyPopper,
   Tag,
+  Ticket,
   Truck,
+  UserCheck,
   Users,
   Warehouse as WarehouseIcon,
   type LucideIcon,
@@ -42,11 +45,14 @@ import {
   importProductTypes,
   importProducts,
   importSeasons,
+  importTeamLinks,
   importTeamLocations,
   importTeamTasks,
   importTeams,
   importWarehouses,
+  type TeamLinkImportPath,
 } from "@/lib/api";
+import type { MasterDataImportOutcome } from "@/lib/types";
 import { getModuleTheme } from "@/lib/module-theme";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -71,12 +77,20 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface ImportRowResult {
   row_number: number;
   key: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
-const OUTCOME_BADGE_VARIANT: Record<ImportRowResult["outcome"], "default" | "destructive"> = {
+/** How many rows of an upload ended in each outcome (the summary line). */
+type ImportCounts = Record<"created" | "updated" | "unchanged" | "errors", number>;
+
+const OUTCOME_BADGE_VARIANT: Record<
+  MasterDataImportOutcome,
+  "default" | "secondary" | "outline" | "destructive"
+> = {
   created: "default",
+  updated: "secondary",
+  unchanged: "outline",
   error: "destructive",
 };
 
@@ -111,6 +125,34 @@ export function MasterDataDataUploadDownload({ canUpload }: MasterDataDataUpload
         <TeamLocationDataTile canUpload={canUpload} />
         <DeliveryMethodDataTile canUpload={canUpload} />
         <TeamTaskDataTile canUpload={canUpload} />
+        <TeamLinkDataTile
+          canUpload={canUpload}
+          icon={ClipboardList}
+          table="teamTaskLinks"
+          path="team-task-link-import"
+          exportPath="team-task-links"
+        />
+        <TeamLinkDataTile
+          canUpload={canUpload}
+          icon={UserCheck}
+          table="teamKernleden"
+          path="team-kernlid-import"
+          exportPath="team-kernleden"
+        />
+        <TeamLinkDataTile
+          canUpload={canUpload}
+          icon={Ticket}
+          table="teamFestivals"
+          path="team-festival-import"
+          exportPath="team-festivals"
+        />
+        <TeamLinkDataTile
+          canUpload={canUpload}
+          icon={ContactRound}
+          table="teamResponsibles"
+          path="team-responsible-import"
+          exportPath="team-responsibles"
+        />
       </div>
     </div>
   );
@@ -135,7 +177,8 @@ function SeasonDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -170,7 +213,8 @@ function ProductDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -205,7 +249,8 @@ function ProductTypeDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -240,7 +285,8 @@ function WarehouseDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -275,7 +321,8 @@ function ProductCategoryDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -310,7 +357,8 @@ function ProductLimitDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -345,7 +393,8 @@ function FestivalDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -380,7 +429,8 @@ function TeamDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -415,7 +465,8 @@ function TeamLocationDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -450,7 +501,8 @@ function DeliveryMethodDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -485,7 +537,8 @@ function TeamTaskDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
+      hint={t("idHint")}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tTable("importColumnKey")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -501,11 +554,63 @@ function TeamTaskDataTile({ canUpload }: { canUpload: boolean }) {
   );
 }
 
+interface TeamLinkDataTileProps {
+  canUpload: boolean;
+  icon: LucideIcon;
+  /** The tile's translation group under masterdata.dataUploadDownload. */
+  table: "teamTaskLinks" | "teamKernleden" | "teamFestivals" | "teamResponsibles";
+  /** The upload's path; the template is "<path>/template". */
+  path: TeamLinkImportPath;
+  /** The export's path, without "/export". */
+  exportPath: string;
+}
+
+/**
+ * The tiles of the team links (tasks, Kernleden and festivals per team) and
+ * the Ploegverantwoordelijken: they share one response shape, so one
+ * component serves all four.
+ */
+function TeamLinkDataTile({ canUpload, icon, table, path, exportPath }: TeamLinkDataTileProps) {
+  const t = useTranslations("masterdata.dataUploadDownload");
+  const tTable = useTranslations(`masterdata.dataUploadDownload.${table}`);
+
+  return (
+    <DataTopicTile
+      icon={icon}
+      tileTitle={tTable("tileTitle")}
+      dialogTitle={tTable("tileTitle")}
+      dialogDescription={tTable("dialogDescription")}
+      templateUrl={`${API_BASE_URL}/api/modules/module-9/${path}/template`}
+      exportUrl={`${API_BASE_URL}/api/modules/module-9/${exportPath}/export`}
+      downloadTemplateLabel={t("downloadTemplateLabel")}
+      downloadTemplateButton={t("downloadTemplateButton")}
+      canUpload={canUpload}
+      uploadNotAllowed={t("uploadNotAllowed")}
+      chooseFileLabel={t("chooseFileLabel")}
+      uploadButton={t("uploadButton")}
+      importFailed={t("importFailed")}
+      importSummary={(counts) => t("importSummary", counts)}
+      // The Ploegverantwoordelijken are records with an id; the others only add links.
+      hint={table === "teamResponsibles" ? t("idHint") : t("linkHint")}
+      importColumnRow={t("importColumnRow")}
+      importColumnKey={tTable("importColumnKey")}
+      importColumnOutcome={t("importColumnOutcome")}
+      importColumnDetail={t("importColumnDetail")}
+      importOutcomeLabel={(outcome) => t(`importOutcome.${outcome}`)}
+      exportLabel={t("exportLabel")}
+      exportButton={tTable("exportButton")}
+      onUpload={async (file) => (await importTeamLinks(path, file)).results}
+    />
+  );
+}
+
 interface DataTopicTileProps {
   icon: LucideIcon;
   tileTitle: string;
   dialogTitle: string;
   dialogDescription: string;
+  /** How the upload treats existing records (shown under the description). */
+  hint: string;
   templateUrl: string;
   exportUrl: string;
   downloadTemplateLabel: string;
@@ -517,7 +622,7 @@ interface DataTopicTileProps {
   chooseFileLabel: string;
   uploadButton: string;
   importFailed: string;
-  importSummary: (created: number, errors: number) => string;
+  importSummary: (counts: ImportCounts) => string;
   importColumnRow: string;
   importColumnKey: string;
   importColumnOutcome: string;
@@ -540,6 +645,7 @@ function DataTopicTile({
   tileTitle,
   dialogTitle,
   dialogDescription,
+  hint,
   templateUrl,
   exportUrl,
   downloadTemplateLabel,
@@ -603,8 +709,14 @@ function DataTopicTile({
     }
   }
 
-  const createdCount = results?.filter((row) => row.outcome === "created").length ?? 0;
-  const errorCount = results?.filter((row) => row.outcome === "error").length ?? 0;
+  // Counts per outcome, for the summary line above the results table.
+  const countOf = (outcome: MasterDataImportOutcome) => results?.filter((row) => row.outcome === outcome).length ?? 0;
+  const counts: ImportCounts = {
+    created: countOf("created"),
+    updated: countOf("updated"),
+    unchanged: countOf("unchanged"),
+    errors: countOf("error"),
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -628,6 +740,8 @@ function DataTopicTile({
           <DialogTitle>{dialogTitle}</DialogTitle>
           <DialogDescription>{dialogDescription}</DialogDescription>
         </DialogHeader>
+
+        <p className="rounded-md bg-muted/50 px-3 py-2 text-sm text-muted-foreground">{hint}</p>
 
         <div className="flex flex-col gap-2">
           <Label>{downloadTemplateLabel}</Label>
@@ -657,7 +771,7 @@ function DataTopicTile({
 
         {results && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">{importSummary(createdCount, errorCount)}</p>
+            <p className="text-sm text-muted-foreground">{importSummary(counts)}</p>
             <div className="rounded-md border [&>div]:max-h-72 [&>div]:overflow-y-auto">
               <Table>
                 <TableHeader>

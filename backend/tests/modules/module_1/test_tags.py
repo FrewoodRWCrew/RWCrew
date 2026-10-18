@@ -674,3 +674,57 @@ def test_kar_nummer_round_trips_through_export_and_import(client: TestClient, db
     assert results[1]["detail"] == 'Kar "X999" not found'
     new_tag = db_session.scalar(select(RfidTag).where(RfidTag.epc_uid == "E2NEW"))
     assert new_tag.kar_id == kar.id
+
+
+# ---- Upload keeps what the file leaves out; export shows "CSV Comment" -----
+
+
+def test_export_shows_the_csv_comment_but_the_import_ignores_it(client: TestClient, db_session: Session) -> None:
+    db_session.add(RfidTag(epc_uid="E2CMT", csv_comment_cell="Wheels"))
+    db_session.commit()
+    _login_as_tagscan_admin(client, db_session)
+
+    # The template has no csv_comment column; the export has it, last.
+    template = load_workbook(io.BytesIO(client.get("/api/modules/module-1/tag-import/template").content)).active
+    assert "csv_comment" not in [cell.value for cell in template[1]]
+    exported = load_workbook(io.BytesIO(client.get("/api/modules/module-1/tags/export").content)).active
+    header = [cell.value for cell in exported[1]]
+    assert header[-1] == "csv_comment"
+    assert dict(zip(header, [cell.value for cell in exported[2]]))["csv_comment"] == "Wheels"
+
+    # An edited csv_comment cell is never applied: TagScan fills it.
+    upload = client.post(
+        "/api/modules/module-1/tag-import",
+        files={"file": ("tags.xlsx", _build_xlsx(["epc_uid", "csv_comment"], [["E2CMT", "Changed"]]), XLSX_CONTENT_TYPE)},
+    )
+    assert [result["outcome"] for result in upload.json()["results"]] == ["updated"]
+    tag = db_session.scalar(select(RfidTag).where(RfidTag.epc_uid == "E2CMT"))
+    db_session.refresh(tag)
+    assert tag.csv_comment_cell == "Wheels"
+
+
+def test_import_leaves_columns_missing_from_the_file_untouched(client: TestClient, db_session: Session) -> None:
+    kar = _create_kar(db_session, kar_nummer="B001")
+    product = _create_product(db_session, name="KBC Lint")
+    tag = RfidTag(epc_uid="E2KEEP", kar_id=kar.id, assigned_product_id=product.id, notes_1="Keep me")
+    db_session.add(tag)
+    db_session.commit()
+    _login_as_tagscan_admin(client, db_session)
+
+    # An old/trimmed sheet with only epc_uid + status (+ an empty notes_2).
+    upload = client.post(
+        "/api/modules/module-1/tag-import",
+        files={
+            "file": (
+                "tags.xlsx",
+                _build_xlsx(["epc_uid", "status", "notes_2"], [["E2KEEP", "damaged", None], ["E2NEW", None, None]]),
+                XLSX_CONTENT_TYPE,
+            )
+        },
+    )
+
+    assert [result["outcome"] for result in upload.json()["results"]] == ["updated", "created"]
+    db_session.refresh(tag)
+    assert (tag.status, tag.kar_id, tag.assigned_product_id, tag.notes_1) == ("damaged", kar.id, product.id, "Keep me")
+    new_tag = db_session.scalar(select(RfidTag).where(RfidTag.epc_uid == "E2NEW"))
+    assert (new_tag.status, new_tag.kar_id, new_tag.assigned_product_id) == ("active", None, None)

@@ -22,9 +22,9 @@ backend/
   app/db/models/ SQLAlchemy models (one file per table): landing ones (User, Module, UserModuleAccess,
                  ModuleRole, RefreshToken, LoginHistory) plus every module's own tables
   app/landing/   Auth endpoints (/api/auth/*) + super-admin endpoints (/api/admin/*)
-  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 4, 8 and 9 have their
-                 own routers with the custom-roles-with-per-screen-permissions system (see
-                 docs/module-custom-roles-pattern.md); modules 5-7 (placeholders) and 10 (phone-app
+  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 4, 5, 6, 8 and 9 have
+                 their own routers with the custom-roles-with-per-screen-permissions system (see
+                 docs/module-custom-roles-pattern.md); module 7 (placeholder) and 10 (phone-app
                  install page) use the shared app/modules/common.py factory
   app/shared/    Small cross-module helpers (accessible module keys, device type from a User-Agent)
   app/cli/seed.py   Seeds the modules + the first super-admin user
@@ -49,7 +49,9 @@ frontend/
                                   Access Rights — see "Altsien Select (module-8)" below
     modules/module-4/             StockMaster: warehouse stock (free + in kars), bookings,
                                   kar needs, "Te bestellen", PDFs — see "StockMaster (module-4)"
-    modules/module-5..7/         Placeholder modules: thin wrapper around ModulePlaceholderPage
+    modules/module-5/, module-6/  Atelier and Walkies: shells (KPI page + Access Rights) — see
+                                  "Atelier (module-5) and Walkies (module-6)" below
+    modules/module-7/             Placeholder module: thin wrapper around ModulePlaceholderPage
                                   until real content is designed
     modules/module-10/            "Mobile App": install page for the phone app (QR code + steps),
                                   see "Phone section (PWA)" below
@@ -121,6 +123,22 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   (`components/module-4/kar-load-overview.tsx`: per kar the needed product types fully loaded and the pieces, from
   `KarSummaryResponse`). Kar laden opens on that overview; "Laden" opens the booking panel with `?kar=<id>`
   (`kar-load-screen.tsx` switches on `?kar=`/`?product=`/`?from=`).
+
+## Atelier (module-5) and Walkies (module-6)
+
+Two modules that are only a **shell** so far (phase 1): tile with name + icon (`Shirt` / custom
+`components/icons/walkie-talkie-icon.tsx`), a KPI landing page with a "coming in phase 2" notice, and Access
+Rights (Roles/Users) with the same custom-roles-per-screen system as StockMaster (`Atelier_*` / `Walkies_*`
+tables, screens `atelier.kpi|roles|users` and `walkies.kpi|roles|users` in `module_5/screens.py` /
+`module_6/screens.py`). Translations under `atelier.*` / `walkies.*`, help manuals in `app/help/content/module_5|6/`
+(no screenshots yet).
+
+- **Atelier**: the atelier team hands out festival work clothing (T-shirts, hoodies for VIP, RW terras, …) at the
+  start of a shift and takes it back afterwards. Phase 2: hand-out/return tracing, stock follow-up, and per-piece
+  tracking by RFID via TagScan.
+- **Walkies**: management of the festival's walkie-talkies. Content follows in phase 2.
+- A new screen = a `ScreenDefinition`, a sidebar link (`components/module-5|6/*-sidebar.tsx`), a line in the
+  `*-help.ts` routes + a manual chapter, and an entry in the landing page's `FALLBACK_SCREENS`.
 
 ## Altsien Select (module-8)
 
@@ -197,7 +215,8 @@ Lines start `new` at scan time; the file's status is derived from its lines
 ## Module help manuals (PDF)
 
 Each module can have a user manual, generated as PDF by the backend (`backend/app/help/`, fpdf2, module's own
-accent colour). Today: TagScan (module-1), KarTracker (module-2) and StockMaster (module-4); modules 3, 8 and 9 to follow the same way.
+accent colour). Every module with its own screens has one: TagScan (module-1), KarTracker (module-2), Interventies
+(module-3), StockMaster (module-4), Altsien Select (module-8) and MasterData (module-9).
 
 - **Text** lives in `backend/app/help/content/<module_N>/{nl,en}.md` (small Markdown subset, see `content.py`):
   `## [topic | screen.key] Title` per chapter. A chapter is only in the PDF when the user may *view* that screen

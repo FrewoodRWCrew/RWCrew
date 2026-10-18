@@ -10,13 +10,23 @@ from app.help.content import CONTENT_DIR, load_manual, parse_manual
 from app.help.help_pdf import TopicNotFound, build_help_pdf, visible_chapters
 from app.modules.module_1.screens import SCREEN_DEFINITIONS as TAGSCAN_SCREENS
 from app.modules.module_2.screens import SCREEN_DEFINITIONS as KARTRACKER_SCREENS
+from app.modules.module_3.screens import SCREEN_DEFINITIONS as INTERVENTIONS_SCREENS
 from app.modules.module_4.screens import SCREEN_DEFINITIONS as STOCKMASTER_SCREENS
+from app.modules.module_5.screens import SCREEN_DEFINITIONS as ATELIER_SCREENS
+from app.modules.module_6.screens import SCREEN_DEFINITIONS as WALKIES_SCREENS
+from app.modules.module_8.screens import SCREEN_DEFINITIONS as ALTSIEN_SELECT_SCREENS
+from app.modules.module_9.screens import SCREEN_DEFINITIONS as MASTERDATA_SCREENS
 
 # Every module with a manual, and the screen keys its chapters may use.
 MANUAL_SCREENS: dict[str, set[str]] = {
     "module-1": {definition.key for definition in TAGSCAN_SCREENS},
     "module-2": {definition.key for definition in KARTRACKER_SCREENS},
+    "module-3": {definition.key for definition in INTERVENTIONS_SCREENS},
     "module-4": {definition.key for definition in STOCKMASTER_SCREENS},
+    "module-5": {definition.key for definition in ATELIER_SCREENS},
+    "module-6": {definition.key for definition in WALKIES_SCREENS},
+    "module-8": {definition.key for definition in ALTSIEN_SELECT_SCREENS},
+    "module-9": {definition.key for definition in MASTERDATA_SCREENS},
 }
 LOCALES = ("nl", "en")
 

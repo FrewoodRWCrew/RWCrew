@@ -3,12 +3,16 @@
 // module's own left-hand menu, the same way Intervention Requests' own
 // layout.tsx does for module-3 — see
 // components/module-8/altsien-select-sidebar.tsx for what shows in it.
+// Above every page sits the "Help bij dit scherm" link to the manual's
+// chapter about the open screen (see components/shared/module-help.tsx).
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
 import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { AltsienSelectMyPermissions } from "@/lib/types";
 import { AltsienSelectSidebar } from "@/components/module-8/altsien-select-sidebar";
+import { ALTSIEN_SELECT_HELP_ROUTES } from "@/components/module-8/altsienselect-help";
+import { ScreenHelpButton } from "@/components/shared/module-help";
 
 interface AltsienSelectLayoutProps {
   children: React.ReactNode;
@@ -39,7 +43,10 @@ export default async function AltsienSelectLayout({ children }: AltsienSelectLay
     // this module's own accent colour — see getModuleAccentStyle().
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-8")}>
       <AltsienSelectSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
-      <div className="min-w-0 flex-1 p-6">{children}</div>
+      <div className="min-w-0 flex-1 p-6">
+        <ScreenHelpButton moduleKey="module-8" routes={ALTSIEN_SELECT_HELP_ROUTES} className="-mt-4 mb-1" />
+        {children}
+      </div>
     </div>
   );
 }

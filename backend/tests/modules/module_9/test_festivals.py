@@ -310,6 +310,7 @@ def test_super_admin_can_update_a_festival(client: TestClient, db_session: Sessi
             "start_date": "2026-08-01",
             "end_date": "2026-08-03",
             "season_id": season.id,
+            "active": True,
         },
     )
 
@@ -364,6 +365,7 @@ def test_updating_a_missing_festival_returns_404(client: TestClient, db_session:
             "start_date": "2026-07-01",
             "end_date": "2026-07-03",
             "season_id": season.id,
+            "active": True,
         },
     )
 
@@ -386,6 +388,7 @@ def test_updating_a_festival_with_an_unknown_season_id_returns_404(client: TestC
             "start_date": "2026-07-01",
             "end_date": "2026-07-03",
             "season_id": 999,
+            "active": True,
         },
     )
 

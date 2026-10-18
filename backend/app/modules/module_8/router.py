@@ -60,6 +60,7 @@ from app.modules.module_4.stock_queries import (
 )
 from app.modules.module_4.stock_service import StockError
 from app.modules.module_8.dashboard import build_dashboard
+from app.help.routes import register_help_route
 from app.modules.module_8.deps import (
     MODULE_KEY,
     PermissionAction,
@@ -70,6 +71,7 @@ from app.modules.module_8.deps import (
     get_user_role,
     require_module_access,
     require_screen_permission,
+    screen_keys_allowed,
     season_is_editable_for,
     user_can,
 )
@@ -129,6 +131,14 @@ from app.schemas.stockmaster import (
 )
 
 router = APIRouter(prefix="/api/modules/module-8", tags=["Altsien Select"])
+
+# GET /help/pdf: the module's manual, with only the screens the user can view.
+register_help_route(
+    router,
+    module_key=MODULE_KEY,
+    require_access=require_module_access,
+    viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
 
 # The two "Akties" screens a Kernlid works in.
 WIZARD_SCREEN = "altsienselect.wizard"

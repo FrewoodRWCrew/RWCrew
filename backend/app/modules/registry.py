@@ -39,6 +39,10 @@ class ModuleDefinition:
 # module-4 (StockMaster) has its own bespoke router too: the warehouse stock
 # of MasterData products, as free stock and loaded in KarTracker's kars.
 #
+# module-5 (Atelier: hand-out and return of festival clothing) and module-6
+# (Walkies: the festival's walkie-talkies) have their own routers with the
+# custom-roles system; for now they are only a shell (KPI page + roles/users).
+#
 # module-10 ("Mobile App") is the install page for the phone app (the PWA
 # under /m): its address and a QR code; it contains no phone screens itself.
 _MODULE_NAMES = {
@@ -46,6 +50,8 @@ _MODULE_NAMES = {
     "module-2": "KarTracker",
     "module-3": "Interventions",
     "module-4": "StockMaster",
+    "module-5": "Atelier",
+    "module-6": "Walkies",
     "module-8": "Altsien Select",
     "module-9": "MasterData",
     "module-10": "Mobile App",

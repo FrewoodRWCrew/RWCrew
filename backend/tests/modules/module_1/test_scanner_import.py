@@ -123,3 +123,26 @@ def test_view_only_dataupload_permission_cannot_import_scanners(client: TestClie
     assert client.get(f"{BASE}/scanners/export").status_code == 200
     response = _upload(client, _build_xlsx(["scanner"], [["Scan_09"]]))
     assert response.status_code == 403
+
+
+def test_import_leaves_columns_missing_from_the_file_untouched(client: TestClient, db_session: Session) -> None:
+    _admin(client, db_session)
+    product_type = _create_product_type(db_session, name="Reader Hardware")
+    existing = _create_scanner(db_session, scanner="Scan_01", type_id=product_type.id, technology="Raspberry Pi 4")
+    existing.description = "Gate reader"
+    db_session.commit()
+
+    # Updating with only a location keeps type, technology and description;
+    # a new scanner without a type in the file is still a row error.
+    response = _upload(client, _build_xlsx(["scanner", "location"], [["Scan_01", "Dock"], ["Scan_09", "Hall"]]))
+
+    results = response.json()["results"]
+    assert [(row["scanner"], row["outcome"]) for row in results] == [("Scan_01", "updated"), ("Scan_09", "error")]
+    assert results[1]["detail"] == "type_name is required"
+    db_session.refresh(existing)
+    assert (existing.type_id, existing.technology, existing.description, existing.location) == (
+        product_type.id,
+        "Raspberry Pi 4",
+        "Gate reader",
+        "Dock",
+    )

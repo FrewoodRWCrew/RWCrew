@@ -31,7 +31,9 @@ from app.modules.module_3.screens import sync_screens as sync_intervention_reque
 from app.modules.module_4.router import router as module_4_router
 from app.modules.module_4.screens import sync_screens as sync_stockmaster_screens
 from app.modules.module_5.router import router as module_5_router
+from app.modules.module_5.screens import sync_screens as sync_atelier_screens
 from app.modules.module_6.router import router as module_6_router
+from app.modules.module_6.screens import sync_screens as sync_walkies_screens
 from app.modules.module_7.router import router as module_7_router
 from app.modules.module_8.router import router as module_8_router
 from app.modules.module_8.screens import sync_screens as sync_altsien_select_screens
@@ -54,6 +56,8 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
         sync_kartracker_screens(db)
         sync_intervention_requests_screens(db)
         sync_stockmaster_screens(db)
+        sync_atelier_screens(db)
+        sync_walkies_screens(db)
         sync_altsien_select_screens(db)
         sync_masterdata_screens(db)
 

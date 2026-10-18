@@ -4,12 +4,16 @@
 // module-1/module-9 — see
 // components/module-3/intervention-requests-sidebar.tsx for what shows in
 // it and why.
+// Above every page sits the "Help bij dit scherm" link to the manual's
+// chapter about the open screen (see components/shared/module-help.tsx).
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
 import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { InterventionRequestsMyPermissions } from "@/lib/types";
 import { InterventionRequestsSidebar } from "@/components/module-3/intervention-requests-sidebar";
+import { INTERVENTIONS_HELP_ROUTES } from "@/components/module-3/interventions-help";
+import { ScreenHelpButton } from "@/components/shared/module-help";
 
 interface InterventionRequestsLayoutProps {
   children: React.ReactNode;
@@ -40,7 +44,10 @@ export default async function InterventionRequestsLayout({ children }: Intervent
     // this module's own accent colour — see getModuleAccentStyle().
     <div className="-m-6 flex min-h-[calc(100vh-3.5rem)]" style={getModuleAccentStyle("module-3")}>
       <InterventionRequestsSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
-      <div className="min-w-0 flex-1 p-6">{children}</div>
+      <div className="min-w-0 flex-1 p-6">
+        <ScreenHelpButton moduleKey="module-3" routes={INTERVENTIONS_HELP_ROUTES} className="-mt-4 mb-1" />
+        {children}
+      </div>
     </div>
   );
 }

@@ -57,7 +57,7 @@ The folders and files on the server as the scanners deliver them, with a preview
 > Deleting removes the file from the server for good. A file that was already logged stays in Tag Headerdata. You need the **Delete** right on this screen.
 
 ## [header-data | tagscan.tag-headerdata] Tag Headerdata
-Every scanned CSV file on one line: the file name, when it was logged, the number of lines, the scanner (name, type, location, technology), the mode, the action and the processing status.
+Every scanned CSV file on one line: the file name, when it was logged, the number of lines, the scanner (name, type, location, technology), the mode, the action, the **kar numbers** of its lines, the **CSV Comment** (the file's Comment cells together), the processing status and the processing comment.
 
 1. Click **Scan** to process the new files in Unreaded Tags right away. The scan log shows per file: **Logged**, **Already logged** or **Error**.
 2. Search with the filters under the column titles, e.g. on file name, scanner or processing status.
@@ -69,7 +69,7 @@ Every scanned CSV file on one line: the file name, when it was logged, the numbe
 > Scanning needs the **Create** right on this screen, deleting the **Delete** right.
 
 ## [line-data | tagscan.tag-linedata] Tag Linedata
-Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, antenna, count, last seen, product, serial number, kar number, manufacturer, batch number, match status and processing.
+Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, antenna, count, last seen, product, serial number, kar number, manufacturer, batch number, **CSV Comment** (that line's Comment cell), match status, processing and **Comment** (e.g. the reason of a cancellation).
 
 1. Search with the filters under the column titles, e.g. on EPC, product, scanner or status.
 2. Click **Group by Product** to see a subtotal per file and product, or **Group by kar** to see the lines of each file with a kar (a tag with a kar number) under that kar (on by default). Click an EPC, product or kar number to open that tag, product fiche or kar straight away.
@@ -81,7 +81,7 @@ Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, an
 > **No match** means the EPC isn't (yet) in TagManagement. Add the tag in TagManagement or through an Assignment, then click **Synchro**.
 
 ## [tag-management | tagscan.tag-management] TagManagement
-The register of all RFID tags: EPC / UID, status, assigned product and serial number, kar number (the KarTracker kar the tag is mounted on), dates, last read and location, manufacturer, batch number and five note fields.
+The register of all RFID tags: EPC / UID, status, assigned product and serial number, kar number (the KarTracker kar the tag is mounted on), dates, last read and location, manufacturer, batch number, five note fields and **CSV Comment**: the latest Comment from a scanned CSV with this EPC. TagScan fills it in itself; it can't be changed.
 
 1. Click **New tag** to register a tag. Fill in at least the **EPC / UID**.
 2. Click **Change** on a tag to change e.g. the product, the serial number, the kar number or the **status** (Active, Inactive, Lost, Damaged, Retired).
@@ -90,7 +90,7 @@ The register of all RFID tags: EPC / UID, status, assigned product and serial nu
 
 ![TagManagement](tag-management.png)
 
-> Registering or changing many tags at once? Use an Excel file in **Data Upload/Download**.
+> Clicking an EPC in Tag Linedata opens that tag's form in TagManagement straight away. Registering or changing many tags at once? Use an Excel file in **Data Upload/Download**.
 
 ## [scanners | tagscan.scanners] Scanners
 The register of the physical RFID scanners that make the CSV files: name, type, technology, location, description and three info fields.
@@ -113,7 +113,7 @@ Import and export tags and scanners in bulk with Excel, one tile per table.
 
 ![Data Upload/Download](data-upload.png)
 
-> An existing EPC / UID or scanner name is **updated**, not created twice. A scanner's API key is kept. Uploading needs the **Create** right on this screen.
+> An existing EPC / UID or scanner name is **updated**, not created twice. Columns left out of your file stay unchanged (so an old template without e.g. kar_nummer doesn't wipe anything). The export's **csv_comment** column is for information only and is ignored on upload. A scanner's API key is kept. Uploading needs the **Create** right on this screen.
 
 ## [roles | tagscan.roles] Roles
 A role decides what someone may do in TagScan, per screen: **View**, **Create**, **Edit** and **Delete**.

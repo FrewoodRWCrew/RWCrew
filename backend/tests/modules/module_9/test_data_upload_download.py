@@ -1,7 +1,7 @@
 # These tests check MasterData's "Data Upload/Download" screen: a single
 # "masterdata.dataupload" screen key gates the XLSX template download,
 # bulk import, and export endpoints for every one of the twelve
-# master-data tables (mirrors KarTracker's own
+# master-data tables plus the team links (mirrors KarTracker's own
 # tests/modules/module_2/test_kar_import.py /
 # test_kar_status_import.py). Coverage here focuses on one simple lookup
 # (Season), Team (unique name + optional FK lookups, scalar fields only),
@@ -151,7 +151,7 @@ def test_super_admin_can_download_the_season_template(client: TestClient, db_ses
 
     workbook = load_workbook(io.BytesIO(response.content))
     header_row = [cell.value for cell in workbook.active[1]]
-    assert header_row == ["name"]
+    assert header_row == ["id", "name", "periode_open"]
 
 
 def test_view_only_dataupload_permission_cannot_import_seasons(client: TestClient, db_session: Session) -> None:
@@ -204,8 +204,8 @@ def test_season_export_contains_every_season(client: TestClient, db_session: Ses
     assert response.status_code == 200
     workbook = load_workbook(io.BytesIO(response.content))
     rows = list(workbook.active.iter_rows(values_only=True))
-    assert rows[0] == ("id", "name")
-    assert rows[1] == (season.id, season.name)
+    assert rows[0] == ("id", "name", "periode_open")
+    assert rows[1] == (season.id, season.name, "no")
 
 
 def test_dataupload_permission_is_independent_of_season_screen_permission(

@@ -15,6 +15,10 @@ import type {
   AltsienSelectResponsibleInput,
   AltsienSelectTeamSummary,
   AltsienSelectUserSummary,
+  AtelierRole,
+  AtelierUserSummary,
+  WalkiesRole,
+  WalkiesUserSummary,
   CurrentUser,
   ModuleInfo,
   ModuleRoleAssignment,
@@ -117,6 +121,7 @@ import type {
   TagscanUserSummary,
   Team,
   TeamImportResponse,
+  TeamLinkImportResponse,
   TeamInput,
   TeamKarMemberOption,
   TeamKarUser,
@@ -1253,6 +1258,33 @@ export async function importTeams(file: File): Promise<TeamImportResponse> {
   return (await response.json()) as TeamImportResponse;
 }
 
+/** The four team-link uploads of MasterData's Data Upload/Download screen,
+ * by their path (e.g. "team-task-link-import"). */
+export type TeamLinkImportPath =
+  | "team-task-link-import"
+  | "team-kernlid-import"
+  | "team-festival-import"
+  | "team-responsible-import";
+
+export async function importTeamLinks(path: TeamLinkImportPath, file: File): Promise<TeamLinkImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/${path}`, {
+    method: "POST",
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as TeamLinkImportResponse;
+}
+
 // --- Intervention Requests (module-3): KPI landing dashboard ---------------
 
 export function getInterventionRequestsDashboard(): Promise<InterventionRequestsDashboardStats> {
@@ -2273,6 +2305,108 @@ export function createOrGrantAltsienSelectUser(payload: {
   role_id?: number | null;
 }): Promise<AltsienSelectUserSummary> {
   return apiFetch<AltsienSelectUserSummary>(`${ALTSIEN_SELECT_BASE}/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- Atelier (module-5): custom roles with per-screen permissions ---
+
+const ATELIER_BASE = "/api/modules/module-5";
+
+export function createAtelierRole(name: string): Promise<AtelierRole> {
+  return apiFetch<AtelierRole>(`${ATELIER_BASE}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameAtelierRole(roleId: number, name: string): Promise<AtelierRole> {
+  return apiFetch<AtelierRole>(`${ATELIER_BASE}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteAtelierRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`${ATELIER_BASE}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function setAtelierRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<AtelierRole> {
+  return apiFetch<AtelierRole>(`${ATELIER_BASE}/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function setAtelierUserRole(userId: number, roleId: number | null): Promise<AtelierUserSummary> {
+  return apiFetch<AtelierUserSummary>(`${ATELIER_BASE}/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantAtelierUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<AtelierUserSummary> {
+  return apiFetch<AtelierUserSummary>(`${ATELIER_BASE}/users`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+// --- Walkies (module-6): custom roles with per-screen permissions ---
+
+const WALKIES_BASE = "/api/modules/module-6";
+
+export function createWalkiesRole(name: string): Promise<WalkiesRole> {
+  return apiFetch<WalkiesRole>(`${WALKIES_BASE}/roles`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function renameWalkiesRole(roleId: number, name: string): Promise<WalkiesRole> {
+  return apiFetch<WalkiesRole>(`${WALKIES_BASE}/roles/${roleId}`, {
+    method: "PUT",
+    body: JSON.stringify({ name }),
+  });
+}
+
+export function deleteWalkiesRole(roleId: number): Promise<void> {
+  return apiFetch<void>(`${WALKIES_BASE}/roles/${roleId}`, { method: "DELETE" });
+}
+
+export function setWalkiesRolePermissions(
+  roleId: number,
+  permissions: InterventionRequestsPermissionUpdate[],
+): Promise<WalkiesRole> {
+  return apiFetch<WalkiesRole>(`${WALKIES_BASE}/roles/${roleId}/permissions`, {
+    method: "PUT",
+    body: JSON.stringify({ permissions }),
+  });
+}
+
+export function setWalkiesUserRole(userId: number, roleId: number | null): Promise<WalkiesUserSummary> {
+  return apiFetch<WalkiesUserSummary>(`${WALKIES_BASE}/users/${userId}/role`, {
+    method: "PUT",
+    body: JSON.stringify({ role_id: roleId }),
+  });
+}
+
+export function createOrGrantWalkiesUser(payload: {
+  email: string;
+  display_name?: string;
+  password?: string;
+  role_id?: number | null;
+}): Promise<WalkiesUserSummary> {
+  return apiFetch<WalkiesUserSummary>(`${WALKIES_BASE}/users`, {
     method: "POST",
     body: JSON.stringify(payload),
   });

@@ -171,12 +171,16 @@ What each team needs per season, **per cart**. This fills "Load cart", shows how
 
 1. Choose the season and the team.
 2. Click one of the team's carts.
-3. Add products with their quantity and an optional comment, or change existing lines.
+3. Add products with their quantity and an optional comment, or change existing lines. Each line shows the product's picture and the **In cart** column: what's already in the cart now.
 4. Click **Save**.
 
 ![Cart needs](requirements.png)
 
-> Under **Copy from last season** you see last season's lines. Tick what you want to take over and click **Copy**. Don't forget to save afterwards.
+- **Excel template** downloads this cart's list as an Excel file. Fill in the quantity column and choose **Upload Excel**: products already in the list get the quantity from the file, new ones are added. Then click **Save**. Products you have no rights on are skipped.
+- **Load list** prints this cart's load list (PDF).
+- Altsien core members fill in the same list through the **Products** step of the Team Wizard in Altsien Select. What they choose there shows up here straight away, and the other way round.
+
+> Under **Copy from last season** you see last season's lines, with next to each product what's already asked now ("now 3"). Tick what you want to take over and click **Copy**. Don't forget to save afterwards.
 
 ## [order-needs | stockmaster.orderneeds] To order
 The needs of all carts of the season against what is in stock (free + in carts). **To order** = needed minus in stock.

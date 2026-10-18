@@ -1313,15 +1313,16 @@ export interface LeverdatumImportResponse {
   results: LeverdatumImportRowResult[];
 }
 
-// --- MasterData Data Upload/Download: one row-result pair per table, all
-// without an "updated" outcome — a row naming something that already
-// exists is rejected as an error instead of being upserted (except
-// Product/Festival, which have no uniqueness rule at all). ------------------
+// --- MasterData Data Upload/Download: one row-result pair per table. A row
+// with an existing "id" is "updated", one without is "created"; the team link
+// tables report a link that already existed as "unchanged". ------------------
+
+export type MasterDataImportOutcome = "created" | "updated" | "unchanged" | "error";
 
 export interface SeasonImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1332,7 +1333,7 @@ export interface SeasonImportResponse {
 export interface ProductTypeImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1343,7 +1344,7 @@ export interface ProductTypeImportResponse {
 export interface WarehouseImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1354,7 +1355,7 @@ export interface WarehouseImportResponse {
 export interface ProductCategoryImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1365,7 +1366,7 @@ export interface ProductCategoryImportResponse {
 export interface ProductLimitImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1376,7 +1377,7 @@ export interface ProductLimitImportResponse {
 export interface TeamLocationImportRowResult {
   row_number: number;
   location: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1387,7 +1388,7 @@ export interface TeamLocationImportResponse {
 export interface DeliveryMethodImportRowResult {
   row_number: number;
   delivery_method: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1398,7 +1399,7 @@ export interface DeliveryMethodImportResponse {
 export interface TeamTaskImportRowResult {
   row_number: number;
   team_tasks: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1409,7 +1410,7 @@ export interface TeamTaskImportResponse {
 export interface FestivalImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1420,7 +1421,7 @@ export interface FestivalImportResponse {
 export interface ProductImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
@@ -1428,17 +1429,30 @@ export interface ProductImportResponse {
   results: ProductImportRowResult[];
 }
 
-/** Team's bulk import only covers its scalar fields — task/kernlid links
- * are not part of this bulk tool, see team_import.py on the backend. */
+/** Team's bulk import only covers its own fields — its links (tasks,
+ * Kernleden, festivals, Ploegverantwoordelijken) have tiles of their own. */
 export interface TeamImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: MasterDataImportOutcome;
   detail: string | null;
 }
 
 export interface TeamImportResponse {
   results: TeamImportRowResult[];
+}
+
+/** One row of a team-link upload (tasks/Kernleden/festivals per team,
+ * Ploegverantwoordelijken); `key` reads e.g. "Team A — Opbouw". */
+export interface TeamLinkImportRowResult {
+  row_number: number;
+  key: string | null;
+  outcome: MasterDataImportOutcome;
+  detail: string | null;
+}
+
+export interface TeamLinkImportResponse {
+  results: TeamLinkImportRowResult[];
 }
 
 // --- Login History (Toegangsbeheer) ----------------------------------
@@ -1480,6 +1494,23 @@ export type AltsienSelectScreenPermission = InterventionRequestsScreenPermission
 export type AltsienSelectRole = InterventionRequestsRole;
 export type AltsienSelectUserSummary = InterventionRequestsUserSummary;
 export type AltsienSelectMyPermissions = InterventionRequestsMyPermissions;
+
+// --- Atelier (module-5) and Walkies (module-6) ------------------------------
+//
+// Both are still a shell (KPI page + access rights): only their custom-roles
+// shapes so far, aliased to Intervention Requests' like Altsien Select's.
+
+export type AtelierScreen = InterventionRequestsScreen;
+export type AtelierScreenPermission = InterventionRequestsScreenPermission;
+export type AtelierRole = InterventionRequestsRole;
+export type AtelierUserSummary = InterventionRequestsUserSummary;
+export type AtelierMyPermissions = InterventionRequestsMyPermissions;
+
+export type WalkiesScreen = InterventionRequestsScreen;
+export type WalkiesScreenPermission = InterventionRequestsScreenPermission;
+export type WalkiesRole = InterventionRequestsRole;
+export type WalkiesUserSummary = InterventionRequestsUserSummary;
+export type WalkiesMyPermissions = InterventionRequestsMyPermissions;
 
 /** One step of the Ploeg Wizard (backend: app/modules/module_8/steps.py). */
 export interface AltsienSelectStep {

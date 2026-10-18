@@ -7,7 +7,8 @@
 # Import is best-effort: every row is applied inside its own SAVEPOINT, so
 # one bad row rolls back only itself — the caller always gets one result
 # per row (created/updated/error). A row naming a scanner that already
-# exists UPDATES it (upsert), so export → edit → re-upload works. A
+# exists UPDATES it (upsert), so export → edit → re-upload works; columns
+# missing from the uploaded header leave its fields untouched. A
 # scanner's device API key is never part of the workbook and never touched.
 
 import io
@@ -170,18 +171,29 @@ def import_scanners_from_xlsx(db: Session, file_bytes: bytes) -> list[ScannerImp
             if len(scanner_name) > 255:
                 raise ValueError("scanner is longer than 255 characters")
 
+            existing = db.scalar(select(Scanner).where(Scanner.scanner == scanner_name))
+
+            # Every template column but the key: its model field and how its
+            # cell is parsed. Only the columns this file has are applied, so
+            # a missing column never clears an existing scanner's value — but
+            # a new scanner still needs a type and a technology (the resolvers
+            # raise "... is required" on an absent/empty cell).
+            parsers = {
+                "type_name": ("type_id", lambda value: _resolve_type_id(db, _cell_text(value))),
+                "technology": ("technology", lambda value: _resolve_technology(_cell_text(value))),
+                "location": ("location", _cell_text),
+                "description": ("description", _cell_text),
+                "info1": ("info1", _cell_text),
+                "info2": ("info2", _cell_text),
+                "info3": ("info3", _cell_text),
+            }
             fields = {
-                "type_id": _resolve_type_id(db, _cell_text(cell(row, "type_name"))),
-                "technology": _resolve_technology(_cell_text(cell(row, "technology"))),
-                "location": _cell_text(cell(row, "location")),
-                "description": _cell_text(cell(row, "description")),
-                "info1": _cell_text(cell(row, "info1")),
-                "info2": _cell_text(cell(row, "info2")),
-                "info3": _cell_text(cell(row, "info3")),
+                field: parse(cell(row, column))
+                for column, (field, parse) in parsers.items()
+                if column in column_index or (existing is None and column in ("type_name", "technology"))
             }
 
             # An existing scanner (same name) is updated; its API key stays.
-            existing = db.scalar(select(Scanner).where(Scanner.scanner == scanner_name))
             if existing is not None:
                 for field, value in fields.items():
                     setattr(existing, field, value)

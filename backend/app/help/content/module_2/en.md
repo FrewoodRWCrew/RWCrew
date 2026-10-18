@@ -92,7 +92,7 @@ The fleet: every kar with its kar number, status, team, transport type, last loc
 
 ![KarManagement](kar-management.png)
 
-> A kar's team decides which delivery locations it goes to (Plan a kar) and what StockMaster plans for that kar. A kar that still holds stock can't be deleted.
+> A kar's team decides which delivery locations it goes to (Plan a kar) and what StockMaster plans for that kar. A kar that still holds stock can't be deleted. Clicking a kar number in TagScan opens that kar's form here straight away.
 
 ## [distributiepunten | kartracker.distributiepunten] Distribution points
 The organisation's distribution points: name, coordinates, site position and the responsible Altsien Kernlid.

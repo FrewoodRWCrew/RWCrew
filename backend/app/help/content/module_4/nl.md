@@ -171,12 +171,16 @@ Wat elke ploeg per seizoen nodig heeft, **per kar**. Dit vult "Kar laden" aan, t
 
 1. Kies het seizoen en de ploeg.
 2. Klik op een kar van de ploeg.
-3. Voeg producten toe met hun aantal en eventueel een opmerking, of pas bestaande lijnen aan.
+3. Voeg producten toe met hun aantal en eventueel een opmerking, of pas bestaande lijnen aan. Elke lijn toont de foto van het product en de kolom **In kar**: wat er nu al in de kar zit.
 4. Klik op **Opslaan**.
 
 ![Benodigdheden per kar](requirements.png)
 
-> Bij **Kopieer van vorig seizoen** zie je de lijnen van vorig seizoen. Vink aan wat je wil overnemen en klik op **Kopiëren**. Vergeet daarna niet op te slaan.
+- **Excel-template** downloadt de lijst van deze kar als Excel-bestand. Vul de kolom quantity in en kies **Excel opladen**: producten die al in de lijst staan krijgen het aantal uit het bestand, nieuwe worden toegevoegd. Daarna nog **Opslaan**. Producten waarvoor je geen rechten hebt, worden overgeslagen.
+- **Laadlijst** drukt de laadlijst (PDF) van deze kar af.
+- Altsien Kernleden vullen dezelfde lijst in via de stap **Producten** van de Ploeg Wizard in Altsien Select. Wat zij daar kiezen, zie je hier meteen, en omgekeerd.
+
+> Bij **Kopieer van vorig seizoen** zie je de lijnen van vorig seizoen, met naast elk product wat er nu al gevraagd is ("nu 3"). Vink aan wat je wil overnemen en klik op **Kopiëren**. Vergeet daarna niet op te slaan.
 
 ## [order-needs | stockmaster.orderneeds] Te bestellen
 De benodigdheden van alle karren van het seizoen tegenover wat er in voorraad is (vrij + in karren). **Te bestellen** = nodig min in voorraad.

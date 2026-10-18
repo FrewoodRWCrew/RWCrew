@@ -92,7 +92,7 @@ Het wagenpark: elke kar met zijn karnummer, status, ploeg, transporttype, laatst
 
 ![KarManagement](kar-management.png)
 
-> De ploeg van een kar bepaalt naar welke afleverlocaties hij gaat (Plan a kar) en wat er in StockMaster voor die kar voorzien wordt. Een kar waarin nog voorraad zit, kan niet verwijderd worden.
+> De ploeg van een kar bepaalt naar welke afleverlocaties hij gaat (Plan a kar) en wat er in StockMaster voor die kar voorzien wordt. Een kar waarin nog voorraad zit, kan niet verwijderd worden. Klik je in TagScan op een karnummer, dan opent het formulier van die kar hier meteen.
 
 ## [distributiepunten | kartracker.distributiepunten] Distributiepunten
 De distributiepunten van de organisatie: naam, coördinaten, terreinpositie en het verantwoordelijke Altsien Kernlid.

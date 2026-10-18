@@ -346,13 +346,13 @@ function EditPermissionsDialog({ role, screens, onSaved }: EditPermissionsDialog
           </Button>
         }
       />
-      <DialogContent className="sm:max-w-lg">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t("permissionsTitle", { name: role.name })}</DialogTitle>
           <DialogDescription>{t("permissionsDescription")}</DialogDescription>
         </DialogHeader>
 
-        <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
+        <div className="min-w-0 rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
           <Table>
             <TableHeader>
               <TableRow>

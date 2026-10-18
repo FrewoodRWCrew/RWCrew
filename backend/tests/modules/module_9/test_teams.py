@@ -234,7 +234,7 @@ def test_super_admin_can_rename_a_team(client: TestClient, db_session: Session) 
     team = _create_team(db_session, name="Bar Team")
     _login(client, "admin@example.com")
 
-    response = client.put(f"/api/modules/module-9/teams/{team.id}", json={"name": "Renamed Team"})
+    response = client.put(f"/api/modules/module-9/teams/{team.id}", json={"name": "Renamed Team", "active": True})
 
     assert response.status_code == 200
     assert response.json()["name"] == "Renamed Team"
@@ -276,7 +276,7 @@ def test_renaming_a_missing_team_returns_404(client: TestClient, db_session: Ses
     _grant_module_access(db_session, admin, module)
     _login(client, "admin@example.com")
 
-    response = client.put("/api/modules/module-9/teams/999", json={"name": "Bar Team"})
+    response = client.put("/api/modules/module-9/teams/999", json={"name": "Bar Team", "active": True})
 
     assert response.status_code == 404
 
@@ -401,7 +401,7 @@ def test_updating_a_team_with_an_unknown_task_id_returns_404(client: TestClient,
     team = _create_team(db_session, name="Bar Team")
     _login(client, "admin@example.com")
 
-    response = client.put(f"/api/modules/module-9/teams/{team.id}", json={"name": "Bar Team", "task_ids": [999]})
+    response = client.put(f"/api/modules/module-9/teams/{team.id}", json={"name": "Bar Team", "task_ids": [999], "active": True})
 
     assert response.status_code == 404
 
@@ -426,7 +426,7 @@ def test_updating_a_team_replaces_its_task_links_rather_than_appending(
 
     update_response = client.put(
         f"/api/modules/module-9/teams/{team_id}",
-        json={"name": "Bar Team", "task_ids": [task_c.id]},
+        json={"name": "Bar Team", "task_ids": [task_c.id], "active": True},
     )
 
     assert update_response.status_code == 200
@@ -470,7 +470,7 @@ def test_updating_a_team_replaces_its_kernlid_links_rather_than_appending(
 
     update_response = client.put(
         f"/api/modules/module-9/teams/{team_id}",
-        json={"name": "Bar Team", "kernlid_ids": [kernlid_c.id]},
+        json={"name": "Bar Team", "kernlid_ids": [kernlid_c.id], "active": True},
     )
 
     assert update_response.status_code == 200

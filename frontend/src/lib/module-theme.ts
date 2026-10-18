@@ -6,11 +6,12 @@
 // Once real module names/branding are decided, these colours (and their
 // order) can simply be reassigned here without touching any component.
 
-import { Box, Database, Nfc, Smartphone, Warehouse, type LucideIcon } from "lucide-react";
+import { Box, Database, Nfc, Shirt, Smartphone, Warehouse, type LucideIcon } from "lucide-react";
 import type { CSSProperties } from "react";
 
 import AltsienIcon from "@/components/icons/altsien-icon";
 import RollContainerIcon from "@/components/icons/roll-container-icon";
+import WalkieTalkieIcon from "@/components/icons/walkie-talkie-icon";
 
 export interface ModuleTheme {
   /** Classes for the module's tile on the landing page: a solid background
@@ -81,12 +82,19 @@ const MODULE_THEMES_BY_KEY: Record<string, ModuleTheme> = {
     badgeClassName: "bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-300",
     accentColorToken: "red-600",
     accentForegroundColorToken: "white",
+    // Atelier hands out and takes back the festival work clothing (T-shirts,
+    // hoodies, ...) — lucide's "Shirt" icon says exactly that.
+    icon: Shirt,
   },
   "module-6": {
     tileClassName: "bg-indigo-600 text-white",
     badgeClassName: "bg-indigo-100 text-indigo-700 dark:bg-indigo-500/15 dark:text-indigo-300",
     accentColorToken: "indigo-600",
     accentForegroundColorToken: "white",
+    // Walkies manages the festival's walkie-talkies — lucide has no such
+    // icon, so this is a small custom one drawn in the same stroke style
+    // (see src/components/icons/walkie-talkie-icon.tsx).
+    icon: WalkieTalkieIcon,
   },
   "module-7": {
     tileClassName: "bg-pink-600 text-white",
@@ -177,14 +185,16 @@ export function getModuleNumber(moduleKey: string): string {
 // real name also carry a translated "moduleTitle" in messages/*.json (used
 // in their own sidebar); this maps a module key to that translation key so
 // the landing tile can show the localized name instead. Placeholder
-// modules ("Module 5".."Module 7") have no entry here and fall
-// back to the backend's name as-is, since "Module 5" reads the same in
+// modules ("Module 7") have no entry here and fall
+// back to the backend's name as-is, since "Module 7" reads the same in
 // every locale anyway.
 const MODULE_TRANSLATION_KEYS: Record<string, string> = {
   "module-1": "tagscan.moduleTitle",
   "module-2": "karTracker.moduleTitle",
   "module-3": "interventionRequests.moduleTitle",
   "module-4": "stockMaster.moduleTitle",
+  "module-5": "atelier.moduleTitle",
+  "module-6": "walkies.moduleTitle",
   "module-8": "altsienSelect.moduleTitle",
   "module-9": "masterdata.moduleTitle",
 };
