@@ -4,12 +4,13 @@
 # unit test on its own.
 #
 # Three parts:
-# - the fleet (KarTracker_karren): totals, per status, per team;
+# - the fleet (KarTracker_karren): totals, per status, per transport type;
 # - the movement log (KarTracker_kar_actions): last 7 days, and per day over
 #   the last 14 days;
 # - "Plan a kar" (KarTracker_kar_afleverlocaties) for one season: how many
-#   (active team, active festival) pairs already have a delivery location.
-#   Only filled in when a season is given.
+#   (team with a kar, one of its festivals) pairs already have a delivery
+#   location, counted like the Plan a kar screen's overview
+#   (plan_kar_service.festivals_by_team). Only filled in when a season is given.
 
 from datetime import date, datetime, timedelta, timezone
 
@@ -17,18 +18,19 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.timezone import BELGIAN_TZ, to_belgian
-from app.db.models.festival import Festival
 from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.kartracker_kar_action import KarTrackerKarAction
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.kartracker_kar_status import KarTrackerKarStatus
+from app.db.models.product import Product
 from app.db.models.team import Team
+from app.modules.module_2.plan_kar_service import festivals_by_team
 from app.schemas.kartracker import (
     KarTrackerDashboardDailyMovementItem,
     KarTrackerDashboardFestivalPlanItem,
     KarTrackerDashboardResponse,
     KarTrackerDashboardStatusBreakdownItem,
-    KarTrackerDashboardTeamBreakdownItem,
+    KarTrackerDashboardTransportTypeBreakdownItem,
 )
 
 # How far back the "movements" tile and the per-day chart look.
@@ -50,19 +52,21 @@ def _status_breakdown(db: Session) -> list[KarTrackerDashboardStatusBreakdownIte
     return [KarTrackerDashboardStatusBreakdownItem(status_name=name, count=count) for name, count in rows]
 
 
-def _team_breakdown(db: Session) -> list[KarTrackerDashboardTeamBreakdownItem]:
-    """Count karren per team — only teams that actually have a kar, ordered
-    by name. Karren without a team are reported separately (see the tiles),
-    so they don't appear here.
+def _transport_type_breakdown(db: Session) -> list[KarTrackerDashboardTransportTypeBreakdownItem]:
+    """Count karren per transport type (a MasterData product) — only types
+    that at least one kar uses, ordered by name. Every kar has a transport
+    type, so the counts add up to the total fleet.
     """
     rows = db.execute(
-        select(Team.name, func.count(KarTrackerKar.id))
+        select(Product.name, func.count(KarTrackerKar.id))
         .select_from(KarTrackerKar)
-        .join(Team, KarTrackerKar.team_id == Team.id)
-        .group_by(Team.id, Team.name)
-        .order_by(Team.name)
+        .join(Product, KarTrackerKar.transport_type_id == Product.id)
+        .group_by(Product.id, Product.name)
+        .order_by(Product.name)
     ).all()
-    return [KarTrackerDashboardTeamBreakdownItem(team_name=name, count=count) for name, count in rows]
+    return [
+        KarTrackerDashboardTransportTypeBreakdownItem(transport_type_name=name, count=count) for name, count in rows
+    ]
 
 
 def _as_utc(moment: datetime) -> datetime:
@@ -109,34 +113,49 @@ def _movements(db: Session, now: datetime) -> tuple[int, list[KarTrackerDashboar
     return last_week, per_day
 
 
-def _plan_kar(db: Session, season_id: int) -> tuple[int, list[KarTrackerDashboardFestivalPlanItem]]:
-    """"Plan a kar" coverage for one season: (number of active teams,
-    per-festival planned-team counts). Only assignments whose team and
-    festival are both still active are counted, so the totals stay
-    comparable with "active teams × active festivals".
+def _plan_kar(db: Session, season_id: int) -> tuple[int, int, int, list[KarTrackerDashboardFestivalPlanItem]]:
+    """"Plan a kar" coverage for one season, counted exactly like the Plan a
+    kar screen's overview: only active teams that have at least one kar,
+    each against its own festivals (the ones it picked in Altsien Select,
+    or every active festival while it picked none). Returns (number of
+    those teams, planned pairs, expected pairs, per-festival planned teams).
     """
-    active_team_count = db.scalar(select(func.count()).select_from(Team).where(Team.active.is_(True))) or 0
+    all_festivals, per_team = festivals_by_team(db, season_id)
 
-    # Every active festival of the season, earliest first (same order as the
-    # Plan a kar and Kar Planning screens), with its number of planned teams.
-    rows = db.execute(
-        select(Festival.name, func.count(Team.id))
-        .select_from(Festival)
-        .outerjoin(
-            KarTrackerKarAfleverlocatie,
-            (KarTrackerKarAfleverlocatie.festival_id == Festival.id)
-            & (KarTrackerKarAfleverlocatie.season_id == season_id),
-        )
-        .outerjoin(Team, (Team.id == KarTrackerKarAfleverlocatie.team_id) & Team.active.is_(True))
-        .where(Festival.season_id == season_id, Festival.active.is_(True))
-        .group_by(Festival.id, Festival.name, Festival.start_date)
-        .order_by(Festival.start_date, Festival.name)
-    ).all()
+    # Teams that can be planned: active and owning at least one kar.
+    team_ids = set(
+        db.scalars(
+            select(KarTrackerKar.team_id).join(Team, Team.id == KarTrackerKar.team_id).where(Team.active.is_(True))
+        ).all()
+    )
 
+    # Every saved (team, festival) pair of the season.
+    planned: set[tuple[int, int]] = set(
+        db.execute(
+            select(KarTrackerKarAfleverlocatie.team_id, KarTrackerKarAfleverlocatie.festival_id).where(
+                KarTrackerKarAfleverlocatie.season_id == season_id
+            )
+        ).all()
+    )
+
+    # Walk every team's own festivals: expected pairs, planned pairs and the
+    # per-festival planned count all come from the same loop.
+    planned_by_festival = {festival.id: 0 for festival in all_festivals}
+    expected_pairs = 0
+    planned_pairs = 0
+    for team_id in team_ids:
+        for festival in per_team.get(team_id, all_festivals):
+            expected_pairs += 1
+            if (team_id, festival.id) in planned:
+                planned_pairs += 1
+                planned_by_festival[festival.id] += 1
+
+    # Festivals stay in calendar order (as festivals_by_team returns them).
     per_festival = [
-        KarTrackerDashboardFestivalPlanItem(festival_name=name, planned_teams=count) for name, count in rows
+        KarTrackerDashboardFestivalPlanItem(festival_name=festival.name, planned_teams=planned_by_festival[festival.id])
+        for festival in all_festivals
     ]
-    return active_team_count, per_festival
+    return len(team_ids), planned_pairs, expected_pairs, per_festival
 
 
 def build_dashboard_stats(
@@ -162,10 +181,7 @@ def build_dashboard_stats(
     festival_plan_breakdown: list[KarTrackerDashboardFestivalPlanItem] | None = None
     active_team_count: int | None = None
     if season_id is not None:
-        active_team_count, festival_plan_breakdown = _plan_kar(db, season_id)
-        # Expected = every active team at every active festival of the season.
-        planned_pairs = sum(item.planned_teams for item in festival_plan_breakdown)
-        expected_pairs = active_team_count * len(festival_plan_breakdown)
+        active_team_count, planned_pairs, expected_pairs, festival_plan_breakdown = _plan_kar(db, season_id)
 
     return KarTrackerDashboardResponse(
         total_karren=total_karren,
@@ -173,7 +189,7 @@ def build_dashboard_stats(
         karren_without_team=total_karren - karren_with_team,
         movements_last_7_days=movements_last_week,
         status_breakdown=_status_breakdown(db),
-        team_breakdown=_team_breakdown(db),
+        transport_type_breakdown=_transport_type_breakdown(db),
         movements_per_day=movements_per_day,
         season_id=season_id,
         active_teams=active_team_count,

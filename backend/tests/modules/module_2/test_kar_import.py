@@ -1,9 +1,9 @@
 # These tests check KarTracker's "Data Upload/Download" screen: the XLSX
 # template download, the bulk kar import (own screen key
 # "kartracker.dataupload", separate from "kartracker.karmanagement"), and
-# the full-database export. Unlike TagScan's tag import, a kar_nummer that
-# already exists is rejected as an error, never upserted — see
-# kar_import.py's own module docstring for why.
+# the full-database export. A kar_nummer that already exists is updated:
+# filled-in cells overwrite, empty cells keep the saved value — see
+# kar_import.py's own module docstring.
 
 import io
 
@@ -151,7 +151,7 @@ def test_view_only_dataupload_permission_cannot_import_karren(client: TestClient
     assert response.status_code == 403
 
 
-def test_import_creates_new_karren_and_rejects_duplicates_and_bad_lookups(
+def test_import_creates_new_karren_updates_existing_and_rejects_bad_lookups(
     client: TestClient, db_session: Session
 ) -> None:
     _login_as_admin(client, db_session)
@@ -181,7 +181,7 @@ def test_import_creates_new_karren_and_rejects_duplicates_and_bad_lookups(
     results = response.json()["results"]
     outcomes = {row["kar_nummer"]: row["outcome"] for row in results}
     assert outcomes["B_NEW"] == "created"
-    assert outcomes["B_EXISTING"] == "error"
+    assert outcomes["B_EXISTING"] == "updated"
     assert outcomes["B_BADSTATUS"] == "error"
     assert outcomes["B_BADPRODUCT"] == "error"
     missing_kar_nummer_row = next(row for row in results if row["row_number"] == 6)
@@ -191,6 +191,62 @@ def test_import_creates_new_karren_and_rejects_duplicates_and_bad_lookups(
     assert new_kar is not None
     assert new_kar.team_id == team.id
 
-    # Only one "B_EXISTING" row remains — the duplicate wasn't touched.
     assert db_session.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == "B_BADSTATUS")) is None
     assert db_session.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == "B_BADPRODUCT")) is None
+
+
+def test_import_update_overwrites_filled_cells_and_keeps_empty_ones(client: TestClient, db_session: Session) -> None:
+    _login_as_admin(client, db_session)
+    old_status = _create_kar_status(db_session, name="Actief")
+    new_status = _create_kar_status(db_session, name="Defect")
+    product = _create_product(db_session)
+    team = _create_team(db_session)
+    db_session.add(
+        KarTrackerKar(
+            kar_nummer="B001",
+            status_id=old_status.id,
+            team_id=team.id,
+            transport_type_id=product.id,
+            last_latitude=50.9,
+            last_longitude=4.8,
+        )
+    )
+    db_session.commit()
+
+    # New status and latitude; team, transport type and longitude left empty.
+    xlsx_bytes = _build_xlsx(
+        ["kar_nummer", "status_name", "team_name", "transport_type_name", "last_latitude", "last_longitude"],
+        [["B001", "defect", None, None, 51.0, None]],
+    )
+
+    response = client.post(
+        "/api/modules/module-2/kar-import",
+        files={"file": ("karren.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)},
+    )
+
+    assert response.json()["results"][0]["outcome"] == "updated"
+    db_session.expire_all()
+    kar = db_session.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == "B001"))
+    assert kar.status_id == new_status.id
+    assert kar.team_id == team.id
+    assert kar.transport_type_id == product.id
+    assert kar.last_latitude == 51.0
+    assert kar.last_longitude == 4.8
+
+
+def test_import_rejects_a_kar_number_repeated_in_the_same_file(client: TestClient, db_session: Session) -> None:
+    _login_as_admin(client, db_session)
+    kar_status = _create_kar_status(db_session)
+    product = _create_product(db_session)
+
+    xlsx_bytes = _build_xlsx(
+        ["kar_nummer", "status_name", "transport_type_name"],
+        [["B001", kar_status.name, product.name], ["B001", kar_status.name, product.name]],
+    )
+
+    response = client.post(
+        "/api/modules/module-2/kar-import",
+        files={"file": ("karren.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)},
+    )
+
+    assert [row["outcome"] for row in response.json()["results"]] == ["created", "error"]

@@ -17,6 +17,7 @@ from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum
 from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.product import Product
 from app.db.models.team import Team
+from app.db.models.team_festival import TeamFestival
 from app.modules.module_2.karblad_pdf import KarbladData, KarbladFestival, build_karbladen_pdf, build_request_url
 from app.modules.module_2.screens import sync_screens
 from tests.modules.module_2.conftest import (
@@ -194,6 +195,42 @@ def test_kar_planning_adds_one_afleverlocatie_column_per_active_festival_of_the_
     assert by_kar["B001"] == {str(early.id): "Poort 1 — Hoofdingang", str(late.id): "Camping"}
     assert by_kar["B002"] == {}
     assert by_kar["B003"] == {}
+
+
+def test_kar_planning_marks_festivals_the_team_unchecked_in_altsien_select(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_screens(db_session)
+    module = create_kartracker_module(db_session)
+    admin = create_user(db_session, email="admin@example.com", is_super_admin=True)
+    grant_module_access(db_session, admin, module)
+    login(client, "admin@example.com")
+
+    kar_status = _create_kar_status(db_session)
+    product = _create_product(db_session)
+    hive = _create_team(db_session, name="Hive")
+    scouts = _create_team(db_session, name="Scouts")
+    season = _create_season(db_session, name="2026")
+    parklife = _create_festival(db_session, season_id=season.id, name="Parklife", start_date="2026-06-28")
+    werchter = _create_festival(db_session, season_id=season.id, name="Werchter", start_date="2026-07-02")
+    # Hive only takes part in Werchter; Scouts picked nothing yet (= every festival).
+    db_session.add(TeamFestival(season_id=season.id, team_id=hive.id, festival_id=werchter.id))
+    db_session.add_all(
+        [
+            KarTrackerKar(kar_nummer="B001", status_id=kar_status.id, team_id=hive.id, transport_type_id=product.id),
+            KarTrackerKar(kar_nummer="B002", status_id=kar_status.id, team_id=scouts.id, transport_type_id=product.id),
+            KarTrackerKar(kar_nummer="B003", status_id=kar_status.id, team_id=None, transport_type_id=product.id),
+        ]
+    )
+    db_session.commit()
+
+    report = client.get(f"/api/modules/module-2/kar-planning?season_id={season.id}").json()
+    inactive = {row["kar_nummer"]: row["inactive_festival_ids"] for row in report["rows"]}
+    assert inactive == {"B001": [parklife.id], "B002": [], "B003": []}
+
+    # Without a season there are no festival columns, so nothing is inactive.
+    report = client.get("/api/modules/module-2/kar-planning").json()
+    assert all(row["inactive_festival_ids"] == [] for row in report["rows"])
 
 
 # --- Print (karbladen PDF) ---

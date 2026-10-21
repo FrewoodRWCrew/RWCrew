@@ -2417,15 +2417,15 @@
       "chartStatusTitle": "Karren per status",
       "chartStatusDescription": "Hoeveel karren momenteel elke status hebben.",
       "chartStatusEmpty": "Er zijn nog geen karstatussen.",
-      "chartTeamTitle": "Karren per ploeg",
-      "chartTeamDescription": "Hoeveel karren elke ploeg momenteel heeft.",
-      "chartTeamEmpty": "Er is nog geen kar aan een ploeg gekoppeld.",
+      "chartTransportTypeTitle": "Karren per transporttype",
+      "chartTransportTypeDescription": "Hoeveel karren er van elk transporttype zijn.",
+      "chartTransportTypeEmpty": "Er zijn nog geen karren.",
       "chartKarrenSeries": "Karren",
       "chartMovementsTitle": "Bewegingen per dag",
       "chartMovementsDescription": "Geregistreerde karbewegingen per dag over de laatste 14 dagen.",
       "chartMovementsSeries": "Bewegingen",
       "chartPlanKarTitle": "Plan a kar per festival",
-      "chartPlanKarDescription": "Hoeveel van de {total} actieve ploegen al een afleverlocatie hebben per festival.",
+      "chartPlanKarDescription": "Hoeveel van de {total} actieve ploegen met een kar al een afleverlocatie hebben per festival.",
       "chartPlanKarSeries": "Ploegen gepland",
       "chartPlanKarNoSeason": "Kies een jaartal bovenaan om de voortgang van Plan a kar te zien.",
       "chartPlanKarEmpty": "Dit jaartal heeft geen actieve festivals."
@@ -2605,7 +2605,12 @@
       "printButton": "Afdrukken",
       "printError": "Afdrukken mislukt. Probeer het opnieuw.",
       "printNeedsSeason": "Kies eerst een jaartal om te kunnen afdrukken.",
-      "printing": "Bezig met afdrukken..."
+      "printing": "Bezig met afdrukken...",
+      "festivalPlanned": "{planned}/{total} gepland",
+      "rowCount": "{shown} van {total} karren · {selected} geselecteerd",
+      "clearFilters": "Filters wissen",
+      "noLocation": "Geen locatie",
+      "notActive": "Niet actief"
     },
     "karMap": {
       "title": "Kar Map",
@@ -2806,60 +2811,66 @@
       "title": "Gegevens uploaden/downloaden",
       "description": "Hulpmiddelen om KarTracker's stamgegevens in bulk te importeren en exporteren, één tegel per onderwerp.",
       "karrenTileTitle": "Karren",
-      "dialogDescription": "Download een sjabloon om nieuwe karren voor te bereiden, upload het om ze in bulk te registreren, of exporteer het volledige wagenpark.",
+      "dialogDescription": "Download een sjabloon om nieuwe karren voor te bereiden, upload het om ze in bulk te registreren of bij te werken (een bestaande lijn wordt bijgewerkt, lege cellen behouden de huidige waarde), of exporteer het volledige wagenpark.",
       "downloadTemplateLabel": "Sjabloon",
       "downloadTemplateButton": "Sjabloon downloaden",
       "uploadNotAllowed": "Je hebt geen rechten om hier te uploaden — vraag een KarTracker-beheerder om dit toe te kennen.",
       "chooseFileLabel": "Excel-bestand",
       "uploadButton": "Uploaden",
       "importFailed": "Importeren van het Excel-bestand is mislukt.",
-      "importSummary": "{created} aangemaakt, {errors} overgeslagen.",
+      "importSummary": "{created} aangemaakt, {updated} bijgewerkt, {errors} overgeslagen.",
+      "importSummaryNames": "{created} aangemaakt, {unchanged} al aanwezig, {errors} overgeslagen.",
       "importColumnRow": "Rij",
       "importColumnKarNummer": "Karnummer",
       "importColumnOutcome": "Resultaat",
       "importColumnDetail": "Detail",
       "importOutcome": {
         "created": "Aangemaakt",
+        "updated": "Bijgewerkt",
         "error": "Fout"
       },
       "exportLabel": "Export",
       "exportButton": "Volledige databank downloaden",
       "karStatuses": {
         "tileTitle": "KarStatussen",
-        "dialogDescription": "Download een sjabloon om nieuwe karstatussen voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om nieuwe karstatussen voor te bereiden, upload het om ze in bulk te registreren (een bestaande naam blijft ongewijzigd), of exporteer de volledige lijst.",
         "importColumnName": "Naam",
         "importOutcome": {
           "created": "Aangemaakt",
+          "unchanged": "Al aanwezig",
           "error": "Fout"
         },
         "exportButton": "Karstatussen downloaden"
       },
       "distributiepunten": {
         "tileTitle": "Distributiepunten",
-        "dialogDescription": "Download een sjabloon om nieuwe distributiepunten voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om nieuwe distributiepunten voor te bereiden, upload het om ze in bulk te registreren of bij te werken (een bestaande lijn wordt bijgewerkt, lege cellen behouden de huidige waarde), of exporteer de volledige lijst.",
         "importColumnName": "Naam",
         "importOutcome": {
           "created": "Aangemaakt",
+          "updated": "Bijgewerkt",
           "error": "Fout"
         },
         "exportButton": "Distributiepunten downloaden"
       },
       "zones": {
         "tileTitle": "Zone",
-        "dialogDescription": "Download een sjabloon om nieuwe zones voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om nieuwe zones voor te bereiden, upload het om ze in bulk te registreren (een bestaande naam blijft ongewijzigd), of exporteer de volledige lijst.",
         "importColumnName": "Naam",
         "importOutcome": {
           "created": "Aangemaakt",
+          "unchanged": "Al aanwezig",
           "error": "Fout"
         },
         "exportButton": "Zones downloaden"
       },
       "afleverlocaties": {
         "tileTitle": "Afleverlocatie",
-        "dialogDescription": "Download een sjabloon om nieuwe afleverlocaties voor te bereiden, upload het om ze in bulk te registreren, of exporteer de volledige lijst.",
+        "dialogDescription": "Download een sjabloon om nieuwe afleverlocaties voor te bereiden, upload het om ze in bulk te registreren of bij te werken (een bestaande lijn wordt bijgewerkt, lege cellen behouden de huidige waarde), of exporteer de volledige lijst.",
         "importColumnName": "Naam",
         "importOutcome": {
           "created": "Aangemaakt",
+          "updated": "Bijgewerkt",
           "error": "Fout"
         },
         "exportButton": "Afleverlocaties downloaden"

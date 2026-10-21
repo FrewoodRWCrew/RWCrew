@@ -2417,15 +2417,15 @@
       "chartStatusTitle": "Karren per status",
       "chartStatusDescription": "How many karren currently carry each status.",
       "chartStatusEmpty": "No kar statuses yet.",
-      "chartTeamTitle": "Karren per team",
-      "chartTeamDescription": "How many karren each team currently has.",
-      "chartTeamEmpty": "No kar is linked to a team yet.",
+      "chartTransportTypeTitle": "Karren per transport type",
+      "chartTransportTypeDescription": "How many karren there are of each transport type.",
+      "chartTransportTypeEmpty": "There are no karren yet.",
       "chartKarrenSeries": "Karren",
       "chartMovementsTitle": "Movements per day",
       "chartMovementsDescription": "Kar movements logged per day over the last 14 days.",
       "chartMovementsSeries": "Movements",
       "chartPlanKarTitle": "Plan a kar per festival",
-      "chartPlanKarDescription": "How many of the {total} active teams already have a delivery location per festival.",
+      "chartPlanKarDescription": "How many of the {total} active teams with a kar already have a delivery location per festival.",
       "chartPlanKarSeries": "Teams planned",
       "chartPlanKarNoSeason": "Pick a year in the header to see the Plan a kar progress.",
       "chartPlanKarEmpty": "This year has no active festivals."
@@ -2605,7 +2605,12 @@
       "printButton": "Print",
       "printError": "Printing failed. Please try again.",
       "printNeedsSeason": "Select a year first to be able to print.",
-      "printing": "Printing..."
+      "printing": "Printing...",
+      "festivalPlanned": "{planned}/{total} planned",
+      "rowCount": "{shown} of {total} karren · {selected} selected",
+      "clearFilters": "Clear filters",
+      "noLocation": "No location",
+      "notActive": "Not active"
     },
     "karMap": {
       "title": "Kar Map",
@@ -2806,60 +2811,66 @@
       "title": "Data Upload/Download",
       "description": "Bulk import and export tools for KarTracker's master data, one tile per topic.",
       "karrenTileTitle": "Karren",
-      "dialogDescription": "Download a template to prepare new karren, upload it to register them in bulk, or export the full fleet registry.",
+      "dialogDescription": "Download a template to prepare new karren, upload it to register or update them in bulk (an existing line is updated, empty cells keep the current value), or export the full fleet registry.",
       "downloadTemplateLabel": "Template",
       "downloadTemplateButton": "Download template",
       "uploadNotAllowed": "You don't have permission to upload here — ask a KarTracker admin to grant it.",
       "chooseFileLabel": "Excel file",
       "uploadButton": "Upload",
       "importFailed": "Failed to import the Excel file.",
-      "importSummary": "{created} created, {errors} skipped.",
+      "importSummary": "{created} created, {updated} updated, {errors} skipped.",
+      "importSummaryNames": "{created} created, {unchanged} already present, {errors} skipped.",
       "importColumnRow": "Row",
       "importColumnKarNummer": "Kar number",
       "importColumnOutcome": "Outcome",
       "importColumnDetail": "Detail",
       "importOutcome": {
         "created": "Created",
+        "updated": "Updated",
         "error": "Error"
       },
       "exportLabel": "Export",
       "exportButton": "Download full database",
       "karStatuses": {
         "tileTitle": "KarStatussen",
-        "dialogDescription": "Download a template to prepare new kar statuses, upload it to register them in bulk, or export the full list.",
+        "dialogDescription": "Download a template to prepare new kar statuses, upload it to register them in bulk (an existing name stays unchanged), or export the full list.",
         "importColumnName": "Name",
         "importOutcome": {
           "created": "Created",
+          "unchanged": "Already present",
           "error": "Error"
         },
         "exportButton": "Download kar statuses"
       },
       "distributiepunten": {
         "tileTitle": "Distributiepunten",
-        "dialogDescription": "Download a template to prepare new distribution points, upload it to register them in bulk, or export the full list.",
+        "dialogDescription": "Download a template to prepare new distribution points, upload it to register or update them in bulk (an existing line is updated, empty cells keep the current value), or export the full list.",
         "importColumnName": "Name",
         "importOutcome": {
           "created": "Created",
+          "updated": "Updated",
           "error": "Error"
         },
         "exportButton": "Download distribution points"
       },
       "zones": {
         "tileTitle": "Zone",
-        "dialogDescription": "Download a template to prepare new zones, upload it to register them in bulk, or export the full list.",
+        "dialogDescription": "Download a template to prepare new zones, upload it to register them in bulk (an existing name stays unchanged), or export the full list.",
         "importColumnName": "Name",
         "importOutcome": {
           "created": "Created",
+          "unchanged": "Already present",
           "error": "Error"
         },
         "exportButton": "Download zones"
       },
       "afleverlocaties": {
         "tileTitle": "Afleverlocatie",
-        "dialogDescription": "Download a template to prepare new delivery locations, upload it to register them in bulk, or export the full list.",
+        "dialogDescription": "Download a template to prepare new delivery locations, upload it to register or update them in bulk (an existing line is updated, empty cells keep the current value), or export the full list.",
         "importColumnName": "Name",
         "importOutcome": {
           "created": "Created",
+          "updated": "Updated",
           "error": "Error"
         },
         "exportButton": "Download delivery locations"

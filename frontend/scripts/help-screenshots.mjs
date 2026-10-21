@@ -49,7 +49,7 @@ const SHOTS = {
     { file: "settings.png", path: "/modules/module-1/settings" },
   ],
   "module-2": [
-    { file: "overview.png", path: "/modules/module-2" },
+    { file: "overview.png", path: "/modules/module-2/dashboard" },
     { file: "movement.png", path: "/modules/module-2/actions" },
     { file: "kar-planning.png", path: "/modules/module-2/actions/kar-planning" },
     { file: "kar-map.png", path: "/modules/module-2/actions/kar-map" },

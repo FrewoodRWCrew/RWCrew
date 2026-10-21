@@ -17,6 +17,7 @@ from app.db.models.kartracker_kar_status import KarTrackerKarStatus
 from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.product import Product
 from app.db.models.team import Team
+from app.modules.module_2.plan_kar_service import festivals_by_team
 from app.schemas.kartracker import (
     KarMapAfleverlocatieRow,
     KarMapDistributiepuntRow,
@@ -37,7 +38,9 @@ def build_kar_planning_report(db: Session, season_id: int | None) -> KarPlanning
     When `season_id` is given, every active festival of that season becomes
     an extra column carrying the afleverlocatie planned (via "Plan a kar")
     for the kar's team at that festival. Without it there are no festival
-    columns.
+    columns. Each row also lists the festival columns its team unchecked in
+    Altsien Select (`inactive_festival_ids`); a team that picked nothing yet
+    takes part in every festival, so its list stays empty.
     """
     rows = db.execute(
         select(
@@ -59,6 +62,8 @@ def build_kar_planning_report(db: Session, season_id: int | None) -> KarPlanning
     festivals: list[KarPlanningFestivalResponse] = []
     # (team_id, festival_id) -> name of the afleverlocatie planned there.
     planned_locations: dict[tuple[int, int], str] = {}
+    # team_id -> ids of the festival columns that team didn't pick.
+    inactive_by_team: dict[int, list[int]] = {}
     if season_id is not None:
         # One column per active festival of the season, earliest first (the
         # same ordering "Plan a kar" uses).
@@ -94,6 +99,13 @@ def build_kar_planning_report(db: Session, season_id: int | None) -> KarPlanning
                 f"{plan.name} — {plan.description}" if plan.description else plan.name
             )
 
+        # Festivals a team unchecked in Altsien Select (same rule as Plan a
+        # kar: only teams that picked something have unpicked festivals).
+        _, per_team = festivals_by_team(db, season_id)
+        for team_id, picked in per_team.items():
+            picked_ids = {festival.id for festival in picked}
+            inactive_by_team[team_id] = [festival.id for festival in festivals if festival.id not in picked_ids]
+
     return KarPlanningReportResponse(
         festivals=festivals,
         rows=[
@@ -110,6 +122,7 @@ def build_kar_planning_report(db: Session, season_id: int | None) -> KarPlanning
                     for festival in festivals
                     if (row.team_id, festival.id) in planned_locations
                 },
+                inactive_festival_ids=inactive_by_team.get(row.team_id, []) if row.team_id is not None else [],
                 geolocation=(
                     f"{row.last_latitude}, {row.last_longitude}"
                     if row.last_latitude is not None and row.last_longitude is not None

@@ -1,8 +1,8 @@
 # These tests check the KarStatussen tile on KarTracker's "Data Upload/
 # Download" screen: the XLSX template download, the bulk kar-status import
 # (same "kartracker.dataupload" screen key the Karren tile uses), and the
-# kar-statuses-only export. A name that already exists is rejected as an
-# error, never upserted — see kar_status_import.py's own module docstring.
+# kar-statuses-only export. A name that already exists (ignoring case) is
+# reported as "unchanged" — see kar_status_import.py's own module docstring.
 
 import io
 
@@ -122,7 +122,7 @@ def test_view_only_dataupload_permission_cannot_import_kar_statuses(client: Test
     assert response.status_code == 403
 
 
-def test_import_creates_new_statuses_and_rejects_duplicates(client: TestClient, db_session: Session) -> None:
+def test_import_creates_new_statuses_and_leaves_existing_ones_unchanged(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
     existing = _create_kar_status(db_session, name="Terug in Magazijn")
 
@@ -134,7 +134,7 @@ def test_import_creates_new_statuses_and_rejects_duplicates(client: TestClient, 
         ["name"],
         [
             ["In gebruik"],
-            ["Terug in Magazijn"],
+            ["terug in magazijn"],
         ],
     )
 
@@ -147,12 +147,12 @@ def test_import_creates_new_statuses_and_rejects_duplicates(client: TestClient, 
     results = response.json()["results"]
     outcomes = {row["name"]: row["outcome"] for row in results}
     assert outcomes["In gebruik"] == "created"
-    assert outcomes["Terug in Magazijn"] == "error"
+    assert outcomes["terug in magazijn"] == "unchanged"
 
     new_status = db_session.scalar(select(KarTrackerKarStatus).where(KarTrackerKarStatus.name == "In gebruik"))
     assert new_status is not None
 
-    # The duplicate row didn't create a second "Terug in Magazijn" row.
+    # The existing name (other case) didn't create a second "Terug in Magazijn" row.
     assert (
         db_session.scalar(
             select(KarTrackerKarStatus).where(KarTrackerKarStatus.name == existing.name)

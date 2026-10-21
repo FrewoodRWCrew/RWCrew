@@ -7,11 +7,11 @@
 # Import is best-effort: every row is validated and applied independently
 # inside its own SAVEPOINT (db.begin_nested()), so one bad row rolls back
 # only itself instead of aborting the whole batch — the caller always gets
-# back one result per row (created/error), never a partial exception.
-# Unlike TagScan's tag import, a row whose kar_nummer already exists is
-# REJECTED as an error rather than upserted — this screen is for
-# registering brand-new kars only, editing existing ones stays on the
-# KarManagement screen itself.
+# back one result per row (created/updated/error), never a partial exception.
+# A row whose kar_nummer already exists UPDATES that kar: every filled-in
+# cell overwrites the saved value, while an empty cell keeps it (clearing a
+# value stays a job for the KarManagement screen). So an edited export can
+# be uploaded again as-is.
 
 import io
 from datetime import datetime
@@ -46,9 +46,8 @@ TEMPLATE_COLUMNS = [
 
 def build_kar_template_xlsx() -> bytes:
     """The downloadable XLSX template: just a bold header row. Deliberately
-    no example data row — since a re-uploaded, unedited row would silently
-    create a real kar (import rejects duplicates rather than upserting, so
-    it wouldn't even get caught as "already exists" the first time).
+    no example data row — a re-uploaded, unedited example row would silently
+    create (or update) a real kar.
     """
     workbook = Workbook()
     sheet = workbook.active
@@ -80,6 +79,11 @@ def _parse_datetime_cell(value: object) -> datetime | None:
     if isinstance(value, datetime):
         return value
     return datetime.fromisoformat(str(value).strip())
+
+
+def _float_or_none(value: object) -> float | None:
+    """A coordinate cell: empty means "not given", anything else must be a number."""
+    return float(value) if _cell_text(value) else None
 
 
 def _resolve_status_id(db: Session, status_name: str | None) -> int:
@@ -130,6 +134,9 @@ def import_karren_from_xlsx(db: Session, file_bytes: bytes) -> list[KarImportRow
         return row[index] if index is not None and index < len(row) else None
 
     results: list[KarImportRowResult] = []
+    # Kar numbers already handled in this file, so a repeated one is caught
+    # instead of silently updating the same kar twice.
+    seen_kar_nummers: set[str] = set()
 
     for row_number, row in enumerate(rows, start=2):
         if row is None or all(value is None for value in row):
@@ -140,24 +147,51 @@ def import_karren_from_xlsx(db: Session, file_bytes: bytes) -> list[KarImportRow
         try:
             if kar_nummer is None:
                 raise ValueError("kar_nummer is required")
+            if kar_nummer in seen_kar_nummers:
+                raise ValueError("This kar number appears more than once in the file")
+            seen_kar_nummers.add(kar_nummer)
+
+            status_name = _cell_text(cell(row, "status_name"))
+            team_name = _cell_text(cell(row, "team_name"))
+            transport_type_name = _cell_text(cell(row, "transport_type_name"))
+            latitude = _float_or_none(cell(row, "last_latitude"))
+            longitude = _float_or_none(cell(row, "last_longitude"))
+            recorded_at = _parse_datetime_cell(cell(row, "last_recorded_at"))
 
             existing = db.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == kar_nummer))
             if existing is not None:
-                raise ValueError("A kar with this kar number already exists")
-
-            new_kar = KarTrackerKar(
-                kar_nummer=kar_nummer,
-                status_id=_resolve_status_id(db, _cell_text(cell(row, "status_name"))),
-                team_id=_resolve_team_id(db, _cell_text(cell(row, "team_name"))),
-                transport_type_id=_resolve_transport_type_id(db, _cell_text(cell(row, "transport_type_name"))),
-                last_latitude=float(cell(row, "last_latitude")) if _cell_text(cell(row, "last_latitude")) else None,
-                last_longitude=float(cell(row, "last_longitude")) if _cell_text(cell(row, "last_longitude")) else None,
-                last_recorded_at=_parse_datetime_cell(cell(row, "last_recorded_at")),
-            )
-            db.add(new_kar)
+                # Update: only the filled-in cells overwrite, empty ones keep the saved value.
+                if status_name is not None:
+                    existing.status_id = _resolve_status_id(db, status_name)
+                if team_name is not None:
+                    existing.team_id = _resolve_team_id(db, team_name)
+                if transport_type_name is not None:
+                    existing.transport_type_id = _resolve_transport_type_id(db, transport_type_name)
+                if latitude is not None:
+                    existing.last_latitude = latitude
+                if longitude is not None:
+                    existing.last_longitude = longitude
+                if recorded_at is not None:
+                    existing.last_recorded_at = recorded_at
+                db.flush()
+                outcome = "updated"
+            else:
+                # New kar: status and transport type are required.
+                db.add(
+                    KarTrackerKar(
+                        kar_nummer=kar_nummer,
+                        status_id=_resolve_status_id(db, status_name),
+                        team_id=_resolve_team_id(db, team_name),
+                        transport_type_id=_resolve_transport_type_id(db, transport_type_name),
+                        last_latitude=latitude,
+                        last_longitude=longitude,
+                        last_recorded_at=recorded_at,
+                    )
+                )
+                outcome = "created"
 
             savepoint.commit()
-            results.append(KarImportRowResult(row_number=row_number, kar_nummer=kar_nummer, outcome="created", detail=None))
+            results.append(KarImportRowResult(row_number=row_number, kar_nummer=kar_nummer, outcome=outcome, detail=None))
         except (ValueError, IntegrityError) as error:
             savepoint.rollback()
             detail = str(error) if isinstance(error, ValueError) else "This row conflicts with existing data"

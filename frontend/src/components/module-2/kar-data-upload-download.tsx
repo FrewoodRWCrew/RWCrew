@@ -11,10 +11,11 @@
 //
 // Each tile's dialog combines template download / bulk upload / export,
 // mirroring TagScan's own import dialog
-// (components/module-1/tagscan-data-upload-download.tsx) — except a duplicate key
-// (kar_nummer / status name) is reported as an error, never upserted (see
-// kar_import.py / kar_status_import.py on the backend for why), so there's
-// no "updated" outcome here.
+// (components/module-1/tagscan-data-upload-download.tsx). A line whose key
+// already exists updates that record ("updated": filled-in cells overwrite,
+// empty cells keep the saved value); for the name-only lookups (KarStatussen,
+// Zones) there is nothing to update, so such a line is "unchanged". See the
+// *_import.py files of module_2 on the backend.
 
 import { useState } from "react";
 import { CalendarDays, FileSpreadsheet, ListChecks, MapPin, Route, type LucideIcon } from "lucide-react";
@@ -46,14 +47,25 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 interface ImportRowResult {
   row_number: number;
   key: string | null;
-  // "updated"/"skipped" only come from the Leverdata import, which upserts.
-  outcome: "created" | "updated" | "skipped" | "error";
+  // "unchanged" only comes from the name-only imports, "skipped" only from Leverdata.
+  outcome: "created" | "updated" | "unchanged" | "skipped" | "error";
   detail: string | null;
 }
+
+/** How many rows of one upload got each outcome. A type (not an interface),
+ * so it can be passed straight to next-intl as the message's values. */
+type ImportOutcomeCounts = {
+  created: number;
+  updated: number;
+  unchanged: number;
+  skipped: number;
+  errors: number;
+};
 
 const OUTCOME_BADGE_VARIANT: Record<ImportRowResult["outcome"], "default" | "secondary" | "outline" | "destructive"> = {
   created: "default",
   updated: "secondary",
+  unchanged: "outline",
   skipped: "outline",
   error: "destructive",
 };
@@ -107,7 +119,7 @@ function KarDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={t("importColumnKarNummer")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -142,7 +154,7 @@ function KarStatusDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummaryNames", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tStatuses("importColumnName")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -177,7 +189,7 @@ function DistributiepuntDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tDistributiepunten("importColumnName")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -212,7 +224,7 @@ function ZoneDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummaryNames", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tZones("importColumnName")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -247,7 +259,7 @@ function AfleverlocatieDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      importSummary={(created, errors) => t("importSummary", { created, errors })}
+      importSummary={(counts) => t("importSummary", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tAfleverlocaties("importColumnName")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -282,10 +294,8 @@ function LeverdataDataTile({ canUpload }: { canUpload: boolean }) {
       chooseFileLabel={t("chooseFileLabel")}
       uploadButton={t("uploadButton")}
       importFailed={t("importFailed")}
-      // This import upserts, so its summary also counts updated and skipped rows.
-      importSummary={(created, errors, updated, skipped) =>
-        tLeverdata("importSummary", { created, updated, skipped, errors })
-      }
+      // Leverdata also skips rows without dates, so its summary counts those too.
+      importSummary={(counts) => tLeverdata("importSummary", counts)}
       importColumnRow={t("importColumnRow")}
       importColumnKey={tLeverdata("importColumnFestival")}
       importColumnOutcome={t("importColumnOutcome")}
@@ -317,8 +327,8 @@ interface DataTopicTileProps {
   chooseFileLabel: string;
   uploadButton: string;
   importFailed: string;
-  /** updated/skipped are only non-zero for an upserting import (Leverdata); other tiles ignore them. */
-  importSummary: (created: number, errors: number, updated: number, skipped: number) => string;
+  /** One count per outcome; each tile's summary text uses the ones its import can produce. */
+  importSummary: (counts: ImportOutcomeCounts) => string;
   importColumnRow: string;
   importColumnKey: string;
   importColumnOutcome: string;
@@ -404,10 +414,15 @@ function DataTopicTile({
     }
   }
 
-  const createdCount = results?.filter((row) => row.outcome === "created").length ?? 0;
-  const errorCount = results?.filter((row) => row.outcome === "error").length ?? 0;
-  const updatedCount = results?.filter((row) => row.outcome === "updated").length ?? 0;
-  const skippedCount = results?.filter((row) => row.outcome === "skipped").length ?? 0;
+  // How many rows got each outcome, for the summary line above the results.
+  const countOf = (outcome: ImportRowResult["outcome"]) => results?.filter((row) => row.outcome === outcome).length ?? 0;
+  const outcomeCounts: ImportOutcomeCounts = {
+    created: countOf("created"),
+    updated: countOf("updated"),
+    unchanged: countOf("unchanged"),
+    skipped: countOf("skipped"),
+    errors: countOf("error"),
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -460,7 +475,7 @@ function DataTopicTile({
 
         {results && (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted-foreground">{importSummary(createdCount, errorCount, updatedCount, skippedCount)}</p>
+            <p className="text-sm text-muted-foreground">{importSummary(outcomeCounts)}</p>
             <div className="rounded-md border [&>div]:max-h-72 [&>div]:overflow-y-auto">
               <Table>
                 <TableHeader>

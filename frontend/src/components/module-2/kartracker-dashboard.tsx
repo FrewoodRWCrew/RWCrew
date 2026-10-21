@@ -6,7 +6,7 @@
 // components/module-3/intervention-requests-dashboard.tsx): stat tiles plus
 // four chart panels.
 //
-// - The fleet (karren per status, karren per team) and the movement log
+// - The fleet (karren per status, karren per transport type) and the movement log
 //   (per day, last 14 days) don't depend on a season.
 // - The "Plan a kar" tile and chart follow the season picked in the header —
 //   the same selector the Plan a kar screen itself uses — and show a hint
@@ -92,7 +92,10 @@ function DashboardContent({ stats }: { stats: KarTrackerDashboardStats }) {
   const planKarConfig: ChartConfig = { count: { label: t("chartPlanKarSeries"), theme: MODULE_ACCENT } };
 
   const statusChartData = stats.status_breakdown.map((item) => ({ label: item.status_name, count: item.count }));
-  const teamChartData = stats.team_breakdown.map((item) => ({ label: item.team_name, count: item.count }));
+  const transportTypeChartData = stats.transport_type_breakdown.map((item) => ({
+    label: item.transport_type_name,
+    count: item.count,
+  }));
   // Days arrive as UTC ISO dates; format them in UTC too so they never shift a day.
   const movementChartData = stats.movements_per_day.map((item) => ({
     label: format.dateTime(new Date(`${item.day}T00:00:00Z`), { day: "numeric", month: "short", timeZone: "UTC" }),
@@ -150,15 +153,15 @@ function DashboardContent({ stats }: { stats: KarTrackerDashboardStats }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>{t("chartTeamTitle")}</CardTitle>
-            <CardDescription>{t("chartTeamDescription")}</CardDescription>
+            <CardTitle>{t("chartTransportTypeTitle")}</CardTitle>
+            <CardDescription>{t("chartTransportTypeDescription")}</CardDescription>
           </CardHeader>
           <CardContent>
-            {teamChartData.length === 0 ? (
-              <EmptyChart message={t("chartTeamEmpty")} />
+            {transportTypeChartData.length === 0 ? (
+              <EmptyChart message={t("chartTransportTypeEmpty")} />
             ) : (
-              <ChartContainer config={karrenConfig} className="w-full" style={rowsHeight(teamChartData.length)}>
-                <BarChart data={teamChartData} layout="vertical" margin={{ left: 8, right: 32 }}>
+              <ChartContainer config={karrenConfig} className="w-full" style={rowsHeight(transportTypeChartData.length)}>
+                <BarChart data={transportTypeChartData} layout="vertical" margin={{ left: 8, right: 32 }}>
                   <CartesianGrid horizontal={false} />
                   <XAxis type="number" hide allowDecimals={false} />
                   <YAxis dataKey="label" type="category" tickLine={false} axisLine={false} width={130} />

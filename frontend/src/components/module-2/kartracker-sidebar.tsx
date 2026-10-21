@@ -7,11 +7,11 @@
 // landing link, then grouped sections gated by the current user's
 // KarTracker role — see module_2/deps.py.
 //
-// Groups so far, in display order: "Actions" ("Manuele kar beweging" — log
-// a kar movement, plus "Kar Planning" — a read-only, cross-table report, and "Kar Map" — a
-// read-only map view of Karren/Afleverlocaties/Distributiepunten, and "Plan
-// a kar" — pick a delivery location per festival for a team, each gated by
-// its own independent permission), "Masterdata" (KarManagement/
+// Groups so far, in display order: "Actions" ("Kar Planning" — a read-only,
+// cross-table report, "Kar Map" — a read-only map view of Karren/
+// Afleverlocaties/Distributiepunten, "Plan a kar" — pick a delivery location
+// per festival for a team, and "Manuele kar beweging" — log a kar movement,
+// each gated by its own independent permission), "Masterdata" (KarManagement/
 // KarStatussen/Delivery Dates/Data Upload/Download/Grondplan, the Karlijst phase), and
 // "Access Rights" (Roles/Users) — same group order as Intervention
 // Requests' own sidebar. Future phases (delivery planning, ...) add their
@@ -82,7 +82,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         {t("moduleTitle")}
       </div>
 
-      <Link href="/modules/module-2" className={linkClassName("/modules/module-2")}>
+      {/* The module root itself redirects (to Kar Planning), so the KPI page has its own URL. */}
+      <Link href="/modules/module-2/dashboard" className={linkClassName("/modules/module-2/dashboard")}>
         {tLanding("title")}
       </Link>
 
@@ -92,11 +93,6 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
             <Zap className="size-4" />
             {t("actionsGroup")}
           </div>
-          {canViewActions && (
-            <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
-              {tActions("title")}
-            </Link>
-          )}
           {canViewKarPlanning && (
             <Link
               href="/modules/module-2/actions/kar-planning"
@@ -119,6 +115,11 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
               className={linkClassName("/modules/module-2/actions/plan-kar", 1)}
             >
               {tPlanKar("title")}
+            </Link>
+          )}
+          {canViewActions && (
+            <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
+              {tActions("title")}
             </Link>
           )}
         </>

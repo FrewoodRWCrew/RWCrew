@@ -21,6 +21,7 @@ from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
+from app.db.models.team_festival import TeamFestival
 from app.modules.module_2.kartracker_dashboard import build_dashboard_stats
 from app.modules.module_2.screens import sync_screens
 from tests.modules.module_2.conftest import create_kartracker_module, create_user, grant_module_access, login
@@ -51,8 +52,16 @@ def _create_team(db_session: Session, name: str, *, active: bool = True) -> Team
     return team
 
 
-def _create_kar(db_session: Session, kar_nummer: str, *, status_id: int, team_id: int | None = None) -> KarTrackerKar:
-    product = db_session.scalar(select(Product)) or Product(name="Box")
+def _create_kar(
+    db_session: Session,
+    kar_nummer: str,
+    *,
+    status_id: int,
+    team_id: int | None = None,
+    transport_type: str = "Box",
+) -> KarTrackerKar:
+    # The transport type is a MasterData product, reused by name.
+    product = db_session.scalar(select(Product).where(Product.name == transport_type)) or Product(name=transport_type)
     db_session.add(product)
     db_session.commit()
     kar = KarTrackerKar(kar_nummer=kar_nummer, status_id=status_id, transport_type_id=product.id, team_id=team_id)
@@ -137,7 +146,7 @@ def test_dashboard_is_open_to_any_module_member_and_starts_empty(client: TestCli
     assert body["karren_without_team"] == 0
     assert body["movements_last_7_days"] == 0
     assert body["status_breakdown"] == []
-    assert body["team_breakdown"] == []
+    assert body["transport_type_breakdown"] == []
     assert len(body["movements_per_day"]) == 14
     assert all(item["count"] == 0 for item in body["movements_per_day"])
     # No season asked for: no Plan a kar figures.
@@ -146,7 +155,7 @@ def test_dashboard_is_open_to_any_module_member_and_starts_empty(client: TestCli
     assert body["festival_plan_breakdown"] is None
 
 
-def test_fleet_figures_count_teams_and_zero_fill_statuses(client: TestClient, db_session: Session) -> None:
+def test_fleet_figures_count_transport_types_and_zero_fill_statuses(client: TestClient, db_session: Session) -> None:
     _login_member(client, db_session)
     in_stock = _create_status(db_session, "In magazijn")
     on_site = _create_status(db_session, "Op terrein")
@@ -155,8 +164,8 @@ def test_fleet_figures_count_teams_and_zero_fill_statuses(client: TestClient, db
     chiro = _create_team(db_session, "Chiro")
     _create_team(db_session, "Empty Team")
     _create_kar(db_session, "K001", status_id=in_stock.id)
-    _create_kar(db_session, "K002", status_id=on_site.id, team_id=scouts.id)
-    _create_kar(db_session, "K003", status_id=on_site.id, team_id=scouts.id)
+    _create_kar(db_session, "K002", status_id=on_site.id, team_id=scouts.id, transport_type="Rolcontainer")
+    _create_kar(db_session, "K003", status_id=on_site.id, team_id=scouts.id, transport_type="Rolcontainer")
     _create_kar(db_session, "K004", status_id=on_site.id, team_id=chiro.id)
 
     body = client.get(DASHBOARD_URL).json()
@@ -169,10 +178,10 @@ def test_fleet_figures_count_teams_and_zero_fill_statuses(client: TestClient, db
         {"status_name": "In magazijn", "count": 1},
         {"status_name": "Op terrein", "count": 3},
     ]
-    # Only teams that have a kar, ordered by name.
-    assert body["team_breakdown"] == [
-        {"team_name": "Chiro", "count": 1},
-        {"team_name": "Scouts", "count": 2},
+    # Only transport types that a kar uses, ordered by name.
+    assert body["transport_type_breakdown"] == [
+        {"transport_type_name": "Box", "count": 2},
+        {"transport_type_name": "Rolcontainer", "count": 2},
     ]
 
 
@@ -211,25 +220,40 @@ def test_plan_kar_coverage_for_a_season(client: TestClient, db_session: Session)
     old_festival = _create_festival(db_session, "Old Fest", season_id=other_season.id, start="2025-07-01")
     scouts = _create_team(db_session, "Scouts")
     chiro = _create_team(db_session, "Chiro")
+    hive = _create_team(db_session, "Hive")
     retired = _create_team(db_session, "Retired", active=False)
+    no_kar = _create_team(db_session, "No kar")
+    # Only teams with a kar are planned (like the Plan a kar overview); Scouts
+    # has two kars but still counts once.
+    kar_status = _create_status(db_session, "In magazijn")
+    for number, team in (("K001", scouts), ("K002", scouts), ("K003", chiro), ("K004", hive), ("K005", retired)):
+        _create_kar(db_session, number, status_id=kar_status.id, team_id=team.id)
+    # Hive picked only Late Fest in Altsien Select, so it expects just that one.
+    db_session.add(TeamFestival(season_id=season.id, team_id=hive.id, festival_id=late.id))
+    db_session.commit()
     location = _create_location(db_session)
     _plan(db_session, season=season, festival=early, team=scouts, location_id=location.id)
     _plan(db_session, season=season, festival=early, team=chiro, location_id=location.id)
     _plan(db_session, season=season, festival=late, team=scouts, location_id=location.id)
-    # None of these count: an inactive team, an inactive festival, another season.
+    _plan(db_session, season=season, festival=late, team=hive, location_id=location.id)
+    # None of these count: an inactive team, a team without a kar, an inactive
+    # festival, a festival the team didn't pick, another season.
     _plan(db_session, season=season, festival=late, team=retired, location_id=location.id)
+    _plan(db_session, season=season, festival=late, team=no_kar, location_id=location.id)
     _plan(db_session, season=season, festival=inactive_festival, team=chiro, location_id=location.id)
+    _plan(db_session, season=season, festival=early, team=hive, location_id=location.id)
     _plan(db_session, season=other_season, festival=old_festival, team=chiro, location_id=location.id)
 
     body = client.get(DASHBOARD_URL, params={"season_id": season.id}).json()
 
     assert body["season_id"] == season.id
-    assert body["active_teams"] == 2
-    assert body["plan_kar_planned"] == 3
-    assert body["plan_kar_expected"] == 4
+    assert body["active_teams"] == 3
+    # Expected: Scouts 2 + Chiro 2 (no picks = every festival) + Hive 1.
+    assert body["plan_kar_planned"] == 4
+    assert body["plan_kar_expected"] == 5
     assert body["festival_plan_breakdown"] == [
         {"festival_name": "Early Fest", "planned_teams": 2},
-        {"festival_name": "Late Fest", "planned_teams": 1},
+        {"festival_name": "Late Fest", "planned_teams": 2},
     ]
 
 

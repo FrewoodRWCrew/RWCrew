@@ -4,8 +4,9 @@
 #
 # Import is best-effort: every row is validated and applied independently
 # inside its own SAVEPOINT (db.begin_nested()), so one bad row rolls back
-# only itself instead of aborting the whole batch. A row whose name
-# already exists is REJECTED as an error rather than upserted — same rule
+# only itself instead of aborting the whole batch. A row whose name already
+# exists (ignoring case) UPDATES that distribution point: every filled-in
+# cell overwrites the saved value, while an empty cell keeps it — same rule
 # as the Karren import.
 
 import io
@@ -36,10 +37,8 @@ TEMPLATE_COLUMNS = [
 
 def build_distributiepunt_template_xlsx() -> bytes:
     """The downloadable XLSX template: just a bold header row. Deliberately
-    no example data row — since a re-uploaded, unedited row would silently
-    create a real distribution point (import rejects duplicates rather
-    than upserting, so it wouldn't even get caught as "already exists"
-    the first time).
+    no example data row — a re-uploaded, unedited example row would
+    silently create (or update) a real distribution point.
     """
     workbook = Workbook()
     sheet = workbook.active
@@ -63,6 +62,11 @@ def _cell_text(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _float_or_none(value: object) -> float | None:
+    """A coordinate cell: empty means "not given", anything else must be a number."""
+    return float(value) if _cell_text(value) else None
 
 
 def _resolve_altsien_kernlid_id(db: Session, email: str | None) -> int | None:
@@ -98,6 +102,9 @@ def import_distributiepunten_from_xlsx(db: Session, file_bytes: bytes) -> list[D
         return row[index] if index is not None and index < len(row) else None
 
     results: list[DistributiepuntImportRowResult] = []
+    # Names already handled in this file (lowercased), so a repeated one is
+    # caught instead of silently updating the same point twice.
+    seen_names: set[str] = set()
 
     for row_number, row in enumerate(rows, start=2):
         if row is None or all(value is None for value in row):
@@ -108,23 +115,46 @@ def import_distributiepunten_from_xlsx(db: Session, file_bytes: bytes) -> list[D
         try:
             if name is None:
                 raise ValueError("name is required")
+            if name.lower() in seen_names:
+                raise ValueError("This distribution point appears more than once in the file")
+            seen_names.add(name.lower())
 
-            existing = db.scalar(select(KarTrackerDistributiepunt).where(KarTrackerDistributiepunt.name == name))
-            if existing is not None:
-                raise ValueError("A distribution point with this name already exists")
+            latitude = _float_or_none(cell(row, "latitude"))
+            longitude = _float_or_none(cell(row, "longitude"))
+            terrein_positie = _cell_text(cell(row, "terrein_positie"))
+            kernlid_email = _cell_text(cell(row, "altsien_kernlid_email"))
 
-            new_distributiepunt = KarTrackerDistributiepunt(
-                name=name,
-                latitude=float(cell(row, "latitude")) if _cell_text(cell(row, "latitude")) else None,
-                longitude=float(cell(row, "longitude")) if _cell_text(cell(row, "longitude")) else None,
-                terrein_positie=_cell_text(cell(row, "terrein_positie")),
-                altsien_kernlid_id=_resolve_altsien_kernlid_id(db, _cell_text(cell(row, "altsien_kernlid_email"))),
+            # Matched ignoring case; an update keeps the saved spelling of the name.
+            existing = db.scalar(
+                select(KarTrackerDistributiepunt).where(func.lower(KarTrackerDistributiepunt.name) == name.lower())
             )
-            db.add(new_distributiepunt)
+            if existing is not None:
+                # Update: only the filled-in cells overwrite, empty ones keep the saved value.
+                if latitude is not None:
+                    existing.latitude = latitude
+                if longitude is not None:
+                    existing.longitude = longitude
+                if terrein_positie is not None:
+                    existing.terrein_positie = terrein_positie
+                if kernlid_email is not None:
+                    existing.altsien_kernlid_id = _resolve_altsien_kernlid_id(db, kernlid_email)
+                db.flush()
+                outcome = "updated"
+            else:
+                db.add(
+                    KarTrackerDistributiepunt(
+                        name=name,
+                        latitude=latitude,
+                        longitude=longitude,
+                        terrein_positie=terrein_positie,
+                        altsien_kernlid_id=_resolve_altsien_kernlid_id(db, kernlid_email),
+                    )
+                )
+                outcome = "created"
 
             savepoint.commit()
             results.append(
-                DistributiepuntImportRowResult(row_number=row_number, name=name, outcome="created", detail=None)
+                DistributiepuntImportRowResult(row_number=row_number, name=name, outcome=outcome, detail=None)
             )
         except (ValueError, IntegrityError) as error:
             savepoint.rollback()

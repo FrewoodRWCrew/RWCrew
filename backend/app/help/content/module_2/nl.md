@@ -20,7 +20,7 @@ Het **jaartal** kies je bovenaan in de kopbalk. De KPI, Kar Planning, Plan a kar
 Het startscherm van KarTracker: het wagenpark, de recente bewegingen en de voortgang van Plan a kar voor het gekozen jaartal.
 
 - **Tegels** bovenaan: totaal aantal karren, karren met en zonder ploeg, bewegingen van de laatste 7 dagen en hoeveel afleverlocaties al gepland zijn.
-- **Karren per status** en **Karren per ploeg**.
+- **Karren per status** en **Karren per transporttype**.
 - **Bewegingen per dag**, de laatste 14 dagen.
 - **Plan a kar per festival**: hoeveel van de actieve ploegen al een afleverlocatie hebben.
 
@@ -43,7 +43,7 @@ Onderaan staan de **geregistreerde bewegingen**. Een foute beweging kan je **ver
 > Camera en GPS werken enkel via een beveiligde verbinding (https). Op het terrein gebruik je best **KarScan** op de gsm (zie "KarTracker op de gsm").
 
 ## [kar-planning | kartracker.karplanning] Kar Planning
-Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg, het transporttype en de locatie. Voor het jaartal in de kopbalk krijgt elk actief festival een kolom met de afleverlocatie die voor de ploeg van de kar gepland is.
+Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg, het transporttype en de locatie. Voor het jaartal in de kopbalk krijgt elk actief festival een kolom met de afleverlocatie die voor de ploeg van de kar gepland is. Heeft de ploeg een festival afgevinkt in Altsien Select, dan staat er **Niet actief** in een lege cel en telt die als gepland.
 
 1. Kies bovenaan het **jaartal**.
 2. Zoek of filter met de velden onder de kolomtitels.
@@ -151,8 +151,10 @@ De stamgegevens van KarTracker in bulk importeren en exporteren met Excel, één
 
 1. Klik op een tegel en daarna op **Sjabloon downloaden** voor een leeg Excel-bestand met de juiste kolommen.
 2. Vul het in, kies het bestand en klik op **Uploaden**.
-3. Het resultaat toont per rij wat er aangemaakt werd en wat overgeslagen werd, met de reden.
+3. Het resultaat toont per rij wat er aangemaakt, bijgewerkt of overgeslagen werd, met de reden.
 4. Met **Volledige databank downloaden** exporteer je alles van dat onderwerp.
+
+Bestaat een lijn al (zelfde karnummer, of zelfde naam ongeacht hoofdletters), dan wordt die **bijgewerkt** in plaats van een nieuwe aangemaakt. Enkel ingevulde cellen overschrijven; een lege cel behoudt de huidige waarde. Zo kan je een export aanpassen en opnieuw uploaden. Een waarde wissen doe je op het scherm zelf. Bij KarStatussen en Zones (enkel een naam) blijft een bestaande naam ongewijzigd.
 
 ![Gegevens uploaden/downloaden](data-upload.png)
 

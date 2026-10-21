@@ -184,6 +184,9 @@ class KarPlanningResponse(BaseModel):
     # afleverlocatie planned for this kar's team at that festival. Festivals
     # with nothing planned (or a kar without a team) are absent from the dict.
     afleverlocaties: dict[int, str]
+    # Festival columns the kar's team unchecked in Altsien Select: an empty
+    # cell there reads "Niet actief" and counts as complete on the screen.
+    inactive_festival_ids: list[int] = []
     geolocation: str | None
 
 
@@ -284,14 +287,14 @@ class KarTrackerGroundplanResponse(BaseModel):
 
 
 class KarImportRowResult(BaseModel):
-    """What happened to one row of an uploaded bulk-import workbook. Unlike
-    TagScan's tag import, there is no "updated" outcome — a kar_nummer that
-    already exists is rejected as an error instead of being upserted.
+    """What happened to one row of an uploaded bulk-import workbook. A
+    kar_nummer that already exists is "updated": its filled-in cells
+    overwrite the saved values, empty cells keep them.
     """
 
     row_number: int
     kar_nummer: str | None
-    outcome: Literal["created", "error"]
+    outcome: Literal["created", "updated", "error"]
     detail: str | None
 
 
@@ -303,13 +306,13 @@ class KarImportResponse(BaseModel):
 
 class KarStatusImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk kar-status import. A
-    name that already exists is rejected as an error instead of being
-    upserted — same rule as the Karren import.
+    name that already exists (ignoring case) is "unchanged": a status is
+    just a name, so there is nothing to update.
     """
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: Literal["created", "unchanged", "error"]
     detail: str | None
 
 
@@ -349,13 +352,13 @@ class DistributiepuntUpdateRequest(DistributiepuntCreateRequest):
 
 class DistributiepuntImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk distributiepunt import.
-    A name that already exists is rejected as an error instead of being
-    upserted — same rule as the Karren import.
+    A name that already exists (ignoring case) is "updated" — same rule as
+    the Karren import.
     """
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: Literal["created", "updated", "error"]
     detail: str | None
 
 
@@ -386,12 +389,13 @@ class ZoneUpdateRequest(BaseModel):
 
 class ZoneImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk zone import. A name
-    that already exists is rejected as an error instead of being upserted.
+    that already exists (ignoring case) is "unchanged": a zone is just a
+    name, so there is nothing to update.
     """
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: Literal["created", "unchanged", "error"]
     detail: str | None
 
 
@@ -603,13 +607,13 @@ class AfleverlocatieUpdateRequest(AfleverlocatieCreateRequest):
 
 class AfleverlocatieImportRowResult(BaseModel):
     """What happened to one row of an uploaded bulk afleverlocatie import.
-    A name that already exists is rejected as an error instead of being
-    upserted — same rule as the Karren import.
+    A name that already exists (ignoring case) is "updated" — same rule as
+    the Karren import.
     """
 
     row_number: int
     name: str | None
-    outcome: Literal["created", "error"]
+    outcome: Literal["created", "updated", "error"]
     detail: str | None
 
 
@@ -626,10 +630,10 @@ class KarTrackerDashboardStatusBreakdownItem(BaseModel):
     count: int
 
 
-class KarTrackerDashboardTeamBreakdownItem(BaseModel):
-    """How many karren one team currently has (only teams with at least one kar)."""
+class KarTrackerDashboardTransportTypeBreakdownItem(BaseModel):
+    """How many karren have one transport type (only types at least one kar uses)."""
 
-    team_name: str
+    transport_type_name: str
     count: int
 
 
@@ -657,7 +661,7 @@ class KarTrackerDashboardResponse(BaseModel):
     karren_without_team: int
     movements_last_7_days: int
     status_breakdown: list[KarTrackerDashboardStatusBreakdownItem]
-    team_breakdown: list[KarTrackerDashboardTeamBreakdownItem]
+    transport_type_breakdown: list[KarTrackerDashboardTransportTypeBreakdownItem]
     movements_per_day: list[KarTrackerDashboardDailyMovementItem]
     season_id: int | None
     active_teams: int | None

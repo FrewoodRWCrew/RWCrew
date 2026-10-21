@@ -162,6 +162,8 @@ interface KarPlanningCardProps {
 /** One kar: the summary is always shown, the details only when opened. */
 function KarPlanningCard({ row, report, isOpen, onToggle, canViewMap }: KarPlanningCardProps) {
   const t = useTranslations("karTracker.phone.planning");
+  // "Niet actief" is shared with the desktop Kar Planning screen.
+  const tPlanning = useTranslations("karTracker.karPlanning");
 
   return (
     <div className="rounded-xl border bg-card">
@@ -185,7 +187,9 @@ function KarPlanningCard({ row, report, isOpen, onToggle, canViewMap }: KarPlann
           ) : (
             report.festivals.map((festival) => (
               <p key={festival.id}>
-                <span className="font-medium">{festival.name}:</span> {row.afleverlocaties[festival.id] ?? "—"}
+                <span className="font-medium">{festival.name}:</span>{" "}
+                {row.afleverlocaties[festival.id] ??
+                  (row.inactive_festival_ids.includes(festival.id) ? tPlanning("notActive") : "—")}
               </p>
             ))
           )}

@@ -979,6 +979,8 @@ export interface KarTrackerKarPlanningRow {
   transport_type_name: string;
   /** Festival id -> planned afleverlocatie name; festivals with none planned are absent. */
   afleverlocaties: Record<number, string>;
+  /** Festival columns the kar's team unchecked in Altsien Select ("Niet actief", counts as complete). */
+  inactive_festival_ids: number[];
   geolocation: string | null;
 }
 
@@ -1047,14 +1049,14 @@ export interface KarTrackerGroundplan {
 }
 
 /**
- * What happened to one row of an uploaded bulk kar-import workbook. Unlike
- * TagScan's tag import, there is no "updated" outcome — a kar_nummer that
- * already exists is rejected as an error instead of being upserted.
+ * What happened to one row of an uploaded bulk kar-import workbook. A
+ * kar_nummer that already exists is "updated": filled-in cells overwrite the
+ * saved values, empty cells keep them.
  */
 export interface KarImportRowResult {
   row_number: number;
   kar_nummer: string | null;
-  outcome: "created" | "error";
+  outcome: "created" | "updated" | "error";
   detail: string | null;
 }
 
@@ -1065,13 +1067,13 @@ export interface KarImportResponse {
 
 /**
  * What happened to one row of an uploaded bulk kar-status import. A name
- * that already exists is rejected as an error instead of being upserted —
- * same rule as the Karren import.
+ * that already exists (ignoring case) is "unchanged": a status is just a
+ * name, so there is nothing to update.
  */
 export interface KarStatusImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: "created" | "unchanged" | "error";
   detail: string | null;
 }
 
@@ -1101,13 +1103,13 @@ export interface KarTrackerDistributiepuntInput {
 
 /**
  * What happened to one row of an uploaded bulk distributiepunt-import
- * workbook. A name that already exists is rejected as an error instead of
- * being upserted — same rule as the Karren import.
+ * workbook. A name that already exists (ignoring case) is "updated" — same
+ * rule as the Karren import.
  */
 export interface DistributiepuntImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: "created" | "updated" | "error";
   detail: string | null;
 }
 
@@ -1124,13 +1126,13 @@ export interface KarTrackerZone {
 
 /**
  * What happened to one row of an uploaded bulk zone-import workbook. A
- * name that already exists is rejected as an error instead of being
- * upserted.
+ * name that already exists (ignoring case) is "unchanged": a zone is just a
+ * name, so there is nothing to update.
  */
 export interface ZoneImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: "created" | "unchanged" | "error";
   detail: string | null;
 }
 
@@ -1214,7 +1216,7 @@ export interface KarTrackerDashboardStats {
   karren_without_team: number;
   movements_last_7_days: number;
   status_breakdown: { status_name: string; count: number }[];
-  team_breakdown: { team_name: string; count: number }[];
+  transport_type_breakdown: { transport_type_name: string; count: number }[];
   /** One entry per UTC day (ISO date), oldest first, last 14 days. */
   movements_per_day: { day: string; count: number }[];
   season_id: number | null;
@@ -1297,13 +1299,13 @@ export interface KarTrackerLeverdatumSaveInput {
 
 /**
  * What happened to one row of an uploaded bulk afleverlocatie-import
- * workbook. A name that already exists is rejected as an error instead of
- * being upserted — same rule as the Karren import.
+ * workbook. A name that already exists (ignoring case) is "updated" — same
+ * rule as the Karren import.
  */
 export interface AfleverlocatieImportRowResult {
   row_number: number;
   name: string | null;
-  outcome: "created" | "error";
+  outcome: "created" | "updated" | "error";
   detail: string | null;
 }
 

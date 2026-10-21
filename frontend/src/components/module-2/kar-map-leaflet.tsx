@@ -171,7 +171,10 @@ export function KarMapLeaflet({
   }, [fitKey]);
 
   return (
-    <MapContainer bounds={DEFAULT_VIEW_BOUNDS} ref={mapRef} className="h-full w-full">
+    // `isolate z-0` gives the map its own stacking context: Leaflet's panes and
+    // controls use z-index 400-1000, which would otherwise paint over the page's
+    // dropdowns, tooltips and dialogs (z-50) wherever those overlap the map.
+    <MapContainer bounds={DEFAULT_VIEW_BOUNDS} ref={mapRef} className="isolate z-0 h-full w-full">
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

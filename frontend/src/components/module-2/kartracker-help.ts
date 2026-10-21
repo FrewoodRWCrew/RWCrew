@@ -8,7 +8,7 @@ import type { HelpTopicRoute } from "@/components/shared/module-help";
 const BASE = "/modules/module-2";
 
 export const KARTRACKER_HELP_ROUTES: HelpTopicRoute[] = [
-  { path: BASE, topic: "overview", exact: true },
+  { path: `${BASE}/dashboard`, topic: "overview", exact: true },
   // "Manuele kar beweging"; the screens under /actions/... win because
   // they're more specific.
   { path: `${BASE}/actions`, topic: "movement" },

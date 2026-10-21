@@ -20,7 +20,7 @@ You choose the **year** at the top, in the header. The KPI, Kar Planning, Plan a
 KarTracker's start screen: the fleet, recent moves and the progress of Plan a kar for the chosen year.
 
 - **Tiles** at the top: total karren, karren with and without a team, moves in the last 7 days and how many delivery locations are already planned.
-- **Karren per status** and **Karren per team**.
+- **Karren per status** and **Karren per transport type**.
 - **Moves per day**, the last 14 days.
 - **Plan a kar per festival**: how many of the active teams already have a delivery location.
 
@@ -43,7 +43,7 @@ The **logged movements** are listed below. A wrong movement can be **deleted**: 
 > Camera and GPS only work over a secure connection (https). On site, **KarScan** on the phone is the easiest (see "KarTracker on the phone").
 
 ## [kar-planning | kartracker.karplanning] Kar Planning
-An overview of the whole fleet: per kar the kar number, status, team, transport type and location. For the year in the header, every active festival gets a column with the delivery location planned for the kar's team.
+An overview of the whole fleet: per kar the kar number, status, team, transport type and location. For the year in the header, every active festival gets a column with the delivery location planned for the kar's team. If the team unchecked a festival in Altsien Select, an empty cell reads **Not active** and counts as planned.
 
 1. Choose the **year** at the top.
 2. Search or filter with the fields under the column titles.
@@ -151,8 +151,10 @@ Import and export KarTracker's master data in bulk with Excel, one tile per topi
 
 1. Click a tile, then **Download template** for an empty Excel file with the right columns.
 2. Fill it in, choose the file and click **Upload**.
-3. The result shows per row what was created and what was skipped, with the reason.
+3. The result shows per row what was created, updated or skipped, with the reason.
 4. **Download full database** exports everything of that topic.
+
+If a line already exists (same kar number, or same name ignoring case), it is **updated** instead of a new one being created. Only filled-in cells overwrite; an empty cell keeps the current value. So you can edit an export and upload it again. Clearing a value is done on the screen itself. For KarStatussen and Zones (only a name) an existing name stays unchanged.
 
 ![Data Upload/Download](data-upload.png)
 
