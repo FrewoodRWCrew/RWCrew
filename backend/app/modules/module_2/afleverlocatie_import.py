@@ -98,6 +98,22 @@ def _float_or_none(value: object) -> float | None:
     return float(value) if _cell_text(value) else None
 
 
+def _positie_or_none(value: object) -> int | None:
+    """The delivery-tour position: empty means "not given", anything else
+    must be a whole number of at least 1 (Excel may hand over 3 as 3.0).
+    """
+    text = _cell_text(value)
+    if text is None:
+        return None
+    try:
+        number = float(text)
+    except ValueError:
+        number = 0.0
+    if not number.is_integer() or number < 1:
+        raise ValueError(f'terrein_positie "{text}" must be a whole number of at least 1')
+    return int(number)
+
+
 def _resolve_zone_id(db: Session, zone_name: str | None) -> int:
     if zone_name is None:
         raise ValueError("zone_name is required")
@@ -175,7 +191,7 @@ def import_afleverlocaties_from_xlsx(db: Session, file_bytes: bytes) -> list[Afl
             distributiepunt_name = _cell_text(cell(row, "distributiepunt_name"))
             latitude = _float_or_none(cell(row, "latitude"))
             longitude = _float_or_none(cell(row, "longitude"))
-            terrein_positie = _cell_text(cell(row, "terrein_positie"))
+            terrein_positie = _positie_or_none(cell(row, "terrein_positie"))
             kernlid_email = _cell_text(cell(row, "altsien_kernlid_email"))
             active = _parse_active_cell(cell(row, "active"))
 

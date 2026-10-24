@@ -75,6 +75,26 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     # Masterdata screen: per active festival of the selected season, its
     # delivery date and pick-up date (table "Festivals_leverdatum").
     ScreenDefinition(key="kartracker.leverdata", label="Delivery Dates", sort_order=14),
+    # "Leveringsvolgorde": put the active delivery locations in the order of
+    # the delivery tour across the ground (KarTracker_afleverlocaties.
+    # terrein_positie). Lives under the "Masterdata" sidebar group.
+    ScreenDefinition(key="kartracker.leveringsvolgorde", label="Leveringsvolgorde", sort_order=15),
+    # "Initiële leverplanning": per delivery location (in the tour order above)
+    # the karren to deliver there at the start, i.e. at their team's first
+    # festival of the season. First screen of the "Planningsanalyses" group.
+    ScreenDefinition(key="kartracker.initieleleverplanning", label="Initiële leverplanning", sort_order=16),
+    # "Verplaatsingen tussen festivals": for a chosen festival A -> B, the
+    # karren whose team's planned delivery location changes, grouped per
+    # pick-up location in tour order. Second screen of "Planningsanalyses".
+    ScreenDefinition(key="kartracker.karverplaatsingen", label="Verplaatsingen tussen festivals", sort_order=17),
+    # Masterdata screen: the special delivery tours (e.g. "Kleine wastoer",
+    # "Ijsblokken") that regularly pass by teams; teams are linked to them on
+    # MasterData's team fiche.
+    ScreenDefinition(key="kartracker.specialelevertoeren", label="Speciale levertoeren", sort_order=18),
+    # "Speciale levertoeren-planning": for a chosen festival + tours, the karren
+    # those tours pass by, grouped like "Initiële leverplanning". Third screen
+    # of "Planningsanalyses".
+    ScreenDefinition(key="kartracker.levertoerplanning", label="Speciale levertoeren-planning", sort_order=19),
 ]
 
 

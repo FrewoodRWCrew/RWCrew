@@ -4,7 +4,7 @@
 # Kernlid is an optional cross-module reference, same pattern as
 # KarTrackerDistributiepunt's own.
 
-from sqlalchemy import Boolean, ForeignKey, String, Text, text
+from sqlalchemy import Boolean, ForeignKey, Integer, String, Text, text
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -37,9 +37,10 @@ class KarTrackerAfleverlocatie(Base):
     latitude: Mapped[float | None] = mapped_column(nullable=True)
     longitude: Mapped[float | None] = mapped_column(nullable=True)
 
-    # Free-text on-site position (e.g. a slot/row code) — optional, no
-    # fixed format was specified.
-    terrein_positie: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Position in the delivery tour across the ground (1 = delivered first),
+    # set on the "Leveringsvolgorde" screen (module_2/delivery_order_service.py).
+    # NULL = not yet placed in the tour.
+    terrein_positie: Mapped[int | None] = mapped_column(Integer, nullable=True, index=True)
 
     # Selected from the users flagged "Altsien Kernlid" on Manage Access —
     # optional, a delivery location need not have one assigned.

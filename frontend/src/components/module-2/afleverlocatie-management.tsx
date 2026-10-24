@@ -373,8 +373,14 @@ function AfleverlocatieFormDialog({
             <Label htmlFor="afleverlocatie-terrein-positie">{t("terreinPositieLabel")}</Label>
             <Input
               id="afleverlocatie-terrein-positie"
+              type="number"
+              min={1}
+              step={1}
               value={form.terrein_positie ?? ""}
-              onChange={(event) => updateField("terrein_positie", event.target.value || null)}
+              // The position in the delivery tour: a whole number, or empty = not in the tour.
+              onChange={(event) =>
+                updateField("terrein_positie", event.target.value ? Math.trunc(Number(event.target.value)) : null)
+              }
             />
           </div>
           <div className="flex flex-col gap-2">

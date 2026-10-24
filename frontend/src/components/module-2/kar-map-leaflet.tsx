@@ -12,14 +12,23 @@ import "leaflet/dist/leaflet.css";
 
 import { divIcon, latLngBounds, type Map as LeafletMap, type Marker as LeafletMarker } from "leaflet";
 import { useEffect, useRef, type ReactNode } from "react";
-import { ImageOverlay, MapContainer, Marker, Popup, TileLayer, useMapEvents } from "react-leaflet";
+import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 
 export interface KarMapPin {
   key: string;
   latitude: number;
   longitude: number;
   color: string;
-  popup: ReactNode;
+  /** Shown when the pin is clicked; optional (a pin can have only a tooltip). */
+  popup?: ReactNode;
+  /** Optional: draw the pin as a rounded badge with this text (e.g. a tour
+   * number) instead of the plain dot. */
+  label?: string;
+  /** Optional: text shown while the mouse is over the pin. */
+  tooltip?: string;
+  /** Optional: raise the pin above others nearby (Leaflet otherwise stacks
+   * pins by latitude, not by the order they are given in). */
+  zIndexOffset?: number;
 }
 
 export interface KarMapLeafletHandle {
@@ -48,6 +57,9 @@ interface KarMapLeafletProps {
    * user clicks on the map (e.g. to pick a location on "Manuele kar
    * beweging"). Without it, clicking the map does nothing. */
   onMapClick?: (latitude: number, longitude: number) => void;
+  /** Optional: a dashed line through these points, in order (e.g. a
+   * delivery tour). */
+  route?: [number, number][];
 }
 
 // The area every map opens on (the Werchter festival site), copied as-is
@@ -85,6 +97,25 @@ function dotIcon(color: string) {
     iconSize: [16, 16],
     iconAnchor: [8, 8],
     popupAnchor: [0, -8],
+  });
+}
+
+/** Escape text for use inside the marker's HTML. */
+function escapeHtml(text: string) {
+  return text.replace(/[&<>"']/g, (char) => `&#${char.charCodeAt(0)};`);
+}
+
+/** A rounded badge with a short text (e.g. "5 (was 3)"), centred on the
+ * point — same plain-div approach as dotIcon. Its size follows the text, so
+ * Leaflet's own size/anchor are left unset and the span centres itself. */
+function labelIcon(color: string, label: string) {
+  return divIcon({
+    className: "",
+    html: `<span style="position:absolute;transform:translate(-50%,-50%);white-space:nowrap;padding:1px 6px;border-radius:9999px;background:${color};color:white;font:600 12px/16px system-ui,sans-serif;border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)">${escapeHtml(label)}</span>`,
+    iconSize: [0, 0],
+    iconAnchor: [0, 0],
+    popupAnchor: [0, -10],
+    tooltipAnchor: [0, -12],
   });
 }
 
@@ -126,6 +157,7 @@ export function KarMapLeaflet({
   groundplanOpacity,
   fitKey,
   onMapClick,
+  route,
 }: KarMapLeafletProps) {
   const mapRef = useRef<LeafletMap | null>(null);
   const markerRefsByKey = useRef<Map<string, LeafletMarker>>(new Map());
@@ -186,17 +218,23 @@ export function KarMapLeaflet({
         groundplanOverlays.map((overlay) => (
           <ImageOverlay key={overlay.key} url={overlay.url} bounds={overlay.bounds} opacity={groundplanOpacity} />
         ))}
+      {/* The route sits under the pins, so the numbers stay readable. */}
+      {route && route.length > 1 && (
+        <Polyline positions={route} pathOptions={{ color: "#7c3aed", weight: 3, dashArray: "6 6", opacity: 0.8 }} />
+      )}
       {pins.map((pin) => (
         <Marker
           key={pin.key}
           position={[pin.latitude, pin.longitude]}
-          icon={dotIcon(pin.color)}
+          icon={pin.label !== undefined ? labelIcon(pin.color, pin.label) : dotIcon(pin.color)}
+          zIndexOffset={pin.zIndexOffset ?? 0}
           ref={(marker) => {
             if (marker) markerRefsByKey.current.set(pin.key, marker);
             else markerRefsByKey.current.delete(pin.key);
           }}
         >
-          <Popup>{pin.popup}</Popup>
+          {pin.popup !== undefined && <Popup>{pin.popup}</Popup>}
+          {pin.tooltip !== undefined && <Tooltip direction="top">{pin.tooltip}</Tooltip>}
         </Marker>
       ))}
     </MapContainer>

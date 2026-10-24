@@ -49,6 +49,9 @@ import type {
   KarStatusImportResponse,
   KarTrackerAfleverlocatie,
   KarTrackerAfleverlocatieInput,
+  KarTrackerDeliveryOrderLocation,
+  KarTrackerInitialDelivery,
+  KarTrackerKarMoves,
   KarTrackerDistributiepunt,
   KarTrackerDistributiepuntInput,
   KarTrackerGroundplan,
@@ -73,6 +76,9 @@ import type {
   KarTrackerRole,
   KarTrackerScreen,
   KarTrackerUserSummary,
+  KarTrackerSpecialTour,
+  KarTrackerSpecialTourInput,
+  KarTrackerSpecialTourPlanning,
   KarTrackerZone,
   LeverdatumImportResponse,
   LoginClient,
@@ -1809,6 +1815,26 @@ export async function importZones(file: File): Promise<ZoneImportResponse> {
   return (await response.json()) as ZoneImportResponse;
 }
 
+// --- Speciale levertoeren (module-2's "kartracker.specialelevertoeren" master data) ---
+
+export function createSpecialTour(payload: KarTrackerSpecialTourInput): Promise<KarTrackerSpecialTour> {
+  return apiFetch<KarTrackerSpecialTour>("/api/modules/module-2/special-tours", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function updateSpecialTour(tourId: number, payload: KarTrackerSpecialTourInput): Promise<KarTrackerSpecialTour> {
+  return apiFetch<KarTrackerSpecialTour>(`/api/modules/module-2/special-tours/${tourId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteSpecialTour(tourId: number): Promise<void> {
+  return apiFetch<void>(`/api/modules/module-2/special-tours/${tourId}`, { method: "DELETE" });
+}
+
 // --- Afleverlocatie (module-2's "kartracker.afleverlocaties" master data) ---
 
 export function listAfleverlocaties(): Promise<KarTrackerAfleverlocatie[]> {
@@ -1834,6 +1860,160 @@ export function updateAfleverlocatie(
 
 export function deleteAfleverlocatie(afleverlocatieId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-2/afleverlocaties/${afleverlocatieId}`, { method: "DELETE" });
+}
+
+// --- Initiële leverplanning (module-2's "kartracker.initieleleverplanning" screen) ---
+
+/** Per delivery location, in tour order, the karren delivered there at their team's first festival. */
+export function getInitialDelivery(seasonId: number): Promise<KarTrackerInitialDelivery> {
+  return apiFetch<KarTrackerInitialDelivery>(`/api/modules/module-2/initial-delivery?season_id=${seasonId}`);
+}
+
+/**
+ * The "Print leverplanning" button: a landscape PDF of the ticked karren
+ * (pick up at the distributiepunt, deliver at the afleverlocatie), optionally
+ * with the route map page. Returns the PDF as a Blob.
+ */
+export async function printInitialDelivery(
+  seasonId: number,
+  karIds: number[],
+  includeMap: boolean,
+  locale: string,
+): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/initial-delivery/print`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ season_id: seasonId, kar_ids: karIds, include_map: includeMap, locale }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+// --- Speciale levertoeren-planning (module-2's "kartracker.levertoerplanning" screen) ---
+
+/**
+ * The season's festivals and active tours and, when a festival and at least
+ * one tour are given, the karren those tours pass by at that festival.
+ */
+export function getSpecialTourPlanning(
+  seasonId: number,
+  festivalId: number | null,
+  tourIds: number[],
+): Promise<KarTrackerSpecialTourPlanning> {
+  const params = new URLSearchParams({ season_id: String(seasonId) });
+  if (festivalId !== null) params.set("festival_id", String(festivalId));
+  for (const tourId of tourIds) params.append("tour_ids", String(tourId));
+  return apiFetch<KarTrackerSpecialTourPlanning>(`/api/modules/module-2/special-tour-planning?${params.toString()}`);
+}
+
+/**
+ * The planning screen's "Print leverplanning" button: the same landscape PDF
+ * as "Initiële leverplanning" for the ticked karren, with the tours instead of
+ * the festival column, optionally with the route map page. Returns the PDF as a Blob.
+ */
+export async function printSpecialTourPlanning(
+  seasonId: number,
+  festivalId: number,
+  tourIds: number[],
+  karIds: number[],
+  includeMap: boolean,
+  locale: string,
+): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/special-tour-planning/print`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      season_id: seasonId,
+      festival_id: festivalId,
+      tour_ids: tourIds,
+      kar_ids: karIds,
+      include_map: includeMap,
+      locale,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+// --- Verplaatsingen tussen festivals (module-2's "kartracker.karverplaatsingen" screen) ---
+
+/**
+ * The season's festivals and, when both are given, the karren to move from
+ * festival A to B (their team's planned location differs), per pick-up location.
+ */
+export function getKarMoves(
+  seasonId: number,
+  fromFestivalId: number | null,
+  toFestivalId: number | null,
+): Promise<KarTrackerKarMoves> {
+  const params = new URLSearchParams({ season_id: String(seasonId) });
+  if (fromFestivalId !== null) params.set("from_festival_id", String(fromFestivalId));
+  if (toFestivalId !== null) params.set("to_festival_id", String(toFestivalId));
+  return apiFetch<KarTrackerKarMoves>(`/api/modules/module-2/kar-moves?${params.toString()}`);
+}
+
+/**
+ * The "Print verplaatsingen" button: a landscape PDF of the ticked karren
+ * (pick up here, take it there), optionally with the map page. Returns the PDF as a Blob.
+ */
+export async function printKarMoves(
+  seasonId: number,
+  fromFestivalId: number,
+  toFestivalId: number,
+  karIds: number[],
+  includeMap: boolean,
+  locale: string,
+): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-2/kar-moves/print`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      season_id: seasonId,
+      from_festival_id: fromFestivalId,
+      to_festival_id: toFestivalId,
+      kar_ids: karIds,
+      include_map: includeMap,
+      locale,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+// --- Leveringsvolgorde (module-2's "kartracker.leveringsvolgorde" screen) ---
+
+/** The active delivery locations, those in the delivery tour first (by position). */
+export function getDeliveryOrder(): Promise<KarTrackerDeliveryOrderLocation[]> {
+  return apiFetch<KarTrackerDeliveryOrderLocation[]>("/api/modules/module-2/delivery-order");
+}
+
+/** Saves the whole delivery tour: the ids in order get position 1..n, every other active location none. */
+export function saveDeliveryOrder(afleverlocatieIds: number[]): Promise<KarTrackerDeliveryOrderLocation[]> {
+  return apiFetch<KarTrackerDeliveryOrderLocation[]>("/api/modules/module-2/delivery-order", {
+    method: "PUT",
+    body: JSON.stringify({ afleverlocatie_ids: afleverlocatieIds }),
+  });
 }
 
 /** Uploads an XLSX file to bulk-register new delivery locations. Mirrors importKarren above. */

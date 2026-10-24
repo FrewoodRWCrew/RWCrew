@@ -10,7 +10,7 @@
 
 from datetime import datetime, timezone
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Response, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -30,6 +30,7 @@ from app.db.models.kartracker_leverdatum import KarTrackerLeverdatum
 from app.db.models.kartracker_role import KarTrackerRole
 from app.db.models.kartracker_role_permission import KarTrackerRolePermission
 from app.db.models.kartracker_screen import KarTrackerScreen
+from app.db.models.kartracker_speciale_levertoer import KarTrackerSpecialeLevertoer
 from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.kartracker_zone import KarTrackerZone
 from app.db.models.module import Module
@@ -37,6 +38,7 @@ from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.stockmaster_balance import StockMasterBalance
 from app.db.models.team import Team
+from app.db.models.team_speciale_levertoer import TeamSpecialeLevertoer
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.help.routes import register_help_route
@@ -54,6 +56,11 @@ from app.modules.module_2.deps import (
     screen_keys_allowed,
     user_can,
 )
+from app.modules.module_2.delivery_order_service import (
+    DeliveryOrderError,
+    list_delivery_order,
+    save_delivery_order,
+)
 from app.modules.module_2.distributiepunt_import import (
     build_distributiepunt_template_xlsx,
     export_distributiepunten_to_xlsx,
@@ -65,7 +72,11 @@ from app.modules.module_2.karblad_pdf import (
     build_karbladen_pdf,
     build_request_url,
 )
+from app.modules.module_2.delivery_planning_pdf import build_delivery_planning_pdf
+from app.modules.module_2.initial_delivery_service import build_initial_delivery
 from app.modules.module_2.kar_action_service import list_kar_actions as list_kar_action_rows
+from app.modules.module_2.kar_moves_pdf import build_kar_moves_pdf
+from app.modules.module_2.kar_moves_service import KarMovesError, build_kar_moves
 from app.modules.module_2.kar_report_service import (
     build_kar_map,
     build_kar_planning_report,
@@ -80,6 +91,8 @@ from app.modules.module_2.leverdatum_import import (
     import_leverdata_from_xlsx,
 )
 from app.modules.module_2.plan_kar_service import festivals_by_team, festivals_for_team, upsert_plan_kar_rows
+from app.modules.module_2.special_tour_pdf import build_special_tour_pdf
+from app.modules.module_2.special_tour_planning_service import SpecialTourPlanningError, build_special_tour_planning
 from app.modules.module_2.kar_import import build_kar_template_xlsx, export_karren_to_xlsx, import_karren_from_xlsx
 from app.modules.module_2.kar_status_import import (
     build_kar_status_template_xlsx,
@@ -93,15 +106,21 @@ from app.schemas.kartracker import (
     AfleverlocatieResponse,
     AfleverlocatieUpdateRequest,
     CreateOrGrantUserRequest,
+    DeliveryOrderLocationResponse,
+    DeliveryOrderUpdateRequest,
     DistributiepuntCreateRequest,
     DistributiepuntImportResponse,
     DistributiepuntResponse,
     DistributiepuntUpdateRequest,
+    InitialDeliveryPrintRequest,
+    InitialDeliveryResponse,
     KarActionCreateRequest,
     KarActionKarOption,
     KarActionLookupsResponse,
     KarActionResponse,
     KarCreateRequest,
+    KarMovesPrintRequest,
+    KarMovesResponse,
     KarImportResponse,
     KarMapResponse,
     KarPlanningPrintRequest,
@@ -134,6 +153,11 @@ from app.schemas.kartracker import (
     ScreenResponse,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    SpecialTourCreateRequest,
+    SpecialTourPlanningPrintRequest,
+    SpecialTourPlanningResponse,
+    SpecialTourResponse,
+    SpecialTourUpdateRequest,
     ZoneCreateRequest,
     ZoneImportResponse,
     ZoneResponse,
@@ -873,13 +897,17 @@ def list_groundplans(
     db: Session = Depends(get_db),
     _user: User = Depends(
         require_screen_view_or_create(
-            "kartracker.karmap", "kartracker.groundplan", "kartracker.plankar", "kartracker.actions"
+            "kartracker.karmap",
+            "kartracker.groundplan",
+            "kartracker.plankar",
+            "kartracker.actions",
+            "kartracker.leveringsvolgorde",
         )
     ),
 ) -> list[KarTrackerGroundplan]:
     """Every ground plan's name and bounds — readable by anyone who can view
-    Kar Map, Plan a kar or Manuele kar beweging (all overlay them on their
-    map) or the Grondplan screen itself.
+    Kar Map, Plan a kar, Manuele kar beweging or Leveringsvolgorde (all
+    overlay them on their map) or the Grondplan screen itself.
     """
     return list_groundplan_rows(db)
 
@@ -890,7 +918,11 @@ def get_groundplan_image(
     db: Session = Depends(get_db),
     _user: User = Depends(
         require_screen_view_or_create(
-            "kartracker.karmap", "kartracker.groundplan", "kartracker.plankar", "kartracker.actions"
+            "kartracker.karmap",
+            "kartracker.groundplan",
+            "kartracker.plankar",
+            "kartracker.actions",
+            "kartracker.leveringsvolgorde",
         )
     ),
 ) -> Response:
@@ -1726,6 +1758,100 @@ def export_zones(
     )
 
 
+def _special_tour_response(db: Session, tour: KarTrackerSpecialeLevertoer) -> SpecialTourResponse:
+    """One tour plus the names of the teams linked to it on the team fiche."""
+    team_names = db.scalars(
+        select(Team.name)
+        .join(TeamSpecialeLevertoer, TeamSpecialeLevertoer.team_id == Team.id)
+        .where(TeamSpecialeLevertoer.levertoer_id == tour.id)
+        .order_by(Team.name)
+    ).all()
+    return SpecialTourResponse(
+        id=tour.id, name=tour.name, description=tour.description, active=tour.active, team_names=list(team_names)
+    )
+
+
+@router.get("/special-tours", response_model=list[SpecialTourResponse])
+def list_special_tours(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.specialelevertoeren", "view")),
+) -> list[SpecialTourResponse]:
+    """List every special delivery tour, with its teams."""
+    tours = db.scalars(select(KarTrackerSpecialeLevertoer).order_by(KarTrackerSpecialeLevertoer.name)).all()
+    return [_special_tour_response(db, tour) for tour in tours]
+
+
+@router.post("/special-tours", response_model=SpecialTourResponse, status_code=status.HTTP_201_CREATED)
+def create_special_tour(
+    payload: SpecialTourCreateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.specialelevertoeren", "create")),
+) -> SpecialTourResponse:
+    """Create a brand-new special delivery tour."""
+    tour = KarTrackerSpecialeLevertoer(name=payload.name, description=payload.description, active=payload.active)
+    db.add(tour)
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A special delivery tour with this name already exists"
+        ) from error
+    db.refresh(tour)
+    return _special_tour_response(db, tour)
+
+
+@router.put("/special-tours/{tour_id}", response_model=SpecialTourResponse)
+def update_special_tour(
+    tour_id: int,
+    payload: SpecialTourUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.specialelevertoeren", "edit")),
+) -> SpecialTourResponse:
+    """Change an existing special delivery tour (name, description, active)."""
+    tour = db.get(KarTrackerSpecialeLevertoer, tour_id)
+    if tour is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Special delivery tour not found")
+
+    tour.name = payload.name
+    tour.description = payload.description
+    tour.active = payload.active
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT, detail="A special delivery tour with this name already exists"
+        ) from error
+    db.refresh(tour)
+    return _special_tour_response(db, tour)
+
+
+@router.delete("/special-tours/{tour_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_special_tour(
+    tour_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.specialelevertoeren", "delete")),
+) -> None:
+    """Delete a special delivery tour, as long as no team is still linked to it
+    (deactivate it instead to keep the history).
+    """
+    tour = db.get(KarTrackerSpecialeLevertoer, tour_id)
+    if tour is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Special delivery tour not found")
+
+    still_in_use = db.scalar(
+        select(TeamSpecialeLevertoer.id).where(TeamSpecialeLevertoer.levertoer_id == tour_id).limit(1)
+    )
+    if still_in_use is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="This special delivery tour is still linked to a team"
+        )
+
+    db.delete(tour)
+    db.commit()
+
+
 def _validate_afleverlocatie_lookup_ids(db: Session, zone_id: int, distributiepunt_id: int, altsien_kernlid_id: int | None) -> None:
     """Turn a bad zone_id/distributiepunt_id/altsien_kernlid_id into a
     friendly 404 instead of letting the database reject it with a raw
@@ -1824,6 +1950,247 @@ def delete_afleverlocatie(
 
     db.delete(afleverlocatie)
     db.commit()
+
+
+@router.get("/delivery-order", response_model=list[DeliveryOrderLocationResponse])
+def get_delivery_order(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.leveringsvolgorde", "view")),
+) -> list[DeliveryOrderLocationResponse]:
+    """The active delivery locations, those in the delivery tour first (by position)."""
+    return list_delivery_order(db)
+
+
+@router.put("/delivery-order", response_model=list[DeliveryOrderLocationResponse])
+def update_delivery_order(
+    payload: DeliveryOrderUpdateRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.leveringsvolgorde", "edit")),
+) -> list[DeliveryOrderLocationResponse]:
+    """Save the whole delivery tour: the ids get position 1..n, other active locations none."""
+    try:
+        save_delivery_order(db, payload.afleverlocatie_ids)
+    except DeliveryOrderError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    db.commit()
+    return list_delivery_order(db)
+
+
+@router.get("/initial-delivery", response_model=InitialDeliveryResponse)
+def get_initial_delivery(
+    season_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.initieleleverplanning", "view")),
+) -> InitialDeliveryResponse:
+    """The "Initiële leverplanning" screen: per delivery location, in tour order, the
+    karren to deliver there at their team's first festival of the season.
+    """
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    return build_initial_delivery(db, season_id)
+
+
+@router.post("/initial-delivery/print")
+def print_initial_delivery(
+    payload: InitialDeliveryPrintRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission("kartracker.initieleleverplanning", "view")),
+) -> Response:
+    """The "Print leverplanning" button: a landscape PDF with, for the ticked
+    karren, where to pick each one up (distributiepunt) and where to deliver
+    it (afleverlocatie) in tour order, optionally with the route map page.
+    The planning is worked out here again (same rule as the screen); the
+    request only says which karren to keep. A POST because the ids don't fit a URL.
+    """
+    season = db.get(Season, payload.season_id)
+    if season is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+
+    # Keep only the selected karren; drop locations/distributiepunten left empty.
+    selected = set(payload.kar_ids)
+    groups = []
+    for group in build_initial_delivery(db, season.id).distributiepunten:
+        locations = []
+        for location in group.locations:
+            karren = [kar for kar in location.karren if kar.id in selected]
+            if karren:
+                locations.append(location.model_copy(update={"karren": karren}))
+        if locations:
+            count = sum(len(location.karren) for location in locations)
+            groups.append(group.model_copy(update={"locations": locations, "count": count}))
+    if not groups:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No karren found")
+
+    pdf = build_delivery_planning_pdf(
+        groups,
+        season_name=season.name,
+        include_map=payload.include_map,
+        groundplans=list_groundplan_rows(db) if payload.include_map else [],
+        printed_by=current_user.display_name,
+        locale=payload.locale,
+    )
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'inline; filename="leverplanning.pdf"'},
+    )
+
+
+@router.get("/kar-moves", response_model=KarMovesResponse)
+def get_kar_moves(
+    season_id: int,
+    from_festival_id: int | None = None,
+    to_festival_id: int | None = None,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.karverplaatsingen", "view")),
+) -> KarMovesResponse:
+    """The "Verplaatsingen tussen festivals" screen: the season's festivals
+    and, for the chosen pair, the karren whose team's planned location
+    changes, per pick-up location in tour order.
+    """
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    try:
+        return build_kar_moves(db, season_id, from_festival_id, to_festival_id)
+    except KarMovesError as error:
+        raise _kar_moves_http_error(error) from error
+
+
+def _kar_moves_http_error(error: KarMovesError) -> HTTPException:
+    """An unknown festival is a 404, the same festival twice a 400."""
+    if error.code == "unknown_festival":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Festival not found")
+    return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Choose two different festivals")
+
+
+@router.post("/kar-moves/print")
+def print_kar_moves(
+    payload: KarMovesPrintRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission("kartracker.karverplaatsingen", "view")),
+) -> Response:
+    """The "Print verplaatsingen" button: a landscape PDF with, for the ticked
+    karren, where to pick each one up and where to take it, optionally with
+    the map page. The moves are worked out here again (same rule as the
+    screen); the request only says which karren to keep.
+    """
+    season = db.get(Season, payload.season_id)
+    if season is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    try:
+        moves = build_kar_moves(db, season.id, payload.from_festival_id, payload.to_festival_id)
+    except KarMovesError as error:
+        raise _kar_moves_http_error(error) from error
+
+    # Keep only the selected karren; drop pick-up locations left empty.
+    selected = set(payload.kar_ids)
+    groups = []
+    for group in moves.locations:
+        karren = [kar for kar in group.karren if kar.id in selected]
+        if karren:
+            groups.append(group.model_copy(update={"karren": karren}))
+    if not groups:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No karren found")
+
+    festival_names = {festival.id: festival.name for festival in moves.festivals}
+    pdf = build_kar_moves_pdf(
+        groups,
+        season_name=season.name,
+        from_festival=festival_names[payload.from_festival_id],
+        to_festival=festival_names[payload.to_festival_id],
+        include_map=payload.include_map,
+        groundplans=list_groundplan_rows(db) if payload.include_map else [],
+        printed_by=current_user.display_name,
+        locale=payload.locale,
+    )
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'inline; filename="verplaatsingen.pdf"'},
+    )
+
+
+def _special_tour_planning_http_error(error: SpecialTourPlanningError) -> HTTPException:
+    """An unknown festival or tour is a 404."""
+    if error.code == "unknown_festival":
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Festival not found")
+    return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Special delivery tour not found")
+
+
+@router.get("/special-tour-planning", response_model=SpecialTourPlanningResponse)
+def get_special_tour_planning(
+    season_id: int,
+    festival_id: int | None = None,
+    tour_ids: list[int] = Query(default=[]),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("kartracker.levertoerplanning", "view")),
+) -> SpecialTourPlanningResponse:
+    """The "Speciale levertoeren-planning" screen: the festivals and tours for the
+    filters and, for the chosen festival + tours, the tour's stops (delivery
+    locations in tour order) with the karren those tours pass by.
+    """
+    if db.get(Season, season_id) is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    try:
+        return build_special_tour_planning(db, season_id, festival_id, tour_ids)
+    except SpecialTourPlanningError as error:
+        raise _special_tour_planning_http_error(error) from error
+
+
+@router.post("/special-tour-planning/print")
+def print_special_tour_planning(
+    payload: SpecialTourPlanningPrintRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission("kartracker.levertoerplanning", "view")),
+) -> Response:
+    """The planning screen's "Print leverplanning" button: a landscape PDF of the
+    tour's stops with the ticked karren (module_2/special_tour_pdf.py),
+    optionally with the route map page. Worked out here again; the request only
+    says which karren to keep.
+    """
+    season = db.get(Season, payload.season_id)
+    if season is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    try:
+        planning = build_special_tour_planning(db, season.id, payload.festival_id, payload.tour_ids)
+    except SpecialTourPlanningError as error:
+        raise _special_tour_planning_http_error(error) from error
+
+    # Keep only the selected karren; drop stops left empty (the others keep
+    # their stop number, so the paper matches the screen).
+    selected = set(payload.kar_ids)
+    stops = []
+    for stop in planning.locations:
+        karren = [kar for kar in stop.karren if kar.id in selected]
+        if karren:
+            stops.append(stop.model_copy(update={"karren": karren}))
+    if not stops:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="No karren found")
+
+    # The festival and the selected tours' names for the PDF's subtitle.
+    festival_name = next(festival.name for festival in planning.festivals if festival.id == payload.festival_id)
+    tour_names = sorted(
+        db.scalars(
+            select(KarTrackerSpecialeLevertoer.name).where(KarTrackerSpecialeLevertoer.id.in_(payload.tour_ids))
+        ).all(),
+        key=str.lower,
+    )
+    pdf = build_special_tour_pdf(
+        stops,
+        season_name=season.name,
+        festival_name=festival_name,
+        tour_names=tour_names,
+        include_map=payload.include_map,
+        groundplans=list_groundplan_rows(db) if payload.include_map else [],
+        printed_by=current_user.display_name,
+        locale=payload.locale,
+    )
+    return Response(
+        content=pdf,
+        media_type="application/pdf",
+        headers={"Content-Disposition": 'inline; filename="leverplanning-speciale-levertoeren.pdf"'},
+    )
 
 
 @router.get("/afleverlocatie-import/template")

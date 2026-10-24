@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.core.security import hash_password
 from app.db.models.delivery_method import DeliveryMethod
+from app.db.models.kartracker_speciale_levertoer import KarTrackerSpecialeLevertoer
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -19,6 +20,7 @@ from app.db.models.module import Module
 from app.db.models.team import Team
 from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
+from app.db.models.team_speciale_levertoer import TeamSpecialeLevertoer
 from app.db.models.team_task import TeamTask
 from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
@@ -499,3 +501,76 @@ def test_deleting_a_team_cascades_its_join_table_rows(client: TestClient, db_ses
     assert delete_response.status_code == 204
     assert db_session.scalars(select(TeamTeamTask).where(TeamTeamTask.team_id == team_id)).all() == []
     assert db_session.scalars(select(TeamKernlid).where(TeamKernlid.team_id == team_id)).all() == []
+
+
+def _login_admin(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    admin = _create_user(db_session, email="admin@example.com", is_super_admin=True)
+    _grant_module_access(db_session, admin, module)
+    _login(client, "admin@example.com")
+
+
+def _create_special_tour(db_session: Session, name: str, *, active: bool = True) -> KarTrackerSpecialeLevertoer:
+    tour = KarTrackerSpecialeLevertoer(name=name, active=active)
+    db_session.add(tour)
+    db_session.commit()
+    db_session.refresh(tour)
+    return tour
+
+
+def test_a_team_saves_and_returns_its_special_tours(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+    wastoer = _create_special_tour(db_session, "Kleine wastoer")
+    ijs = _create_special_tour(db_session, "Ijsblokken")
+
+    created = client.post("/api/modules/module-9/teams", json={"name": "Bar Team", "special_tour_ids": [ijs.id, wastoer.id]})
+    assert created.status_code == 201
+    team_id = created.json()["id"]
+    assert created.json()["special_tour_ids"] == sorted([wastoer.id, ijs.id])
+
+    # An update that leaves the field out keeps the links ...
+    kept = client.put(f"/api/modules/module-9/teams/{team_id}", json={"name": "Bar Team", "active": True})
+    assert kept.json()["special_tour_ids"] == sorted([wastoer.id, ijs.id])
+
+    # ... one that sends it replaces them.
+    replaced = client.put(
+        f"/api/modules/module-9/teams/{team_id}", json={"name": "Bar Team", "active": True, "special_tour_ids": [ijs.id]}
+    )
+    assert replaced.json()["special_tour_ids"] == [ijs.id]
+    links = db_session.scalars(select(TeamSpecialeLevertoer).where(TeamSpecialeLevertoer.team_id == team_id)).all()
+    assert [link.levertoer_id for link in links] == [ijs.id]
+
+    # Deleting the team removes its links.
+    assert client.delete(f"/api/modules/module-9/teams/{team_id}").status_code == 204
+    assert db_session.scalars(select(TeamSpecialeLevertoer)).all() == []
+
+
+def test_an_unknown_special_tour_id_returns_404(client: TestClient, db_session: Session) -> None:
+    _login_admin(client, db_session)
+
+    response = client.post("/api/modules/module-9/teams", json={"name": "Bar Team", "special_tour_ids": [9999]})
+
+    assert response.status_code == 404
+
+
+def test_special_tour_options_need_only_the_teams_view_right(client: TestClient, db_session: Session) -> None:
+    sync_screens(db_session)
+    module = _create_masterdata_module(db_session)
+    _create_special_tour(db_session, "Wastoer")
+    _create_special_tour(db_session, "Ijsblokken", active=False)
+    viewer = _create_user(db_session, email="viewer@example.com")
+    _grant_module_access(db_session, viewer, module)
+    outsider = _create_user(db_session, email="outsider@example.com")
+    _grant_module_access(db_session, outsider, module)
+    _grant_teams_permission(db_session, viewer, can_view=True)
+
+    _login(client, "viewer@example.com")
+    response = client.get("/api/modules/module-9/special-tours")
+    assert response.status_code == 200
+    # Every tour, by name, with its active flag (the form hides inactive ones).
+    assert [(tour["name"], tour["active"]) for tour in response.json()] == [("Ijsblokken", False), ("Wastoer", True)]
+
+    client.cookies.clear()
+    _login(client, "outsider@example.com")
+    assert client.get("/api/modules/module-9/special-tours").status_code == 403

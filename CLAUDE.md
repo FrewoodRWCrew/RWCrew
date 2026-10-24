@@ -63,7 +63,26 @@ frontend/
                                 badgeClassName = soft pill used on the module's own page)
   messages/nl.json (default), en.json    next-intl translations
 docker-compose.yml   Local Postgres for dev only (port 5433, see Gotchas)
+docs/work-history.md Log of every accepted-and-executed plan (see "Work history" below)
 ```
+
+## Work history (plan log) — mandatory
+
+Every time a plan is accepted (plan mode approved) **and** carried out, add an entry to
+`docs/work-history.md` as part of that same work — before reporting it done or committing. This keeps
+the history of the work on the project.
+
+- Newest entry on top, directly under the file's header. Date in Belgian time.
+- Entries are never rewritten afterwards; a correction or follow-up gets its own new entry.
+- Format:
+  ```
+  ## YYYY-MM-DD — <short title>
+  **Request:** what the user asked for (1–2 lines)
+  **Plan:** the approach that was accepted (a few bullets)
+  **Changes:** files/areas changed, migrations, new endpoints/screens
+  **Verification:** tests run / checks done and their result
+  **Notes:** open points, follow-ups, deviations from the plan (optional)
+  ```
 
 ## StockMaster (module-4)
 
@@ -123,6 +142,72 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   (`components/module-4/kar-load-overview.tsx`: per kar the needed product types fully loaded and the pieces, from
   `KarSummaryResponse`). Kar laden opens on that overview; "Laden" opens the booking panel with `?kar=<id>`
   (`kar-load-screen.tsx` switches on `?kar=`/`?product=`/`?from=`).
+
+## KarTracker (module-2): Leveringsvolgorde
+
+- `KarTracker_afleverlocaties.terrein_positie` is an **integer**: the location's position in the one delivery tour
+  across the ground (1 = delivered first, NULL = not in the tour; converted from free text in migration
+  `c4d8e2f6a913`, non-numeric values became NULL). Not to be confused with `KarTracker_distributiepunten.terrein_positie`,
+  which is still free text.
+- Set on the "Leveringsvolgorde" screen (`/modules/module-2/actions/delivery-order`, screen key
+  `kartracker.leveringsvolgorde`, `components/module-2/delivery-order-screen.tsx`, drag and drop with `@dnd-kit`):
+  left = the tour, right = active locations without a position. `PUT /delivery-order` saves the whole tour through
+  `module_2/delivery_order_service.py` (ids → 1..n, every other *active* location → NULL; inactive ones untouched).
+  The Afleverlocatie form and XLSX import can also set it (a whole number ≥ 1).
+- Each row shows the saved value next to the new number ("was 3" / "nieuw" / "wordt leeg"); **Kaart** opens
+  `components/module-2/delivery-order-map.tsx` (ground plan + numbered badges "5 (was 3)", hover tooltip = name,
+  dashed route 1 → n) built on `kar-map-leaflet.tsx`, whose `KarMapPin` now has optional `label`/`tooltip`/
+  `zIndexOffset` and the map an optional `route`. `/groundplans` is also readable with `kartracker.leveringsvolgorde`.
+
+## KarTracker (module-2): Planningsanalyses
+
+Sidebar group (between "Acties" and "Masterdata") for analyses of what has to be organised before/during/after the
+festival; route prefix `/modules/module-2/planning-analyses/`.
+
+- **Initiële leverplanning** (`initial-delivery`, screen key `kartracker.initieleleverplanning`,
+  `module_2/initial_delivery_service.py`, `GET /initial-delivery?season_id=`, `components/module-2/initial-delivery-screen.tsx`):
+  grouped per distributiepunt (ordered by its first location in the tour), then per afleverlocatie in `terrein_positie`
+  order (no position last), the karren delivered there at the start. A kar's
+  initial location = the Plan a kar location of its **team's first festival** of the season (earliest picked in
+  Altsien Select via `festivals_by_team`, else the season's first active festival). Karren without a team or whose
+  team planned nothing there are left out. Totals per distributiepunt + overall. Read-only, follows the header's season.
+  Filter row under the headings (Status dropdown + text per column, client-side; selection actions only touch the shown
+  karren, hidden ticked ones stay ticked). Kar lines have checkboxes (Shift-click = range, group rows tick all their karren); **Print leverplanning**
+  (`POST /initial-delivery/print`, `module_2/delivery_planning_pdf.py`) makes a landscape PDF of the ticked karren per
+  distributiepunt ("Ophalen bij") with a "Geleverd" box, re-deriving the planning server-side and keeping only the ids.
+  Optional **map page**: drawn server-side (no tiles) on the ground plan holding most points, lat/lng → page via
+  Web-Mercator over the plan's bounds (as Leaflet stretches it), zoomed to the printed points (padding, min 150 m, plan
+  image cropped to the view); points outside the plan / without coordinates are listed.
+- **Verplaatsingen tussen festivals** (`kar-moves`, screen key `kartracker.karverplaatsingen`,
+  `module_2/kar_moves_service.py`, `GET /kar-moves?season_id=&from_festival_id=&to_festival_id=`,
+  `components/module-2/kar-moves-screen.tsx`): for a chosen festival A → B (dropdowns, default the first two; without a
+  pair the response only holds the festivals) the karren whose team plays both (picks, or every festival while it picked
+  none), has a Plan a kar location at both, and those differ. Grouped per **pick-up location** (the one at A) in tour
+  order; each kar row has its `to_location`. Same filters/checkboxes as above; **Print verplaatsingen**
+  (`POST /kar-moves/print`, `module_2/kar_moves_pdf.py`) = per pick-up location with a "Verplaatst" box, optional map
+  with purple pick-up / green destination badges (tour position, letters for no position) and an arrow per move with
+  its kar count. The map's ground-plan view (pick plan, zoom, background) is shared via `_draw_map_view` in
+  `delivery_planning_pdf.py`.
+- **Speciale levertoeren-planning** (`special-tours`, screen key `kartracker.levertoerplanning`,
+  `module_2/special_tour_planning_service.py`, `GET /special-tour-planning?season_id=&festival_id=&tour_ids=…`,
+  `components/module-2/special-tour-planning-screen.tsx`): Festival dropdown (default the first) + multi-select of
+  active tours; lists the karren of teams linked to any chosen tour that play the festival, at their Plan a kar location
+  there. **No distributiepunten** (the tour passes by the karren): a flat list of stops (`SpecialTourStop`) in tour order
+  (`terrein_positie`, then the rest by name) numbered `stop` 1..n, so every stop gets a map badge even without a
+  position. A kar on two chosen tours appears once with both in `tour_names`. **Print**
+  (`POST /special-tour-planning/print`, `module_2/special_tour_pdf.py`, reusing the house style/map helpers of
+  `delivery_planning_pdf.py`): one table (Stop, location, karren, Levertoer, "Geleverd" box) + optional route map with
+  a numbered badge per stop and the dashed route 1 → n; printing a subset keeps the screen's stop numbers.
+
+## KarTracker (module-2): Speciale levertoeren
+
+KarTracker master data `KarTracker_speciale_levertoeren` (name unique, description, active; screen
+`kartracker.specialelevertoeren`, `/modules/module-2/special-tours`, `components/module-2/special-tour-management.tsx`,
+`/special-tours` CRUD): tours such as "Kleine wastoer"/"Ijsblokken" that regularly pass by teams. Teams are linked on
+MasterData's team fiche (**Levertoeren** multi-select, `MasterData_team_speciale_levertoer`, `special_tour_ids` on the
+team endpoints; `PUT /teams` without the field keeps the links). The fiche reads the options from module-9's own
+`GET /special-tours` (gated by `masterdata.teams`), so managing teams needs no KarTracker rights. Deleting a tour that
+is still linked is refused (400) — deactivate it instead (inactive tours stay on teams already linked but can't be picked).
 
 ## Atelier (module-5) and Walkies (module-6)
 

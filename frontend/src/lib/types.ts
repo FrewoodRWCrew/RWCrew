@@ -163,6 +163,8 @@ export interface Team {
   delivery_method_id: number | null;
   task_ids: number[];
   kernlid_ids: number[];
+  /** KarTracker "Speciale levertoeren" passing by this team. */
+  special_tour_ids: number[];
   description: string | null;
   active: boolean;
 }
@@ -174,8 +176,16 @@ export interface TeamInput {
   delivery_method_id?: number | null;
   task_ids?: number[];
   kernlid_ids?: number[];
+  special_tour_ids?: number[];
   description?: string | null;
   active?: boolean;
+}
+
+/** One KarTracker "Speciale levertoer" as offered on the team fiche's "Levertoeren" field. */
+export interface SpecialTourOption {
+  id: number;
+  name: string;
+  active: boolean;
 }
 
 /** One product, as managed on MasterData's Products screen. */
@@ -1150,7 +1160,8 @@ export interface KarTrackerAfleverlocatie {
   distributiepunt_id: number;
   latitude: number | null;
   longitude: number | null;
-  terrein_positie: string | null;
+  /** Position in the delivery tour (see the Leveringsvolgorde screen); null = not in the tour. */
+  terrein_positie: number | null;
   altsien_kernlid_id: number | null;
   active: boolean;
 }
@@ -1163,9 +1174,148 @@ export interface KarTrackerAfleverlocatieInput {
   distributiepunt_id: number;
   latitude: number | null;
   longitude: number | null;
-  terrein_positie: string | null;
+  /** Position in the delivery tour (see the Leveringsvolgorde screen); null = not in the tour. */
+  terrein_positie: number | null;
   altsien_kernlid_id: number | null;
   active: boolean;
+}
+
+/** One active delivery location on the Leveringsvolgorde screen; terrein_positie null = not yet in the tour. */
+export interface KarTrackerDeliveryOrderLocation {
+  id: number;
+  name: string;
+  description: string | null;
+  zone_name: string;
+  distributiepunt_name: string;
+  terrein_positie: number | null;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** One kar on the "Initiële leverplanning" screen, with the festival it's delivered for. */
+export interface KarTrackerInitialDeliveryKar {
+  id: number;
+  kar_nummer: string;
+  team_name: string;
+  transport_type_name: string;
+  status_name: string;
+  festival_name: string;
+  delivery_date: string | null;
+  /** Only on "Speciale levertoeren-planning": the selected tours passing by the kar's team. */
+  tour_names?: string[];
+}
+
+/** One delivery location with the karren delivered there first (terrein_positie null = not in the tour). */
+export interface KarTrackerInitialDeliveryLocation {
+  id: number;
+  name: string;
+  description: string | null;
+  zone_name: string;
+  terrein_positie: number | null;
+  active: boolean;
+  latitude: number | null;
+  longitude: number | null;
+  karren: KarTrackerInitialDeliveryKar[];
+}
+
+/** One distributiepunt with its locations (tour order) and kar count. */
+export interface KarTrackerInitialDeliveryDistributiepunt {
+  id: number;
+  name: string;
+  count: number;
+  latitude: number | null;
+  longitude: number | null;
+  locations: KarTrackerInitialDeliveryLocation[];
+}
+
+/** The "Initiële leverplanning" screen: per distributiepunt its locations + the overall total. */
+export interface KarTrackerInitialDelivery {
+  distributiepunten: KarTrackerInitialDeliveryDistributiepunt[];
+  total: number;
+}
+
+/** One festival in the "Van" / "Naar" dropdowns of "Verplaatsingen tussen festivals". */
+export interface KarTrackerKarMovesFestival {
+  id: number;
+  name: string;
+  start_date: string;
+}
+
+/** A delivery location on "Verplaatsingen" (terrein_positie null = not in the tour). */
+export interface KarTrackerKarMovesLocation {
+  id: number;
+  name: string;
+  description: string | null;
+  zone_name: string;
+  terrein_positie: number | null;
+  active: boolean;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** One kar to move, with the location it has to go to. */
+export interface KarTrackerKarMovesKar {
+  id: number;
+  kar_nummer: string;
+  team_name: string;
+  transport_type_name: string;
+  status_name: string;
+  to_location: KarTrackerKarMovesLocation;
+}
+
+/** One pick-up location (where the karren stand at the "Van" festival) with its karren to move. */
+export interface KarTrackerKarMovesLocationGroup extends KarTrackerKarMovesLocation {
+  karren: KarTrackerKarMovesKar[];
+}
+
+/** The "Verplaatsingen tussen festivals" screen: the season's festivals + the moves for the chosen pair. */
+export interface KarTrackerKarMoves {
+  festivals: KarTrackerKarMovesFestival[];
+  from_festival_id: number | null;
+  to_festival_id: number | null;
+  to_delivery_date: string | null;
+  locations: KarTrackerKarMovesLocationGroup[];
+  total: number;
+}
+
+/** One special delivery tour, as managed on KarTracker's "Speciale levertoeren" screen. */
+export interface KarTrackerSpecialTour {
+  id: number;
+  name: string;
+  description: string | null;
+  active: boolean;
+  /** The teams linked to it on MasterData's team fiche (read-only here). */
+  team_names: string[];
+}
+
+/** The fields sent to create or update a special delivery tour. */
+export interface KarTrackerSpecialTourInput {
+  name: string;
+  description: string | null;
+  active: boolean;
+}
+
+/**
+ * One stop of a special delivery tour: a delivery location with the karren
+ * standing there; `stop` = its number in the tour (1..n, tour order).
+ */
+export interface KarTrackerSpecialTourStop extends KarTrackerInitialDeliveryLocation {
+  stop: number;
+}
+
+/**
+ * The "Speciale levertoeren-planning" screen: festivals + active tours for the
+ * filters and, for the chosen festival + tours, the tour's stops in order
+ * (no distributiepunten: the tour passes by the karren).
+ */
+export interface KarTrackerSpecialTourPlanning {
+  festivals: KarTrackerKarMovesFestival[];
+  tours: { id: number; name: string }[];
+  festival_id: number | null;
+  tour_ids: number[];
+  delivery_date: string | null;
+  locations: KarTrackerSpecialTourStop[];
+  total: number;
 }
 
 /** One entry of a "Plan a kar" dropdown (a team or a delivery location). */

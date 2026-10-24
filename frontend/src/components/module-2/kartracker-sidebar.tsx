@@ -10,15 +10,18 @@
 // Groups so far, in display order: "Actions" ("Kar Planning" — a read-only,
 // cross-table report, "Kar Map" — a read-only map view of Karren/
 // Afleverlocaties/Distributiepunten, "Plan a kar" — pick a delivery location
-// per festival for a team, and "Manuele kar beweging" — log a kar movement,
-// each gated by its own independent permission), "Masterdata" (KarManagement/
+// per festival for a team, "Leveringsvolgorde" — the order of the delivery
+// tour, and "Manuele kar beweging" — log a kar movement,
+// each gated by its own independent permission), "Planningsanalyses" (analyses
+// of what has to be organised before/during/after the festival: "Initiële
+// leverplanning" so far), "Masterdata" (KarManagement/
 // KarStatussen/Delivery Dates/Data Upload/Download/Grondplan, the Karlijst phase), and
 // "Access Rights" (Roles/Users) — same group order as Intervention
 // Requests' own sidebar. Future phases (delivery planning, ...) add their
 // own groups here the same way.
 // At the bottom: the "Help" group with the module's help manual (PDF).
 
-import { Database, ShieldCheck, Zap } from "lucide-react";
+import { ClipboardList, Database, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -46,6 +49,11 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const tKarPlanning = useTranslations("karTracker.karPlanning");
   const tKarMap = useTranslations("karTracker.karMap");
   const tPlanKar = useTranslations("karTracker.planKar");
+  const tDeliveryOrder = useTranslations("karTracker.deliveryOrder");
+  const tInitialDelivery = useTranslations("karTracker.initialDelivery");
+  const tKarMoves = useTranslations("karTracker.karMoves");
+  const tSpecialTours = useTranslations("karTracker.specialTours");
+  const tSpecialTourPlanning = useTranslations("karTracker.specialTourPlanning");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -65,6 +73,11 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const canViewKarPlanning = viewableScreenKeys.includes("kartracker.karplanning");
   const canViewKarMap = viewableScreenKeys.includes("kartracker.karmap");
   const canViewPlanKar = viewableScreenKeys.includes("kartracker.plankar");
+  const canViewDeliveryOrder = viewableScreenKeys.includes("kartracker.leveringsvolgorde");
+  const canViewInitialDelivery = viewableScreenKeys.includes("kartracker.initieleleverplanning");
+  const canViewKarMoves = viewableScreenKeys.includes("kartracker.karverplaatsingen");
+  const canViewSpecialTours = viewableScreenKeys.includes("kartracker.specialelevertoeren");
+  const canViewSpecialTourPlanning = viewableScreenKeys.includes("kartracker.levertoerplanning");
 
   function linkClassName(href: string, level: 0 | 1 = 0) {
     return cn(
@@ -125,10 +138,45 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         </>
       )}
 
+      {(canViewInitialDelivery || canViewKarMoves || canViewSpecialTourPlanning) && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <ClipboardList className="size-4" />
+            {t("planningAnalysesGroup")}
+          </div>
+          {canViewInitialDelivery && (
+            <Link
+              href="/modules/module-2/planning-analyses/initial-delivery"
+              className={linkClassName("/modules/module-2/planning-analyses/initial-delivery", 1)}
+            >
+              {tInitialDelivery("title")}
+            </Link>
+          )}
+          {canViewKarMoves && (
+            <Link
+              href="/modules/module-2/planning-analyses/kar-moves"
+              className={linkClassName("/modules/module-2/planning-analyses/kar-moves", 1)}
+            >
+              {tKarMoves("title")}
+            </Link>
+          )}
+          {canViewSpecialTourPlanning && (
+            <Link
+              href="/modules/module-2/planning-analyses/special-tours"
+              className={linkClassName("/modules/module-2/planning-analyses/special-tours", 1)}
+            >
+              {tSpecialTourPlanning("title")}
+            </Link>
+          )}
+        </>
+      )}
+
       {(canViewKarManagement ||
         canViewDistributiepunten ||
         canViewZones ||
         canViewAfleverlocaties ||
+        canViewDeliveryOrder ||
+        canViewSpecialTours ||
         canViewKarStatuses ||
         canViewDataUploadDownload ||
         canViewDeliveryDates ||
@@ -165,6 +213,20 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
               className={linkClassName("/modules/module-2/afleverlocaties", 1)}
             >
               {tAfleverlocaties("title")}
+            </Link>
+          )}
+          {/* Leveringsvolgorde (delivery tour order of the afleverlocaties) sits right below them. */}
+          {canViewDeliveryOrder && (
+            <Link
+              href="/modules/module-2/actions/delivery-order"
+              className={linkClassName("/modules/module-2/actions/delivery-order", 1)}
+            >
+              {tDeliveryOrder("title")}
+            </Link>
+          )}
+          {canViewSpecialTours && (
+            <Link href="/modules/module-2/special-tours" className={linkClassName("/modules/module-2/special-tours", 1)}>
+              {tSpecialTours("title")}
             </Link>
           )}
           {canViewKarStatuses && (

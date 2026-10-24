@@ -405,6 +405,30 @@ class ZoneImportResponse(BaseModel):
     results: list[ZoneImportRowResult]
 
 
+class SpecialTourResponse(BaseModel):
+    """One special delivery tour, as shown on the "Speciale levertoeren" screen,
+    with the names of the teams linked to it (read-only, set on the team fiche).
+    """
+
+    id: int
+    name: str
+    description: str | None
+    active: bool
+    team_names: list[str]
+
+
+class SpecialTourCreateRequest(BaseModel):
+    """What's sent to create a brand-new special delivery tour."""
+
+    name: str = Field(min_length=1, max_length=255)
+    description: str | None = None
+    active: bool = True
+
+
+class SpecialTourUpdateRequest(SpecialTourCreateRequest):
+    """What's sent to change an existing tour — same shape as creating one."""
+
+
 class PlanKarOption(BaseModel):
     """One entry of a "Plan a kar" dropdown (a team or a delivery location)."""
 
@@ -575,7 +599,8 @@ class AfleverlocatieResponse(BaseModel):
     distributiepunt_id: int
     latitude: float | None
     longitude: float | None
-    terrein_positie: str | None
+    # Position in the delivery tour (see the Leveringsvolgorde screen).
+    terrein_positie: int | None
     altsien_kernlid_id: int | None
     active: bool
 
@@ -593,7 +618,7 @@ class AfleverlocatieCreateRequest(BaseModel):
     distributiepunt_id: int
     latitude: float | None = None
     longitude: float | None = None
-    terrein_positie: str | None = Field(default=None, max_length=255)
+    terrein_positie: int | None = Field(default=None, ge=1)
     altsien_kernlid_id: int | None = None
     # Inactive locations are hidden from the "Plan a kar" dropdowns.
     active: bool = True
@@ -621,6 +646,219 @@ class AfleverlocatieImportResponse(BaseModel):
     """The full outcome of a bulk afleverlocatie import — one result per row, in order."""
 
     results: list[AfleverlocatieImportRowResult]
+
+
+class DeliveryOrderLocationResponse(BaseModel):
+    """One active delivery location on the Leveringsvolgorde screen.
+    terrein_positie NULL = not yet placed in the delivery tour.
+    """
+
+    id: int
+    name: str
+    # Shown as the location's main text on the screen (falls back to the name).
+    description: str | None
+    zone_name: str
+    distributiepunt_name: str
+    terrein_positie: int | None
+    # Coordinates for the screen's map ("Kaart"); NULL = can't be pinned.
+    latitude: float | None
+    longitude: float | None
+
+
+class DeliveryOrderUpdateRequest(BaseModel):
+    """The delivery tour, in order: every id gets position 1..n; every other
+    active location is taken out of the tour.
+    """
+
+    afleverlocatie_ids: list[int]
+
+
+class InitialDeliveryKarRow(BaseModel):
+    """One kar on the "Initiële leverplanning" screen."""
+
+    id: int
+    kar_nummer: str
+    team_name: str
+    transport_type_name: str
+    status_name: str
+    # The team's first festival of the season (the one this delivery is for)
+    # and that festival's delivery date ("Leverdata"), when one is set.
+    festival_name: str
+    delivery_date: date | None
+    # Only on "Speciale levertoeren-planning": the selected tours passing by
+    # this kar's team (a kar on two of them is still listed once).
+    tour_names: list[str] = []
+
+
+class InitialDeliveryLocationGroup(BaseModel):
+    """One delivery location with the karren to deliver there first.
+    terrein_positie NULL = not (yet) in the delivery tour.
+    """
+
+    id: int
+    name: str
+    description: str | None
+    zone_name: str
+    terrein_positie: int | None
+    # A deactivated location can still be in an older plan; flagged on screen.
+    active: bool
+    # For the route map in the printed PDF; NULL = can't be pinned.
+    latitude: float | None
+    longitude: float | None
+    karren: list[InitialDeliveryKarRow]
+
+
+class InitialDeliveryDistributiepuntGroup(BaseModel):
+    """One distributiepunt with its locations (in tour order) and kar count."""
+
+    id: int
+    name: str
+    count: int
+    # The pick-up point on the printed route map; NULL = can't be pinned.
+    latitude: float | None
+    longitude: float | None
+    locations: list[InitialDeliveryLocationGroup]
+
+
+class InitialDeliveryResponse(BaseModel):
+    """The "Initiële leverplanning" screen: per distributiepunt its locations + the overall total."""
+
+    distributiepunten: list[InitialDeliveryDistributiepuntGroup]
+    total: int
+
+
+class InitialDeliveryPrintRequest(BaseModel):
+    """The "Print leverplanning" button: which karren to print, in which
+    season, and whether a page with the route map is added.
+    """
+
+    season_id: int
+    # Capped so a single request can't ask for an absurd PDF.
+    kar_ids: list[int] = Field(min_length=1, max_length=1000)
+    include_map: bool = False
+    locale: Literal["nl", "en"] = "nl"
+
+
+class KarMovesFestival(BaseModel):
+    """One festival in the "Van" / "Naar" dropdowns of "Verplaatsingen"."""
+
+    id: int
+    name: str
+    start_date: date
+
+
+class KarMovesLocation(BaseModel):
+    """A delivery location as shown on "Verplaatsingen" (pick-up or destination).
+    terrein_positie NULL = not (yet) in the delivery tour.
+    """
+
+    id: int
+    name: str
+    description: str | None
+    zone_name: str
+    terrein_positie: int | None
+    # A deactivated location can still be in an older plan; flagged on screen.
+    active: bool
+    # For the map in the printed PDF; NULL = can't be pinned.
+    latitude: float | None
+    longitude: float | None
+
+
+class KarMovesKarRow(BaseModel):
+    """One kar that has to be moved between the two festivals, with where it goes."""
+
+    id: int
+    kar_nummer: str
+    team_name: str
+    transport_type_name: str
+    status_name: str
+    to_location: KarMovesLocation
+
+
+class KarMovesLocationGroup(KarMovesLocation):
+    """One pick-up location (where the karren stand at the "Van" festival)
+    with the karren to take away from there.
+    """
+
+    karren: list[KarMovesKarRow]
+
+
+class KarMovesResponse(BaseModel):
+    """The "Verplaatsingen tussen festivals" screen: the season's festivals for
+    the dropdowns and, when both are chosen, the moves grouped per pick-up
+    location in tour order.
+    """
+
+    festivals: list[KarMovesFestival]
+    from_festival_id: int | None
+    to_festival_id: int | None
+    # The "Naar" festival's delivery date ("Leverdata"), when one is set.
+    to_delivery_date: date | None
+    locations: list[KarMovesLocationGroup]
+    total: int
+
+
+class KarMovesPrintRequest(BaseModel):
+    """The "Print verplaatsingen" button: which karren to print for which
+    festival pair, and whether a page with the map is added.
+    """
+
+    season_id: int
+    from_festival_id: int
+    to_festival_id: int
+    # Capped so a single request can't ask for an absurd PDF.
+    kar_ids: list[int] = Field(min_length=1, max_length=1000)
+    include_map: bool = False
+    locale: Literal["nl", "en"] = "nl"
+
+
+class SpecialTourOption(BaseModel):
+    """One tour in the "Levertoeren" filter of the planning screen."""
+
+    id: int
+    name: str
+
+
+class SpecialTourStop(InitialDeliveryLocationGroup):
+    """One delivery location the tour passes, with the karren standing there.
+    `stop` = its number in this tour (1..n, in the order of the delivery tour:
+    locations with a terrein_positie first, the rest by name), so every stop
+    gets a number on the map even without a position in "Leveringsvolgorde".
+    """
+
+    stop: int
+
+
+class SpecialTourPlanningResponse(BaseModel):
+    """The "Speciale levertoeren-planning" screen: the festivals and active tours
+    for the filters and, when a festival and at least one tour are chosen, the
+    stops of those tours (delivery locations in tour order) with the karren of
+    the tours' teams standing there at that festival. No distributiepunten:
+    the tour passes by the karren, it doesn't pick them up.
+    """
+
+    festivals: list[KarMovesFestival]
+    tours: list[SpecialTourOption]
+    festival_id: int | None
+    tour_ids: list[int]
+    # The chosen festival's delivery date ("Leverdata"), when one is set.
+    delivery_date: date | None
+    locations: list[SpecialTourStop]
+    total: int
+
+
+class SpecialTourPlanningPrintRequest(BaseModel):
+    """The "Print leverplanning" button of the planning screen: which karren to
+    print for which festival + tours, and whether the route map page is added.
+    """
+
+    season_id: int
+    festival_id: int
+    tour_ids: list[int] = Field(min_length=1, max_length=100)
+    # Capped so a single request can't ask for an absurd PDF.
+    kar_ids: list[int] = Field(min_length=1, max_length=1000)
+    include_map: bool = False
+    locale: Literal["nl", "en"] = "nl"
 
 
 class KarTrackerDashboardStatusBreakdownItem(BaseModel):

@@ -16,6 +16,7 @@ from app.core.security import hash_password
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.festival import Festival
 from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.kartracker_speciale_levertoer import KarTrackerSpecialeLevertoer
 from app.db.models.masterdata_role import MasterDataRole
 from app.db.models.masterdata_role_permission import MasterDataRolePermission
 from app.db.models.masterdata_screen import MasterDataScreen
@@ -32,6 +33,7 @@ from app.db.models.team import Team
 from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_location import TeamLocation
 from app.db.models.team_responsible import TeamResponsible
+from app.db.models.team_speciale_levertoer import TeamSpecialeLevertoer
 from app.db.models.team_task import TeamTask
 from app.db.models.team_team_task import TeamTeamTask
 from app.db.models.user import User
@@ -162,6 +164,7 @@ from app.schemas.masterdata import (
     SeasonUpdateRequest,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
+    SpecialTourOptionResponse,
     TeamCreateRequest,
     TeamImportResponse,
     TeamLinkImportResponse,
@@ -996,6 +999,10 @@ def _validate_team_lookup_ids(db: Session, payload: TeamCreateRequest | TeamUpda
         if kernlid is None or not kernlid.is_altsien_kernlid:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Altsien Kernlid not found")
 
+    for tour_id in payload.special_tour_ids or []:
+        if db.get(KarTrackerSpecialeLevertoer, tour_id) is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Special delivery tour not found")
+
 
 def _replace_team_task_links(db: Session, team_id: int, task_ids: list[int]) -> None:
     """Make MasterData_team_team_task's rows for this team match task_ids
@@ -1017,6 +1024,18 @@ def _replace_team_kernlid_links(db: Session, team_id: int, kernlid_ids: list[int
         db.add(TeamKernlid(team_id=team_id, altsien_kernlid_id=kernlid_id))
 
 
+def _replace_team_special_tour_links(db: Session, team_id: int, tour_ids: list[int] | None) -> None:
+    """Same replace-not-append logic as _replace_team_task_links, for
+    MasterData_team_speciale_levertoer. None = the request left the field out:
+    keep the team's current links.
+    """
+    if tour_ids is None:
+        return
+    db.execute(delete(TeamSpecialeLevertoer).where(TeamSpecialeLevertoer.team_id == team_id))
+    for tour_id in dict.fromkeys(tour_ids):
+        db.add(TeamSpecialeLevertoer(team_id=team_id, levertoer_id=tour_id))
+
+
 def _team_to_response(db: Session, team: Team) -> TeamResponse:
     """Build a TeamResponse for one team by pulling its current task_ids/
     kernlid_ids from the two join tables — these aren't columns on Team
@@ -1026,6 +1045,11 @@ def _team_to_response(db: Session, team: Team) -> TeamResponse:
     kernlid_ids = list(
         db.scalars(select(TeamKernlid.altsien_kernlid_id).where(TeamKernlid.team_id == team.id)).all()
     )
+    special_tour_ids = list(
+        db.scalars(
+            select(TeamSpecialeLevertoer.levertoer_id).where(TeamSpecialeLevertoer.team_id == team.id)
+        ).all()
+    )
     return TeamResponse(
         id=team.id,
         name=team.name,
@@ -1033,8 +1057,22 @@ def _team_to_response(db: Session, team: Team) -> TeamResponse:
         delivery_method_id=team.delivery_method_id,
         task_ids=sorted(task_ids),
         kernlid_ids=sorted(kernlid_ids),
+        special_tour_ids=sorted(special_tour_ids),
         description=team.description,
         active=team.active,
+    )
+
+
+@router.get("/special-tours", response_model=list[SpecialTourOptionResponse])
+def list_special_tour_options(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission("masterdata.teams", "view")),
+) -> list[KarTrackerSpecialeLevertoer]:
+    """Every KarTracker "Speciale levertoer", for the team fiche's "Levertoeren"
+    field — gated by the Teams screen, so managing teams needs no KarTracker rights.
+    """
+    return list(
+        db.scalars(select(KarTrackerSpecialeLevertoer).order_by(KarTrackerSpecialeLevertoer.name)).all()
     )
 
 
@@ -1076,6 +1114,7 @@ def create_team(
 
     _replace_team_task_links(db, new_team.id, payload.task_ids)
     _replace_team_kernlid_links(db, new_team.id, payload.kernlid_ids)
+    _replace_team_special_tour_links(db, new_team.id, payload.special_tour_ids)
 
     db.commit()
     db.refresh(new_team)
@@ -1110,6 +1149,7 @@ def update_team(
 
     _replace_team_task_links(db, team.id, payload.task_ids)
     _replace_team_kernlid_links(db, team.id, payload.kernlid_ids)
+    _replace_team_special_tour_links(db, team.id, payload.special_tour_ids)
 
     db.commit()
     db.refresh(team)

@@ -84,6 +84,85 @@ Below the table, the **delivery locations map** shows where the chosen locations
 
 > Altsien Kernleden fill in the same delivery locations through the Altsien Select wizard. What you save here they see there, and the other way round.
 
+## [leveringsvolgorde | kartracker.leveringsvolgorde] Delivery order
+Put the delivery locations in the order in which they are served across the ground, so karren are loaded and delivered in the right order.
+
+On the left is the **delivery tour**, numbered 1, 2, 3, … in delivery order. On the right are the **active delivery locations not yet in the tour** (by name; each line shows the description with the name and zone below it, plus a search box).
+
+1. Click the **left arrow** next to a location (or drag it to the left) to add it to the tour. **Add all shown** adds everything the search on the right shows.
+2. Drag the lines on the left into the right order.
+3. Take a location out of the tour with the **right arrow** (or drag it back to the right).
+4. Click **Save**. Every location on the left gets its position as **Terreinpositie** (1, 2, 3, …); locations on the right get none.
+
+Next to every line is its **saved terreinpositie**, so you see what changes before saving: in the tour (left) "was 3" (orange when Save changes it) or "new" (had no position yet), on the right "was 3 → cleared" (Save clears it). At the top you see how many locations change.
+
+**Map** (top right) opens the ground plan with the tour as it is on screen now: every location shows its new number and, in brackets, the saved one (e.g. "5 (was 3)"). A dashed line follows the tour from 1 to the end, so an illogical order stands out. Hover a location to see its name.
+
+> Nothing changes until you save: **Undo changes** brings back the last saved order. Inactive delivery locations are not on this screen and keep their terreinpositie.
+
+## [initial-delivery | kartracker.initieleleverplanning] Initial delivery planning
+The **Planning analyses** group holds analyses of what has to be organised before, during or after the festival. **Initial delivery planning** shows which karren have to be delivered at the start, and where, for the year in the header.
+
+A kar goes to the delivery location planned in **Plan a kar** for its team at the **team's first festival** (the earliest festival the team picked in Altsien Select, or the year's first festival while it picked none). Karren without a team, or whose team hasn't planned a location for that festival yet, are not listed.
+
+- At the top: the **total** number of karren and the number **per distribution point**.
+- The list is grouped first per **distribution point** (purple header line with its number of karren). Distribution points follow the order of their first location in the delivery tour.
+- Within it, per delivery location a grey header line with its **terreinpositie** (#1, #2, …), name and description, zone and number of karren. Locations follow the **Delivery order**; those without a position ("no position") come last.
+- Below it the karren (by kar number) with team, transport type, status, the festival they're delivered for and the delivery date from **Delivery Dates**.
+
+**Filtering**: a filter row sits under the column headings. Pick a status in the **Status** dropdown, or type part of a text in the other columns (the filter under **Position** searches the location's position, name, description and zone). Locations and distribution points without a matching kar disappear and the counts follow the filter. **Clear filters** resets everything. Select all, the group boxes and Shift-click only touch the karren shown; karren already ticked stay ticked (and are printed), even when a filter hides them.
+
+**Printing the delivery planning** for the drivers:
+
+1. Tick the karren. **Shift-click** ticks (or unticks) the whole range between your previous click and this one; the box on a distribution point or location line does all its karren at once, the box in the header everything.
+2. Optionally tick **Add map**.
+3. Click **Print delivery planning**. You get a landscape PDF with, per distribution point (**Pick up at**), the delivery locations in tour order, their karren and an empty **Delivered** box to tick off.
+
+With **Add map** a **Delivery route** page is added: the ground plan with the route from 1 to the end (dashed line), the delivery locations as numbered badges, locations without a position as grey dots and the distribution points as black squares. The map zooms in on the printed locations. The legend on the right lists the tour's stops (position, description and zone). Locations outside the ground plan or without coordinates are listed under the legend.
+
+> This screen changes nothing. Change the order on **Delivery order** and the locations on **Plan a kar**.
+
+## [kar-moves | kartracker.karverplaatsingen] Moves between festivals
+**Moves between festivals** shows which karren have to be moved on the ground between two festivals, for the year in the header. That is needed when a team has a different delivery location in **Plan a kar** at the next festival than at the previous one.
+
+Choose **From festival** and **To festival** at the top (the year's active festivals, in date order; the screen opens on the first two). A kar is listed when:
+
+- its team takes part in **both** festivals (the festivals the team picked in Altsien Select, or every festival while it picked none);
+- a delivery location is planned for the team at **both** festivals;
+- and those two locations **differ**.
+
+Karren that stay where they are, or for which not everything is planned yet, are not listed. Next to the dropdowns is the delivery date of the **To** festival (from **Delivery dates**).
+
+- The list is grouped per **pick-up location** (where the karren stand at the From festival): a purple heading row with the **ground position** (#1, #2, …), name, zone and number of karren, in the order of the **Delivery order** (locations without a position last).
+- Below it the karren (by kar number) with team, transport type, status and the **To** column: the delivery location the kar has to go to, with its position and zone.
+
+**Filtering** works as on the Initial delivery planning: Status through the dropdown, the other columns with a piece of text (the filters under **From** and **To** search the position, name, description and zone). **Clear filters** resets everything.
+
+**Printing the moves** for the drivers:
+
+1. Tick the karren (Shift-click for a range, the box on a pick-up location for all its karren, the box in the heading for everything).
+2. Optionally tick **Add map**.
+3. Click **Print moves**. You get a landscape PDF with, per pick-up location (**Pick up at**), the karren, where they have to go and an empty **Moved** box to tick off.
+
+With **Add map** a map page is added: the ground plan with the pick-up locations as purple dots, the locations that only receive karren as green dots, and an **arrow per move** with its number of karren. The dots carry the position in the delivery tour; a location without a position gets a letter (A, B, …). The legend on the right lists every location.
+
+> This screen changes nothing. Change the locations in **Plan a kar** and the order in **Delivery order**.
+
+## [special-tour-planning | kartracker.levertoerplanning] Special delivery tours planning
+**Special delivery tours planning** shows which karren a special delivery tour (for example the laundry tour or the ice cube tour) passes by at a festival and where they stand, for the year in the header.
+
+Pick the **Festival** at the top (the screen opens on the year's first festival) and one or more **Delivery tours**. A kar is listed when:
+
+- its team is linked to at least one chosen tour on its team fiche (MasterData > Teams, field **Delivery tours**);
+- the team takes part in the festival (the festivals it picked in Altsien Select, or every festival while it picked none);
+- and a delivery location is planned for the team at that festival in **Plan a kar**.
+
+A kar of a team on two chosen tours appears only once; the **Delivery tour** column then shows both.
+
+The list shows the tour's **stops**: the delivery locations in the order of the **Delivery order** (locations without a position after them, by name), numbered **Stop 1, 2, 3, …**, each with the karren standing there (by kar number). Distribution points aren't shown: the tour passes by the karren, nothing is picked up. Filtering and ticking (Shift-click for a range) work like in the Initial delivery planning. **Print delivery planning** makes a PDF with the stops, the tours and the festival at the top and a **Delivered** box per kar; **Add map** adds a map page with every stop as a numbered badge and the route from stop 1 to the last. Put the delivery locations in the **Delivery order** for a sensible route.
+
+> This screen changes nothing. Link teams to a tour on their team fiche and change their location in **Plan a kar**.
+
 ## [kar-management | kartracker.karmanagement] KarManagement
 The fleet: every kar with its kar number, status, team, transport type, last location and when it was last logged.
 
@@ -115,12 +194,23 @@ The delivery zones, which you choose on a delivery location.
 
 ![Zone](zones.png)
 
+## [special-tours | kartracker.specialelevertoeren] Special delivery tours
+The special delivery tours that regularly pass by a number of teams, for example **Small laundry tour**, **Large laundry tour** or **Ice cubes**.
+
+1. Click **New delivery tour**, give it a name and optionally a description (what the tour checks and when).
+2. Click **Change** to change the name, description or status. A tour that isn't **Active** can no longer be picked on a team fiche.
+3. **Delete** only works when no team is linked to the tour any more.
+
+The **Teams** column shows which teams are on the tour. You link them on the team fiche in MasterData (field **Delivery tours**); the planning per festival is on **Special delivery tours planning**.
+
 ## [afleverlocaties | kartracker.afleverlocaties] Delivery locations
 The places karren are delivered to: name, description, zone, distribution point, coordinates, site position, Altsien Kernlid and whether the location is active.
 
 1. Click **New delivery location** and fill in the details.
 2. Click **Change** to change them, or **Delete**.
 3. Set a location you no longer use to **Active: No** instead of deleting it.
+
+The **site position** (terreinpositie) is a number: the location's place in the delivery tour (1 = served first). The easiest way to set it is the **Delivery order** screen.
 
 ![Delivery locations](afleverlocaties.png)
 

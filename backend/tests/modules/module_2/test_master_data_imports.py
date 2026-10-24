@@ -113,3 +113,26 @@ def test_afleverlocatie_import_updates_and_keeps_active_when_blank(db_session: S
     assert updated.active is False
     created = db_session.scalar(select(KarTrackerAfleverlocatie).where(KarTrackerAfleverlocatie.name == "Loc 2"))
     assert created.active is True
+
+
+def test_afleverlocatie_import_reads_terrein_positie_as_a_whole_number(db_session: Session) -> None:
+    _create_zone(db_session, "Zone A")
+    _create_distributiepunt(db_session)
+
+    header = ["name", "zone_name", "distributiepunt_name", "terrein_positie"]
+    results = import_afleverlocaties_from_xlsx(
+        db_session,
+        _build_xlsx(
+            header,
+            [
+                # Excel may hand over a whole number as a float.
+                ["Loc 1", "Zone A", "DP 1", 3.0],
+                ["Loc 2", "Zone A", "DP 1", "Noord"],
+                ["Loc 3", "Zone A", "DP 1", 0],
+            ],
+        ),
+    )
+
+    assert [result.outcome for result in results] == ["created", "error", "error"]
+    created = db_session.scalar(select(KarTrackerAfleverlocatie).where(KarTrackerAfleverlocatie.name == "Loc 1"))
+    assert created.terrein_positie == 3

@@ -43,7 +43,8 @@ De verenigingen die met een kar werken: naam, locatie, leverwijze, beschrijving 
 
 1. Klik op **Nieuw team** en vul minstens de naam in.
 2. Kies de **Taken** van de ploeg en de **Kernleden**: de Altsien Kernleden die deze ploeg in Altsien Select zien en invullen.
-3. Een ploeg die niet meer meedoet, zet je op niet **Actief**.
+3. Kies bij **Levertoeren** de speciale levertoeren (KarTracker > Speciale levertoeren, bijvoorbeeld de wastoer of ijsblokken) die regelmatig bij de ploeg langsgaan.
+4. Een ploeg die niet meer meedoet, zet je op niet **Actief**.
 
 ![Ploegen](teams.png)
 

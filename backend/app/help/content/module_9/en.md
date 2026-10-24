@@ -43,7 +43,8 @@ The associations that work with a cart: name, location, delivery method, descrip
 
 1. Click **New team** and fill in at least the name.
 2. Choose the team's **Tasks** and **Core members**: the Altsien core members who see and fill in this team in Altsien Select.
-3. A team that no longer takes part is set to not **Active**.
+3. Under **Delivery tours**, pick the special delivery tours (KarTracker > Special delivery tours, for example the laundry or ice cube tour) that regularly pass by the team.
+4. A team that no longer takes part is set to not **Active**.
 
 ![Teams](teams.png)
 

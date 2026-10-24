@@ -449,6 +449,16 @@ class MasterDataDashboardResponse(BaseModel):
     products_by_warehouse: list[MasterDataWarehouseBreakdownItem]
 
 
+class SpecialTourOptionResponse(BaseModel):
+    """One KarTracker "Speciale levertoer" for the team fiche's "Levertoeren"
+    field (served by MasterData so team managers need no KarTracker rights).
+    """
+
+    id: int
+    name: str
+    active: bool
+
+
 class TeamResponse(BaseModel):
     """One team, as shown on the Teams screen. task_ids/kernlid_ids are
     derived from the MasterData_team_team_task / MasterData_team_kernlid
@@ -461,6 +471,9 @@ class TeamResponse(BaseModel):
     delivery_method_id: int | None
     task_ids: list[int]
     kernlid_ids: list[int]
+    # KarTracker "Speciale levertoeren" passing by this team
+    # (MasterData_team_speciale_levertoer).
+    special_tour_ids: list[int]
     description: str | None
     active: bool
 
@@ -477,6 +490,9 @@ class TeamCreateRequest(BaseModel):
     delivery_method_id: int | None = None
     task_ids: list[int] = Field(default_factory=list)
     kernlid_ids: list[int] = Field(default_factory=list)
+    # Ids of KarTracker "Speciale levertoeren"; None (left out) keeps the
+    # team's current links on an update, so older clients don't wipe them.
+    special_tour_ids: list[int] | None = None
     description: str | None = None
     active: bool = True
 

@@ -3,7 +3,8 @@
 // MasterData's "Teams" screen: a table of teams with add/change/delete,
 // following the same dialog/table pattern as products-management.tsx —
 // the create/edit dialog covers every field from the reference "Teams"
-// screen (naam, Locatie, Leverwijze, Taken, Kernleden, Beschrijving).
+// screen (naam, Locatie, Leverwijze, Taken, Kernleden, Beschrijving) plus
+// "Levertoeren": the KarTracker "Speciale levertoeren" passing by the team.
 
 import { useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
@@ -11,7 +12,15 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
 import { ApiError, createTeam, deleteTeam, updateTeam } from "@/lib/api";
-import type { AltsienKernlid, DeliveryMethod, Team, TeamInput, TeamLocation, TeamTask } from "@/lib/types";
+import type {
+  AltsienKernlid,
+  DeliveryMethod,
+  SpecialTourOption,
+  Team,
+  TeamInput,
+  TeamLocation,
+  TeamTask,
+} from "@/lib/types";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -47,6 +56,7 @@ interface TeamManagementProps {
   deliveryMethods: DeliveryMethod[];
   teamTasks: TeamTask[];
   kernleden: AltsienKernlid[];
+  specialTours: SpecialTourOption[];
 }
 
 // Base UI's Select needs every item to have a non-empty value, so "no
@@ -59,6 +69,7 @@ const EMPTY_FORM: TeamInput = {
   delivery_method_id: null,
   task_ids: [],
   kernlid_ids: [],
+  special_tour_ids: [],
   description: "",
   active: true,
 };
@@ -70,6 +81,7 @@ function toFormValues(team: Team): TeamInput {
     delivery_method_id: team.delivery_method_id,
     task_ids: team.task_ids,
     kernlid_ids: team.kernlid_ids,
+    special_tour_ids: team.special_tour_ids,
     description: team.description ?? "",
     active: team.active,
   };
@@ -81,6 +93,7 @@ export function TeamManagement({
   deliveryMethods,
   teamTasks,
   kernleden,
+  specialTours,
 }: TeamManagementProps) {
   const t = useTranslations("masterdata.teams");
   const router = useRouter();
@@ -93,6 +106,14 @@ export function TeamManagement({
 
   function deliveryMethodLabelFor(deliveryMethodId: number | null) {
     return deliveryMethods.find((method) => method.id === deliveryMethodId)?.delivery_method ?? "";
+  }
+
+  // The team's tours as "Ijsblokken, Kleine wastoer" for the table.
+  function specialTourLabelsFor(tourIds: number[]) {
+    return specialTours
+      .filter((tour) => tourIds.includes(tour.id))
+      .map((tour) => tour.name)
+      .join(", ");
   }
 
   function upsert(updated: Team) {
@@ -119,6 +140,7 @@ export function TeamManagement({
           deliveryMethods={deliveryMethods}
           teamTasks={teamTasks}
           kernleden={kernleden}
+          specialTours={specialTours}
         />
       </div>
 
@@ -129,6 +151,7 @@ export function TeamManagement({
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnName")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLocation")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDeliveryMethod")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnSpecialTours")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnActive")}</TableHead>
               <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                 {t("tableActions")}
@@ -143,6 +166,7 @@ export function TeamManagement({
                 <TableCell className="text-muted-foreground">
                   {deliveryMethodLabelFor(team.delivery_method_id)}
                 </TableCell>
+                <TableCell className="text-muted-foreground">{specialTourLabelsFor(team.special_tour_ids)}</TableCell>
                 <TableCell className="text-muted-foreground">{team.active ? t("activeYes") : t("activeNo")}</TableCell>
                 <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50">
                   <div className="flex justify-end gap-1">
@@ -158,6 +182,7 @@ export function TeamManagement({
                       deliveryMethods={deliveryMethods}
                       teamTasks={teamTasks}
                       kernleden={kernleden}
+                      specialTours={specialTours}
                     />
                     <DeleteTeamAlertDialog
                       team={team}
@@ -185,6 +210,7 @@ interface TeamFormDialogProps {
   deliveryMethods: DeliveryMethod[];
   teamTasks: TeamTask[];
   kernleden: AltsienKernlid[];
+  specialTours: SpecialTourOption[];
 }
 
 function TeamFormDialog({
@@ -195,6 +221,7 @@ function TeamFormDialog({
   deliveryMethods,
   teamTasks,
   kernleden,
+  specialTours,
 }: TeamFormDialogProps) {
   const t = useTranslations("masterdata.teams");
   const isEditing = team !== undefined;
@@ -232,6 +259,10 @@ function TeamFormDialog({
 
   const taskOptions = teamTasks.map((task) => ({ id: task.id, label: task.team_tasks }));
   const kernlidOptions = kernleden.map((kernlid) => ({ id: kernlid.id, label: kernlid.display_name }));
+  // Active tours, plus an inactive one the team is still linked to (so it can be removed).
+  const specialTourOptions = specialTours
+    .filter((tour) => tour.active || (form.special_tour_ids ?? []).includes(tour.id))
+    .map((tour) => ({ id: tour.id, label: tour.name }));
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
@@ -303,6 +334,16 @@ function TeamFormDialog({
               selectedIds={form.task_ids ?? []}
               onChange={(ids) => updateField("task_ids", ids)}
               placeholder={t("tasksPlaceholder")}
+            />
+          </div>
+          <div className="col-span-2 flex flex-col gap-2">
+            <Label htmlFor="team-special-tours">{t("specialToursLabel")}</Label>
+            <TagMultiSelect
+              id="team-special-tours"
+              options={specialTourOptions}
+              selectedIds={form.special_tour_ids ?? []}
+              onChange={(ids) => updateField("special_tour_ids", ids)}
+              placeholder={t("specialToursPlaceholder")}
             />
           </div>
           <div className="col-span-2 flex flex-col gap-2">

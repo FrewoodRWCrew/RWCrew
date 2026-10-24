@@ -84,6 +84,85 @@ Onder de tabel toont de **kaart afleverlocaties** waar de gekozen locaties ligge
 
 > Altsien Kernleden vullen dezelfde afleverlocaties in via de wizard van Altsien Select. Wat je hier opslaat, zien zij daar ook, en omgekeerd.
 
+## [leveringsvolgorde | kartracker.leveringsvolgorde] Leveringsvolgorde
+Zet de afleverlocaties in de volgorde waarin ze over het terrein beleverd worden, zodat karren in de juiste volgorde geladen en geleverd worden.
+
+Links staat de **levertoer**, genummerd 1, 2, 3, … in volgorde van levering. Rechts staan de **actieve afleverlocaties die nog niet in de toer zitten** (op naam; per lijn de omschrijving met daaronder naam en zone, en een zoekveld).
+
+1. Klik op de **pijl naar links** naast een locatie (of sleep ze naar links) om ze aan de toer toe te voegen. **Alle getoonde toevoegen** voegt alles toe wat de zoekterm rechts toont.
+2. Sleep de lijnen links in de juiste volgorde.
+3. Haal een locatie uit de toer met de **pijl naar rechts** (of sleep ze terug naar rechts).
+4. Klik op **Opslaan**. Elke locatie links krijgt haar positie als **Terreinpositie** (1, 2, 3, …); locaties rechts krijgen geen terreinpositie.
+
+Naast elke lijn staat de **opgeslagen terreinpositie**, zodat je voor het opslaan ziet wat er verandert: in de toer (links) "was 3" (oranje als Opslaan ze wijzigt) of "nieuw" (had nog geen positie), rechts "was 3 → wordt leeg" (Opslaan maakt ze leeg). Bovenaan zie je hoeveel locaties er wijzigen.
+
+Met **Kaart** (rechtsboven) open je het grondplan met de toer zoals hij nu op het scherm staat: elke locatie toont haar nieuwe nummer en, tussen haakjes, het opgeslagen (bv. "5 (was 3)"). Een stippellijn volgt de toer van 1 tot het einde, zodat een onlogische volgorde opvalt. Ga met de muis over een locatie om haar naam te zien.
+
+> Zolang je niet opslaat, is er niets gewijzigd: **Wijzigingen ongedaan maken** zet de laatst opgeslagen volgorde terug. Inactieve afleverlocaties staan niet op dit scherm en houden hun terreinpositie.
+
+## [initial-delivery | kartracker.initieleleverplanning] Initiële leverplanning
+In de groep **Planningsanalyses** staan analyses van wat voor, tijdens of na het festival georganiseerd moet worden. **Initiële leverplanning** toont welke karren bij de start geleverd moeten worden en waar, voor het jaartal in de kopbalk.
+
+Een kar gaat naar de afleverlocatie die in **Plan a kar** voor zijn ploeg gepland is op het **eerste festival van die ploeg** (het vroegste festival dat de ploeg in Altsien Select aanduidde, of het eerste festival van het jaar zolang ze niets aanduidde). Karren zonder ploeg, of waarvan de ploeg voor dat festival nog geen locatie plande, staan er niet bij.
+
+- Bovenaan staan het **totaal** aantal karren en het aantal **per distributiepunt**.
+- De lijst is eerst gegroepeerd per **distributiepunt** (paarse kopregel met het aantal karren). De distributiepunten staan in de volgorde van hun eerste locatie in de levertoer.
+- Daarbinnen per afleverlocatie een grijze kopregel met de **terreinpositie** (#1, #2, …), de naam en omschrijving, de zone en het aantal karren. De locaties staan in de volgorde van de **Leveringsvolgorde**; locaties zonder positie ("geen positie") komen achteraan.
+- Daaronder de karren (op karnummer) met ploeg, transporttype, status, het festival waarvoor ze geleverd worden en de leverdatum uit **Leverdata**.
+
+**Filteren**: onder de kolomkoppen staat een filterrij. Kies bij **Status** een status in de keuzelijst, of typ in de andere kolommen een stukje tekst (de filter onder **Positie** zoekt in de positie, naam, omschrijving en zone van de locatie). Locaties en distributiepunten zonder passende kar verdwijnen en de aantallen volgen de filter. **Filters wissen** zet alles terug. Alles selecteren, de groepsvakjes en Shift-klik werken enkel op de getoonde karren; al aangevinkte karren blijven aangevinkt (en worden afgedrukt), ook als een filter ze verbergt.
+
+**Leverplanning afdrukken** voor de chauffeurs:
+
+1. Vink de karren aan. **Shift-klik** vinkt de hele reeks aan (of uit) tussen je vorige en deze klik; het vakje op een distributiepunt- of locatieregel doet al zijn karren tegelijk, het vakje in de kop alles.
+2. Vink eventueel **Kaart toevoegen** aan.
+3. Klik op **Print leverplanning**. Je krijgt een liggende PDF met per distributiepunt (**Ophalen bij**) de afleverlocaties in de volgorde van de levertoer, hun karren en een leeg vakje **Geleverd** om af te vinken.
+
+Met **Kaart toevoegen** komt er een pagina **Leverroute** bij: het grondplan met de route van 1 tot het einde (stippellijn), de afleverlocaties als genummerde bolletjes, locaties zonder positie als grijze puntjes en de distributiepunten als zwarte vierkantjes. De kaart zoomt in op de afgedrukte locaties. Rechts staat de legende met de stops van de levertoer (positie, omschrijving en zone). Locaties buiten het grondplan of zonder coördinaten worden onder de legende opgesomd.
+
+> Dit scherm wijzigt niets. Pas de volgorde aan in **Leveringsvolgorde** en de locaties in **Plan a kar**.
+
+## [kar-moves | kartracker.karverplaatsingen] Verplaatsingen tussen festivals
+**Verplaatsingen tussen festivals** toont welke karren tussen twee festivals op het terrein verplaatst moeten worden, voor het jaartal in de kopbalk. Dat is nodig wanneer een ploeg in **Plan a kar** op het volgende festival een andere afleverlocatie heeft dan op het vorige.
+
+Kies bovenaan **Van festival** en **Naar festival** (de actieve festivals van het jaar, in volgorde van datum; het scherm opent op de eerste twee). Een kar staat in de lijst wanneer:
+
+- zijn ploeg aan **beide** festivals deelneemt (de festivals die de ploeg in Altsien Select aanduidde, of alle festivals zolang ze niets aanduidde);
+- voor de ploeg op **beide** festivals een afleverlocatie gepland is;
+- en die twee locaties **verschillen**.
+
+Karren die op dezelfde plek blijven, of waarvoor nog niet alles gepland is, staan er niet bij. Naast de keuzelijsten staat de leverdatum van het **Naar**-festival (uit **Leverdata**).
+
+- De lijst is gegroepeerd per **ophaallocatie** (waar de karren op het Van-festival staan): een paarse kopregel met de **terreinpositie** (#1, #2, …), naam, zone en het aantal karren, in de volgorde van de **Leveringsvolgorde** (locaties zonder positie achteraan).
+- Daaronder de karren (op karnummer) met ploeg, transporttype, status en de kolom **Naar**: de afleverlocatie waar de kar naartoe moet, met haar positie en zone.
+
+**Filteren** werkt zoals in de Initiële leverplanning: Status via de keuzelijst, de andere kolommen met een stukje tekst (de filters onder **Van** en **Naar** zoeken in positie, naam, omschrijving en zone). **Filters wissen** zet alles terug.
+
+**Verplaatsingen afdrukken** voor de chauffeurs:
+
+1. Vink de karren aan (Shift-klik voor een reeks, het vakje op een ophaallocatie voor al haar karren, het vakje in de kop voor alles).
+2. Vink eventueel **Kaart toevoegen** aan.
+3. Klik op **Print verplaatsingen**. Je krijgt een liggende PDF met per ophaallocatie (**Ophalen bij**) de karren, waar ze naartoe moeten en een leeg vakje **Verplaatst** om af te vinken.
+
+Met **Kaart toevoegen** komt er een kaartpagina bij: het grondplan met de ophaallocaties als paarse bolletjes, de locaties die enkel karren ontvangen als groene bolletjes, en een **pijl per verplaatsing** met het aantal karren. De bolletjes dragen de positie in de levertoer; een locatie zonder positie krijgt een letter (A, B, …). Rechts staat de legende met alle locaties.
+
+> Dit scherm wijzigt niets. Pas de locaties aan in **Plan a kar** en de volgorde in **Leveringsvolgorde**.
+
+## [special-tour-planning | kartracker.levertoerplanning] Speciale levertoeren-planning
+**Speciale levertoeren-planning** toont welke karren een speciale levertoer (bijvoorbeeld de wastoer of de ijsblokkentoer) op een festival aandoet en waar ze staan, voor het jaartal in de kopbalk.
+
+Kies bovenaan het **Festival** (het scherm opent op het eerste festival van het jaar) en één of meer **Levertoeren**. Een kar staat in de lijst wanneer:
+
+- zijn ploeg op haar ploegfiche (MasterData > Ploegen, veld **Levertoeren**) aan minstens één gekozen levertoer gekoppeld is;
+- de ploeg aan het festival deelneemt (de festivals die ze in Altsien Select aanduidde, of alle festivals zolang ze niets aanduidde);
+- en voor de ploeg op dat festival een afleverlocatie gepland is in **Plan a kar**.
+
+Een kar van een ploeg die op twee gekozen levertoeren staat, verschijnt maar één keer; de kolom **Levertoer** toont dan beide.
+
+De lijst toont de **stops** van de toer: de afleverlocaties in de volgorde van de **Leveringsvolgorde** (locaties zonder positie daarna, op naam), genummerd **Stop 1, 2, 3, …**, elk met de karren die er staan (op karnummer). Distributiepunten staan er niet bij: de toer komt langs de karren, er wordt niets opgehaald. Filteren en aanvinken (Shift-klik voor een reeks) werken zoals in de Initiële leverplanning. **Print leverplanning** maakt een PDF met de stops, de levertoeren en het festival bovenaan en per kar een vakje **Geleverd**; met **Kaart toevoegen** komt er een kaartpagina bij met elke stop als genummerd bolletje en de route van stop 1 tot de laatste. Zet de afleverlocaties in **Leveringsvolgorde** voor een logische route.
+
+> Dit scherm wijzigt niets. Koppel ploegen aan een levertoer op hun ploegfiche en pas hun locatie aan in **Plan a kar**.
+
 ## [kar-management | kartracker.karmanagement] KarManagement
 Het wagenpark: elke kar met zijn karnummer, status, ploeg, transporttype, laatste locatie en wanneer hij het laatst geregistreerd werd.
 
@@ -115,12 +194,23 @@ De leveringszones, die je kiest bij een afleverlocatie.
 
 ![Zone](zones.png)
 
+## [special-tours | kartracker.specialelevertoeren] Speciale levertoeren
+De speciale levertoeren die regelmatig bij een aantal ploegen langsgaan, bijvoorbeeld **Kleine wastoer**, **Grote wastoer** of **Ijsblokken**.
+
+1. Klik op **Nieuwe levertoer**, geef een naam en eventueel een beschrijving (wat de toer controleert en wanneer).
+2. Klik op **Wijzigen** om de naam, beschrijving of status aan te passen. Een levertoer die niet **Actief** is, kan niet meer op een ploegfiche gekozen worden.
+3. **Verwijderen** kan enkel als geen enkele ploeg nog aan de levertoer gekoppeld is.
+
+De kolom **Ploegen** toont welke ploegen op de toer staan. Die koppel je op de ploegfiche in MasterData (veld **Levertoeren**); de planning per festival zie je op **Speciale levertoeren-planning**.
+
 ## [afleverlocaties | kartracker.afleverlocaties] Afleverlocatie
 De plaatsen waar karren geleverd worden: naam, omschrijving, zone, distributiepunt, coördinaten, terreinpositie, Altsien Kernlid en of de locatie actief is.
 
 1. Klik op **Nieuwe afleverlocatie** en vul de gegevens in.
 2. Klik op **Wijzigen** om ze aan te passen, of op **Verwijderen**.
 3. Zet een locatie die je niet meer gebruikt op **Actief: Nee** in plaats van ze te verwijderen.
+
+De **terreinpositie** is een getal: de plaats van de locatie in de levertoer (1 = eerst beleverd). Je zet ze het makkelijkst op het scherm **Leveringsvolgorde**.
 
 ![Afleverlocatie](afleverlocaties.png)
 

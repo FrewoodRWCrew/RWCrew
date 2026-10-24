@@ -4,7 +4,7 @@
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
-import type { AltsienKernlid, DeliveryMethod, Team, TeamLocation, TeamTask } from "@/lib/types";
+import type { AltsienKernlid, DeliveryMethod, SpecialTourOption, Team, TeamLocation, TeamTask } from "@/lib/types";
 import { TeamManagement } from "@/components/module-9/team-management";
 
 export default async function MasterDataTeamsPage() {
@@ -15,17 +15,19 @@ export default async function MasterDataTeamsPage() {
   let deliveryMethods: DeliveryMethod[] = [];
   let teamTasks: TeamTask[] = [];
   let kernleden: AltsienKernlid[] = [];
+  let specialTours: SpecialTourOption[] = [];
   try {
     teams = await serverApiFetch<Team[]>("/api/modules/module-9/teams");
-    // These four lookup lists power the Locatie/Leverwijze/Taken/Kernleden
-    // fields on the create/edit form — fetched here too since a user might
+    // These lookup lists power the Locatie/Leverwijze/Taken/Kernleden/
+    // Levertoeren fields on the create/edit form — fetched here too since a user might
     // be able to manage teams without also being able to view those
     // screens directly.
-    [teamLocations, deliveryMethods, teamTasks, kernleden] = await Promise.all([
+    [teamLocations, deliveryMethods, teamTasks, kernleden, specialTours] = await Promise.all([
       serverApiFetch<TeamLocation[]>("/api/modules/module-9/team-locations").catch(() => []),
       serverApiFetch<DeliveryMethod[]>("/api/modules/module-9/delivery-methods").catch(() => []),
       serverApiFetch<TeamTask[]>("/api/modules/module-9/team-tasks").catch(() => []),
       serverApiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden").catch(() => []),
+      serverApiFetch<SpecialTourOption[]>("/api/modules/module-9/special-tours").catch(() => []),
     ]);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
@@ -41,6 +43,7 @@ export default async function MasterDataTeamsPage() {
       deliveryMethods={deliveryMethods}
       teamTasks={teamTasks}
       kernleden={kernleden}
+      specialTours={specialTours}
     />
   );
 }
