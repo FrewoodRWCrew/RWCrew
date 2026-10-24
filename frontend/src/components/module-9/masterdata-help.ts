@@ -17,12 +17,6 @@ export const MASTERDATA_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/teams/location`, topic: "team-location" },
   { path: `${BASE}/teams/delivery-method`, topic: "delivery-method" },
   { path: `${BASE}/teams/tasks`, topic: "team-tasks" },
-  // /products itself; same rule for its sub-screens.
-  { path: `${BASE}/products`, topic: "products" },
-  { path: `${BASE}/products/types`, topic: "product-types" },
-  { path: `${BASE}/products/warehouses`, topic: "warehouses" },
-  { path: `${BASE}/products/categories`, topic: "product-categories" },
-  { path: `${BASE}/products/limits`, topic: "product-limits" },
   { path: `${BASE}/data-upload-download`, topic: "data-upload" },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },

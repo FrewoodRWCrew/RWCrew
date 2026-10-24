@@ -1,14 +1,14 @@
 "use client";
 
 // KarTracker's "Zone" screen: a thin wrapper around the shared
-// LookupManagement component (see components/module-9/lookup-management.tsx),
+// LookupManagement component (see components/shared/lookup-management.tsx),
 // supplying its own translated labels and api.ts functions — same pattern
 // as KarStatusManagement/MasterData's SeasonManagement.
 
 import { useTranslations } from "next-intl";
 import { createZone, deleteZone, updateZone } from "@/lib/api";
 import type { KarTrackerZone } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
 interface ZoneManagementProps {
   initialZones: KarTrackerZone[];

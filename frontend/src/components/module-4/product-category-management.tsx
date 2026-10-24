@@ -1,50 +1,50 @@
 "use client";
 
-// MasterData's "Limiet" screen: a thin wrapper around the shared
-// LookupManagement component (see lookup-management.tsx), supplying its
+// StockMaster's "Categorie" screen: a thin wrapper around the shared
+// LookupManagement component (see components/shared/lookup-management.tsx), supplying its
 // own translated labels and api.ts functions — one of the four lookup
 // lists ("selection criteria") nested under Products, alongside Type,
-// Magazijn, and Categorie.
+// Magazijn, and Limiet.
 
 import { useTranslations } from "next-intl";
-import { createProductLimit, deleteProductLimit, updateProductLimit } from "@/lib/api";
-import type { ProductLimit } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { createProductCategory, deleteProductCategory, updateProductCategory } from "@/lib/api";
+import type { ProductCategory } from "@/lib/types";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
-interface ProductLimitManagementProps {
-  initialProductLimits: ProductLimit[];
+interface ProductCategoryManagementProps {
+  initialProductCategories: ProductCategory[];
 }
 
-export function ProductLimitManagement({ initialProductLimits }: ProductLimitManagementProps) {
-  const t = useTranslations("masterdata.productLimits");
+export function ProductCategoryManagement({ initialProductCategories }: ProductCategoryManagementProps) {
+  const t = useTranslations("stockMaster.productCategories");
   const tCommon = useTranslations("common");
 
   return (
     <LookupManagement
-      initialItems={initialProductLimits}
-      create={createProductLimit}
-      update={updateProductLimit}
-      remove={deleteProductLimit}
+      initialItems={initialProductCategories}
+      create={createProductCategory}
+      update={updateProductCategory}
+      remove={deleteProductCategory}
       labels={{
         title: t("title"),
         description: t("description"),
         tableName: t("tableName"),
         tableActions: t("tableActions"),
-        newItem: t("newProductLimit"),
+        newItem: t("newProductCategory"),
         nameLabel: t("nameLabel"),
         createTitle: t("createTitle"),
         createDescription: t("createDescription"),
-        itemCreated: t("productLimitCreated"),
+        itemCreated: t("productCategoryCreated"),
         createFailed: t("createFailed"),
         change: t("change"),
         delete: t("delete"),
         changeTitle: t("changeTitle"),
         changeDescription: t("changeDescription"),
-        itemUpdated: t("productLimitUpdated"),
+        itemUpdated: t("productCategoryUpdated"),
         updateFailed: t("updateFailed"),
         deleteConfirmTitle: t("deleteConfirmTitle"),
         deleteConfirmDescription: (name) => t("deleteConfirmDescription", { name }),
-        itemDeleted: t("productLimitDeleted"),
+        itemDeleted: t("productCategoryDeleted"),
         deleteFailed: t("deleteFailed"),
         cancel: tCommon("cancel"),
       }}

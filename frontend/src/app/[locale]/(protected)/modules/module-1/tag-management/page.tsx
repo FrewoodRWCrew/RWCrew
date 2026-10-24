@@ -16,8 +16,8 @@ export default async function TagscanTagManagementPage() {
     tags = await serverApiFetch<RfidTag[]>("/api/modules/module-1/tags");
     // Powers the "Assigned Product" dropdown on the create/edit form —
     // fetched separately since a user might be able to manage tags
-    // without also being able to view the Products screen directly.
-    products = await serverApiFetch<Product[]>("/api/modules/module-9/products").catch(() => []);
+    // without also being able to view StockMaster's Products screen directly.
+    products = await serverApiFetch<Product[]>("/api/modules/module-4/products").catch(() => []);
     // Powers the "Karnummer" dropdown — every kar of KarTracker's
     // KarManagement, served by TagScan itself (no KarTracker rights needed).
     kars = await serverApiFetch<TagscanKarOption[]>("/api/modules/module-1/kars").catch(() => []);

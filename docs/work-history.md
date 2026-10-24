@@ -3,6 +3,34 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-24 — Product master data moved from MasterData to StockMaster
+**Request:** move MasterData's "Producten" group (Producten, Type, Magazijnen, Categorieën, Limieten) to StockMaster
+under a new "Masterdata" submenu.
+**Plan:** screens, endpoints and rights move to module-4, tables stay `MasterData_*`; sidebar nested as before
+(Producten with the four lists indented); rights start fresh (new `stockmaster.*` screens unticked, old
+`masterdata.*` product screens + grants deleted); product/lookup import/export and the product statistics move too;
+TagScan and KarTracker read the lists from StockMaster's endpoints.
+**Changes:** backend — new `module_4/product_masterdata_router.py` (CRUD, picture PUT/DELETE, XLSX import/export,
+`GET /product-stats`, included in `main.py`), `module_4/product_stats.py`, the five `*_import.py` moved from module_9,
+6 new screens in `module_4/screens.py`, the 5 removed from `module_9/screens.py`, endpoints/imports removed from
+`module_9/router.py`, MasterData dashboard reduced to the seasons count (schema too), `ProductStats*` schemas; migration
+`e6a1b4c8d235` (deletes the old MasterData screen rows and grants). Frontend — routes `module-4/masterdata/products/...`
+and `masterdata/data-upload-download`, components moved to `components/module-4/` (`lookup-management.tsx` →
+`components/shared/`, `DataTopicTile` extracted to `components/shared/data-topic-tile.tsx`), new
+`product-data-upload-download.tsx` and `product-stats-section.tsx` (KPI page), StockMaster sidebar "Masterdata" group
+(level-2 indent), MasterData sidebar/grid/dashboard trimmed, `api.ts` URLs → module-4, TagScan/KarTracker fetches and
+TagScan's product link repointed, help routes, `FALLBACK_SCREENS`, nl/en texts moved to `stockMaster.*`. Help manual
+chapters + 5 images moved to module_4 (new "Data Upload/Download" chapter), MasterData intro/overview updated;
+screenshot script paths; `CLAUDE.md`; screen-key table in `docs/handleiding/.../07-deel-d-beheer-en-bijlagen.html`.
+**Verification:** full backend suite green (product, lookup, upload, stats tests moved/split into `tests/modules/module_4/`;
+the stock delete test now uses the module-4 endpoint); help tests 28 passed; `tsc --noEmit` clean apart from stale
+`.next` route types of the removed module-9 pages; eslint clean; local `alembic upgrade head` applied and the screen
+tables checked; backend restarted, new routes answer (redirect to login), old `/modules/module-9/products` is a 404.
+**Notes:** after deploying, tick the new screens in StockMaster › Rollen (nobody has them yet; super admin passes).
+Users of TagScan Tag management/Scanners and KarTracker Kar management need StockMaster access + view on the
+product screens, or their product/type dropdowns stay empty. Screenshots for the moved chapters and MasterData's
+overview should be re-made (`npm run help:screenshots module-4 module-9`). Not checked in a logged-in browser.
+
 ## 2026-10-24 — Speciale levertoeren-planning: stops instead of distributiepunten, working route map
 **Request:** the PDF map showed nothing, and the list must not mention the distributiepunt.
 **Plan:** (follow-up fix, no separate plan) cause: the map only badged locations with a Leveringsvolgorde position (just

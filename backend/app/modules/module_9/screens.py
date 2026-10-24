@@ -27,28 +27,20 @@ class ScreenDefinition:
     sort_order: int
 
 
-# Every screen MasterData currently has. "Season", "Products", "Festivals",
-# and "Teams" are its actual pieces of master data ("Teams" itself is
-# still a placeholder page — its own real screen hasn't been built yet —
-# but "Team Location"/"Delivery Method"/"Team Tasks"/"Ploegverantwoordelijken" ARE real, working
-# screens nested one level under it, the same way the four Products
-# lookups are nested under "Products"); "Type"/"Warehouses"/"Product
-# categories"/"Product limits" are the four lookup lists ("selection
-# criteria") nested under Products; "Roles" and "Users" are the two
-# access-rights screens; "Data Upload/Download" gates the bulk XLSX
-# import/export tile grid (one tile per master-data table) — a single
-# screen key for all twelve tiles, the same way KarTracker's own
-# "kartracker.dataupload" gates both of its tiles. All are gated
-# independently of one another — a Festivals permission does not imply a
-# Season permission, and dataupload access does not imply access to any
-# one table's own screen (or vice versa).
+# Every screen MasterData currently has. "Season", "Festivals" and "Teams"
+# are its actual pieces of master data ("Team Location"/"Delivery Method"/
+# "Team Tasks"/"Ploegverantwoordelijken" are real screens nested one level
+# under Teams); "Roles" and "Users" are the two access-rights screens;
+# "Data Upload/Download" gates the bulk XLSX import/export tile grid (one
+# tile per master-data table) — a single screen key for all tiles, the same
+# way KarTracker's own "kartracker.dataupload" gates both of its tiles. All
+# are gated independently of one another — a Festivals permission does not
+# imply a Season permission, and dataupload access does not imply access to
+# any one table's own screen (or vice versa). Products and their four
+# lookup lists moved to StockMaster (module-4, see its screens.py); their
+# old keys (sort orders 2-6) were removed by a migration.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.season", label="Years", sort_order=1),
-    ScreenDefinition(key="masterdata.products", label="Products", sort_order=2),
-    ScreenDefinition(key="masterdata.product-types", label="Type", sort_order=3),
-    ScreenDefinition(key="masterdata.warehouses", label="Magazijnen", sort_order=4),
-    ScreenDefinition(key="masterdata.product-categories", label="Categorieën", sort_order=5),
-    ScreenDefinition(key="masterdata.product-limits", label="Limieten", sort_order=6),
     ScreenDefinition(key="masterdata.roles", label="Roles", sort_order=7),
     ScreenDefinition(key="masterdata.users", label="Users", sort_order=8),
     ScreenDefinition(key="masterdata.festival", label="Festivals", sort_order=9),

@@ -24,6 +24,13 @@ export const STOCKMASTER_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/requirements`, topic: "requirements" },
   { path: `${BASE}/order-needs`, topic: "order-needs" },
   { path: `${BASE}/bookings`, topic: "bookings" },
+  // /masterdata/products itself; its lookup lists below win because they're more specific.
+  { path: `${BASE}/masterdata/products`, topic: "products" },
+  { path: `${BASE}/masterdata/products/types`, topic: "product-types" },
+  { path: `${BASE}/masterdata/products/warehouses`, topic: "warehouses" },
+  { path: `${BASE}/masterdata/products/categories`, topic: "product-categories" },
+  { path: `${BASE}/masterdata/products/limits`, topic: "product-limits" },
+  { path: `${BASE}/masterdata/data-upload-download`, topic: "product-data-upload" },
   { path: `${BASE}/settings`, topic: "reasons" },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },

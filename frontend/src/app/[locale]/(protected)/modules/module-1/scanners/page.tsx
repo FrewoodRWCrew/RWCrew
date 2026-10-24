@@ -15,8 +15,8 @@ export default async function TagscanScannersPage() {
     scanners = await serverApiFetch<Scanner[]>("/api/modules/module-1/scanners");
     // Powers the "Type" dropdown on the create/edit form — fetched
     // separately since a user might be able to manage scanners without
-    // also being able to view MasterData's Type screen directly.
-    productTypes = await serverApiFetch<ProductType[]>("/api/modules/module-9/product-types").catch(() => []);
+    // also being able to view StockMaster's Type screen directly.
+    productTypes = await serverApiFetch<ProductType[]>("/api/modules/module-4/product-types").catch(() => []);
   } catch (error) {
     if (error instanceof ServerApiError && error.status === 403) {
       return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;

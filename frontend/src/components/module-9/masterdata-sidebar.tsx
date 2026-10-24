@@ -7,18 +7,14 @@
 // top-level, exactly like TagScan's own "Dashboard" link — always-visible
 // landing content, not a gated screen.
 //
-// "Season", "Festival", "Teams", and "Products" ARE
-// gated by their own permissions and are grouped under their own
-// "MasterData" heading (icon matches this module's own Database icon
-// from module-theme.ts), the same visual treatment "Access Rights" gets
-// for Roles/Users below. Type/Magazijn/Categorie/Limiet are the four
-// "selection criteria" lookup lists used by the Products form — shown
-// one level deeper, indented under "Products" within that same group.
-// "Teams" itself is currently a placeholder page (see its page.tsx)
-// while its own real screen is designed, but Ploegverantwoordelijken/Team
-// Location/Delivery Method/Team Tasks ARE real, working screens nested one
-// level under it, the same way Type/Magazijn/Categorie/Limiet nest under
-// Products.
+// "Season", "Festival" and "Teams" ARE gated by their own permissions and
+// are grouped under their own "MasterData" heading (icon matches this
+// module's own Database icon from module-theme.ts), the same visual
+// treatment "Access Rights" gets for Roles/Users below. "Teams" itself is
+// currently a placeholder page (see its page.tsx) while its own real screen
+// is designed, but Ploegverantwoordelijken/Team Location/Delivery Method/
+// Team Tasks ARE real, working screens nested one level under it. Products
+// and their four lookup lists moved to StockMaster's "Masterdata" group.
 
 import { Database, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -43,11 +39,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const tTeamLocation = useTranslations("masterdata.teamLocation");
   const tDeliveryMethod = useTranslations("masterdata.deliveryMethod");
   const tTeamTasks = useTranslations("masterdata.teamTasks");
-  const tProducts = useTranslations("masterdata.products");
-  const tProductTypes = useTranslations("masterdata.productTypes");
-  const tWarehouses = useTranslations("masterdata.warehouses");
-  const tProductCategories = useTranslations("masterdata.productCategories");
-  const tProductLimits = useTranslations("masterdata.productLimits");
   const tRoles = useTranslations("masterdata.roles");
   const tUsers = useTranslations("masterdata.users");
   const tDataUploadDownload = useTranslations("masterdata.dataUploadDownload");
@@ -63,11 +54,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewTeamLocation = viewableScreenKeys.includes("masterdata.team-location");
   const canViewDeliveryMethod = viewableScreenKeys.includes("masterdata.delivery-method");
   const canViewTeamTasks = viewableScreenKeys.includes("masterdata.team-tasks");
-  const canViewProducts = viewableScreenKeys.includes("masterdata.products");
-  const canViewProductTypes = viewableScreenKeys.includes("masterdata.product-types");
-  const canViewWarehouses = viewableScreenKeys.includes("masterdata.warehouses");
-  const canViewProductCategories = viewableScreenKeys.includes("masterdata.product-categories");
-  const canViewProductLimits = viewableScreenKeys.includes("masterdata.product-limits");
   const canViewRoles = viewableScreenKeys.includes("masterdata.roles");
   const canViewUsers = viewableScreenKeys.includes("masterdata.users");
   const canViewDataUpload = viewableScreenKeys.includes("masterdata.dataupload");
@@ -97,7 +83,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
         canViewFestival ||
         canViewTeams ||
         canViewTeamResponsibles ||
-        canViewProducts ||
         canViewDataUpload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
@@ -156,48 +141,6 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
               className={linkClassName("/modules/module-9/teams/tasks", 2)}
             >
               {tTeamTasks("title")}
-            </Link>
-          )}
-
-          {canViewProducts && (
-            <Link href="/modules/module-9/products" className={linkClassName("/modules/module-9/products", 1)}>
-              {tProducts("title")}
-            </Link>
-          )}
-
-          {canViewProductTypes && (
-            <Link
-              href="/modules/module-9/products/types"
-              className={linkClassName("/modules/module-9/products/types", 2)}
-            >
-              {tProductTypes("title")}
-            </Link>
-          )}
-
-          {canViewWarehouses && (
-            <Link
-              href="/modules/module-9/products/warehouses"
-              className={linkClassName("/modules/module-9/products/warehouses", 2)}
-            >
-              {tWarehouses("title")}
-            </Link>
-          )}
-
-          {canViewProductCategories && (
-            <Link
-              href="/modules/module-9/products/categories"
-              className={linkClassName("/modules/module-9/products/categories", 2)}
-            >
-              {tProductCategories("title")}
-            </Link>
-          )}
-
-          {canViewProductLimits && (
-            <Link
-              href="/modules/module-9/products/limits"
-              className={linkClassName("/modules/module-9/products/limits", 2)}
-            >
-              {tProductLimits("title")}
             </Link>
           )}
 

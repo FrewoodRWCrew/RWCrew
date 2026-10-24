@@ -1,24 +1,20 @@
 # MasterData
 
-MasterData holds the base data every other module uses: the years, festivals, teams and their team leads, and the products with their type, warehouse, category and limit.
+MasterData holds the base data every other module uses: the years, festivals and teams with their team leads. Products and their lists are managed in StockMaster (Masterdata menu).
 
 ## [start] How MasterData works
 The other modules read this data; they don't keep their own copy:
 
 - **Years** and **Festivals**: the season Altsien Select, KarTracker and StockMaster work in.
 - **Teams**: the associations, with their location, delivery method, tasks and Altsien core members. Which teams a core member sees in Altsien Select is decided here.
-- **Products**: everything in the warehouse and in the carts. Their properties decide how StockMaster handles them (blocking, limit, minimum stock, ...).
-- The small lists (Type, Warehouses, Categories, Limits, Team Location, Delivery Method, Team Tasks) are the choices in the Products and Teams forms.
+- The small lists (Team Location, Delivery Method, Team Tasks) are the choices in the Teams form.
+- **Products** (with Type, Warehouses, Categories and Limits) are in StockMaster, under **Masterdata**.
 
 > On every screen, **Help for this screen** at the top right opens the part of this guide about that screen. The full guide is at the bottom of the menu on the left.
 
 ## [overview] Masterdata Overview
-The start screen of MasterData: the products at a glance.
+The start screen of MasterData, with the number of years. The product figures are on StockMaster's KPI screen.
 
-- **Tiles** at the top: the number of products and years, and how many products are blocked, consumable or logistics products, and how many have an incomplete classification (no type, warehouse or category).
-- **Products per type**, **per category** and **per warehouse**.
-
-![The Masterdata Overview](overview.png)
 
 ## [season | masterdata.season] Years
 The years (seasons) the app works in.
@@ -75,50 +71,10 @@ The tasks a team can have. Click **New team task** to add one; on the team you t
 
 ![Team Tasks](team-tasks.png)
 
-## [products | masterdata.products] Products
-All products with their picture, type, warehouse, category and properties.
-
-1. Click **New product**. Name, type, warehouse, category and limit are required. Also fill in the **Warehouse location**: that's where the free stock lies in StockMaster.
-2. Optionally add a **Picture**: you see it in StockMaster and Altsien Select.
-3. Choose the properties:
-   - **Consumable**: used up. Only for these the **minimum stock** counts (orange banner in StockMaster).
-   - **Blocked**: can no longer be booked in or delivered.
-   - **Is logistics product**: always gets what's asked in Load cart.
-   - **Tag Managed (RFID)**: the product carries an RFID tag (TagScan).
-   - **StockMaster: after 'Cart returns'**: does it go back into the cart or to the free stock?
-4. Choose the **Limit** (Ongelimiteerd, Automatisch, Percentage, Toegewezen aantal) and, for Percentage, the **Limit value**. **Maximum initial stock** caps what a cart gets as long as it isn't delivered in KarTracker. Together they decide what StockMaster may deliver in Load cart.
-5. **Cost (€)** is optional.
-
-![Products](products.png)
-
-> A product with stock or bookings in StockMaster can't be deleted: block it instead.
-
-## [product-types | masterdata.product-types] Type
-The product types, a choice on the product form. Click **New type** to add one.
-
-![Type](product-types.png)
-
-## [warehouses | masterdata.warehouses] Warehouses
-The warehouses where products are kept. Click **New warehouse** to add one.
-
-![Warehouses](warehouses.png)
-
-## [product-categories | masterdata.product-categories] Categories
-The product categories, to group and filter products. Click **New category** to add one.
-
-![Categories](product-categories.png)
-
-## [product-limits | masterdata.product-limits] Limits
-The limits you choose on a product. StockMaster recognises them by their **name**: Ongelimiteerd, Automatisch, Percentage and Toegewezen aantal.
-
-![Limits](product-limits.png)
-
-> Don't rename these limits: StockMaster knows them by name, and a different name no longer counts in the Load cart calculation.
-
 ## [data-upload | masterdata.dataupload] Data Upload/Download
 Import and export all MasterData tables in bulk with Excel, one tile per table.
 
-1. Click a tile, e.g. **Products**.
+1. Click a tile, e.g. **Teams**.
 2. **Download template** gives an empty Excel file with the right columns.
 3. Fill it in, choose it under **Excel file** and click **Upload**. The result shows per row: **Created**, **Updated**, **Already there** or **Error** (with the reason).
 4. The button at the bottom exports the full list.
@@ -126,7 +82,7 @@ Import and export all MasterData tables in bulk with Excel, one tile per table.
 ![Data Upload/Download](data-upload.png)
 
 - **Changing in bulk**: export the list, edit it and upload it again. A row with an **id** (the export's first column) changes that record; a row without an id creates a new one. Columns left out of your file stay unchanged.
-- Lists (type, warehouse, team, ...) are given by **name**; upper or lower case doesn't matter.
+- Lists (team location, delivery method, team, ...) are given by **name**; upper or lower case doesn't matter.
 - Yes/no columns accept yes/no, ja/nee, true/false and 1/0.
 - **Tasks per team**, **Core members per team** and **Festivals per team** only add links: a link that already exists gets "Already there". Core members are given by their account's email address. Removing is done on the screen itself.
 

@@ -1,10 +1,11 @@
 "use client";
 
-// MasterData's "Products" screen: a table of products with add/change/
-// delete, following the same dialog/table pattern as season-management.tsx
-// — the create/edit dialog covers every field from the reference
-// "Producten" screen, including the product's picture (chosen with a file
-// button, uploaded right after the fields are saved).
+// StockMaster's "Products" screen (Masterdata group, moved here from
+// MasterData): a table of products with add/change/delete, following the
+// same dialog/table pattern as MasterData's season-management.tsx — the
+// create/edit dialog covers every field from the reference "Producten"
+// screen, including the product's picture (chosen with a file button,
+// uploaded right after the fields are saved).
 
 import { useEffect, useState } from "react";
 import { ImageOff, Info, Pencil, Trash2 } from "lucide-react";
@@ -116,7 +117,7 @@ export function ProductsManagement({
   productCategories,
   productLimits,
 }: ProductsManagementProps) {
-  const t = useTranslations("masterdata.products");
+  const t = useTranslations("stockMaster.products");
   const router = useRouter();
 
   const [products, setProducts] = useState(initialProducts);
@@ -255,7 +256,7 @@ function ProductFormDialog({
   productCategories,
   productLimits,
 }: ProductFormDialogProps) {
-  const t = useTranslations("masterdata.products");
+  const t = useTranslations("stockMaster.products");
   const isEditing = product !== undefined;
   const [isOpen, setIsOpen] = useState(defaultOpen ?? false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -718,7 +719,7 @@ interface DeleteProductAlertDialogProps {
 }
 
 function DeleteProductAlertDialog({ product, onDeleted }: DeleteProductAlertDialogProps) {
-  const t = useTranslations("masterdata.products");
+  const t = useTranslations("stockMaster.products");
   const tCommon = useTranslations("common");
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);

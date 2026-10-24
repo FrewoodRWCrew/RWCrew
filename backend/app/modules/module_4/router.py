@@ -569,9 +569,9 @@ def get_product_image(
     db: Session = Depends(get_db),
     _user: User = Depends(require_module_access),
 ) -> Response:
-    """A product's picture (from MasterData) for the booking panel's basket.
-    Its own endpoint because module-9's needs MasterData rights, which most
-    StockMaster users don't have.
+    """A product's picture for the booking panels, the Products screen and
+    any other StockMaster screen — plain module access, so no Products right
+    is needed to see it. Changing it lives in product_masterdata_router.py.
     """
     product = db.get(Product, product_id)
     if product is None or product.image_data is None or product.image_content_type is None:

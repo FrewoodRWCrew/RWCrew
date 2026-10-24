@@ -1,14 +1,14 @@
 "use client";
 
 // KarTracker's "KarStatussen" screen: a thin wrapper around the shared
-// LookupManagement component (see components/module-9/lookup-management.tsx),
+// LookupManagement component (see components/shared/lookup-management.tsx),
 // supplying its own translated labels and api.ts functions — same pattern
 // as MasterData's SeasonManagement.
 
 import { useTranslations } from "next-intl";
 import { createKarStatus, deleteKarStatus, updateKarStatus } from "@/lib/api";
 import type { KarTrackerKarStatus } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
 interface KarStatusManagementProps {
   initialKarStatuses: KarTrackerKarStatus[];

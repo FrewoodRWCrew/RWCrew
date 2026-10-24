@@ -91,6 +91,14 @@ bin (`MasterData_product.warehouse_id` + `warehouse_location`, no bin table) and
 kars** while they stand in the warehouse. Web only (no `/m` screens). Full design: `docs/stockmaster-design.md`.
 Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `module_4/screens.py`).
 
+- **Product master data lives here** (moved from MasterData on 2026-10-24): sidebar group "Masterdata" =
+  Producten with Type/Magazijnen/Categorieën/Limieten nested under it (`/modules/module-4/masterdata/products/...`)
+  + Data Upload/Download (`masterdata/data-upload-download`), screens `stockmaster.products|product-types|warehouses|
+  product-categories|product-limits|dataupload`. Endpoints in `module_4/product_masterdata_router.py` (own APIRouter on
+  the module-4 prefix, included in `main.py`): CRUD, picture PUT/DELETE (GET stays in `router.py`, module access only),
+  XLSX import/export (`module_4/*_import.py`, still using `module_9/xlsx_common.py`) and `GET /product-stats` (KPI
+  page's "Producten" section, `product_stats.py`). The tables keep their `MasterData_*` names. TagScan and KarTracker
+  read the product lists from these endpoints, so their users need StockMaster view rights for those dropdowns.
 - **Only `module_4/stock_service.py` changes stock.** Each booking = one `StockMaster_document` + one
   `StockMaster_movement` per product (`free`/`kar`/`external` from → to), and `StockMaster_balance` (one row
   per product per place; `kar_id` NULL = free; emptied rows are deleted) is updated in the same transaction

@@ -9,7 +9,7 @@
 import { useTranslations } from "next-intl";
 import { createTeamLocation, deleteTeamLocation, updateTeamLocation } from "@/lib/api";
 import type { TeamLocation } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
 interface TeamLocationManagementProps {
   initialTeamLocations: TeamLocation[];

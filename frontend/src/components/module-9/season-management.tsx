@@ -4,7 +4,7 @@
 // following the same dialog/table pattern as
 // module-3/intervention-status-management.tsx's own StatusFormDialog. Used
 // to be a thin wrapper around the shared LookupManagement component (see
-// components/module-9/lookup-management.tsx), but that component is
+// components/shared/lookup-management.tsx), but that component is
 // deliberately single-field and shared by several other lookup screens
 // (ProductType, Warehouses, ...) that must not gain this extra field, so
 // this screen now has its own bespoke form for its 2 fields: name and

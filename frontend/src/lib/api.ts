@@ -146,6 +146,7 @@ import type {
   StockMasterTagscanBookInFile,
   StockMasterCountSheetLine,
   StockMasterDashboard,
+  StockMasterProductStats,
   StockMasterDocument,
   StockMasterDocumentFilters,
   StockMasterDocumentPage,
@@ -525,28 +526,28 @@ export function listAltsienKernleden(): Promise<AltsienKernlid[]> {
   return apiFetch<AltsienKernlid[]>("/api/modules/altsien-kernleden");
 }
 
-// --- Products (module-9's "masterdata.products" screen) -----------------
+// --- Products (StockMaster's "stockmaster.products" screen) -----------------
 
 export function listProducts(): Promise<Product[]> {
-  return apiFetch<Product[]>("/api/modules/module-9/products");
+  return apiFetch<Product[]>("/api/modules/module-4/products");
 }
 
 export function createProduct(payload: ProductInput): Promise<Product> {
-  return apiFetch<Product>("/api/modules/module-9/products", {
+  return apiFetch<Product>("/api/modules/module-4/products", {
     method: "POST",
     body: JSON.stringify(payload),
   });
 }
 
 export function updateProduct(productId: number, payload: ProductInput): Promise<Product> {
-  return apiFetch<Product>(`/api/modules/module-9/products/${productId}`, {
+  return apiFetch<Product>(`/api/modules/module-4/products/${productId}`, {
     method: "PUT",
     body: JSON.stringify(payload),
   });
 }
 
 export function deleteProduct(productId: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/products/${productId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-4/products/${productId}`, { method: "DELETE" });
 }
 
 /**
@@ -557,7 +558,7 @@ export function deleteProduct(productId: number): Promise<void> {
 export async function uploadProductImage(productId: number, image: File): Promise<Product> {
   const formData = new FormData();
   formData.append("image", image);
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/products/${productId}/image`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/products/${productId}/image`, {
     method: "PUT",
     credentials: "include",
     body: formData,
@@ -574,110 +575,110 @@ export async function uploadProductImage(productId: number, image: File): Promis
 
 /** Removes a product's picture; the product itself stays. */
 export function deleteProductImage(productId: number): Promise<Product> {
-  return apiFetch<Product>(`/api/modules/module-9/products/${productId}/image`, { method: "DELETE" });
+  return apiFetch<Product>(`/api/modules/module-4/products/${productId}/image`, { method: "DELETE" });
 }
 
 /** A product picture's direct URL, for use as an <img> source. The cookie
  * login goes along automatically (same site); `updatedAt` busts the browser
  * cache when the picture is replaced. */
 export function productImageUrl(productId: number, updatedAt: string | null): string {
-  return `${API_BASE_URL}/api/modules/module-9/products/${productId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
+  return `${API_BASE_URL}/api/modules/module-4/products/${productId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
 }
 
-// --- Product types (module-9's "masterdata.product-types" screen) -------
+// --- Product types (StockMaster's "stockmaster.product-types" screen) -------
 
 export function listProductTypes(): Promise<ProductType[]> {
-  return apiFetch<ProductType[]>("/api/modules/module-9/product-types");
+  return apiFetch<ProductType[]>("/api/modules/module-4/product-types");
 }
 
 export function createProductType(name: string): Promise<ProductType> {
-  return apiFetch<ProductType>("/api/modules/module-9/product-types", {
+  return apiFetch<ProductType>("/api/modules/module-4/product-types", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function updateProductType(productTypeId: number, name: string): Promise<ProductType> {
-  return apiFetch<ProductType>(`/api/modules/module-9/product-types/${productTypeId}`, {
+  return apiFetch<ProductType>(`/api/modules/module-4/product-types/${productTypeId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
 }
 
 export function deleteProductType(productTypeId: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/product-types/${productTypeId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-4/product-types/${productTypeId}`, { method: "DELETE" });
 }
 
-// --- Warehouses (module-9's "masterdata.warehouses" screen) -------------
+// --- Warehouses (StockMaster's "stockmaster.warehouses" screen) -------------
 
 export function listWarehouses(): Promise<Warehouse[]> {
-  return apiFetch<Warehouse[]>("/api/modules/module-9/warehouses");
+  return apiFetch<Warehouse[]>("/api/modules/module-4/warehouses");
 }
 
 export function createWarehouse(name: string): Promise<Warehouse> {
-  return apiFetch<Warehouse>("/api/modules/module-9/warehouses", {
+  return apiFetch<Warehouse>("/api/modules/module-4/warehouses", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function updateWarehouse(warehouseId: number, name: string): Promise<Warehouse> {
-  return apiFetch<Warehouse>(`/api/modules/module-9/warehouses/${warehouseId}`, {
+  return apiFetch<Warehouse>(`/api/modules/module-4/warehouses/${warehouseId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
 }
 
 export function deleteWarehouse(warehouseId: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/warehouses/${warehouseId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-4/warehouses/${warehouseId}`, { method: "DELETE" });
 }
 
-// --- Product categories (module-9's "masterdata.product-categories" screen) ---
+// --- Product categories (StockMaster's "stockmaster.product-categories" screen) ---
 
 export function listProductCategories(): Promise<ProductCategory[]> {
-  return apiFetch<ProductCategory[]>("/api/modules/module-9/product-categories");
+  return apiFetch<ProductCategory[]>("/api/modules/module-4/product-categories");
 }
 
 export function createProductCategory(name: string): Promise<ProductCategory> {
-  return apiFetch<ProductCategory>("/api/modules/module-9/product-categories", {
+  return apiFetch<ProductCategory>("/api/modules/module-4/product-categories", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function updateProductCategory(productCategoryId: number, name: string): Promise<ProductCategory> {
-  return apiFetch<ProductCategory>(`/api/modules/module-9/product-categories/${productCategoryId}`, {
+  return apiFetch<ProductCategory>(`/api/modules/module-4/product-categories/${productCategoryId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
 }
 
 export function deleteProductCategory(productCategoryId: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/product-categories/${productCategoryId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-4/product-categories/${productCategoryId}`, { method: "DELETE" });
 }
 
-// --- Product limits (module-9's "masterdata.product-limits" screen) -----
+// --- Product limits (StockMaster's "stockmaster.product-limits" screen) -----
 
 export function listProductLimits(): Promise<ProductLimit[]> {
-  return apiFetch<ProductLimit[]>("/api/modules/module-9/product-limits");
+  return apiFetch<ProductLimit[]>("/api/modules/module-4/product-limits");
 }
 
 export function createProductLimit(name: string): Promise<ProductLimit> {
-  return apiFetch<ProductLimit>("/api/modules/module-9/product-limits", {
+  return apiFetch<ProductLimit>("/api/modules/module-4/product-limits", {
     method: "POST",
     body: JSON.stringify({ name }),
   });
 }
 
 export function updateProductLimit(productLimitId: number, name: string): Promise<ProductLimit> {
-  return apiFetch<ProductLimit>(`/api/modules/module-9/product-limits/${productLimitId}`, {
+  return apiFetch<ProductLimit>(`/api/modules/module-4/product-limits/${productLimitId}`, {
     method: "PUT",
     body: JSON.stringify({ name }),
   });
 }
 
 export function deleteProductLimit(productLimitId: number): Promise<void> {
-  return apiFetch<void>(`/api/modules/module-9/product-limits/${productLimitId}`, { method: "DELETE" });
+  return apiFetch<void>(`/api/modules/module-4/product-limits/${productLimitId}`, { method: "DELETE" });
 }
 
 // --- Tagscan (module-1) -------------------------------------------------
@@ -1047,7 +1048,8 @@ export function createOrGrantMasterDataUser(payload: {
   });
 }
 
-// --- MasterData (module-9): Data Upload/Download ---------------------------
+// --- Data Upload/Download: MasterData (module-9) and, for the products and
+// their lookups, StockMaster (module-4) ------------------------------------
 //
 // Each uses a plain fetch instead of apiFetch: the body is FormData, not
 // JSON, and the browser must set its own multipart Content-Type (with
@@ -1077,7 +1079,7 @@ export async function importProductTypes(file: File): Promise<ProductTypeImportR
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-type-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/product-type-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1096,7 +1098,7 @@ export async function importWarehouses(file: File): Promise<WarehouseImportRespo
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/warehouse-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/warehouse-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1115,7 +1117,7 @@ export async function importProductCategories(file: File): Promise<ProductCatego
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-category-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/product-category-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1134,7 +1136,7 @@ export async function importProductLimits(file: File): Promise<ProductLimitImpor
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-limit-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/product-limit-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -1229,7 +1231,7 @@ export async function importProducts(file: File): Promise<ProductImportResponse>
   const formData = new FormData();
   formData.append("file", file);
 
-  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-9/product-import`, {
+  const response = await fetchWithRefresh(`${API_BASE_URL}/api/modules/module-4/product-import`, {
     method: "POST",
     credentials: "include",
     body: formData,
@@ -2679,6 +2681,11 @@ export function getStockMasterAlerts(): Promise<{ below_minimum_count: number }>
 
 export function getStockMasterDashboard(seasonId: number): Promise<StockMasterDashboard> {
   return apiFetch<StockMasterDashboard>(`${STOCKMASTER_BASE}/dashboard?season_id=${seasonId}`);
+}
+
+/** The product figures of the KPI page (not per season). */
+export function getStockMasterProductStats(): Promise<StockMasterProductStats> {
+  return apiFetch<StockMasterProductStats>(`${STOCKMASTER_BASE}/product-stats`);
 }
 
 export function listStockMasterKars(seasonId: number | null): Promise<StockMasterKarSummary[]> {

@@ -9,7 +9,7 @@
 import { useTranslations } from "next-intl";
 import { createDeliveryMethod, deleteDeliveryMethod, updateDeliveryMethod } from "@/lib/api";
 import type { DeliveryMethod } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
 interface DeliveryMethodManagementProps {
   initialDeliveryMethods: DeliveryMethod[];

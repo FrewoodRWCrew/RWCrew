@@ -37,7 +37,10 @@ class ScreenDefinition:
 # - reasons: the reasons master data (Instellingen);
 # - closedseason: not a page but a switch — "edit" allows booking in a
 #   season whose period is closed;
-# - roles / users: the access-rights screens.
+# - roles / users: the access-rights screens;
+# - products, product-types, warehouses, product-categories, product-limits:
+#   the "Masterdata" group (moved here from MasterData, module-9);
+# - dataupload: bulk XLSX import/export of those five lists.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.kpi", label="KPI", sort_order=1),
     ScreenDefinition(key="stockmaster.stock", label="Stock overview", sort_order=2),
@@ -50,6 +53,12 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.closedseason", label="Book in a closed season", sort_order=9),
     ScreenDefinition(key="stockmaster.roles", label="Roles", sort_order=10),
     ScreenDefinition(key="stockmaster.users", label="Users", sort_order=11),
+    ScreenDefinition(key="stockmaster.products", label="Products", sort_order=12),
+    ScreenDefinition(key="stockmaster.product-types", label="Product types", sort_order=13),
+    ScreenDefinition(key="stockmaster.warehouses", label="Warehouses", sort_order=14),
+    ScreenDefinition(key="stockmaster.product-categories", label="Product categories", sort_order=15),
+    ScreenDefinition(key="stockmaster.product-limits", label="Product limits", sort_order=16),
+    ScreenDefinition(key="stockmaster.dataupload", label="Data Upload/Download", sort_order=17),
 ]
 
 

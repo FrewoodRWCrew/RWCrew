@@ -1,7 +1,7 @@
 # These tests check the parts of MasterData's "Data Upload/Download" added
 # for keeping the uploads in line with the tables: updating a record through
 # its "id" column (so an export can be edited and uploaded again), the new
-# Season/Product columns, and the four team-link tiles (tasks, Kernleden and
+# Season columns, and the four team-link tiles (tasks, Kernleden and
 # festivals per team, Ploegverantwoordelijken). Helpers come from
 # test_data_upload_download.py, like the scanner tests do in module_1.
 
@@ -15,7 +15,6 @@ from sqlalchemy.orm import Session
 
 from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress
 from app.db.models.festival import Festival
-from app.db.models.product import Product
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
@@ -23,11 +22,9 @@ from app.db.models.team_kernlid import TeamKernlid
 from app.db.models.team_responsible import TeamResponsible
 from app.db.models.team_task import TeamTask
 from app.db.models.team_team_task import TeamTeamTask
-from app.db.models.warehouse import Warehouse
 from tests.modules.module_9.test_data_upload_download import (
     XLSX_CONTENT_TYPE,
     _build_xlsx,
-    _create_product_lookups,
     _create_user,
     _login_as_admin,
 )
@@ -54,32 +51,6 @@ def _export_rows(client: TestClient, path: str) -> list[tuple]:
 # --- Update through the "id" column ---------------------------------------
 
 
-def test_lookup_row_with_an_id_renames_and_unknown_id_is_an_error(client: TestClient, db_session: Session) -> None:
-    _login_as_admin(client, db_session)
-    main, spare = Warehouse(name="Main"), Warehouse(name="Spare")
-    db_session.add_all([main, spare])
-    db_session.commit()
-
-    results = _upload(
-        client,
-        "warehouse-import",
-        ["id", "name"],
-        [[main.id, "Central"], [None, "North"], [spare.id, "Central"], [999, "Ghost"], ["abc", "Bad"]],
-    )
-
-    assert [(row["name"], row["outcome"]) for row in results] == [
-        ("Central", "updated"),
-        ("North", "created"),
-        ("Central", "error"),
-        ("Ghost", "error"),
-        ("Bad", "error"),
-    ]
-    assert results[2]["detail"] == "A warehouse with this name already exists"
-    assert results[3]["detail"] == "id 999 not found"
-    db_session.refresh(main)
-    assert main.name == "Central"
-
-
 def test_season_periode_open_round_trips_and_updates(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
     season = Season(name="2026", periode_open=False)
@@ -96,36 +67,6 @@ def test_season_periode_open_round_trips_and_updates(client: TestClient, db_sess
     new_season = db_session.scalar(select(Season).where(Season.name == "2027"))
     assert new_season.periode_open is False
     assert _export_rows(client, "seasons/export")[1:] == [(season.id, "2026", "yes"), (new_season.id, "2027", "no")]
-
-
-def test_product_export_reuploaded_updates_instead_of_duplicating(client: TestClient, db_session: Session) -> None:
-    _login_as_admin(client, db_session)
-    _create_product_lookups(db_session)
-    created = _upload(
-        client,
-        "product-import",
-        ["name", "type_name", "warehouse_name", "category_name", "limit_name", "min_stock", "stock_return_to"],
-        [["Cola", "Drinks", "Main", "Bar", "Ongelimiteerd", 12, "Free"]],
-    )
-    assert [row["outcome"] for row in created] == ["created"]
-    product = db_session.scalar(select(Product).where(Product.name == "Cola"))
-    assert (product.min_stock, product.stock_return_to) == (12, "free")
-
-    # The export has both new columns; uploaded again as-is, it updates.
-    exported = client.get(f"{BASE}/products/export").content
-    header = [cell.value for cell in load_workbook(io.BytesIO(exported)).active[1]]
-    assert {"min_stock", "stock_return_to"} <= set(header)
-    again = client.post(f"{BASE}/product-import", files={"file": ("p.xlsx", exported, XLSX_CONTENT_TYPE)})
-    assert [row["outcome"] for row in again.json()["results"]] == ["updated"]
-    assert len(db_session.scalars(select(Product).where(Product.name == "Cola")).all()) == 1
-
-    # Only the columns in the sheet change; a bad stock_return_to is a row error.
-    results = _upload(
-        client, "product-import", ["id", "min_stock", "stock_return_to"], [[product.id, 3, None], [product.id, 1, "x"]]
-    )
-    assert [row["outcome"] for row in results] == ["updated", "error"]
-    db_session.refresh(product)
-    assert (product.name, product.min_stock, product.stock_return_to) == ("Cola", 3, "kar")
 
 
 # --- The team links ---------------------------------------------------------

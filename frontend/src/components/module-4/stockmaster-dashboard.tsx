@@ -7,6 +7,8 @@
 // - bookings per month, stacked per action (in process order);
 // - consumption per team (what didn't come back from the kar trips);
 // - the ten most consumed products (trips + "Uitboeken").
+// Below them, the "Producten" section (ProductStatsSection) with figures
+// about all products, independent of the season.
 
 import {
   Boxes,
@@ -37,9 +39,12 @@ import {
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import { ACTION_ORDER, STOCKMASTER_BASE } from "@/components/module-4/stockmaster-common";
+import { ProductStatsSection } from "@/components/module-4/product-stats-section";
 
 interface StockMasterDashboardProps {
   seasons: Season[];
+  /** Whether the product tiles may link to the Products screen. */
+  canOpenProducts: boolean;
 }
 
 // The module accent (teal-600, lightened to teal-400 on the dark theme).
@@ -56,7 +61,7 @@ const ACTION_COLORS: Record<string, { light: string; dark: string }> = {
   count: { light: "#4b5563", dark: "#9ca3af" },
 };
 
-export function StockMasterDashboard({ seasons }: StockMasterDashboardProps) {
+export function StockMasterDashboard({ seasons, canOpenProducts }: StockMasterDashboardProps) {
   const t = useTranslations("stockMaster.kpi");
   const seasonId = useStockMasterSeasonId(seasons);
 
@@ -79,6 +84,8 @@ export function StockMasterDashboard({ seasons }: StockMasterDashboardProps) {
       {seasonId === null && <p className="text-sm text-muted-foreground">{t("noSeason")}</p>}
       {failed && <p className="text-sm text-destructive">{t("loadError")}</p>}
       {stats && <DashboardContent stats={stats} seasonId={seasonId} />}
+
+      <ProductStatsSection canOpenProducts={canOpenProducts} />
     </div>
   );
 }

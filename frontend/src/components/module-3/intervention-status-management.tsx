@@ -4,7 +4,7 @@
 // statuses with add/change/delete, following the same dialog/table pattern
 // as intervention-requests-management.tsx's own RequestFormDialog. Used to
 // be a thin wrapper around the shared LookupManagement component (see
-// components/module-9/lookup-management.tsx), but that component is
+// components/shared/lookup-management.tsx), but that component is
 // deliberately single-field and shared by several other lookup screens
 // (Season, ProductType, ...) that must not gain these extra fields, so this
 // screen now has its own bespoke form for its 3 fields: name, "open"

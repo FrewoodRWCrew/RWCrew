@@ -1,7 +1,7 @@
 "use client";
 
-// MasterData's "Type" screen: a thin wrapper around the shared
-// LookupManagement component (see lookup-management.tsx), supplying its
+// StockMaster's "Type" screen: a thin wrapper around the shared
+// LookupManagement component (see components/shared/lookup-management.tsx), supplying its
 // own translated labels and api.ts functions — one of the four lookup
 // lists ("selection criteria") nested under Products, alongside
 // Magazijn, Categorie, and Limiet.
@@ -9,14 +9,14 @@
 import { useTranslations } from "next-intl";
 import { createProductType, deleteProductType, updateProductType } from "@/lib/api";
 import type { ProductType } from "@/lib/types";
-import { LookupManagement } from "@/components/module-9/lookup-management";
+import { LookupManagement } from "@/components/shared/lookup-management";
 
 interface ProductTypeManagementProps {
   initialProductTypes: ProductType[];
 }
 
 export function ProductTypeManagement({ initialProductTypes }: ProductTypeManagementProps) {
-  const t = useTranslations("masterdata.productTypes");
+  const t = useTranslations("stockMaster.productTypes");
   const tCommon = useTranslations("common");
 
   return (

@@ -411,42 +411,12 @@ class ProductLimitUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=255)
 
 
-class MasterDataTypeBreakdownItem(BaseModel):
-    """How many products have one product type — one entry per existing
-    type (zero-filled), plus one "Unassigned" entry (type_name=None) for
-    products with no type set, for the dashboard's "Products by Type" chart.
+class MasterDataDashboardResponse(BaseModel):
+    """Aggregate KPI stats for MasterData's landing dashboard ("Masterdata
+    Overview"). The product stats moved to StockMaster's KPI page.
     """
 
-    type_name: str | None
-    count: int
-
-
-class MasterDataCategoryBreakdownItem(BaseModel):
-    """Same as MasterDataTypeBreakdownItem, but for product categories."""
-
-    category_name: str | None
-    count: int
-
-
-class MasterDataWarehouseBreakdownItem(BaseModel):
-    """Same as MasterDataTypeBreakdownItem, but for warehouses."""
-
-    warehouse_name: str | None
-    count: int
-
-
-class MasterDataDashboardResponse(BaseModel):
-    """Aggregate KPI stats for MasterData's landing dashboard ("Masterdata Overview")."""
-
-    total_products: int
     total_seasons: int
-    blocked_products: int
-    consumable_products: int
-    logistics_products: int
-    products_missing_classification: int
-    products_by_type: list[MasterDataTypeBreakdownItem]
-    products_by_category: list[MasterDataCategoryBreakdownItem]
-    products_by_warehouse: list[MasterDataWarehouseBreakdownItem]
 
 
 class SpecialTourOptionResponse(BaseModel):

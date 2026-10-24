@@ -437,7 +437,7 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
         <TableCell>
           {/* Opens the product's fiche in MasterData > Producten. */}
           {entry.assigned_product_id !== null && entry.assigned_product_name ? (
-            <Link href={`/modules/module-9/products?product=${entry.assigned_product_id}`} className={LINK_CLASS}>
+            <Link href={`/modules/module-4/masterdata/products?product=${entry.assigned_product_id}`} className={LINK_CLASS}>
               {entry.assigned_product_name}
             </Link>
           ) : (

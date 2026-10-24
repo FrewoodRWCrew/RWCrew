@@ -15,6 +15,12 @@ const FALLBACK_SCREENS: [string, string][] = [
   ["stockmaster.requirements", "/modules/module-4/requirements"],
   ["stockmaster.orderneeds", "/modules/module-4/order-needs"],
   ["stockmaster.bookings", "/modules/module-4/bookings"],
+  ["stockmaster.products", "/modules/module-4/masterdata/products"],
+  ["stockmaster.product-types", "/modules/module-4/masterdata/products/types"],
+  ["stockmaster.warehouses", "/modules/module-4/masterdata/products/warehouses"],
+  ["stockmaster.product-categories", "/modules/module-4/masterdata/products/categories"],
+  ["stockmaster.product-limits", "/modules/module-4/masterdata/products/limits"],
+  ["stockmaster.dataupload", "/modules/module-4/masterdata/data-upload-download"],
   ["stockmaster.reasons", "/modules/module-4/settings/reasons"],
   ["stockmaster.roles", "/modules/module-4/access-rights/roles"],
   ["stockmaster.users", "/modules/module-4/access-rights/users"],
@@ -35,5 +41,10 @@ export default async function StockMasterLandingPage() {
     return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
   }
 
-  return <StockMasterDashboard seasons={data.seasons} />;
+  return (
+    <StockMasterDashboard
+      seasons={data.seasons}
+      canOpenProducts={data.permissions.viewable_screen_keys.includes("stockmaster.products")}
+    />
+  );
 }

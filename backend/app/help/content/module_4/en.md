@@ -21,6 +21,9 @@ At the top of most screens you choose the **season**. Cart needs, To order, the 
 ### Below minimum
 Consumables with a minimum stock that drop below it show an **orange bar** at the top of every StockMaster screen. Click **View** to see only those products.
 
+### Masterdata
+The products and their small lists (Type, Warehouses, Categories, Limits) are managed here, under **Masterdata** in the menu. The other modules (TagScan, KarTracker, Altsien Select) read them from here.
+
 > On every screen, the **Help for this screen** button at the top right opens the part of this guide about that screen. The full guide is at the bottom of the menu on the left.
 
 ## [booking] Booking in 4 steps
@@ -42,6 +45,7 @@ StockMaster's start screen: the stock and the carts at a glance, for the chosen 
 - **Bookings per month**, per action (undone bookings are not counted).
 - **Consumption per team**: what didn't come back with the carts.
 - **Most consumed products**: not returned + booked out.
+- **Products** (independent of the season): the number of products, how many are blocked, consumable or logistics products or have an incomplete classification (no type, warehouse or category), and the products per type, per category and per warehouse.
 
 ![The KPI screen](kpi.png)
 
@@ -203,6 +207,60 @@ All bookings, newest first, with who made them and when.
 ![The bookings](bookings.png)
 
 > Undo isn't possible once the goods have been booked further (e.g. the cart has already left). Undo that later booking first.
+
+## [products | stockmaster.products] Products
+All products with their picture, type, warehouse, category and properties.
+
+1. Click **New product**. Name, type, warehouse, category and limit are required. Also fill in the **Warehouse location**: that's where the free stock lies in StockMaster.
+2. Optionally add a **Picture**: you see it in StockMaster and Altsien Select.
+3. Choose the properties:
+   - **Consumable**: used up. Only for these the **minimum stock** counts (orange banner in StockMaster).
+   - **Blocked**: can no longer be booked in or delivered.
+   - **Is logistics product**: always gets what's asked in Load cart.
+   - **Tag Managed (RFID)**: the product carries an RFID tag (TagScan).
+   - **StockMaster: after 'Cart returns'**: does it go back into the cart or to the free stock?
+4. Choose the **Limit** (Ongelimiteerd, Automatisch, Percentage, Toegewezen aantal) and, for Percentage, the **Limit value**. **Maximum initial stock** caps what a cart gets as long as it isn't delivered in KarTracker. Together they decide what StockMaster may deliver in Load cart.
+5. **Cost (€)** is optional.
+
+![Products](products.png)
+
+> A product with stock or bookings in StockMaster can't be deleted: block it instead.
+
+## [product-types | stockmaster.product-types] Type
+The product types, a choice on the product form. Click **New type** to add one.
+
+![Type](product-types.png)
+
+## [warehouses | stockmaster.warehouses] Warehouses
+The warehouses where products are kept. Click **New warehouse** to add one.
+
+![Warehouses](warehouses.png)
+
+## [product-categories | stockmaster.product-categories] Categories
+The product categories, to group and filter products. Click **New category** to add one.
+
+![Categories](product-categories.png)
+
+## [product-limits | stockmaster.product-limits] Limits
+The limits you choose on a product. StockMaster recognises them by their **name**: Ongelimiteerd, Automatisch, Percentage and Toegewezen aantal.
+
+![Limits](product-limits.png)
+
+> Don't rename these limits: StockMaster knows them by name, and a different name no longer counts in the Load cart calculation.
+
+## [product-data-upload | stockmaster.dataupload] Data Upload/Download
+Import and export the products and their lists (Type, Warehouses, Categories, Limits) in bulk with Excel, one tile per table.
+
+1. Click a tile, e.g. **Products**.
+2. **Download template** gives an empty Excel file with the right columns.
+3. Fill it in, choose it under **Excel file** and click **Upload**. The result shows per row: **Created**, **Updated**, **Already there** or **Error** (with the reason).
+4. The button at the bottom exports the full list.
+
+- **Changing in bulk**: export the list, edit it and upload it again. A row with an **id** (the export's first column) changes that record; a row without an id creates a new one.
+- A product's type, warehouse, category and limit are given by **name**; upper or lower case doesn't matter.
+- Yes/no columns accept yes/no, ja/nee, true/false and 1/0.
+
+> Uploading needs the **Create** right on this screen; downloading templates and exports needs **View**.
 
 ## [reasons | stockmaster.reasons] Reasons
 The reasons you choose when booking out or counting, such as "Used", "Broken" or "Count difference".

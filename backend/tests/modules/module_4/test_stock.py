@@ -356,9 +356,9 @@ def test_product_and_kar_with_stock_cannot_be_deleted(
     from app.db.models.user_module_access import UserModuleAccess
     from tests.modules.module_4.conftest import login
 
-    # A super admin with access to StockMaster, MasterData and KarTracker.
+    # A super admin with access to StockMaster and KarTracker.
     admin = make_user("admin@example.com", None, super_admin=True)
-    for key, name, order in (("module-9", "MasterData", 9), ("module-2", "KarTracker", 2)):
+    for key, name, order in (("module-2", "KarTracker", 2),):
         module = Module(key=key, name=name, sort_order=order)
         db_session.add(module)
         db_session.flush()
@@ -367,7 +367,7 @@ def test_product_and_kar_with_stock_cannot_be_deleted(
     login(client, "admin@example.com")
     _ten_laders_spread(client, world)
 
-    product_delete = client.delete(f"/api/modules/module-9/products/{world.lader.id}")
+    product_delete = client.delete(f"/api/modules/module-4/products/{world.lader.id}")
     kar_delete = client.delete(f"/api/modules/module-2/karren/{world.k101.id}")
 
     assert product_delete.status_code == 400

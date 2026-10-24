@@ -28,6 +28,7 @@ from app.modules.module_2.screens import sync_screens as sync_kartracker_screens
 from app.modules.module_3.public_router import router as module_3_public_router
 from app.modules.module_3.router import router as module_3_router
 from app.modules.module_3.screens import sync_screens as sync_intervention_requests_screens
+from app.modules.module_4.product_masterdata_router import router as module_4_product_masterdata_router
 from app.modules.module_4.router import router as module_4_router
 from app.modules.module_4.screens import sync_screens as sync_stockmaster_screens
 from app.modules.module_5.router import router as module_5_router
@@ -96,6 +97,7 @@ app.include_router(module_2_router)
 app.include_router(module_3_router)
 app.include_router(module_3_public_router)
 app.include_router(module_4_router)
+app.include_router(module_4_product_masterdata_router)
 app.include_router(module_5_router)
 app.include_router(module_6_router)
 app.include_router(module_7_router)

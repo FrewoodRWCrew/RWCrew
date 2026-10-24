@@ -17,12 +17,12 @@ export default async function KarManagementPage() {
     // These four are independent of each other, so fetch them
     // concurrently instead of one after another. The status/product/team
     // lookups are caught separately: a user might manage karren without
-    // also being able to view the KarStatussen screen or module-9's
-    // Products/Teams directly, in which case their dropdown just starts empty.
+    // also being able to view the KarStatussen screen, StockMaster's Products
+    // or MasterData's Teams directly, in which case their dropdown just starts empty.
     [karren, karStatuses, products, teams] = await Promise.all([
       serverApiFetch<KarTrackerKar[]>("/api/modules/module-2/karren"),
       serverApiFetch<KarTrackerKarStatus[]>("/api/modules/module-2/kar-statuses").catch(() => []),
-      serverApiFetch<Product[]>("/api/modules/module-9/products").catch(() => []),
+      serverApiFetch<Product[]>("/api/modules/module-4/products").catch(() => []),
       // Powers the "Ploeg" (Team) dropdown, sourced from module-9's
       // existing Teams master data.
       serverApiFetch<Team[]>("/api/modules/module-9/teams").catch(() => []),

@@ -4,11 +4,24 @@
 // same visual pattern as Altsien Select's and MasterData's sidebars (see
 // docs/module-custom-roles-pattern.md): a header bar in the module's tile
 // colour, the KPI main page, then the groups Voorraad, Akties (in the
-// order of the warehouse process), Planning, Historiek, Instellingen and
-// Toegangsrechten — each link gated by the user's StockMaster role — and
-// the "Handleiding (PDF)" link to the module's help manual at the bottom.
+// order of the warehouse process), Planning, Historiek, Masterdata,
+// Instellingen and Toegangsrechten — each link gated by the user's
+// StockMaster role — and the "Handleiding (PDF)" link to the module's help
+// manual at the bottom. Masterdata holds Producten with its four lookup
+// lists (Type, Magazijnen, Categorieën, Limieten) indented one level deeper
+// under it, then Data Upload/Download.
 
-import { ChartColumn, ClipboardList, Package, ScrollText, Settings, ShieldCheck, Zap, type LucideIcon } from "lucide-react";
+import {
+  ChartColumn,
+  ClipboardList,
+  Database,
+  Package,
+  ScrollText,
+  Settings,
+  ShieldCheck,
+  Zap,
+  type LucideIcon,
+} from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -26,10 +39,13 @@ interface StockMasterSidebarProps {
 interface MenuLink {
   href: string;
   label: string;
+  /** 2 = indented under the link above it (the Products lookup lists). */
+  level?: 1 | 2;
 }
 
 export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
   const t = useTranslations("stockMaster");
+  const PRODUCTS = `${BASE}/masterdata/products`;
   const pathname = usePathname();
   // Same colour as this module's tile on the landing page.
   const { tileClassName } = getModuleTheme("module-4");
@@ -37,18 +53,20 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
   const can = (screen: string) => permissions.viewable_screen_keys.includes(`stockmaster.${screen}`);
 
   // A link counts as active on its own page and on its sub-pages (e.g. one
-  // kar under /kars/12) — but "Karren" isn't active on the kar actions.
+  // kar under /kars/12) — but "Karren" isn't active on the kar actions, and
+  // "Producten" isn't on its lookup lists (they have links of their own).
   const actionHrefs = ACTION_ORDER.map((action) => `${BASE}${ACTION_PATHS[action]}`);
   function isActive(href: string) {
-    if (href === BASE) return pathname === href;
+    if (href === BASE || href === PRODUCTS) return pathname === href;
     if (pathname === href) return true;
     return pathname.startsWith(`${href}/`) && !actionHrefs.includes(pathname);
   }
 
-  function linkClassName(href: string, level: 0 | 1 = 0) {
+  function linkClassName(href: string, level: 0 | 1 | 2 = 0) {
     return cn(
       "rounded-md px-3 py-2 text-sm font-medium transition-colors",
       level === 1 && "ml-3 underline",
+      level === 2 && "ml-6",
       isActive(href)
         ? "bg-sidebar-primary text-sidebar-primary-foreground"
         : "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -92,6 +110,26 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
       links: can("bookings") ? [{ href: `${BASE}/bookings`, label: t("bookings.title") }] : [],
     },
     {
+      icon: Database,
+      label: t("menu.masterDataGroup"),
+      links: [
+        ...(can("products") ? [{ href: PRODUCTS, label: t("products.title") }] : []),
+        ...(can("product-types") ? [{ href: `${PRODUCTS}/types`, label: t("productTypes.title"), level: 2 as const }] : []),
+        ...(can("warehouses")
+          ? [{ href: `${PRODUCTS}/warehouses`, label: t("warehouses.title"), level: 2 as const }]
+          : []),
+        ...(can("product-categories")
+          ? [{ href: `${PRODUCTS}/categories`, label: t("productCategories.title"), level: 2 as const }]
+          : []),
+        ...(can("product-limits")
+          ? [{ href: `${PRODUCTS}/limits`, label: t("productLimits.title"), level: 2 as const }]
+          : []),
+        ...(can("dataupload")
+          ? [{ href: `${BASE}/masterdata/data-upload-download`, label: t("dataUploadDownload.title") }]
+          : []),
+      ],
+    },
+    {
       icon: Settings,
       label: t("menu.settingsGroup"),
       links: can("reasons") ? [{ href: `${BASE}/settings/reasons`, label: t("reasons.title") }] : [],
@@ -126,7 +164,7 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
               {label}
             </div>
             {links.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClassName(link.href, 1)}>
+              <Link key={link.href} href={link.href} className={linkClassName(link.href, link.level ?? 1)}>
                 {link.label}
               </Link>
             ))}

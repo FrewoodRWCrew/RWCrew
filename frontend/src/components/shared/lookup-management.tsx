@@ -1,10 +1,10 @@
 "use client";
 
-// The shared table + create/change/delete-dialog UI for MasterData's
-// simple "id + unique field" lookup screens: Seasons, the four Products
-// "selection criteria" lists (Type, Magazijnen, Categorieën, Limieten),
-// and the three screens nested under Teams (Team Location, Delivery
-// Method, Team Tasks). Each screen's own *-management.tsx file is a thin
+// The shared table + create/change/delete-dialog UI for the simple
+// "id + unique field" lookup screens of several modules: MasterData's
+// Seasons and the three screens nested under Teams (Team Location, Delivery
+// Method, Team Tasks), StockMaster's four Products "selection criteria"
+// lists (Type, Magazijnen, Categorieën, Limieten), and KarTracker's own. Each screen's own *-management.tsx file is a thin
 // wrapper that supplies its translated labels, its api.ts
 // create/update/delete functions, and (for any screen whose field isn't
 // literally called "name") a `field` prop naming which key on its item

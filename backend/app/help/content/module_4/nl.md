@@ -21,6 +21,9 @@ Bovenaan de meeste schermen kies je het **seizoen**. Benodigdheden, Te bestellen
 ### Onder minimum
 Verbruiksgoederen met een minimum stock die eronder zakken, geven een **oranje balk** bovenaan elk StockMaster scherm. Klik op **Bekijken** om enkel die producten te zien.
 
+### Masterdata
+De producten en hun kleine lijsten (Type, Magazijnen, Categorieën, Limieten) beheer je hier, onder **Masterdata** in het menu. De andere modules (TagScan, KarTracker, Altsien Select) lezen ze van hier.
+
 > Op elk scherm opent de knop **Help bij dit scherm** rechtsboven het stuk van deze handleiding dat over dat scherm gaat. De volledige handleiding vind je onderaan het menu links.
 
 ## [booking] Boeken in 4 stappen
@@ -42,6 +45,7 @@ Het startscherm van StockMaster: de voorraad en de karren in één oogopslag, vo
 - **Boekingen per maand**, per actie (ongedaan gemaakte boekingen tellen niet mee).
 - **Verbruik per ploeg**: wat niet terugkwam met de karren.
 - **Meest verbruikte producten**: niet teruggekomen + uitgeboekt.
+- **Producten** (los van het seizoen): het aantal producten, hoeveel er geblokkeerd, consumeerbaar of logistiek zijn of een onvolledige classificatie hebben (geen type, magazijn of categorie), en de producten per type, per categorie en per magazijn.
 
 ![Het KPI scherm](kpi.png)
 
@@ -203,6 +207,60 @@ Alle boekingen, de nieuwste eerst, met wie ze deed en wanneer.
 ![De boekingen](bookings.png)
 
 > Ongedaan maken gaat niet als de goederen intussen al verder geboekt zijn (bv. de kar is al vertrokken). Maak dan eerst die latere boeking ongedaan.
+
+## [products | stockmaster.products] Producten
+Alle producten met hun foto, type, magazijn, categorie en eigenschappen.
+
+1. Klik op **Nieuw product**. Naam, type, magazijn, categorie en limiet zijn verplicht. Vul ook de **Magazijn locatie** in: daar ligt de vrije voorraad in StockMaster.
+2. Voeg eventueel een **Foto** toe: die zie je in StockMaster en Altsien Select.
+3. Kies de eigenschappen:
+   - **Consumeerbaar**: een verbruiksgoed. Enkel daarvoor telt de **minimum voorraad** (oranje balk in StockMaster).
+   - **Blokkeer**: kan niet meer ingeboekt of geleverd worden.
+   - **Is logistiek product**: krijgt bij Kar laden altijd wat gevraagd is.
+   - **Tag Managed (RFID)**: het product draagt een RFID-tag (TagScan).
+   - **StockMaster: na 'Kar terug'**: komt het terug in de kar of naar de vrije voorraad?
+4. Kies de **Limiet** (Ongelimiteerd, Automatisch, Percentage, Toegewezen aantal) en, bij Percentage, de **Limietwaarde**. Met **Maximum initiële stock** begrens je wat een kar krijgt zolang ze in KarTracker niet geleverd is. Samen bepalen ze wat StockMaster bij Kar laden mag leveren.
+5. **Kostprijs (€)** is optioneel.
+
+![Producten](products.png)
+
+> Een product met voorraad of boekingen in StockMaster kan je niet verwijderen: blokkeer het in de plaats.
+
+## [product-types | stockmaster.product-types] Type
+De producttypes, een keuze op het productformulier. Klik op **Nieuw type** om er een toe te voegen.
+
+![Type](product-types.png)
+
+## [warehouses | stockmaster.warehouses] Magazijnen
+De magazijnen waar producten liggen. Klik op **Nieuw magazijn** om er een toe te voegen.
+
+![Magazijnen](warehouses.png)
+
+## [product-categories | stockmaster.product-categories] Categorieën
+De productcategorieën, om producten te groeperen en te filteren. Klik op **Nieuwe categorie** om er een toe te voegen.
+
+![Categorieën](product-categories.png)
+
+## [product-limits | stockmaster.product-limits] Limieten
+De limieten die je bij een product kiest. StockMaster herkent ze aan hun **naam**: Ongelimiteerd, Automatisch, Percentage en Toegewezen aantal.
+
+![Limieten](product-limits.png)
+
+> Hernoem deze limieten niet: StockMaster kent ze bij naam, en een andere naam telt niet meer mee in de berekening van Kar laden.
+
+## [product-data-upload | stockmaster.dataupload] Data Upload/Download
+De producten en hun lijsten (Type, Magazijnen, Categorieën, Limieten) in bulk importeren en exporteren met Excel, één tegel per tabel.
+
+1. Klik op een tegel, bv. **Producten**.
+2. **Sjabloon downloaden** geeft een leeg Excel-bestand met de juiste kolommen.
+3. Vul het in, kies het bij **Excel-bestand** en klik op **Uploaden**. Het resultaat toont per rij: **Aangemaakt**, **Bijgewerkt**, **Al aanwezig** of **Fout** (met de reden).
+4. Met de knop onderaan exporteer je de volledige lijst.
+
+- **Wijzigen in bulk**: exporteer de lijst, pas ze aan en upload ze opnieuw. Een rij met een **id** (de eerste kolom van de export) wijzigt dat record; een rij zonder id maakt een nieuw aan.
+- Type, magazijn, categorie en limiet van een product geef je bij **naam**, hoofdletters maken niet uit.
+- Ja/nee-kolommen aanvaarden ja/nee, yes/no, true/false en 1/0.
+
+> Uploaden kan enkel met het recht **Aanmaken** op dit scherm; sjablonen en exports downloaden kan met **Bekijken**.
 
 ## [reasons | stockmaster.reasons] Redenen
 De redenen die je kiest bij het uitboeken of bij een telling, zoals "Verbruikt", "Kapot" of "Telverschil".

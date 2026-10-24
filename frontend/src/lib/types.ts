@@ -680,36 +680,10 @@ export interface MasterDataMyPermissions {
   creatable_screen_keys: string[];
 }
 
-/** How many products have one product type — plus a trailing entry with
- * type_name null for products with no type set ("Unassigned"). */
-export interface MasterDataTypeBreakdownItem {
-  type_name: string | null;
-  count: number;
-}
-
-/** Same as MasterDataTypeBreakdownItem, but for product categories. */
-export interface MasterDataCategoryBreakdownItem {
-  category_name: string | null;
-  count: number;
-}
-
-/** Same as MasterDataTypeBreakdownItem, but for warehouses. */
-export interface MasterDataWarehouseBreakdownItem {
-  warehouse_name: string | null;
-  count: number;
-}
-
-/** Aggregate KPI stats for MasterData's landing dashboard ("Masterdata Overview"). */
+/** Aggregate KPI stats for MasterData's landing dashboard ("Masterdata
+ * Overview"). The product stats moved to StockMaster's KPI page. */
 export interface MasterDataDashboardStats {
-  total_products: number;
   total_seasons: number;
-  blocked_products: number;
-  consumable_products: number;
-  logistics_products: number;
-  products_missing_classification: number;
-  products_by_type: MasterDataTypeBreakdownItem[];
-  products_by_category: MasterDataCategoryBreakdownItem[];
-  products_by_warehouse: MasterDataWarehouseBreakdownItem[];
 }
 
 /** One status, as managed on module-3's Intervention Statuses screen. */
@@ -2170,6 +2144,26 @@ export interface StockMasterCountSheetLine {
   bin_label: string | null;
   warehouse_location: string | null;
   expected: number;
+}
+
+/** How many products have one Type/Categorie/Magazijn — plus a trailing
+ * entry with name null for products with none set ("Unassigned"). */
+export interface StockMasterProductStatsBreakdownItem {
+  name: string | null;
+  count: number;
+}
+
+/** The product tiles and charts on StockMaster's KPI page (all products,
+ * not per season). */
+export interface StockMasterProductStats {
+  total_products: number;
+  blocked_products: number;
+  consumable_products: number;
+  logistics_products: number;
+  products_missing_classification: number;
+  products_by_type: StockMasterProductStatsBreakdownItem[];
+  products_by_category: StockMasterProductStatsBreakdownItem[];
+  products_by_warehouse: StockMasterProductStatsBreakdownItem[];
 }
 
 export interface StockMasterDashboard {

@@ -491,3 +491,27 @@ class DashboardResponse(BaseModel):
     bookings_per_month: list[MonthActionCount]
     consumption_per_team: list[NamedQuantity]
     top_consumed_products: list[NamedQuantity]
+
+
+class ProductStatsBreakdownItem(BaseModel):
+    """How many products have one Type/Categorie/Magazijn — one entry per
+    lookup row (zero-filled), plus a trailing name=None ("unassigned") entry.
+    """
+
+    name: str | None
+    count: int
+
+
+class ProductStatsResponse(BaseModel):
+    """The product tiles and breakdown charts on StockMaster's KPI page (all
+    products, not per season) — moved here from MasterData's dashboard.
+    """
+
+    total_products: int
+    blocked_products: int
+    consumable_products: int
+    logistics_products: int
+    products_missing_classification: int
+    products_by_type: list[ProductStatsBreakdownItem]
+    products_by_category: list[ProductStatsBreakdownItem]
+    products_by_warehouse: list[ProductStatsBreakdownItem]
