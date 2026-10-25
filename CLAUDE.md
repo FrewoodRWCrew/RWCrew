@@ -221,7 +221,7 @@ never returns the formula), `GET /settings` + `POST /settings/karcode/preview` (
 (`kartracker-settings.tsx`), where future KarTracker-wide settings go too. The calculator itself is
 `components/module-2/karcode-calculator.tsx` (`variant="desktop"|"phone"`), shared by the web screen and the phone
 page `/m/module-2/karcode` (same screen right); both can fill the kar number by scanning the kar's QR code
-(`qr-scanner.tsx`) or by typing it.
+(`qr-scanner.tsx`; only the **last 3 digits** of the scanned value are used) or by typing it.
 
 ## KarTracker (module-2): Speciale levertoeren
 

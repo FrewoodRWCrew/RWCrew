@@ -37,6 +37,9 @@ interface RecentCode {
 
 // The longest scanned QR text that's passed on (a kar number is short).
 const MAX_SCANNED_LENGTH = 20;
+// Only the last digits of a scanned QR code are the kar number for the lock
+// code (e.g. "K0036" -> "036").
+const SCANNED_KAR_DIGITS = 3;
 
 interface KarcodeCalculatorProps {
   /** "desktop": recent list beside the device, keyboard hint, tapping the
@@ -188,12 +191,17 @@ export function KarcodeCalculator({ variant }: KarcodeCalculatorProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pressDigit, pressBackspace, pressClear, pressEquals]);
 
-  // A scanned QR code holds just the kar number: it replaces what's typed
-  // and the code follows as after typing. Anything that isn't a number is
-  // passed on as is, so the display shows the backend's "not a kar number".
+  // A scanned QR code replaces what's typed with its last 3 digits, and the
+  // code follows as after typing. A code without any digit is passed on as
+  // is, so the display shows the backend's "not a kar number".
   function handleScanned(text: string) {
     setIsScanning(false);
-    setKar(text.trim().slice(0, MAX_SCANNED_LENGTH));
+    const digits = text.replace(/\D/g, "");
+    setKar(
+      digits
+        ? digits.slice(-SCANNED_KAR_DIGITS)
+        : text.trim().slice(0, MAX_SCANNED_LENGTH),
+    );
   }
 
   async function copyCode() {

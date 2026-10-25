@@ -49,7 +49,7 @@ Every kar is closed with a combination lock. The lock's code follows from the ka
 2. The **code** appears right away in large digits. **=** recalculates, **C** clears everything and **⌫** removes the last digit.
 3. The **copy** icon next to the code puts it on the clipboard.
 
-Instead of typing you can also click **Scan the kar's QR code** and point the camera at the kar's QR code: the kar number is filled in and the code appears.
+Instead of typing you can also click **Scan the kar's QR code** and point the camera at the kar's QR code: the last 3 digits of the QR code become the kar number and the code appears.
 
 Below the calculator are your **recent calculations**; click one to show that kar again.
 

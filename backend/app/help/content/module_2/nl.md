@@ -49,7 +49,7 @@ Elke kar wordt afgesloten met een cijferslot. De code van dat slot volgt uit het
 2. De **code** verschijnt meteen groot op het scherm. **=** rekent opnieuw, **C** wist alles en **⌫** wist het laatste cijfer.
 3. Met het **kopieer**-icoon naast de code zet je ze op het klembord.
 
-In plaats van te typen kan je ook op **Scan QR-code van de kar** klikken en de camera op de QR-code van de kar richten: het karnummer wordt ingevuld en de code verschijnt.
+In plaats van te typen kan je ook op **Scan QR-code van de kar** klikken en de camera op de QR-code van de kar richten: de laatste 3 cijfers van de QR-code worden het karnummer en de code verschijnt.
 
 Onder de rekenmachine staan je **laatste berekeningen**; klik er één aan om die kar opnieuw te tonen.
 

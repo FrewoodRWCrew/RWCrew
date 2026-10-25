@@ -3,6 +3,13 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-25 — Karcode Simulator: scan uses the last 3 digits
+**Request:** when scanning a QR code in the Karcode Simulator, take only the last 3 digits of the scanned value.
+**Plan:** small follow-up, no plan mode: `handleScanned` keeps the scanned value's digits and uses the last 3.
+**Changes:** `components/module-2/karcode-calculator.tsx` (web + phone), help manual sentence (nl/en), CLAUDE.md.
+**Verification:** eslint + `tsc --noEmit` clean; help tests.
+**Notes:** a scanned value without any digit still shows the "digits only" error. Typing is not limited to 3 digits.
+
 ## 2026-10-25 — KarTracker: Karcode Simulator in the phone app (+ QR scan)
 **Request:** the Karcode Simulator also in KarTracker's phone app, only for the people allowed to use it; the kar
 number can be filled in by scanning the kar's existing QR code, and must also be possible to type manually.
