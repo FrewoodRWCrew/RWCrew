@@ -48,6 +48,8 @@ ROLLEN_MODULES = [
     ("stockmaster", "StockMaster"),
     ("altsien_select", "AltsienSelect"),
     ("masterdata", "MasterData"),
+    ("atelier", "Atelier"),
+    ("walkies", "Walkies"),
 ]
 
 
@@ -116,12 +118,21 @@ def exporteer_persoonsgegevens() -> None:
             ('"StockMaster_movement"', "created_by_name"),
             ('"StockMaster_kar_requirement"', "updated_by_name"),
             ('"StockMaster_reason"', "created_by_name"),
+            ('"Atelier_person"', "first_name || ' ' || last_name"),
+            ('"Atelier_person"', "first_name"),
+            ('"Atelier_person"', "last_name"),
+            ('"Atelier_scan"', "first_name || ' ' || last_name"),
+            ('"Atelier_handout"', "created_by_name"),
+            ('"Atelier_stock_document"', "created_by_name"),
+            ('"Atelier_reservation"', "updated_by_name"),
         ],
         "emails": [
             ('"Landing_users"', "email"),
             ('"MasterData_team_responsible"', "email"),
             ('"InterventionRequests_mailing_recipient"', "email"),
             ('"Landing_login_history"', "email_attempted"),
+            ('"Atelier_person"', "email"),
+            ('"Atelier_scan"', "email"),
         ],
         "telefoons": [
             ('"Landing_users"', "phone"),
@@ -135,7 +146,7 @@ def exporteer_persoonsgegevens() -> None:
         for soort, kolommen in bronnen.items():
             waarden: set[str] = set()
             for tabel, kolom in kolommen:
-                for (waarde,) in db.execute(text(f"SELECT DISTINCT {kolom} FROM {tabel} WHERE {kolom} IS NOT NULL")):
+                for (waarde,) in db.execute(text(f"SELECT DISTINCT {kolom} FROM {tabel} WHERE ({kolom}) IS NOT NULL")):
                     if str(waarde).strip() and waarde != "Demo Beheerder":
                         waarden.add(str(waarde).strip())
             resultaat[soort] = sorted(waarden, key=len, reverse=True)   # langste eerst vervangen

@@ -14,7 +14,7 @@
 //   backend/app/help/content/<module_N>/images/<file>.png, the names the
 //   Markdown manuals refer to.
 
-import { mkdir } from "node:fs/promises";
+import { mkdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { chromium } from "playwright-core";
@@ -31,6 +31,8 @@ const SEASON = process.env.HELP_SHOTS_SEASON ?? "1";
 const KAR = process.env.HELP_SHOTS_KAR ?? "36";
 // A team with choices in Altsien Select, for its Ploegfiche.
 const TEAM = process.env.HELP_SHOTS_TEAM ?? "1";
+// An Atelier festival with reservations and hand-outs.
+const FESTIVAL = process.env.HELP_SHOTS_FESTIVAL ?? "4";
 
 // Per module: the page to open, the file to write and, optionally, the name
 // of a button to click first (e.g. to load a list) or a "prepare" step that
@@ -51,9 +53,16 @@ const SHOTS = {
   "module-2": [
     { file: "overview.png", path: "/modules/module-2/dashboard" },
     { file: "movement.png", path: "/modules/module-2/actions" },
+    { file: "karcode.png", path: "/modules/module-2/actions/karcode-simulator" },
+    { file: "delivery-order.png", path: "/modules/module-2/actions/delivery-order" },
+    { file: "initial-delivery.png", path: "/modules/module-2/planning-analyses/initial-delivery" },
+    { file: "kar-moves.png", path: "/modules/module-2/planning-analyses/kar-moves" },
+    { file: "special-tour-planning.png", path: "/modules/module-2/planning-analyses/special-tours" },
+    { file: "special-tours.png", path: "/modules/module-2/special-tours" },
+    { file: "settings.png", path: "/modules/module-2/settings" },
     { file: "kar-planning.png", path: "/modules/module-2/actions/kar-planning" },
     { file: "kar-map.png", path: "/modules/module-2/actions/kar-map" },
-    { file: "plan-kar.png", path: "/modules/module-2/actions/plan-kar", prepare: pickFirstOption },
+    { file: "plan-kar.png", path: "/modules/module-2/actions/plan-kar" },
     { file: "kar-management.png", path: "/modules/module-2/kar-management" },
     { file: "distributiepunten.png", path: "/modules/module-2/distributiepunten" },
     { file: "zones.png", path: "/modules/module-2/zones" },
@@ -88,6 +97,27 @@ const SHOTS = {
     { file: "roles.png", path: "/modules/module-4/access-rights/roles" },
     { file: "users.png", path: "/modules/module-4/access-rights/users" },
   ],
+  "module-5": [
+    { file: "overview.png", path: `/modules/module-5?season=${SEASON}` },
+    { file: "desk.png", path: `/modules/module-5/desk?festival=${FESTIVAL}` },
+    { file: "open.png", path: `/modules/module-5/desk/open?festival=${FESTIVAL}` },
+    { file: "reservations.png", path: `/modules/module-5/reservations?season=${SEASON}&festival=${FESTIVAL}` },
+    { file: "preparation.png", path: `/modules/module-5/reservations/preparation?season=${SEASON}&festival=${FESTIVAL}` },
+    { file: "stock.png", path: "/modules/module-5/stock" },
+    { file: "receipt.png", path: "/modules/module-5/stock/receipt" },
+    { file: "wash.png", path: "/modules/module-5/stock/wash" },
+    { file: "write-off.png", path: "/modules/module-5/stock/write-off" },
+    { file: "count.png", path: "/modules/module-5/stock/count" },
+    { file: "bookings.png", path: "/modules/module-5/stock/bookings" },
+    { file: "order-needs.png", path: `/modules/module-5/stock/order-needs?season=${SEASON}&festival=${FESTIVAL}` },
+    { file: "articles.png", path: "/modules/module-5/masterdata/articles" },
+    { file: "sizes.png", path: "/modules/module-5/masterdata/articles/sizes" },
+    { file: "data-upload.png", path: "/modules/module-5/masterdata/data-upload-download" },
+    { file: "settings.png", path: "/modules/module-5/settings" },
+    { file: "scan-test.png", path: "/modules/module-5/settings/scan-test" },
+    { file: "roles.png", path: "/modules/module-5/access-rights/roles" },
+    { file: "users.png", path: "/modules/module-5/access-rights/users" },
+  ],
   "module-3": [
     { file: "overview.png", path: "/modules/module-3" },
     { file: "requests.png", path: "/modules/module-3/intervention-requests" },
@@ -121,11 +151,36 @@ const SHOTS = {
   ],
 };
 
-// Open the first dropdown of the page itself (not the header's year
-// selector) and choose its first option.
-async function pickFirstOption(page) {
-  await page.locator("main nav.w-60 + div").getByRole("combobox").first().click();
-  await page.getByRole("option").first().click();
+// Personal data to hide on the shots: the names/emails/phones exported by
+// docs/handleiding/screenshot_user.py setup (when that file exists), replaced
+// by made-up values right before each shot.
+const FAKE_NAMES = ["An Peeters", "Bart Janssens", "Charlotte Maes", "Dirk Jacobs", "Els Mertens", "Filip Willems"];
+let maskPairs = [];
+try {
+  const exported = JSON.parse(
+    await readFile(path.resolve(CONTENT_DIR, "../../../../docs/handleiding/.screenshot-namen.json"), "utf8"),
+  );
+  maskPairs = [
+    ...exported.emails.map((email) => [email, "naam@voorbeeld.be"]),
+    ...exported.telefoons.filter((phone) => phone.replace(/\D/g, "").length >= 8).map((phone) => [phone, "0470 00 00 00"]),
+    ...exported.namen.filter((name) => name.length >= 5).map((name, index) => [name, FAKE_NAMES[index % FAKE_NAMES.length]]),
+  ];
+} catch {}
+
+// Replace every masked value on the page (text, input values, titles) as a whole word.
+function maskPage(pairs) {
+  const replace = (text) => {
+    for (const [real, fake] of pairs) {
+      if (!text.includes(real)) continue;
+      const escaped = real.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      text = text.replace(new RegExp(`(?<![\\p{L}\\d])${escaped}(?![\\p{L}\\d])`, "gu"), fake);
+    }
+    return text;
+  };
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) node.nodeValue = replace(node.nodeValue);
+  for (const field of document.querySelectorAll("input, textarea")) if (field.value) field.value = replace(field.value);
+  for (const element of document.querySelectorAll("[title]")) element.title = replace(element.title);
 }
 
 if (!EMAIL || !PASSWORD) {
@@ -182,6 +237,8 @@ for (const moduleKey of modules) {
       if (document.activeElement instanceof HTMLElement) document.activeElement.blur();
       document.querySelector("main")?.scrollTo(0, 0);
     });
+
+    if (maskPairs.length) await page.evaluate(maskPage, maskPairs);
 
     // The module's page area (the block right of the module's own sidebar),
     // cut off below its last content instead of at the window's bottom

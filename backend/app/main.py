@@ -32,8 +32,14 @@ from app.modules.module_3.screens import sync_screens as sync_intervention_reque
 from app.modules.module_4.product_masterdata_router import router as module_4_product_masterdata_router
 from app.modules.module_4.router import router as module_4_router
 from app.modules.module_4.screens import sync_screens as sync_stockmaster_screens
+from app.modules.module_5.desk_router import router as module_5_desk_router
+from app.modules.module_5.masterdata_router import router as module_5_masterdata_router
+from app.modules.module_5.reservation_router import router as module_5_reservation_router
 from app.modules.module_5.router import router as module_5_router
+from app.modules.module_5.scan_router import router as module_5_scan_router
+from app.modules.module_5.scan_webhook_router import router as module_5_scan_webhook_router
 from app.modules.module_5.screens import sync_screens as sync_atelier_screens
+from app.modules.module_5.stock_router import router as module_5_stock_router
 from app.modules.module_6.router import router as module_6_router
 from app.modules.module_6.screens import sync_screens as sync_walkies_screens
 from app.modules.module_7.router import router as module_7_router
@@ -101,6 +107,12 @@ app.include_router(module_3_public_router)
 app.include_router(module_4_router)
 app.include_router(module_4_product_masterdata_router)
 app.include_router(module_5_router)
+app.include_router(module_5_masterdata_router)
+app.include_router(module_5_reservation_router)
+app.include_router(module_5_stock_router)
+app.include_router(module_5_desk_router)
+app.include_router(module_5_scan_router)
+app.include_router(module_5_scan_webhook_router)
 app.include_router(module_6_router)
 app.include_router(module_7_router)
 app.include_router(module_8_router)

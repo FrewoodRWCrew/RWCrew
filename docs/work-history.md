@@ -3,6 +3,176 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-26 — Atelier: block 5 (wristband scans via webhook + Test-scan)
+**Request:** the next block: the wristband. It turned out we don't scan ourselves: the wristband company scans at our
+counter and sends us a small JSON message via a webhook (example given). Also a screen to type the data or drop a JSON
+file, since the company can only be connected from May 2027.
+**Plan:** public webhook logging every message (shared-secret token, configurable, refused ones logged); scanner per
+`data.device.id`, auto-registered and labelled; wristband number = `data.id`, new per festival; team by name; email
+always optional; one global switch "Polsband verplicht bij Ophalen"; desk screen picks its scanner and polls scans;
+Instellingen + Test-scan screens.
+**Changes:** migration `b2d5f8a3c697` (`Atelier_scan`, `Atelier_scanner`, `Atelier_person_bracelet`, `Atelier_settings`;
+`Atelier_person.bracelet_number` dropped, email nullable); config/env `ATELIER_WEBHOOK_TOKEN` (also
+docker-compose.prod.yml + .env examples); `scan_service.py`, `scan_webhook_router.py`, `scan_router.py`;
+`desk_service.py` (bracelet per festival, `bracelet_required`, `scan_id` → used, email optional); `desk_router.py`
+(`/desk/scanners`, `/desk/scans`, dismiss, `/desk/persons/by-bracelet`, `/desk/wristband-required`); screens
+`atelier.settings|scantest`. Frontend: desk screen (scanner dropdown, polling, scan card, pre-fill, size pre-select),
+`atelier-settings.tsx`, `scan-test.tsx`, menu group Instellingen, translations, help, CLAUDE.md.
+**Verification:** new `tests/modules/module_5/test_scans.py` (6 tests) + Atelier/help tests (82) passed; full backend
+suite 910 passed; `tsc` + eslint clean; local DB migrated, backend restarted; `curl` to the local webhook → 401 + logged
+(no token set locally).
+**Notes:** the meaning of `token` is unknown (treated as a fixed secret; every message is logged to check). Existing
+local wristband numbers (no festival) were dropped. To accept real messages on a server, set `ATELIER_WEBHOOK_TOKEN`
+in its `.env` and restart the backend container.
+
+## 2026-10-26 — Atelier desk: optional articles, clear "still has", return warning
+**Request:** "Uitgeven" stayed disabled (the OneSize apron had no size selected) and a second pick-up gave "not
+returned yet" although the user thought everything was back (the T-shirt had been left unticked at the return).
+**Plan:** articles optional (click again to skip, single in-stock size pre-selected, at least one, hint why the button
+is disabled); orange "still has" box with "Eerst terugbrengen" → return of that person; re-lookup after
+`article_still_out`; confirmation on Terugbrengen when pieces stay unticked. Backend rules unchanged.
+**Changes:** `components/module-5/desk-screen.tsx` (PickupForm selection model + missing hint + still-has box +
+hand-over to ReturnForm; ReturnForm with `initialPerson`, open pick-ups via `useKeyedLoad`, "unticked" list and
+confirm), translations nl/en, help chapter; new desk test (two pick-ups a day, only some articles).
+**Verification:** Atelier/help tests 76 passed; `tsc` + eslint clean. Not clicked through by me (no login).
+**Notes:** the local person "fredtest" (empty family name from before the name split) still has the T-shirt S out —
+return it via Terugbrengen (search "fredtest").
+
+## 2026-10-26 — Atelier desk: first + family name as the person, bracelet number
+**Request:** split the name into first name and family name, entered first and then the email; the email is not
+unique, the first + family name combination is. Also add a unique festival personal number from the future wristband.
+**Plan:** follow-up of block 4 without plan mode.
+**Changes:** migration `a1c4e7f2b586` (`Atelier_person`: `first_name`, `last_name`, unique `name_key`, email index no
+longer unique, new unique optional `bracelet_number`; existing names split on the first space). `desk_service.py`
+(`name_key`, `find_person`, person found by name, latest email kept, `bracelet_in_use`), `desk_router.py` (search also
+by bracelet number, `GET /desk/persons/lookup?first_name=&last_name=`), schemas, Ophalen form order first name →
+family name → email → bracelet number (lookup by name), bracelet shown in search results and Openstaand;
+translations, help, CLAUDE.md.
+**Verification:** desk tests updated + new test (email shared by two persons, bracelet unique, search by bracelet);
+Atelier/help tests 75 passed; full backend suite 903 passed; `tsc` + eslint clean; local DB migrated, backend restarted.
+**Notes:** the bracelet number is optional until block 5 (scan the wristband QR). The local test person "fredtest" had
+no space in the name, so its family name is empty.
+
+## 2026-10-26 — Atelier: block 4 (counter desk)
+**Request:** plan and build block 4 of Atelier (the counter: hand-out and return).
+**Plan:** per person name + email (required) + team + festival + day; 1 piece per package article with the size picked
+at the desk, never an article the person still has; package quantity always 1 (field stays, fixed at 1); warning only
+when more people than reserved; return = find the person and tick what's back; open list only; web screen. Every
+transaction starts with a big "Ophalen" / "Terugbrengen" choice (added by the user during planning).
+**Changes:** migration `f9b3d6e1a475` (`Atelier_person`, `Atelier_handout`, `Atelier_handout_line`; package lines set
+to 1). Backend: `stock_service.py` (`hand_out`, `return_pieces`, `use_desk` guard on reversals),
+`reservation_service.py` (`PACKAGE_QUANTITY` = 1 everywhere), `desk_service.py`, `desk_router.py` (`/desk/teams`,
+`/desk/persons`, `/desk/context`, `/desk/handouts` + `/return` + `/cancel`, `/desk/persons/{id}/open`, `/desk/open`,
+`/desk/stats`); screens `atelier.desk|open`. Frontend: sidebar group Balie, `desk-screen.tsx` (choice → pick-up / return),
+`open-handouts.tsx`, `desk-common.ts`, KPI `desk-stats-section.tsx`, Pakket dialog quantity read-only 1, desk bookings
+not undoable on Boekingen; translations nl/en; help chapters; CLAUDE.md. Tests updated for quantity 1.
+**Verification:** new `tests/modules/module_5/test_desk.py` (5 tests) + Atelier/help tests (74) passed; full backend
+suite 902 passed; `tsc` + eslint clean; local DB migrated, backend restarted. Not clicked through by me (no login).
+**Notes:** on XLSX "Pakketlijnen" any quantity is stored as 1 without a separate row note (the import result has no
+note for successful rows). Block 5 (wristband QR) will add a code to `Atelier_person`.
+
+## 2026-10-25 — Atelier: block 3 (Stock)
+**Request:** plan and build block 3 of Atelier (stock), after asking what the user had to explain.
+**Plan:** no purchase orders and no suppliers — goods are simply received; own washing (to wash → available);
+start empty; write-off with a reason; stock count; undo by counter-booking; shortage on Voorbereiden, a "Te
+bestellen" list (+PDF) and a minimum-stock warning. Stock per article size and status (available / to wash /
+handed out), following StockMaster's stock-service pattern.
+**Changes:** migration `e8a2c5d9f364` (`Atelier_stock_document`, `Atelier_stock_movement`, `Atelier_stock_balance`).
+Backend: `module_5/stock_service.py` (receive, wash, write_off, count_stock, reverse_document), `stock_needs.py`
+(overview, order needs, min-stock alerts), `stock_pdfs.py` (Boekingsbon, Bestellijst), `stock_router.py` (`/stock`,
+`/stock/receipt|wash|write-off|count`, `/stock/documents[/{id}[/reverse|/pdf]]`, `/stock/order-needs[/pdf]`,
+`/stock/min-stock`, `/stock/totals`); 7 new screens; preparation size estimates carry available/owned; article sizes
+with stock history can't be removed. Frontend: sidebar group Stock with `stock-overview.tsx`,
+`stock-booking-screen.tsx` (Ontvangst/Wassen/Afboeken), `stock-count.tsx`, `stock-bookings.tsx`, `order-needs.tsx`,
+minimum-stock banner in the layout, KPI `stock-totals-section.tsx`, red/orange stock on Voorbereiden; translations
+nl/en; help chapters; CLAUDE.md.
+**Verification:** `tests/modules/module_5/test_stock.py` (6 tests) + Atelier/help tests (69) passed; full backend
+suite 897 passed; `tsc` + eslint clean; local DB migrated, backend restarted. Screens not clicked through by me (no login).
+**Notes:** the planned "Stock" export tile on Data Upload/Download was left out (the stock overview shows the same
+and the tile component expects an import); can be added if wanted. Block 4 will add hand-out (available →
+handed out) and return (handed out → to wash) through `stock_service.py`.
+
+## 2026-10-25 — Atelier KPI: teams forgotten at a festival
+**Request:** an indication when a team got a reservation at one festival but was forgotten at another.
+**Plan:** signal based on the season's other reservations (not Altsien Select), shown only on the KPI page: a team
+with persons > 0 at another active festival of the season and nothing here (no persons, no note) counts as
+"forgotten"; 0 persons + a note silences it.
+**Changes:** `reservation_router.py` `_forgotten_teams` + `teams_missing` on `FestivalReservationStatsResponse`;
+`reservation-stats-section.tsx` column "Vergeten?" (count opens the team names + link to that festival's
+Reservaties); types, translations nl/en, KPI help chapter, CLAUDE.md.
+**Verification:** new test in `test_reservations.py`; module-5 + help tests passed (63); `tsc` + eslint clean;
+backend restarted.
+
+## 2026-10-25 — Atelier: Ploegpakketten merged into Reservaties (package per festival)
+**Request:** merge the Ploegpakketten functionality into the Reservaties screen, so everything is entered on one page.
+**Plan:** the package becomes per festival (not copied automatically; "copy from the same festival last year" is
+proposed); the Ploegpakketten screen is removed; Reservaties lists all active teams. Persons and package share the
+key festival + team, so a reservation gets its own package lines.
+**Changes:** migration `d7f1b4c8e253`: new `Atelier_reservation_line`, existing season packages copied onto every
+active festival of their season, `Atelier_team_package` and screen `atelier.teampackages` (+ its rights) removed.
+Backend: `reservation_service.py` rewritten (persons/note/lines via one `upsert_reservation`, `upsert_line`,
+`previous_festival` + `copy_from_previous_festival`), `team_package_service.py` deleted, `reservation_router.py`
+(`PUT /reservations/{festival}` with `lines`, `GET …/previous`, `POST …/copy-previous`), preparation reads the
+reservation's lines, `masterdata_router.py` lost `/teams` + `/team-packages*` (masterdata-stats without season),
+XLSX "Ploegpakketten" → "Pakketlijnen" (season, festival, team, article_code, quantity_per_person). Frontend:
+`reservation-screen.tsx` (Pakket dialog per team, chips, "no package" warning, copy-from-last-year panel, one
+Save), `team-package-management.tsx` + page + menu link removed, KPI sections adjusted, upload tile, translations,
+help manual, CLAUDE.md.
+**Verification:** `test_reservations.py` rewritten (10 tests) + module_5/help/StockMaster tests (178) passed; full
+backend suite 890 passed; `tsc` + eslint clean; local DB
+migrated — 3 teams × 9 package lines became 18 lines on Parklife 2026 and Rock Werchter 2026; backend restarted.
+**Notes:** a reservation with 0 persons but a package is kept (shows the package for later). Downgrade of the
+migration restores an empty season-package table only.
+
+## 2026-10-25 — Atelier: block 2 (Reservations + Voorbereiden)
+**Request:** plan and build block 2 of Atelier (reservations), after listing what the user had to explain.
+**Plan:** one reservation = team + festival → persons, entered by the atelier team; the team works every festival day
+and returns the clothing every evening, so each day needs persons × package; teams offered = package this season +
+festival picked in Altsien Select (all festivals when nothing picked); sizes estimated with a size split (%) per
+article; output = totals per day, bundle per team, picklist PDF. Changing/locking reservations: decided later.
+**Changes:** table `Atelier_reservation` (unique festival+team, `updated_by(_name)` = session user) and
+`Atelier_article_size.size_share_pct` — migration `c6e9a3b7d142`. Screens `atelier.reservations|preparation`.
+Backend `module_5/reservation_router.py` (`/festivals`, `/reservations`, `PUT /reservations/{festival}`,
+`/preparation`, `/preparation/pdf`, `/reservation-stats`), `reservation_service.py` (only writer, `offered_teams`
+reusing `module_2/plan_kar_service.festivals_by_team`), `preparation_service.py` (calculation, largest-remainder size
+split), `picklist_pdf.py`; Reservaties XLSX tile + `size_share_pct` column in `xlsx_imports.py`; article form checks
+the split adds up to 100%. `module_4/pdf_layout.py`: `StockMasterPDF` got optional `accent_color`/`brand` (defaults
+unchanged) so Atelier's PDF is red; `require_view_on_any` moved to `module_5/deps.py`. Frontend: sidebar group
+Reservaties, `reservation-screen.tsx`, `preparation-screen.tsx`, `atelier-festival-select.tsx` (`?festival=`),
+`reservation-stats-section.tsx` on the KPI page, % per size in the article form; translations nl/en; help chapters.
+**Verification:** `tests/modules/module_5/test_reservations.py` (8 tests) + Atelier/StockMaster/help tests (178)
+passed; full backend suite 890 passed; `tsc --noEmit` (src) and eslint clean; migration applied locally, backend restarted.
+Screens not clicked through in a browser by me (no local login).
+**Notes:** reservation history / deadline lock still to be decided. The picklist for a subset of teams also estimates
+sizes for that subset only.
+
+## 2026-10-25 — Atelier: roadmap + block 1 (Masterdata)
+**Request:** start building the Atelier module's content (work clothing handed out before a shift and returned after
+it), in blocks: masterdata, reservations, procurement/inbound, digital wristband reading, later RFID per piece.
+Sizes must have a fit (Women/Men/Unisex) and a "OneSize".
+**Plan:** roadmap of 6 blocks (1 masterdata, 2 reservations per team + festival + day entered by the atelier team,
+3 suppliers + purchasing/receiving + stock service with wash cycle, 4 counter-desk hand-out/return, 5 wristband QR
+code, 6 RFID via TagScan). Block 1: own article catalogue with size variants, sizes = name + fit, team packages per
+season (article + pieces per person, size chosen at the desk), copy from last season, XLSX upload/download, KPI counts.
+Decisions: workers aren't in a database (name typed at the desk, later the wristband); everything is returned; one
+atelier store.
+**Changes:** tables `Atelier_size` (unique name+fit, seeded XS–XXL × Women/Men/Unisex + OneSize·Unisex),
+`Atelier_article` (unique code, colour, cost, picture, `is_tag_managed` for block 6, active), `Atelier_article_size`,
+`Atelier_team_package` (season + team + article, quantity per person) — migration `b5d8f2a6c931`. Screens
+`atelier.articles|sizes|teampackages|dataupload`. Backend `module_5/masterdata_router.py` (CRUD, picture, team
+packages + `/team-packages/previous` + `/copy-previous`, `/masterdata-stats`, XLSX template/import/export per table),
+`team_package_service.py` (the only writer of packages), `xlsx_imports.py`; `router.py` got `GET /seasons` and the
+article picture GET. Frontend: sidebar group Masterdata (Artikelen > Maten, Ploegpakketten, Data Upload/Download),
+`article-management.tsx`, `size-management.tsx`, `team-package-management.tsx`, `atelier-data-upload-download.tsx`,
+KPI `masterdata-stats-section.tsx`, own season dropdown (`atelier-season-select.tsx`); translations nl/en; help manual
+chapters; landing `FALLBACK_SCREENS`; CLAUDE.md.
+**Verification:** new `tests/modules/module_5/test_masterdata.py` (11 tests) + full backend suite 883 passed;
+`tsc --noEmit` (src) and eslint clean on the Atelier files; migration applied to local Postgres (19 sizes seeded),
+backend restarted and healthy. The screens were not clicked through in a browser (no local login available to me).
+**Notes:** deleting an article in a package / a size used by an article is refused (deactivate instead); unticking a
+size on an article deletes it — once stock exists (block 3) that must become a refusal. Packages of a closed season
+are still editable (no season lock yet). Help screenshots not made yet (`npm run help:screenshots module-5`).
+
 ## 2026-10-25 — Karcode Simulator: scan uses the last 3 digits
 **Request:** when scanning a QR code in the Karcode Simulator, take only the last 3 digits of the scanned value.
 **Plan:** small follow-up, no plan mode: `handleScanned` keeps the scanned value's digits and uses the last 3.

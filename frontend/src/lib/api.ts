@@ -15,7 +15,34 @@ import type {
   AltsienSelectResponsibleInput,
   AltsienSelectTeamSummary,
   AltsienSelectUserSummary,
+  AtelierArticle,
+  AtelierArticleInput,
+  AtelierDeskContext,
+  AtelierDeskPerson,
+  AtelierDeskStats,
+  AtelierDeskTeam,
+  AtelierFestival,
+  AtelierFestivalReservationStats,
+  AtelierHandout,
+  AtelierImportResponse,
+  AtelierPreparation,
+  AtelierReservationRow,
+  AtelierScan,
+  AtelierScanner,
+  AtelierSettings,
+  AtelierMasterdataStats,
+  AtelierMinStockLine,
+  AtelierOrderNeed,
+  AtelierPackageLine,
+  AtelierPreviousReservations,
   AtelierRole,
+  AtelierSize,
+  AtelierSizeInput,
+  AtelierStockArticle,
+  AtelierStockDocument,
+  AtelierStockLineInput,
+  AtelierStockTotals,
+  AtelierTestScanResult,
   AtelierUserSummary,
   WalkiesRole,
   WalkiesUserSummary,
@@ -2577,6 +2604,352 @@ export function createOrGrantAtelierUser(payload: {
     method: "POST",
     body: JSON.stringify(payload),
   });
+}
+
+// --- Atelier (module-5): masterdata (sizes, articles, team packages) ---
+
+/**
+ * Sends a multipart form (a picture or an XLSX file) to an Atelier endpoint.
+ * A plain fetch instead of apiFetch: the browser must set its own multipart
+ * Content-Type (with boundary).
+ */
+async function sendAtelierForm<TResponse>(path: string, method: "POST" | "PUT", formData: FormData): Promise<TResponse> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${ATELIER_BASE}${path}`, {
+    method,
+    credentials: "include",
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = errorBody?.detail ?? `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return (await response.json()) as TResponse;
+}
+
+export function getAtelierMasterdataStats(): Promise<AtelierMasterdataStats> {
+  return apiFetch<AtelierMasterdataStats>(`${ATELIER_BASE}/masterdata-stats`);
+}
+
+export function createAtelierSize(payload: AtelierSizeInput): Promise<AtelierSize> {
+  return apiFetch<AtelierSize>(`${ATELIER_BASE}/sizes`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function updateAtelierSize(sizeId: number, payload: AtelierSizeInput): Promise<AtelierSize> {
+  return apiFetch<AtelierSize>(`${ATELIER_BASE}/sizes/${sizeId}`, { method: "PUT", body: JSON.stringify(payload) });
+}
+
+export function deleteAtelierSize(sizeId: number): Promise<void> {
+  return apiFetch<void>(`${ATELIER_BASE}/sizes/${sizeId}`, { method: "DELETE" });
+}
+
+export function createAtelierArticle(payload: AtelierArticleInput): Promise<AtelierArticle> {
+  return apiFetch<AtelierArticle>(`${ATELIER_BASE}/articles`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function updateAtelierArticle(articleId: number, payload: AtelierArticleInput): Promise<AtelierArticle> {
+  return apiFetch<AtelierArticle>(`${ATELIER_BASE}/articles/${articleId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAtelierArticle(articleId: number): Promise<void> {
+  return apiFetch<void>(`${ATELIER_BASE}/articles/${articleId}`, { method: "DELETE" });
+}
+
+/** Sets or replaces an article's picture. */
+export function uploadAtelierArticleImage(articleId: number, image: File): Promise<AtelierArticle> {
+  const formData = new FormData();
+  formData.append("image", image);
+  return sendAtelierForm<AtelierArticle>(`/articles/${articleId}/image`, "PUT", formData);
+}
+
+/** Removes an article's picture; the article itself stays. */
+export function deleteAtelierArticleImage(articleId: number): Promise<AtelierArticle> {
+  return apiFetch<AtelierArticle>(`${ATELIER_BASE}/articles/${articleId}/image`, { method: "DELETE" });
+}
+
+/** An article picture's URL for an <img>; `updatedAt` busts the browser cache. */
+export function atelierArticleImageUrl(articleId: number, updatedAt: string | null): string {
+  return `${API_BASE_URL}${ATELIER_BASE}/articles/${articleId}/image?v=${encodeURIComponent(updatedAt ?? "")}`;
+}
+
+// --- Atelier (module-5): reservations (persons + package) and preparation ---
+
+export function listAtelierFestivals(seasonId: number): Promise<AtelierFestival[]> {
+  return apiFetch<AtelierFestival[]>(`${ATELIER_BASE}/festivals?season_id=${seasonId}`);
+}
+
+export function listAtelierReservations(festivalId: number): Promise<AtelierReservationRow[]> {
+  return apiFetch<AtelierReservationRow[]>(`${ATELIER_BASE}/reservations?festival_id=${festivalId}`);
+}
+
+/** Saves the sent teams' persons, notes and packages (`lines` left out =
+ * package unchanged) for a festival; returns every row. */
+export function saveAtelierReservations(
+  festivalId: number,
+  reservations: { team_id: number; persons: number; note: string | null; lines?: AtelierPackageLine[] }[],
+): Promise<AtelierReservationRow[]> {
+  return apiFetch<AtelierReservationRow[]>(`${ATELIER_BASE}/reservations/${festivalId}`, {
+    method: "PUT",
+    body: JSON.stringify({ reservations }),
+  });
+}
+
+/** The same festival last season and its reservations ("copy from last year"). */
+export function getAtelierPreviousReservations(festivalId: number): Promise<AtelierPreviousReservations> {
+  return apiFetch<AtelierPreviousReservations>(`${ATELIER_BASE}/reservations/${festivalId}/previous`);
+}
+
+/** Copies last year's reservations of these teams (package topped up, persons only while 0). */
+export function copyAtelierPreviousReservations(
+  festivalId: number,
+  teamIds: number[],
+): Promise<{ teams_changed: number; skipped_inactive: number }> {
+  return apiFetch(`${ATELIER_BASE}/reservations/${festivalId}/copy-previous`, {
+    method: "POST",
+    body: JSON.stringify({ team_ids: teamIds }),
+  });
+}
+
+export function getAtelierPreparation(festivalId: number): Promise<AtelierPreparation> {
+  return apiFetch<AtelierPreparation>(`${ATELIER_BASE}/preparation?festival_id=${festivalId}`);
+}
+
+/** The picklist PDF's URL (opened in a new tab); no team ids = every reserved team. */
+export function atelierPicklistUrl(festivalId: number, day: string, teamIds: number[] | null, locale: string): string {
+  const params = new URLSearchParams({ festival_id: String(festivalId), day, locale });
+  for (const teamId of teamIds ?? []) params.append("team_ids", String(teamId));
+  return `${API_BASE_URL}${ATELIER_BASE}/preparation/pdf?${params.toString()}`;
+}
+
+export function getAtelierReservationStats(seasonId: number): Promise<AtelierFestivalReservationStats[]> {
+  return apiFetch<AtelierFestivalReservationStats[]>(`${ATELIER_BASE}/reservation-stats?season_id=${seasonId}`);
+}
+
+// --- Atelier (module-5): stock (block 3) ---
+
+export function listAtelierStock(): Promise<AtelierStockArticle[]> {
+  return apiFetch<AtelierStockArticle[]>(`${ATELIER_BASE}/stock`);
+}
+
+/** Ontvangst: received pieces become available. */
+export function bookAtelierReceipt(payload: {
+  lines: AtelierStockLineInput[];
+  reference: string | null;
+  note: string | null;
+}): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/receipt`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+/** Gewassen: pieces to wash become available. */
+export function bookAtelierWash(payload: { lines: AtelierStockLineInput[]; note: string | null }): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/wash`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+/** Afboeken: pieces leave the store with a reason. */
+export function bookAtelierWriteOff(payload: {
+  lines: AtelierStockLineInput[];
+  reason: string;
+  note: string | null;
+}): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/write-off`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+/** Telling: only the differences with the booked stock are booked. */
+export function bookAtelierCount(payload: {
+  lines: { article_size_id: number; status: "available" | "to_wash"; counted: number }[];
+  note: string | null;
+}): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/count`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function listAtelierStockDocuments(docType: string | null): Promise<AtelierStockDocument[]> {
+  const query = docType ? `?doc_type=${encodeURIComponent(docType)}` : "";
+  return apiFetch<AtelierStockDocument[]>(`${ATELIER_BASE}/stock/documents${query}`);
+}
+
+export function getAtelierStockDocument(documentId: number): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/documents/${documentId}`);
+}
+
+/** Ongedaan maken: books the opposite; returns the reversal. */
+export function reverseAtelierStockDocument(documentId: number, note: string | null): Promise<AtelierStockDocument> {
+  return apiFetch<AtelierStockDocument>(`${ATELIER_BASE}/stock/documents/${documentId}/reverse`, {
+    method: "POST",
+    body: JSON.stringify({ note }),
+  });
+}
+
+/** A booking slip PDF's URL (opened in a new tab). */
+export function atelierStockDocumentPdfUrl(documentId: number, locale: string): string {
+  return `${API_BASE_URL}${ATELIER_BASE}/stock/documents/${documentId}/pdf?locale=${locale}`;
+}
+
+export function getAtelierOrderNeeds(seasonId: number): Promise<AtelierOrderNeed[]> {
+  return apiFetch<AtelierOrderNeed[]>(`${ATELIER_BASE}/stock/order-needs?season_id=${seasonId}`);
+}
+
+/** The Te bestellen PDF's URL (opened in a new tab). */
+export function atelierOrderNeedsPdfUrl(seasonId: number, locale: string): string {
+  return `${API_BASE_URL}${ATELIER_BASE}/stock/order-needs/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
+export function getAtelierMinStock(): Promise<AtelierMinStockLine[]> {
+  return apiFetch<AtelierMinStockLine[]>(`${ATELIER_BASE}/stock/min-stock`);
+}
+
+export function getAtelierStockTotals(): Promise<AtelierStockTotals> {
+  return apiFetch<AtelierStockTotals>(`${ATELIER_BASE}/stock/totals`);
+}
+
+// --- Atelier (module-5): counter desk (block 4) ---
+
+export function listAtelierDeskTeams(festivalId: number): Promise<AtelierDeskTeam[]> {
+  return apiFetch<AtelierDeskTeam[]>(`${ATELIER_BASE}/desk/teams?festival_id=${festivalId}`);
+}
+
+/** The worker with exactly this first + family name (the person's key), or null. */
+export function lookupAtelierDeskPerson(
+  firstName: string,
+  lastName: string,
+  festivalId: number | null = null,
+): Promise<AtelierDeskPerson | null> {
+  const params = new URLSearchParams({ first_name: firstName, last_name: lastName });
+  if (festivalId !== null) params.set("festival_id", String(festivalId));
+  return apiFetch<AtelierDeskPerson | null>(`${ATELIER_BASE}/desk/persons/lookup?${params.toString()}`);
+}
+
+/** Workers whose name, email or bracelet number contains the text (at least 2 characters). */
+export function searchAtelierDeskPersons(query: string): Promise<AtelierDeskPerson[]> {
+  return apiFetch<AtelierDeskPerson[]>(`${ATELIER_BASE}/desk/persons?q=${encodeURIComponent(query)}`);
+}
+
+export function getAtelierDeskContext(festivalId: number, teamId: number, day: string): Promise<AtelierDeskContext> {
+  return apiFetch<AtelierDeskContext>(
+    `${ATELIER_BASE}/desk/context?festival_id=${festivalId}&team_id=${teamId}&day=${day}`,
+  );
+}
+
+/** Ophalen: hand out one piece of each chosen article to a person. */
+export function createAtelierHandout(payload: {
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  bracelet_number: string | null;
+  scan_id: number | null;
+  festival_id: number;
+  team_id: number;
+  day: string;
+  lines: { article_id: number; article_size_id: number }[];
+}): Promise<AtelierHandout> {
+  return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function listAtelierPersonOpenHandouts(personId: number): Promise<AtelierHandout[]> {
+  return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/open`);
+}
+
+/** Terugbrengen: the ticked pieces come back. */
+export function returnAtelierHandoutLines(handoutId: number, lineIds: number[], scanId: number | null = null): Promise<AtelierHandout> {
+  return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts/${handoutId}/return`, {
+    method: "POST",
+    body: JSON.stringify({ line_ids: lineIds, scan_id: scanId }),
+  });
+}
+
+// --- Atelier (module-5): wristband scans (block 5) ---
+
+/** The person wearing this wristband number at the festival, or null. */
+export function lookupAtelierPersonByBracelet(festivalId: number, number: string): Promise<AtelierDeskPerson | null> {
+  const params = new URLSearchParams({ festival_id: String(festivalId), number });
+  return apiFetch<AtelierDeskPerson | null>(`${ATELIER_BASE}/desk/persons/by-bracelet?${params.toString()}`);
+}
+
+export function getAtelierWristbandRequired(): Promise<boolean> {
+  return apiFetch<boolean>(`${ATELIER_BASE}/desk/wristband-required`);
+}
+
+export function listAtelierDeskScanners(): Promise<AtelierScanner[]> {
+  return apiFetch<AtelierScanner[]>(`${ATELIER_BASE}/desk/scanners`);
+}
+
+/** The scans waiting at this scanner (polled by the desk screen). */
+export function listAtelierWaitingScans(deviceId: string): Promise<AtelierScan[]> {
+  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/desk/scans?device_id=${encodeURIComponent(deviceId)}`);
+}
+
+export function dismissAtelierScan(scanId: number): Promise<void> {
+  return apiFetch<void>(`${ATELIER_BASE}/desk/scans/${scanId}/dismiss`, { method: "POST" });
+}
+
+export function getAtelierSettings(): Promise<AtelierSettings> {
+  return apiFetch<AtelierSettings>(`${ATELIER_BASE}/settings`);
+}
+
+export function saveAtelierSettings(wristbandRequired: boolean): Promise<AtelierSettings> {
+  return apiFetch<AtelierSettings>(`${ATELIER_BASE}/settings`, {
+    method: "PUT",
+    body: JSON.stringify({ wristband_required: wristbandRequired }),
+  });
+}
+
+export function listAtelierScanners(): Promise<AtelierScanner[]> {
+  return apiFetch<AtelierScanner[]>(`${ATELIER_BASE}/scanners`);
+}
+
+export function saveAtelierScannerLabel(scannerId: number, label: string | null): Promise<AtelierScanner> {
+  return apiFetch<AtelierScanner>(`${ATELIER_BASE}/scanners/${scannerId}`, {
+    method: "PUT",
+    body: JSON.stringify({ label }),
+  });
+}
+
+/** The latest received scan messages (all statuses), newest first. */
+export function listAtelierScanLog(): Promise<AtelierScan[]> {
+  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/scans`);
+}
+
+export function listAtelierTestTeams(): Promise<{ id: number; name: string; active: boolean }[]> {
+  return apiFetch(`${ATELIER_BASE}/scan-test/teams`);
+}
+
+/** Sends a message through the webhook's processing (no token), marked as a test. */
+export function sendAtelierTestScan(raw: string): Promise<AtelierTestScanResult> {
+  return apiFetch<AtelierTestScanResult>(`${ATELIER_BASE}/scans/test`, { method: "POST", body: JSON.stringify({ raw }) });
+}
+
+/** Uitgifte annuleren (only while nothing was returned). */
+export function cancelAtelierHandout(handoutId: number): Promise<AtelierHandout> {
+  return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts/${handoutId}/cancel`, { method: "POST" });
+}
+
+/** Pick-ups with pieces still out, optionally per festival / day / team. */
+export function listAtelierOpenHandouts(filters: {
+  festivalId: number | null;
+  day: string | null;
+  teamId: number | null;
+}): Promise<AtelierHandout[]> {
+  const params = new URLSearchParams();
+  if (filters.festivalId !== null) params.set("festival_id", String(filters.festivalId));
+  if (filters.day) params.set("day", filters.day);
+  if (filters.teamId !== null) params.set("team_id", String(filters.teamId));
+  const query = params.toString();
+  return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/open${query ? `?${query}` : ""}`);
+}
+
+export function getAtelierDeskStats(): Promise<AtelierDeskStats> {
+  return apiFetch<AtelierDeskStats>(`${ATELIER_BASE}/desk/stats`);
+}
+
+/** Uploads one Data Upload/Download tile's XLSX (path = "sizes", "articles", ...). */
+export function importAtelierXlsx(path: string, file: File): Promise<AtelierImportResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return sendAtelierForm<AtelierImportResponse>(`/${path}-import`, "POST", formData);
 }
 
 // --- Walkies (module-6): custom roles with per-screen permissions ---

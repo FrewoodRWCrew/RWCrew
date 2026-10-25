@@ -83,6 +83,12 @@ class Settings(BaseSettings):
     # an emergency/ops switch to keep the job from starting in a process.
     tagscan_auto_scan_worker: bool = True
 
+    # Atelier (module-5): the shared secret the wristband company sends as
+    # "token" in every scan message posted to the public webhook
+    # (app/modules/module_5/scan_webhook_router.py). Empty = every webhook
+    # message is refused (and logged); the Test-scan screen works without it.
+    atelier_webhook_token: str = ""
+
     # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
     # (https://resend.com). The API key is secret and set per environment in
     # the server's .env; left empty (the default, and in local dev/tests),

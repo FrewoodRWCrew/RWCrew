@@ -55,6 +55,8 @@ Below the calculator are your **recent calculations**; click one to show that ka
 
 > The formula itself is not shown here. Administrators change it under **Settings**.
 
+![Karcode Simulator](karcode.png)
+
 ## [kar-planning | kartracker.karplanning] Kar Planning
 An overview of the whole fleet: per kar the kar number, status, team, transport type and location. For the year in the header, every active festival gets a column with the delivery location planned for the kar's team. If the team unchecked a festival in Altsien Select, an empty cell reads **Not active** and counts as planned.
 
@@ -113,6 +115,8 @@ Next to every line is its **saved terreinpositie**, so you see what changes befo
 
 > Nothing changes until you save: **Undo changes** brings back the last saved order. Inactive delivery locations are not on this screen and keep their terreinpositie.
 
+![Delivery order](delivery-order.png)
+
 ## [initial-delivery | kartracker.initieleleverplanning] Initial delivery planning
 The **Planning analyses** group holds analyses of what has to be organised before, during or after the festival. **Initial delivery planning** shows which karren have to be delivered at the start, and where, for the year in the header.
 
@@ -134,6 +138,8 @@ A kar goes to the delivery location planned in **Plan a kar** for its team at th
 With **Add map** a **Delivery route** page is added: the ground plan with the route from 1 to the end (dashed line), the delivery locations as numbered badges, locations without a position as grey dots and the distribution points as black squares. The map zooms in on the printed locations. The legend on the right lists the tour's stops (position, description and zone). Locations outside the ground plan or without coordinates are listed under the legend.
 
 > This screen changes nothing. Change the order on **Delivery order** and the locations on **Plan a kar**.
+
+![Initial delivery planning](initial-delivery.png)
 
 ## [kar-moves | kartracker.karverplaatsingen] Moves between festivals
 **Moves between festivals** shows which karren have to be moved on the ground between two festivals, for the year in the header. That is needed when a team has a different delivery location in **Plan a kar** at the next festival than at the previous one.
@@ -161,6 +167,8 @@ With **Add map** a map page is added: the ground plan with the pick-up locations
 
 > This screen changes nothing. Change the locations in **Plan a kar** and the order in **Delivery order**.
 
+![Moves between festivals](kar-moves.png)
+
 ## [special-tour-planning | kartracker.levertoerplanning] Special delivery tours planning
 **Special delivery tours planning** shows which karren a special delivery tour (for example the laundry tour or the ice cube tour) passes by at a festival and where they stand, for the year in the header.
 
@@ -175,6 +183,8 @@ A kar of a team on two chosen tours appears only once; the **Delivery tour** col
 The list shows the tour's **stops**: the delivery locations in the order of the **Delivery order** (locations without a position after them, by name), numbered **Stop 1, 2, 3, …**, each with the karren standing there (by kar number). Distribution points aren't shown: the tour passes by the karren, nothing is picked up. Filtering and ticking (Shift-click for a range) work like in the Initial delivery planning. **Print delivery planning** makes a PDF with the stops, the tours and the festival at the top and a **Delivered** box per kar; **Add map** adds a map page with every stop as a numbered badge and the route from stop 1 to the last. Put the delivery locations in the **Delivery order** for a sensible route.
 
 > This screen changes nothing. Link teams to a tour on their team fiche and change their location in **Plan a kar**.
+
+![Special delivery tours planning](special-tour-planning.png)
 
 ## [kar-management | kartracker.karmanagement] KarManagement
 The fleet: every kar with its kar number, status, team, transport type, last location and when it was last logged.
@@ -215,6 +225,8 @@ The special delivery tours that regularly pass by a number of teams, for example
 3. **Delete** only works when no team is linked to the tour any more.
 
 The **Teams** column shows which teams are on the tour. You link them on the team fiche in MasterData (field **Delivery tours**); the planning per festival is on **Special delivery tours planning**.
+
+![Special delivery tours](special-tours.png)
 
 ## [afleverlocaties | kartracker.afleverlocaties] Delivery locations
 The places karren are delivered to: name, description, zone, distribution point, coordinates, site position, Altsien Kernlid and whether the location is active.
@@ -283,6 +295,8 @@ This screen holds the **karcode formula** the Karcode Simulator uses to compute 
 - Example: **LEFT(kar*500+3118; 4)** gives kar 36 the code **2111** (36 × 500 + 3118 = 21118, the first 4 digits).
 
 Try a formula first under **Test** with a kar number: the result appears right away, nothing is saved. **Save** makes the formula active for everyone; only users with "edit" on this screen can save. Below you see who last changed the formula.
+
+![Settings](settings.png)
 
 ## [roles | kartracker.roles] Roles
 A role decides what someone may do in KarTracker, per screen: **View**, **Create**, **Edit** and **Delete**.

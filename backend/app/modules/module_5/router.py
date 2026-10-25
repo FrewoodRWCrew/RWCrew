@@ -6,22 +6,24 @@
 # below is gated per-screen, per-action.
 #
 # Atelier is where the atelier team hands out festival clothing (T-shirts,
-# hoodies, ...) at the start of a shift and takes it back afterwards. For now
-# the module is only a shell: its KPI page plus the access-rights screens.
-# The hand-out/return, stock and RFID (TagScan) endpoints follow in phase 2.
+# hoodies, ...) at the start of a shift and takes it back afterwards. This file
+# holds the access-rights screens plus the lookups every screen shares; the
+# masterdata screens live in masterdata_router.py.
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_role import AtelierRole
 from app.db.models.atelier_role_permission import AtelierRolePermission
 from app.db.models.atelier_screen import AtelierScreen
 from app.db.models.atelier_user_role import AtelierUserRole
 from app.db.models.module import Module
+from app.db.models.season import Season
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.help.routes import register_help_route
@@ -38,6 +40,7 @@ from app.schemas.atelier import (
     RoleCreateRequest,
     RoleResponse,
     RoleUpdateRequest,
+    SeasonSummaryResponse,
     ScreenPermissionResponse,
     ScreenResponse,
     SetRolePermissionsRequest,
@@ -360,3 +363,30 @@ def get_my_permissions(
         editable_screen_keys=screen_keys_allowed(db, current_user, "edit"),
         deletable_screen_keys=screen_keys_allowed(db, current_user, "delete"),
     )
+
+
+# --- Lookups and pictures (every Atelier user) ---------------------------------
+
+
+@router.get("/seasons", response_model=list[SeasonSummaryResponse])
+def list_seasons(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> list[Season]:
+    """Every season (open and closed) for the module's own season dropdown."""
+    return list(db.scalars(select(Season).order_by(Season.name)).all())
+
+
+@router.get("/articles/{article_id}/image")
+def get_article_image(
+    article_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_module_access),
+) -> Response:
+    """An article's picture — plain module access, so every Atelier screen
+    can show it. Changing it lives in masterdata_router.py.
+    """
+    article = db.get(AtelierArticle, article_id)
+    if article is None or article.image_data is None or article.image_content_type is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Article has no image")
+    return Response(content=article.image_data, media_type=article.image_content_type)

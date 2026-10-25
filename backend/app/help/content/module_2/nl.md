@@ -55,6 +55,8 @@ Onder de rekenmachine staan je **laatste berekeningen**; klik er één aan om di
 
 > De formule zelf zie je hier niet. Beheerders passen ze aan onder **Instellingen**.
 
+![Karcode Simulator](karcode.png)
+
 ## [kar-planning | kartracker.karplanning] Kar Planning
 Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg, het transporttype en de locatie. Voor het jaartal in de kopbalk krijgt elk actief festival een kolom met de afleverlocatie die voor de ploeg van de kar gepland is. Heeft de ploeg een festival afgevinkt in Altsien Select, dan staat er **Niet actief** in een lege cel en telt die als gepland.
 
@@ -113,6 +115,8 @@ Met **Kaart** (rechtsboven) open je het grondplan met de toer zoals hij nu op he
 
 > Zolang je niet opslaat, is er niets gewijzigd: **Wijzigingen ongedaan maken** zet de laatst opgeslagen volgorde terug. Inactieve afleverlocaties staan niet op dit scherm en houden hun terreinpositie.
 
+![Leveringsvolgorde](delivery-order.png)
+
 ## [initial-delivery | kartracker.initieleleverplanning] Initiële leverplanning
 In de groep **Planningsanalyses** staan analyses van wat voor, tijdens of na het festival georganiseerd moet worden. **Initiële leverplanning** toont welke karren bij de start geleverd moeten worden en waar, voor het jaartal in de kopbalk.
 
@@ -134,6 +138,8 @@ Een kar gaat naar de afleverlocatie die in **Plan a kar** voor zijn ploeg geplan
 Met **Kaart toevoegen** komt er een pagina **Leverroute** bij: het grondplan met de route van 1 tot het einde (stippellijn), de afleverlocaties als genummerde bolletjes, locaties zonder positie als grijze puntjes en de distributiepunten als zwarte vierkantjes. De kaart zoomt in op de afgedrukte locaties. Rechts staat de legende met de stops van de levertoer (positie, omschrijving en zone). Locaties buiten het grondplan of zonder coördinaten worden onder de legende opgesomd.
 
 > Dit scherm wijzigt niets. Pas de volgorde aan in **Leveringsvolgorde** en de locaties in **Plan a kar**.
+
+![Initiële leverplanning](initial-delivery.png)
 
 ## [kar-moves | kartracker.karverplaatsingen] Verplaatsingen tussen festivals
 **Verplaatsingen tussen festivals** toont welke karren tussen twee festivals op het terrein verplaatst moeten worden, voor het jaartal in de kopbalk. Dat is nodig wanneer een ploeg in **Plan a kar** op het volgende festival een andere afleverlocatie heeft dan op het vorige.
@@ -161,6 +167,8 @@ Met **Kaart toevoegen** komt er een kaartpagina bij: het grondplan met de ophaal
 
 > Dit scherm wijzigt niets. Pas de locaties aan in **Plan a kar** en de volgorde in **Leveringsvolgorde**.
 
+![Verplaatsingen tussen festivals](kar-moves.png)
+
 ## [special-tour-planning | kartracker.levertoerplanning] Speciale levertoeren-planning
 **Speciale levertoeren-planning** toont welke karren een speciale levertoer (bijvoorbeeld de wastoer of de ijsblokkentoer) op een festival aandoet en waar ze staan, voor het jaartal in de kopbalk.
 
@@ -175,6 +183,8 @@ Een kar van een ploeg die op twee gekozen levertoeren staat, verschijnt maar é�
 De lijst toont de **stops** van de toer: de afleverlocaties in de volgorde van de **Leveringsvolgorde** (locaties zonder positie daarna, op naam), genummerd **Stop 1, 2, 3, …**, elk met de karren die er staan (op karnummer). Distributiepunten staan er niet bij: de toer komt langs de karren, er wordt niets opgehaald. Filteren en aanvinken (Shift-klik voor een reeks) werken zoals in de Initiële leverplanning. **Print leverplanning** maakt een PDF met de stops, de levertoeren en het festival bovenaan en per kar een vakje **Geleverd**; met **Kaart toevoegen** komt er een kaartpagina bij met elke stop als genummerd bolletje en de route van stop 1 tot de laatste. Zet de afleverlocaties in **Leveringsvolgorde** voor een logische route.
 
 > Dit scherm wijzigt niets. Koppel ploegen aan een levertoer op hun ploegfiche en pas hun locatie aan in **Plan a kar**.
+
+![Speciale levertoeren-planning](special-tour-planning.png)
 
 ## [kar-management | kartracker.karmanagement] KarManagement
 Het wagenpark: elke kar met zijn karnummer, status, ploeg, transporttype, laatste locatie en wanneer hij het laatst geregistreerd werd.
@@ -215,6 +225,8 @@ De speciale levertoeren die regelmatig bij een aantal ploegen langsgaan, bijvoor
 3. **Verwijderen** kan enkel als geen enkele ploeg nog aan de levertoer gekoppeld is.
 
 De kolom **Ploegen** toont welke ploegen op de toer staan. Die koppel je op de ploegfiche in MasterData (veld **Levertoeren**); de planning per festival zie je op **Speciale levertoeren-planning**.
+
+![Speciale levertoeren](special-tours.png)
 
 ## [afleverlocaties | kartracker.afleverlocaties] Afleverlocatie
 De plaatsen waar karren geleverd worden: naam, omschrijving, zone, distributiepunt, coördinaten, terreinpositie, Altsien Kernlid en of de locatie actief is.
@@ -283,6 +295,8 @@ Hier staat de **karcode formule** waarmee de Karcode Simulator de code van een s
 - Voorbeeld: **LEFT(kar*500+3118; 4)** geeft voor kar 36 de code **2111** (36 × 500 + 3118 = 21118, de eerste 4 cijfers).
 
 Test een formule eerst bij **Testen** met een karnummer: het resultaat verschijnt meteen, zonder iets op te slaan. Met **Opslaan** wordt de formule actief voor iedereen; enkel wie "bewerken" mag op dit scherm kan opslaan. Onderaan zie je wie de formule het laatst wijzigde.
+
+![Instellingen](settings.png)
 
 ## [roles | kartracker.roles] Rollen
 Een rol bepaalt wat iemand in KarTracker mag doen, per scherm: **Bekijken**, **Aanmaken**, **Wijzigen** en **Verwijderen**.

@@ -8,6 +8,9 @@
 #     rows and right-aligned numbers;
 #   - footer: "StockMaster · RWCrew", printed by whom, page x / y;
 #   - optional signature boxes and a kar-number QR code (like the Karblad).
+# Another module can use the same style in its own colour and name (e.g.
+# Atelier's picklist): pass `accent_color` and `brand` to StockMasterPDF; the
+# helpers below take the colour from the pdf they draw on.
 #
 # Uses fpdf2, like the other PDFs (module_2/karblad_pdf.py,
 # module_8/ploegfiche_pdf.py). The built-in Helvetica font only knows
@@ -52,9 +55,15 @@ class StockMasterPDF(FPDF):
         doc_number: str | None,
         printed_by: str | None,
         landscape: bool = False,
+        accent_color: tuple[int, int, int] = ACCENT_COLOR,
+        brand: str = "StockMaster",
     ) -> None:
         super().__init__(orientation="L" if landscape else "P", unit="mm", format="A4")
         self.labels = labels
+        # The top band, rules and table headings use this colour; the footer
+        # says "<brand> · RWCrew".
+        self.accent_color = accent_color
+        self.brand = brand
         self.doc_title = title
         self.doc_subtitle = subtitle
         self.doc_number = doc_number
@@ -67,7 +76,7 @@ class StockMasterPDF(FPDF):
 
     def header(self) -> None:
         """Teal band, TeamKar logo, title/subtitle, number and print date."""
-        self.set_fill_color(*ACCENT_COLOR)
+        self.set_fill_color(*self.accent_color)
         self.rect(0, 0, self.w, 3, style="F")
 
         logo_height = 16
@@ -100,7 +109,7 @@ class StockMasterPDF(FPDF):
         self.cell(right_block, 5, pdf_text(self.labels["printed_on"].format(date=self.printed_on)), align="R")
 
         # Teal rule under the header.
-        self.set_draw_color(*ACCENT_COLOR)
+        self.set_draw_color(*self.accent_color)
         self.set_line_width(0.5)
         self.line(self.l_margin, 26, self.w - self.r_margin, 26)
         self.set_y(30)
@@ -113,7 +122,7 @@ class StockMasterPDF(FPDF):
         self.line(self.l_margin, self.get_y() - 1.5, self.w - self.r_margin, self.get_y() - 1.5)
         self.set_font("Helvetica", "", 8)
         self.set_text_color(*MUTED_TEXT)
-        left = "StockMaster · RWCrew"
+        left = f"{self.brand} · RWCrew"
         if self.printed_by:
             left += " · " + self.labels["printed_by"].format(name=self.printed_by)
         self.cell(0, 6, pdf_text(left), align="L")
@@ -137,13 +146,18 @@ def info_rows(pdf: FPDF, rows: Sequence[tuple[str, object]], label_width: float 
     pdf.ln(2)
 
 
+def _accent(pdf: FPDF) -> tuple[int, int, int]:
+    """The accent colour of this document (StockMaster's teal by default)."""
+    return getattr(pdf, "accent_color", ACCENT_COLOR)
+
+
 def section_heading(pdf: FPDF, heading: str) -> None:
     """A section title with a small teal bar in front of it."""
     if pdf.get_y() > pdf.h - 45:
         pdf.add_page()
     pdf.ln(2)
     top = pdf.get_y()
-    pdf.set_fill_color(*ACCENT_COLOR)
+    pdf.set_fill_color(*_accent(pdf))
     pdf.rect(pdf.l_margin, top + 1.2, 1.6, 5.5, style="F")
     pdf.set_fill_color(255, 255, 255)
     pdf.set_xy(pdf.l_margin + 4, top)
@@ -178,7 +192,7 @@ def data_table(
     pdf.set_text_color(*TEXT_DARK)
     pdf.set_draw_color(*BORDER_COLOR)
     pdf.set_line_width(0.2)
-    heading_style = FontFace(emphasis="BOLD", color=(255, 255, 255), fill_color=ACCENT_COLOR)
+    heading_style = FontFace(emphasis="BOLD", color=(255, 255, 255), fill_color=_accent(pdf))
     with pdf.table(
         col_widths=tuple(col_widths),
         width=sum(col_widths),
@@ -224,7 +238,7 @@ def signature_boxes(pdf: FPDF, captions: Sequence[str], labels: dict) -> None:
         pdf.rect(left, top, width, box_height)
         pdf.set_xy(left + 2, top + 1.5)
         pdf.set_font("Helvetica", "B", 9.5)
-        pdf.set_text_color(*ACCENT_COLOR)
+        pdf.set_text_color(*_accent(pdf))
         pdf.cell(width - 4, 5, pdf_text(caption))
         pdf.set_font("Helvetica", "", 8.5)
         pdf.set_text_color(*MUTED_TEXT)

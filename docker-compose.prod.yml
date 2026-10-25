@@ -55,6 +55,9 @@ services:
       # Ops switch for TagScan's automatic background Scan (on/off and
       # interval themselves are set on TagScan's Settings screen).
       TAGSCAN_AUTO_SCAN_WORKER: ${TAGSCAN_AUTO_SCAN_WORKER:-true}
+      # Atelier wristband webhook: the "token" the wristband company sends in
+      # every scan message (backend/app/modules/module_5/scan_webhook_router.py).
+      ATELIER_WEBHOOK_TOKEN: ${ATELIER_WEBHOOK_TOKEN:-}
       # Outgoing email via Resend (backend/app/core/mail.py), e.g. the
       # Intervention Requests "new request" mail. Empty RESEND_API_KEY or
       # MAIL_FROM = mails are skipped (only a log line), never an error.

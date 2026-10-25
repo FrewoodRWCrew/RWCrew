@@ -28,12 +28,39 @@ class ScreenDefinition:
 
 # Every screen Atelier currently has. Each is gated independently:
 # - kpi: the module's main page;
+# - desk / open: the "Balie" group (Ophalen / Terugbrengen — "edit" also
+#   allows "Uitgifte annuleren" — and the pieces not returned yet);
+# - reservations / preparation: the "Reservaties" group (persons per team per
+#   festival, and what to prepare each day + the picklist);
+# - stock / receipt / wash / writeoff / count / bookings / orderneeds: the
+#   "Stock" group (overview, the bookings that change stock, their history
+#   with undo — "edit" on bookings — and the Te bestellen list);
+# - articles / sizes / dataupload: the "Masterdata" group (the clothing
+#   catalogue, its sizes, and the bulk XLSX import/export); what each team
+#   gets is part of its reservation (the old "teampackages" screen is gone);
+# - settings / scantest: the "Instellingen" group (the wristband switch,
+#   scanners, webhook log; and sending a test wristband scan);
 # - roles / users: the access-rights screens.
-# The hand-out/return and stock screens are added here in phase 2.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.kpi", label="KPI", sort_order=1),
-    ScreenDefinition(key="atelier.roles", label="Roles", sort_order=2),
-    ScreenDefinition(key="atelier.users", label="Users", sort_order=3),
+    ScreenDefinition(key="atelier.desk", label="Uitgifte & inname", sort_order=3),
+    ScreenDefinition(key="atelier.open", label="Openstaand", sort_order=4),
+    ScreenDefinition(key="atelier.reservations", label="Reservaties", sort_order=5),
+    ScreenDefinition(key="atelier.preparation", label="Voorbereiden", sort_order=6),
+    ScreenDefinition(key="atelier.stock", label="Stock", sort_order=7),
+    ScreenDefinition(key="atelier.receipt", label="Ontvangst", sort_order=8),
+    ScreenDefinition(key="atelier.wash", label="Wassen", sort_order=9),
+    ScreenDefinition(key="atelier.writeoff", label="Afboeken", sort_order=10),
+    ScreenDefinition(key="atelier.count", label="Telling", sort_order=11),
+    ScreenDefinition(key="atelier.bookings", label="Boekingen", sort_order=12),
+    ScreenDefinition(key="atelier.orderneeds", label="Te bestellen", sort_order=13),
+    ScreenDefinition(key="atelier.articles", label="Artikelen", sort_order=20),
+    ScreenDefinition(key="atelier.sizes", label="Maten", sort_order=21),
+    ScreenDefinition(key="atelier.dataupload", label="Data Upload/Download", sort_order=22),
+    ScreenDefinition(key="atelier.settings", label="Instellingen", sort_order=30),
+    ScreenDefinition(key="atelier.scantest", label="Test-scan", sort_order=31),
+    ScreenDefinition(key="atelier.roles", label="Roles", sort_order=90),
+    ScreenDefinition(key="atelier.users", label="Users", sort_order=91),
 ]
 
 

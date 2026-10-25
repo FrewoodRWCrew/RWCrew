@@ -49,8 +49,8 @@ frontend/
                                   Access Rights — see "Altsien Select (module-8)" below
     modules/module-4/             StockMaster: warehouse stock (free + in kars), bookings,
                                   kar needs, "Te bestellen", PDFs — see "StockMaster (module-4)"
-    modules/module-5/, module-6/  Atelier and Walkies: shells (KPI page + Access Rights) — see
-                                  "Atelier (module-5) and Walkies (module-6)" below
+    modules/module-5/, module-6/  Atelier (work clothing; blocks 1–5 built) and Walkies (still a
+                                  shell) — see "Atelier (module-5) and Walkies (module-6)" below
     modules/module-7/             Placeholder module: thin wrapper around ModulePlaceholderPage
                                   until real content is designed
     modules/module-10/            "Mobile App": install page for the phone app (QR code + steps),
@@ -235,16 +235,86 @@ is still linked is refused (400) — deactivate it instead (inactive tours stay 
 
 ## Atelier (module-5) and Walkies (module-6)
 
-Two modules that are only a **shell** so far (phase 1): tile with name + icon (`Shirt` / custom
-`components/icons/walkie-talkie-icon.tsx`), a KPI landing page with a "coming in phase 2" notice, and Access
-Rights (Roles/Users) with the same custom-roles-per-screen system as StockMaster (`Atelier_*` / `Walkies_*`
-tables, screens `atelier.kpi|roles|users` and `walkies.kpi|roles|users` in `module_5/screens.py` /
-`module_6/screens.py`). Translations under `atelier.*` / `walkies.*`, help manuals in `app/help/content/module_5|6/`
-(no screenshots yet).
+Started as a **shell**: tile with name + icon (`Shirt` / custom `components/icons/walkie-talkie-icon.tsx`), a KPI
+landing page, and Access Rights (Roles/Users) with the same custom-roles-per-screen system as StockMaster
+(`Atelier_*` / `Walkies_*` tables, screens in `module_5/screens.py` / `module_6/screens.py`). Translations under
+`atelier.*` / `walkies.*`, help manuals in `app/help/content/module_5|6/` (no screenshots yet). Walkies is still
+only that shell.
 
 - **Atelier**: the atelier team hands out festival work clothing (T-shirts, hoodies for VIP, RW terras, …) at the
-  start of a shift and takes it back afterwards. Phase 2: hand-out/return tracing, stock follow-up, and per-piece
-  tracking by RFID via TagScan.
+  start of a shift and takes **everything** back afterwards. Workers are **not** in a database: they belong to a
+  ploeg (MasterData team), whose package says what they get. Built in blocks (see `docs/work-history.md`,
+  2026-10-25): **1 Masterdata (done)**, **2 reservations (done)**, **3 stock (done**: receipt without purchase orders or suppliers, own washing, write-off, count; one atelier store), **4 counter desk (done)**:
+  hand-out/return (first name, family name, email, bracelet number typed), **5 wristband scans via webhook (done)**, 6 RFID per piece
+  via TagScan.
+- **Atelier masterdata** (sidebar group "Masterdata", `/modules/module-5/masterdata/...`, screens
+  `atelier.articles|sizes|dataupload`, endpoints in `module_5/masterdata_router.py`):
+  `Atelier_size` = name + **fit** (`women`/`men`/`unisex`, fixed list `FITS` in the model, unique name+fit; seeded
+  XS–XXL per fit + OneSize·Unisex); `Atelier_article` (own catalogue, not StockMaster products; unique code,
+  picture like products, `is_tag_managed` for block 6); `Atelier_article_size` = the stock-keeping unit of the later
+  blocks (managed from the article form's size checklist, with `size_share_pct`; unticking deletes it — refuse once
+  stock exists). Used things are deactivated, not deleted (400). XLSX per table in `module_5/xlsx_imports.py`
+  (sizes/articles by `id`, the rest by natural key; columns left out stay unchanged). The module has its own season
+  dropdown (`atelier-season-select.tsx`, `?season=`) and `GET /seasons`; `/articles` is readable with the
+  Reservaties screen too.
+- **Atelier reservations** (sidebar group "Reservaties", `/modules/module-5/reservations[/preparation]`, screens
+  `atelier.reservations|preparation`, endpoints in `module_5/reservation_router.py`): **one page per festival** with,
+  per team, the **number of persons and its package** — `Atelier_reservation` (festival + team: persons, note,
+  changer = session user) + `Atelier_reservation_line` (article × pieces per person; **size is chosen at the
+  desk**). The package is **per festival** (there is no season package any more: the old Ploegpakketten screen and
+  `Atelier_team_package` were removed on 2026-10-25, migration `d7f1b4c8e253` copied them onto every festival of
+  their season). Written only by `module_5/reservation_service.py`; a reservation without persons, note and
+  package is deleted. Every active team is listed (`offered_teams`). "Copy from last year" =
+  `previous_festival` (previous season, same `normalize_festival_name`): package lines added/updated (never
+  removed, inactive articles skipped), persons only while still 0. The team works **every festival day** and
+  returns the clothing **every evening**, so each day needs persons × package. `preparation_service.py` computes
+  (nothing stored) store totals per article with a size estimate from `Atelier_article_size.size_share_pct` (must
+  total 100% per article, else equal split; largest-remainder rounding) and a bundle per team. Picklist PDF per day
+  (`picklist_pdf.py`, StockMaster's house style via `StockMasterPDF(accent_color=…, brand="Atelier")`). Festival
+  choice travels in `?festival=` (`atelier-festival-select.tsx`). History/lock of changed reservations: not decided.
+  The KPI's reservation stats list per festival `teams_missing` (`_forgotten_teams`): active teams with persons at
+  another festival of the season but no persons and no note here; 0 persons + a note silences it.
+- **Atelier stock** (sidebar group "Stock", `/modules/module-5/stock[/receipt|wash|write-off|count|bookings|order-needs]`,
+  screens `atelier.stock|receipt|wash|writeoff|count|bookings|orderneeds`, endpoints in `module_5/stock_router.py`):
+  pieces per **article size** and status `available` / `to_wash` / `handed_out` (the last one for block 4). **Only
+  `module_5/stock_service.py` changes stock** — the StockMaster pattern: `Atelier_stock_document` (`AT-<year>-<id>`,
+  types receipt/washed/write_off/count/reversal) + `Atelier_stock_movement` (from/to status, NULL = outside) +
+  `Atelier_stock_balance` (row per article size + status, locked `FOR UPDATE`, emptied rows deleted, never negative);
+  never commits; `StockError("code", *params)` → detail `"code|param|…"`, translated under `atelier.stock.errors.<code>`
+  (a status code as parameter is shown translated); booker = session user; undo = `reverse_document` (needs "edit" on
+  `atelier.bookings`). Write-off reasons are a fixed list (damaged/lost/not_returned/other, other needs a note).
+  `stock_needs.py`: overview, **Te bestellen** (per article size the highest festival-day size estimate of the season
+  − owned), min-stock alerts (`Atelier_article_size.min_stock`, orange banner `atelier-min-stock-banner.tsx` in the
+  layout, re-counted on `ATELIER_STOCK_CHANGED_EVENT`). Voorbereiden's size estimates carry `available`/`owned` (red =
+  not owned, orange = still in the wash). An article size with stock bookings can't be unticked and its article can't
+  be deleted. PDFs in `module_5/stock_pdfs.py` (Boekingsbon, Bestellijst).
+- **Atelier counter desk** (sidebar group "Balie", `/modules/module-5/desk[/open]`, screens `atelier.desk|open`,
+  endpoints in `module_5/desk_router.py`, rules in `module_5/desk_service.py` — the only writer of `Atelier_person`
+  (**first name + family name** = the person's key, `name_key` "first|last" lowercase unique; email **optional**, not
+  unique; the wristband number is **per festival** in `Atelier_person_bracelet`, unique within the festival), `Atelier_handout` (person, festival, team, day, status
+  open/returned/cancelled, its `hand_out` stock document) and `Atelier_handout_line` (article + article size,
+  `returned_at` + return document)). **Every transaction starts with the choice "Ophalen" / "Terugbrengen"** (big
+  buttons, keys 1/2) in `desk-screen.tsx`, then back to that choice. Ophalen: only articles of the team's package for
+  that festival, **1 piece each** (size picked at the desk), never an article the person still has out; more people than
+  reserved is only an orange warning. Terugbrengen: tick what's back (partial allowed) → `return` (handed out → to
+  wash). `stock_service.hand_out` / `return_pieces`; those documents can't be undone on Boekingen (`use_desk`) — only
+  "Uitgifte annuleren" (`edit` on the desk, while nothing was returned). **Package quantity is always 1**
+  (`reservation_service.PACKAGE_QUANTITY`, forced on save/copy/XLSX; migration `f9b3d6e1a475` set existing lines to 1;
+  the field stays visible, read-only). "Openstaand" = open pieces per person; write-offs stay manual.
+- **Atelier wristband scans** (block 5): the wristband company scans at our counter and posts one JSON message per
+  scan to the **public webhook** `POST /api/public/atelier/wristband-scan` (`module_5/scan_webhook_router.py`, body read
+  raw). Its `token` must equal **`ATELIER_WEBHOOK_TOKEN`** (config `atelier_webhook_token`; also in
+  `docker-compose.prod.yml` and `.env.*.example`; empty = everything refused). `module_5/scan_service.process_message` —
+  the only writer of `Atelier_scan` / `Atelier_scanner` — logs **every** message (status new/used/dismissed/ignored/
+  refused + detail + raw), maps `data.device.id` → scanner (auto-registered, labelled on Instellingen),
+  `data.id` → wristband number, `data.person.first_name/last_name`, `data.attending_group.name` → team (matched by
+  name, ignoring case), optional email/size; only `event = crew_participation` becomes `new`. The desk screen picks its
+  scanner (localStorage via `useSyncExternalStore`) and polls `GET /desk/scans?device_id=` every 2 s; a waiting scan
+  shows as a card on the Ophalen/Terugbrengen choice and pre-fills the transaction, which sends `scan_id` (marked
+  used). Global switch `Atelier_settings.wristband_required` (`bracelet_required`). Screens `atelier.settings`
+  (switch, scanners, message log) and **`atelier.scantest`** (form → company JSON, or drop/paste a .json; same
+  processing without token, `source = "test"`) — the real company connects from May 2027. Endpoints in
+  `module_5/scan_router.py`.
 - **Walkies**: management of the festival's walkie-talkies. Content follows in phase 2.
 - A new screen = a `ScreenDefinition`, a sidebar link (`components/module-5|6/*-sidebar.tsx`), a line in the
   `*-help.ts` routes + a manual chapter, and an entry in the landing page's `FALLBACK_SCREENS`.

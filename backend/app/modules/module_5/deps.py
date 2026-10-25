@@ -117,3 +117,21 @@ def require_screen_permission(screen_key: str, action: PermissionAction):
         return current_user
 
     return dependency
+
+
+def require_view_on_any(*screen_keys: str):
+    """Build a dependency that lets a request through when the caller may
+    view at least one of these screens — for lists several screens need
+    (e.g. the sizes for both Maten and the article form)."""
+
+    def dependency(
+        db: Session = Depends(get_db),
+        current_user: User = Depends(require_module_access),
+    ) -> User:
+        if not any(user_can(db, current_user, key, "view") for key in screen_keys):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, detail=f"Not allowed to view on {' / '.join(screen_keys)}"
+            )
+        return current_user
+
+    return dependency

@@ -3,7 +3,8 @@
 // layout.tsx does for module-5 — see
 // components/module-5/atelier-sidebar.tsx for what shows in it.
 // Above every page sits the "Help bij dit scherm" link to the manual's
-// chapter about the open screen (see components/shared/module-help.tsx).
+// chapter about the open screen (see components/shared/module-help.tsx), and
+// the orange minimum-stock banner when sizes are below their minimum.
 
 import { getTranslations } from "next-intl/server";
 import { ServerApiError, serverApiFetch } from "@/lib/server-api";
@@ -12,6 +13,7 @@ import type { AtelierMyPermissions } from "@/lib/types";
 import { AtelierSidebar } from "@/components/module-5/atelier-sidebar";
 import { ATELIER_HELP_ROUTES } from "@/components/module-5/atelier-help";
 import { ScreenHelpButton } from "@/components/shared/module-help";
+import { AtelierMinStockBanner } from "@/components/module-5/atelier-min-stock-banner";
 
 interface AtelierLayoutProps {
   children: React.ReactNode;
@@ -44,6 +46,7 @@ export default async function AtelierLayout({ children }: AtelierLayoutProps) {
       <AtelierSidebar viewableScreenKeys={permissions.viewable_screen_keys} />
       <div className="min-w-0 flex-1 p-6">
         <ScreenHelpButton moduleKey="module-5" routes={ATELIER_HELP_ROUTES} className="-mt-4 mb-1" />
+        <AtelierMinStockBanner canOpen={permissions.viewable_screen_keys.includes("atelier.stock")} />
         {children}
       </div>
     </div>

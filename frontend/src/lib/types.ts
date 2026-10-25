@@ -1660,6 +1660,370 @@ export type AtelierRole = InterventionRequestsRole;
 export type AtelierUserSummary = InterventionRequestsUserSummary;
 export type AtelierMyPermissions = InterventionRequestsMyPermissions;
 
+/** Who an Atelier size is cut for. */
+export type AtelierFit = "women" | "men" | "unisex";
+
+/** One size on Atelier's Maten screen ("M · Men"). */
+export interface AtelierSize {
+  id: number;
+  name: string;
+  fit: AtelierFit;
+  sort_order: number;
+  active: boolean;
+}
+
+export type AtelierSizeInput = Omit<AtelierSize, "id">;
+
+/** One size an Atelier article comes in. */
+export interface AtelierArticleSize {
+  id: number;
+  size_id: number;
+  min_stock: number | null;
+  /** Share (%) of the article's pieces to prepare in this size. */
+  size_share_pct: number | null;
+  active: boolean;
+}
+
+/** One clothing article with its sizes (Atelier's Artikelen screen). */
+export interface AtelierArticle {
+  id: number;
+  code: string;
+  name: string;
+  description: string | null;
+  colour: string | null;
+  cost: number | null;
+  is_tag_managed: boolean;
+  active: boolean;
+  has_image: boolean;
+  image_updated_at: string | null;
+  sizes: AtelierArticleSize[];
+}
+
+/** What the article form sends; `sizes` is the whole size list. */
+export interface AtelierArticleInput {
+  code: string;
+  name: string;
+  description: string | null;
+  colour: string | null;
+  cost: number | null;
+  is_tag_managed: boolean;
+  active: boolean;
+  sizes: { size_id: number; min_stock: number | null; size_share_pct: number | null; active: boolean }[];
+}
+
+/** A festival of the season with its days (ISO dates). */
+export interface AtelierFestival {
+  id: number;
+  name: string;
+  start_date: string;
+  end_date: string;
+  days: string[];
+}
+
+/** One package line: each person gets N of this article. */
+export interface AtelierPackageLine {
+  article_id: number;
+  quantity_per_person: number;
+}
+
+/** One team on a festival's Reservaties table: persons + its package. */
+export interface AtelierReservationRow {
+  team_id: number;
+  team_name: string;
+  team_active: boolean;
+  persons: number;
+  lines: AtelierPackageLine[];
+  note: string | null;
+  updated_by_name: string | null;
+  updated_at: string | null;
+}
+
+/** What to prepare for a festival — the same every festival day. */
+export interface AtelierPreparation {
+  festival: AtelierFestival;
+  persons_per_day: number;
+  pieces_per_day: number;
+  articles: {
+    article_id: number;
+    article_code: string;
+    article_name: string;
+    quantity: number;
+    sizes: {
+      size_id: number;
+      article_size_id: number;
+      size_name: string;
+      fit: AtelierFit;
+      quantity: number;
+      /** The store's pieces of this size: available now, and owned in total. */
+      available: number;
+      owned: number;
+    }[];
+    equal_split: boolean;
+  }[];
+  bundles: {
+    team_id: number;
+    team_name: string;
+    persons: number;
+    lines: { article_id: number; article_name: string; quantity: number }[];
+  }[];
+  teams_without_package: string[];
+}
+
+/** The KPI page's line for one festival. */
+export interface AtelierFestivalReservationStats {
+  festival: AtelierFestival;
+  persons_per_day: number;
+  pieces_per_day: number;
+  teams_reserved: number;
+  teams_without_package: number;
+  /** Teams reserved at another festival of the season but with nothing here (probably forgotten). */
+  teams_missing: string[];
+}
+
+/** The same festival last season and its reservations ("copy from last year"). */
+export interface AtelierPreviousReservations {
+  festival: AtelierFestival | null;
+  rows: AtelierReservationRow[];
+}
+
+/** The KPI page's masterdata section. */
+export interface AtelierMasterdataStats {
+  articles_active: number;
+  articles_inactive: number;
+  sizes_active: number;
+  article_sizes_active: number;
+}
+
+/** Where a piece of Atelier clothing is (null = outside the store). */
+export type AtelierStockStatus = "available" | "to_wash" | "handed_out";
+
+/** One article size on Atelier's stock overview. */
+export interface AtelierStockSize {
+  article_size_id: number;
+  size_id: number;
+  size_name: string;
+  fit: AtelierFit;
+  active: boolean;
+  min_stock: number | null;
+  available: number;
+  to_wash: number;
+  handed_out: number;
+}
+
+/** One article on Atelier's stock overview, with its sizes. */
+export interface AtelierStockArticle {
+  article_id: number;
+  code: string;
+  name: string;
+  active: boolean;
+  has_image: boolean;
+  image_updated_at: string | null;
+  sizes: AtelierStockSize[];
+}
+
+/** One line sent to a booking (from_status only on a write-off). */
+export interface AtelierStockLineInput {
+  article_size_id: number;
+  quantity: number;
+  from_status?: "available" | "to_wash";
+}
+
+/** One Atelier stock booking (lines empty in the history list). */
+export interface AtelierStockDocument {
+  id: number;
+  doc_number: string;
+  doc_type: "receipt" | "washed" | "write_off" | "count" | "reversal" | "hand_out" | "return";
+  reference: string | null;
+  reason: string | null;
+  note: string | null;
+  status: "posted" | "reversed";
+  reversal_of_number: string | null;
+  reversed_by_number: string | null;
+  created_by_name: string | null;
+  created_at: string;
+  total_quantity: number;
+  movements: {
+    article_size_id: number;
+    article_id: number;
+    article_name: string;
+    size_name: string;
+    fit: AtelierFit;
+    from_status: AtelierStockStatus | null;
+    to_status: AtelierStockStatus | null;
+    quantity: number;
+  }[];
+}
+
+/** One line of Atelier's "Te bestellen". */
+export interface AtelierOrderNeed {
+  article_id: number;
+  article_code: string;
+  article_name: string;
+  article_size_id: number;
+  size_name: string;
+  fit: AtelierFit;
+  needed: number;
+  festival_name: string;
+  owned: number;
+  to_order: number;
+}
+
+/** An article size below its minimum stock. */
+export interface AtelierMinStockLine {
+  article_size_id: number;
+  article_id: number;
+  article_name: string;
+  size_name: string;
+  fit: AtelierFit;
+  min_stock: number;
+  available: number;
+}
+
+/** The KPI page's stock tiles. */
+export interface AtelierStockTotals {
+  available: number;
+  to_wash: number;
+  handed_out: number;
+  below_min_stock: number;
+}
+
+/** A piece a worker still has (Atelier counter desk). */
+export interface AtelierDeskOpenLine {
+  line_id: number;
+  handout_id: number;
+  article_id: number;
+  article_name: string;
+  size_name: string;
+  fit: AtelierFit;
+  festival_name: string;
+  team_name: string;
+  day: string;
+  handed_out_at: string;
+}
+
+/** A known worker at the counter, with the pieces still out. */
+export interface AtelierDeskPerson {
+  id: number;
+  first_name: string;
+  last_name: string;
+  /** "First Last". */
+  name: string;
+  email: string | null;
+  /** The wristband number at the asked festival (else the latest one known). */
+  bracelet_number: string | null;
+  last_team_id: number | null;
+  open_lines: AtelierDeskOpenLine[];
+}
+
+/** A team with a package at the festival (the desk's team dropdown). */
+export interface AtelierDeskTeam {
+  team_id: number;
+  team_name: string;
+  persons: number;
+}
+
+/** What the desk needs for a team at a festival on a day. */
+export interface AtelierDeskContext {
+  team_id: number;
+  team_name: string;
+  persons_reserved: number;
+  served_today: number;
+  articles: {
+    article_id: number;
+    code: string;
+    name: string;
+    has_image: boolean;
+    image_updated_at: string | null;
+    sizes: { article_size_id: number; size_name: string; fit: AtelierFit; available: number }[];
+  }[];
+}
+
+/** One pick-up with its pieces. */
+export interface AtelierHandout {
+  id: number;
+  person_id: number;
+  person_name: string;
+  email: string | null;
+  bracelet_number: string | null;
+  festival_name: string;
+  team_name: string;
+  day: string;
+  status: "open" | "returned" | "cancelled";
+  created_at: string;
+  created_by_name: string | null;
+  lines: {
+    id: number;
+    article_id: number;
+    article_name: string;
+    size_name: string;
+    fit: AtelierFit;
+    returned_at: string | null;
+  }[];
+}
+
+/** One received wristband-scan message (desk card and settings log). */
+export interface AtelierScan {
+  id: number;
+  received_at: string;
+  source: "webhook" | "test";
+  status: "new" | "used" | "dismissed" | "ignored" | "refused";
+  status_detail: string | null;
+  event: string | null;
+  device_id: string | null;
+  device_name: string | null;
+  wristband_number: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  team_name: string | null;
+  team_id: number | null;
+  profile_name: string | null;
+  email: string | null;
+  size: string | null;
+  person_id: number | null;
+  /** Only in the settings log: the message as received. */
+  raw?: string | null;
+}
+
+/** A scanner of the wristband company (registered by its first message). */
+export interface AtelierScanner {
+  id: number;
+  device_id: string;
+  device_name: string | null;
+  label: string | null;
+  last_seen_at: string | null;
+}
+
+/** Atelier's settings. */
+export interface AtelierSettings {
+  wristband_required: boolean;
+  webhook_path: string;
+  webhook_token_configured: boolean;
+}
+
+/** What the processing did with a test scan. */
+export interface AtelierTestScanResult {
+  scan: AtelierScan;
+  http_status: number;
+  team_name_matched: string | null;
+}
+
+/** The KPI page's desk tiles. */
+export interface AtelierDeskStats {
+  handed_out_today: number;
+  still_out: number;
+  persons_with_open: number;
+}
+
+/** The result of an Atelier XLSX upload: one row per uploaded row. */
+export interface AtelierImportResponse {
+  results: {
+    row_number: number;
+    name: string | null;
+    outcome: "created" | "updated" | "unchanged" | "error";
+    detail: string | null;
+  }[];
+}
+
 export type WalkiesScreen = InterventionRequestsScreen;
 export type WalkiesScreenPermission = InterventionRequestsScreenPermission;
 export type WalkiesRole = InterventionRequestsRole;
