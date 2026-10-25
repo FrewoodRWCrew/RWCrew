@@ -11,17 +11,19 @@
 // cross-table report, "Kar Map" — a read-only map view of Karren/
 // Afleverlocaties/Distributiepunten, "Plan a kar" — pick a delivery location
 // per festival for a team, "Leveringsvolgorde" — the order of the delivery
-// tour, and "Manuele kar beweging" — log a kar movement,
+// tour, "Manuele kar beweging" — log a kar movement, and "Karcode Simulator" —
+// the code of a kar's lock,
 // each gated by its own independent permission), "Planningsanalyses" (analyses
 // of what has to be organised before/during/after the festival: "Initiële
 // leverplanning" so far), "Masterdata" (KarManagement/
-// KarStatussen/Delivery Dates/Data Upload/Download/Grondplan, the Karlijst phase), and
+// KarStatussen/Delivery Dates/Data Upload/Download/Grondplan, the Karlijst phase),
+// "Instellingen" (module-wide settings: the karcode formula), and
 // "Access Rights" (Roles/Users) — same group order as Intervention
 // Requests' own sidebar. Future phases (delivery planning, ...) add their
 // own groups here the same way.
 // At the bottom: the "Help" group with the module's help manual (PDF).
 
-import { ClipboardList, Database, ShieldCheck, Zap } from "lucide-react";
+import { ClipboardList, Database, Settings, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -54,6 +56,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const tKarMoves = useTranslations("karTracker.karMoves");
   const tSpecialTours = useTranslations("karTracker.specialTours");
   const tSpecialTourPlanning = useTranslations("karTracker.specialTourPlanning");
+  const tKarcodeSimulator = useTranslations("karTracker.karcodeSimulator");
+  const tSettings = useTranslations("karTracker.settings");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -78,6 +82,8 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
   const canViewKarMoves = viewableScreenKeys.includes("kartracker.karverplaatsingen");
   const canViewSpecialTours = viewableScreenKeys.includes("kartracker.specialelevertoeren");
   const canViewSpecialTourPlanning = viewableScreenKeys.includes("kartracker.levertoerplanning");
+  const canViewKarcodeSimulator = viewableScreenKeys.includes("kartracker.karcodesimulator");
+  const canViewSettings = viewableScreenKeys.includes("kartracker.settings");
 
   function linkClassName(href: string, level: 0 | 1 = 0) {
     return cn(
@@ -100,7 +106,7 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
         {tLanding("title")}
       </Link>
 
-      {(canViewActions || canViewKarPlanning || canViewKarMap || canViewPlanKar) && (
+      {(canViewActions || canViewKarPlanning || canViewKarMap || canViewPlanKar || canViewKarcodeSimulator) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
             <Zap className="size-4" />
@@ -133,6 +139,14 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
           {canViewActions && (
             <Link href="/modules/module-2/actions" className={linkClassName("/modules/module-2/actions", 1)}>
               {tActions("title")}
+            </Link>
+          )}
+          {canViewKarcodeSimulator && (
+            <Link
+              href="/modules/module-2/actions/karcode-simulator"
+              className={linkClassName("/modules/module-2/actions/karcode-simulator", 1)}
+            >
+              {tKarcodeSimulator("title")}
             </Link>
           )}
         </>
@@ -258,6 +272,18 @@ export function KarTrackerSidebar({ viewableScreenKeys }: KarTrackerSidebarProps
               {tGroundplan("title")}
             </Link>
           )}
+        </>
+      )}
+
+      {canViewSettings && (
+        <>
+          <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
+            <Settings className="size-4" />
+            {t("settingsGroup")}
+          </div>
+          <Link href="/modules/module-2/settings" className={linkClassName("/modules/module-2/settings", 1)}>
+            {tSettings("title")}
+          </Link>
         </>
       )}
 

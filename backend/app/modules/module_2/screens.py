@@ -95,6 +95,13 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     # those tours pass by, grouped like "Initiële leverplanning". Third screen
     # of "Planningsanalyses".
     ScreenDefinition(key="kartracker.levertoerplanning", label="Speciale levertoeren-planning", sort_order=19),
+    # "Karcode Simulator": type a kar number, get the code of its lock
+    # (computed with the formula below). Lives under the "Actions" sidebar
+    # group, right below "Manuele kar beweging".
+    ScreenDefinition(key="kartracker.karcodesimulator", label="Karcode Simulator", sort_order=20),
+    # "Instellingen": module-wide settings, for now the karcode formula
+    # (view = see/test it, edit = change it). Own "Instellingen" sidebar group.
+    ScreenDefinition(key="kartracker.settings", label="Instellingen", sort_order=21),
 ]
 
 

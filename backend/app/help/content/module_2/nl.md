@@ -42,6 +42,19 @@ Onderaan staan de **geregistreerde bewegingen**. Een foute beweging kan je **ver
 
 > Camera en GPS werken enkel via een beveiligde verbinding (https). Op het terrein gebruik je best **KarScan** op de gsm (zie "KarTracker op de gsm").
 
+## [karcode | kartracker.karcodesimulator] Karcode Simulator
+Elke kar wordt afgesloten met een cijferslot. De code van dat slot volgt uit het karnummer via een vaste formule.
+
+1. Tik het **karnummer** in met de toetsen van de rekenmachine, of typ het op je toetsenbord.
+2. De **code** verschijnt meteen groot op het scherm. **=** rekent opnieuw, **C** wist alles en **⌫** wist het laatste cijfer.
+3. Met het **kopieer**-icoon naast de code zet je ze op het klembord.
+
+In plaats van te typen kan je ook op **Scan QR-code van de kar** klikken en de camera op de QR-code van de kar richten: het karnummer wordt ingevuld en de code verschijnt.
+
+Onder de rekenmachine staan je **laatste berekeningen**; klik er één aan om die kar opnieuw te tonen.
+
+> De formule zelf zie je hier niet. Beheerders passen ze aan onder **Instellingen**.
+
 ## [kar-planning | kartracker.karplanning] Kar Planning
 Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg, het transporttype en de locatie. Voor het jaartal in de kopbalk krijgt elk actief festival een kolom met de afleverlocatie die voor de ploeg van de kar gepland is. Heeft de ploeg een festival afgevinkt in Altsien Select, dan staat er **Niet actief** in een lege cel en telt die als gepland.
 
@@ -262,6 +275,15 @@ De grondplannen van de festivalsite, elk met een afbeelding en de coördinaten v
 
 > Ligt het plan wat verschoven op Kar Map? Pas de hoekpunten in kleine stappen aan tot de wegen en gebouwen samenvallen.
 
+## [settings | kartracker.settings] Instellingen
+Hier staat de **karcode formule** waarmee de Karcode Simulator de code van een slot berekent.
+
+- De formule werkt zoals in Excel: gebruik **kar** voor het karnummer, de bewerkingen **+ - * / ^**, haakjes en de functies **LEFT**, **RIGHT**, **MID**, **MOD**, **INT**, **ROUND** en **ABS**.
+- Zet **;** tussen de argumenten van een functie; een kommagetal schrijf je met **,** of **.**.
+- Voorbeeld: **LEFT(kar*500+3118; 4)** geeft voor kar 36 de code **2111** (36 × 500 + 3118 = 21118, de eerste 4 cijfers).
+
+Test een formule eerst bij **Testen** met een karnummer: het resultaat verschijnt meteen, zonder iets op te slaan. Met **Opslaan** wordt de formule actief voor iedereen; enkel wie "bewerken" mag op dit scherm kan opslaan. Onderaan zie je wie de formule het laatst wijzigde.
+
 ## [roles | kartracker.roles] Rollen
 Een rol bepaalt wat iemand in KarTracker mag doen, per scherm: **Bekijken**, **Aanmaken**, **Wijzigen** en **Verwijderen**.
 
@@ -293,5 +315,6 @@ KarTracker heeft ook een gsm-versie, zonder iets te installeren uit een app stor
 - **KarScan**: scan de QR-code op het karblad, kies de nieuwe status en sla de beweging op met de GPS-locatie van je gsm.
 - **Kar Planning**: alle karren met hun geplande afleverlocaties.
 - **Kar Map**: de kaart met karren, afleverlocaties en distributiepunten.
+- **Karcode Simulator**: scan de QR-code op de kar (of tik het karnummer in) en zie meteen de code van het slot.
 
 Je logt in met hetzelfde account en hebt dezelfde rechten als op de pc.

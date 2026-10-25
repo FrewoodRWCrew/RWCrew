@@ -915,3 +915,34 @@ class KarTrackerSeasonOption(BaseModel):
 
     id: int
     name: str
+
+
+class KarcodeResponse(BaseModel):
+    """The lock code of one kar number (Karcode Simulator)."""
+
+    kar: str
+    code: str
+
+
+class KarTrackerSettingsResponse(BaseModel):
+    """KarTracker's settings (Instellingen screen): the karcode formula, who
+    last changed it, and the functions the formula may use.
+    """
+
+    karcode_formula: str
+    karcode_updated_by_name: str | None
+    karcode_updated_at: datetime | None
+    karcode_functions: list[str]
+
+
+class KarcodeFormulaUpdateRequest(BaseModel):
+    """A new karcode formula to save (checked before it is stored)."""
+
+    formula: str = Field(min_length=1, max_length=500)
+
+
+class KarcodePreviewRequest(BaseModel):
+    """Try a formula on one kar number without saving it."""
+
+    formula: str = Field(min_length=1, max_length=500)
+    kar: str = Field(min_length=1, max_length=50)

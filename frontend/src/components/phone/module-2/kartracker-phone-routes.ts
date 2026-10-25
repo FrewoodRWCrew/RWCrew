@@ -9,6 +9,8 @@ export const karTrackerPhoneRoutes = {
   menu: BASE_HREF,
   scan: `${BASE_HREF}/scan`,
   planning: `${BASE_HREF}/planning`,
+  /** The Karcode Simulator (the code of a kar's lock). */
+  karcode: `${BASE_HREF}/karcode`,
   /** The map; with a pin key (e.g. "kar-12") it flies to that pin on opening. */
   map: (focusKey?: string) => (focusKey ? `${BASE_HREF}/map?focus=${encodeURIComponent(focusKey)}` : `${BASE_HREF}/map`),
   /** One kar's movement form, by its kar number. */

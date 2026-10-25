@@ -16,6 +16,7 @@ export const KARTRACKER_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/actions/kar-map`, topic: "kar-map" },
   { path: `${BASE}/actions/plan-kar`, topic: "plan-kar" },
   { path: `${BASE}/actions/delivery-order`, topic: "leveringsvolgorde" },
+  { path: `${BASE}/actions/karcode-simulator`, topic: "karcode" },
   { path: `${BASE}/planning-analyses/initial-delivery`, topic: "initial-delivery" },
   { path: `${BASE}/planning-analyses/kar-moves`, topic: "kar-moves" },
   { path: `${BASE}/planning-analyses/special-tours`, topic: "special-tour-planning" },
@@ -28,6 +29,7 @@ export const KARTRACKER_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/delivery-dates`, topic: "delivery-dates" },
   { path: `${BASE}/data-upload-download`, topic: "data-upload" },
   { path: `${BASE}/groundplan`, topic: "groundplan" },
+  { path: `${BASE}/settings`, topic: "settings" },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },
 ];

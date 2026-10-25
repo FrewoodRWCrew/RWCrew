@@ -2435,6 +2435,7 @@
     "masterdataGroup": "Masterdata",
     "actionsGroup": "Acties",
     "planningAnalysesGroup": "Planningsanalyses",
+    "settingsGroup": "Instellingen",
     "landing": {
       "title": "KPI Overzicht",
       "description": "Het wagenpark, de recente karbewegingen en de voortgang van Plan a kar voor het gekozen jaartal.",
@@ -3132,7 +3133,8 @@
         "karScanTitle": "KarScan",
         "karScanDescription": "Manuele kar beweging: scan de QR-code op een kar.",
         "planningDescription": "Overzicht van alle karren met hun geplande afleverlocaties.",
-        "mapDescription": "Kaart met Karren, Afleverlocaties en Distributiepunten."
+        "mapDescription": "Kaart met Karren, Afleverlocaties en Distributiepunten.",
+        "karcodeDescription": "Bereken de code van het slot van een kar"
       },
       "scan": {
         "title": "Scan de QR-code op de kar",
@@ -3177,6 +3179,69 @@
       },
       "map": {
         "noMatches": "Niets gevonden."
+      }
+    },
+    "karcodeSimulator": {
+      "title": "Karcode Simulator",
+      "description": "Geef een karnummer en krijg meteen de code van het slot van die kar.",
+      "deviceTitle": "Karcode",
+      "karLabel": "Kar",
+      "prompt": "Geef het karnummer",
+      "calculate": "Bereken",
+      "clear": "Alles wissen",
+      "backspace": "Laatste cijfer wissen",
+      "copy": "Kopieer code",
+      "copied": "Code {code} gekopieerd",
+      "copyFailed": "Kopiëren lukte niet",
+      "recent": "Laatste berekeningen",
+      "recentEmpty": "Nog geen berekeningen.",
+      "keyboardHint": "Je kan ook typen: Enter = bereken, Backspace = laatste cijfer, Esc = wissen.",
+      "calculating": "Rekenen…",
+      "inputLabel": "Karnummer",
+      "scanQr": "Scan QR-code van de kar",
+      "scanHint": "Richt de camera op de QR-code van de kar.",
+      "scanCancel": "Annuleren"
+    },
+    "settings": {
+      "title": "Karcode formule",
+      "description": "De formule waarmee de Karcode Simulator de code van het slot van een kar berekent.",
+      "formulaLabel": "Formule",
+      "syntaxTitle": "Zo schrijf je de formule",
+      "syntaxVariable": "kar = het karnummer",
+      "syntaxOperators": "Bewerkingen: + - * / ^ en haakjes",
+      "syntaxFunctions": "Functies: {functions}",
+      "syntaxSeparator": "Zet ; tussen de argumenten van een functie, kommagetallen met , of .",
+      "syntaxExample": "Voorbeeld: LEFT(kar*500+3118; 4) → kar 36 = 2111",
+      "testTitle": "Testen",
+      "testKar": "Karnummer",
+      "testResult": "Code",
+      "testHint": "Test de formule hierboven zonder ze op te slaan.",
+      "save": "Opslaan",
+      "reset": "Ongedaan maken",
+      "saved": "Formule opgeslagen",
+      "confirmTitle": "Formule opslaan?",
+      "confirmDescription": "Vanaf nu berekent de Karcode Simulator elke code met deze formule. Controleer met Testen of de codes kloppen met de sloten.",
+      "lastChanged": "Laatst gewijzigd door {name} op {date}",
+      "neverChanged": "Nog niet gewijzigd: dit is de standaardformule.",
+      "readOnly": "Je kan de formule bekijken en testen, maar niet wijzigen.",
+      "unsaved": "Niet opgeslagen wijzigingen"
+    },
+    "karcode": {
+      "errors": {
+        "invalid_syntax": "De formule klopt niet: controleer de haakjes en zet ; tussen de argumenten.",
+        "invalid_character": "Het teken \"{p1}\" is niet toegelaten in de formule.",
+        "unknown_name": "\"{p1}\" is onbekend. Gebruik kar voor het karnummer.",
+        "unknown_function": "De functie {p1} bestaat niet.",
+        "wrong_arguments": "Verkeerde argumenten voor {p1}.",
+        "not_a_number": "\"{p1}\" is geen getal.",
+        "division_by_zero": "Deling door nul.",
+        "number_too_large": "Het getal wordt te groot.",
+        "too_long": "De formule mag maximaal {p1} tekens lang zijn.",
+        "empty_formula": "Vul een formule in.",
+        "empty_result": "De formule geeft een lege code.",
+        "kar_not_numeric": "Een karnummer bestaat enkel uit cijfers.",
+        "not_allowed": "Je hebt hier geen rechten voor.",
+        "generic": "Er ging iets mis bij het berekenen."
       }
     }
   },

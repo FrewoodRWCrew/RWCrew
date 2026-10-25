@@ -207,6 +207,22 @@ festival; route prefix `/modules/module-2/planning-analyses/`.
   `delivery_planning_pdf.py`): one table (Stop, location, karren, Levertoer, "Geleverd" box) + optional route map with
   a numbered badge per stop and the dashed route 1 → n; printing a subset keeps the screen's stop numbers.
 
+## KarTracker (module-2): Karcode
+
+The kar locks' code follows from the kar number via one admin-editable formula (single row `KarTracker_settings`,
+id 1, seeded `LEFT(kar*500+3118; 4)` → kar 36 = 2111). **Only `module_2/karcode_formula.py` checks/computes it**:
+Excel-like (`kar`, + - * / ^, LEFT/RIGHT/MID/MOD/INT/ROUND/ABS, `;` between arguments, `,` or `.` decimals),
+parsed with `ast` and walked over a whitelist — never `eval`. Errors = `KarcodeError` → HTTP 400 `"code|param"`,
+translated under `karTracker.karcode.errors.<code>` (a new code needs both languages). Endpoints in their own
+`module_2/karcode_router.py` (included in `main.py`): `GET /karcode?kar=` (screen `kartracker.karcodesimulator`;
+never returns the formula), `GET /settings` + `POST /settings/karcode/preview` (`kartracker.settings` view) and
+`PUT /settings/karcode` (edit). Screens: "Karcode Simulator" under Acties (calculator UI,
+`components/module-2/karcode-simulator.tsx`) and "Karcode formule" in the sidebar's **Instellingen** group
+(`kartracker-settings.tsx`), where future KarTracker-wide settings go too. The calculator itself is
+`components/module-2/karcode-calculator.tsx` (`variant="desktop"|"phone"`), shared by the web screen and the phone
+page `/m/module-2/karcode` (same screen right); both can fill the kar number by scanning the kar's QR code
+(`qr-scanner.tsx`) or by typing it.
+
 ## KarTracker (module-2): Speciale levertoeren
 
 KarTracker master data `KarTracker_speciale_levertoeren` (name unique, description, active; screen
@@ -347,7 +363,7 @@ accent colour). Every module with its own screens has one: TagScan (module-1), K
 
 The phone version of the app is a Progressive Web App served by the same Next.js frontend: `src/app/manifest.ts`
 makes the site installable ("Add to Home Screen"), and the installed app opens `/m`, a separate section that
-shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map) and
+shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map, Karcode Simulator) and
 Interventies (Akties list/create/edit, KPI overzicht). No desktop sidebar/topbar, no delete, no PDFs.
 This is the only phone app: there is no native (App Store / Play Store) app, no separate phone API, no Bearer
 tokens and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed

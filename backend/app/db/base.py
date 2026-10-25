@@ -39,6 +39,7 @@ from app.db.models.kartracker_screen import KarTrackerScreen  # noqa: F401
 from app.db.models.kartracker_user_role import KarTrackerUserRole  # noqa: F401
 from app.db.models.kartracker_zone import KarTrackerZone  # noqa: F401
 from app.db.models.kartracker_speciale_levertoer import KarTrackerSpecialeLevertoer  # noqa: F401
+from app.db.models.kartracker_settings import KarTrackerSettings  # noqa: F401
 from app.db.models.login_history import LoginHistory  # noqa: F401
 from app.db.models.masterdata_role import MasterDataRole  # noqa: F401
 from app.db.models.masterdata_role_permission import MasterDataRolePermission  # noqa: F401

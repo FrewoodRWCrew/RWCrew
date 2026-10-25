@@ -1155,6 +1155,21 @@ export interface KarTrackerAfleverlocatieInput {
 }
 
 /** One active delivery location on the Leveringsvolgorde screen; terrein_positie null = not yet in the tour. */
+/** The lock code of one kar number (KarTracker's Karcode Simulator). */
+export interface KarTrackerKarcode {
+  kar: string;
+  code: string;
+}
+
+/** KarTracker's settings (the "Instellingen" screen): the karcode formula,
+ *  who last changed it (Belgian time on screen), and the functions it may use. */
+export interface KarTrackerSettings {
+  karcode_formula: string;
+  karcode_updated_by_name: string | null;
+  karcode_updated_at: string | null;
+  karcode_functions: string[];
+}
+
 export interface KarTrackerDeliveryOrderLocation {
   id: number;
   name: string;

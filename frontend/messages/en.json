@@ -2435,6 +2435,7 @@
     "masterdataGroup": "Masterdata",
     "actionsGroup": "Actions",
     "planningAnalysesGroup": "Planning analyses",
+    "settingsGroup": "Settings",
     "landing": {
       "title": "KPI Overview",
       "description": "The fleet, recent kar movements and the Plan a kar progress for the selected year.",
@@ -3132,7 +3133,8 @@
         "karScanTitle": "KarScan",
         "karScanDescription": "Manual kar movement: scan the QR code on a kar.",
         "planningDescription": "Overview of all karren with their planned delivery locations.",
-        "mapDescription": "Map of Karren, Delivery locations and Distribution points."
+        "mapDescription": "Map of Karren, Delivery locations and Distribution points.",
+        "karcodeDescription": "Compute the code of a kar's lock"
       },
       "scan": {
         "title": "Scan the QR code on the kar",
@@ -3177,6 +3179,69 @@
       },
       "map": {
         "noMatches": "Nothing found."
+      }
+    },
+    "karcodeSimulator": {
+      "title": "Karcode Simulator",
+      "description": "Enter a kar number and instantly get the code of that kar's lock.",
+      "deviceTitle": "Karcode",
+      "karLabel": "Kar",
+      "prompt": "Enter the kar number",
+      "calculate": "Calculate",
+      "clear": "Clear all",
+      "backspace": "Delete last digit",
+      "copy": "Copy code",
+      "copied": "Code {code} copied",
+      "copyFailed": "Copying failed",
+      "recent": "Recent calculations",
+      "recentEmpty": "No calculations yet.",
+      "keyboardHint": "You can also type: Enter = calculate, Backspace = last digit, Esc = clear.",
+      "calculating": "Calculating…",
+      "inputLabel": "Kar number",
+      "scanQr": "Scan the kar's QR code",
+      "scanHint": "Point the camera at the kar's QR code.",
+      "scanCancel": "Cancel"
+    },
+    "settings": {
+      "title": "Karcode formula",
+      "description": "The formula the Karcode Simulator uses to compute the code of a kar's lock.",
+      "formulaLabel": "Formula",
+      "syntaxTitle": "How to write the formula",
+      "syntaxVariable": "kar = the kar number",
+      "syntaxOperators": "Operators: + - * / ^ and parentheses",
+      "syntaxFunctions": "Functions: {functions}",
+      "syntaxSeparator": "Put ; between a function's arguments, decimals with , or .",
+      "syntaxExample": "Example: LEFT(kar*500+3118; 4) → kar 36 = 2111",
+      "testTitle": "Test",
+      "testKar": "Kar number",
+      "testResult": "Code",
+      "testHint": "Test the formula above without saving it.",
+      "save": "Save",
+      "reset": "Undo changes",
+      "saved": "Formula saved",
+      "confirmTitle": "Save the formula?",
+      "confirmDescription": "From now on the Karcode Simulator computes every code with this formula. Use Test to check the codes match the locks.",
+      "lastChanged": "Last changed by {name} on {date}",
+      "neverChanged": "Not changed yet: this is the default formula.",
+      "readOnly": "You can view and test the formula, but not change it.",
+      "unsaved": "Unsaved changes"
+    },
+    "karcode": {
+      "errors": {
+        "invalid_syntax": "The formula is not valid: check the parentheses and put ; between arguments.",
+        "invalid_character": "The character \"{p1}\" is not allowed in the formula.",
+        "unknown_name": "\"{p1}\" is unknown. Use kar for the kar number.",
+        "unknown_function": "The function {p1} doesn't exist.",
+        "wrong_arguments": "Wrong arguments for {p1}.",
+        "not_a_number": "\"{p1}\" is not a number.",
+        "division_by_zero": "Division by zero.",
+        "number_too_large": "The number gets too large.",
+        "too_long": "The formula can be at most {p1} characters long.",
+        "empty_formula": "Enter a formula.",
+        "empty_result": "The formula gives an empty code.",
+        "kar_not_numeric": "A kar number consists of digits only.",
+        "not_allowed": "You don't have the rights for this.",
+        "generic": "Something went wrong while calculating."
       }
     }
   },

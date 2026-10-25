@@ -1,7 +1,8 @@
-// KarTracker's phone menu under the heading "ACTIES": KarScan, Kar Planning
-// and Kar Map, each only when the user's role may view that screen.
+// KarTracker's phone menu under the heading "ACTIES": KarScan, Kar Planning,
+// Kar Map and the Karcode Simulator, each only when the user's role may view
+// that screen.
 
-import { List, Map as MapIcon, ScanLine, Zap } from "lucide-react";
+import { List, LockKeyhole, Map as MapIcon, ScanLine, Zap } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import type { KarTrackerPhoneRights } from "@/components/phone/module-2/kartracker-phone-rights";
 import { karTrackerPhoneRoutes } from "@/components/phone/module-2/kartracker-phone-routes";
@@ -13,7 +14,7 @@ const MODULE_KEY = "module-2";
 export async function KarTrackerPhoneMenu({ rights }: { rights: KarTrackerPhoneRights }) {
   const [t, tPhone] = await Promise.all([getTranslations("karTracker"), getTranslations("karTracker.phone.menu")]);
 
-  if (!rights.canViewActions && !rights.canViewPlanning && !rights.canViewMap) {
+  if (!rights.canViewActions && !rights.canViewPlanning && !rights.canViewMap && !rights.canViewKarcode) {
     return <PhoneNotice>{tPhone("noScreens")}</PhoneNotice>;
   }
 
@@ -47,6 +48,15 @@ export async function KarTrackerPhoneMenu({ rights }: { rights: KarTrackerPhoneR
           icon={MapIcon}
           title={t("karMap.title")}
           description={tPhone("mapDescription")}
+          moduleKey={MODULE_KEY}
+        />
+      )}
+      {rights.canViewKarcode && (
+        <PhoneMenuRow
+          href={karTrackerPhoneRoutes.karcode}
+          icon={LockKeyhole}
+          title={t("karcodeSimulator.title")}
+          description={tPhone("karcodeDescription")}
           moduleKey={MODULE_KEY}
         />
       )}

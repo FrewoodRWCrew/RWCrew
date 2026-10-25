@@ -42,6 +42,19 @@ The **logged movements** are listed below. A wrong movement can be **deleted**: 
 
 > Camera and GPS only work over a secure connection (https). On site, **KarScan** on the phone is the easiest (see "KarTracker on the phone").
 
+## [karcode | kartracker.karcodesimulator] Karcode Simulator
+Every kar is closed with a combination lock. The lock's code follows from the kar number through a fixed formula.
+
+1. Enter the **kar number** with the calculator keys, or type it on your keyboard.
+2. The **code** appears right away in large digits. **=** recalculates, **C** clears everything and **⌫** removes the last digit.
+3. The **copy** icon next to the code puts it on the clipboard.
+
+Instead of typing you can also click **Scan the kar's QR code** and point the camera at the kar's QR code: the kar number is filled in and the code appears.
+
+Below the calculator are your **recent calculations**; click one to show that kar again.
+
+> The formula itself is not shown here. Administrators change it under **Settings**.
+
 ## [kar-planning | kartracker.karplanning] Kar Planning
 An overview of the whole fleet: per kar the kar number, status, team, transport type and location. For the year in the header, every active festival gets a column with the delivery location planned for the kar's team. If the team unchecked a festival in Altsien Select, an empty cell reads **Not active** and counts as planned.
 
@@ -262,6 +275,15 @@ The ground plans of the festival site, each with an image and the coordinates of
 
 > Is the plan a bit off on Kar Map? Adjust the corners in small steps until roads and buildings line up.
 
+## [settings | kartracker.settings] Settings
+This screen holds the **karcode formula** the Karcode Simulator uses to compute a lock code.
+
+- The formula works like in Excel: use **kar** for the kar number, the operators **+ - * / ^**, parentheses and the functions **LEFT**, **RIGHT**, **MID**, **MOD**, **INT**, **ROUND** and **ABS**.
+- Put **;** between a function's arguments; write decimals with **,** or **.**.
+- Example: **LEFT(kar*500+3118; 4)** gives kar 36 the code **2111** (36 × 500 + 3118 = 21118, the first 4 digits).
+
+Try a formula first under **Test** with a kar number: the result appears right away, nothing is saved. **Save** makes the formula active for everyone; only users with "edit" on this screen can save. Below you see who last changed the formula.
+
 ## [roles | kartracker.roles] Roles
 A role decides what someone may do in KarTracker, per screen: **View**, **Create**, **Edit** and **Delete**.
 
@@ -293,5 +315,6 @@ KarTracker also has a phone version, without installing anything from an app sto
 - **KarScan**: scan the QR code on the kar sheet, choose the new status and save the movement with your phone's GPS location.
 - **Kar Planning**: all karren with their planned delivery locations.
 - **Kar Map**: the map with karren, delivery locations and distribution points.
+- **Karcode Simulator**: scan the QR code on the kar (or tap in the kar number) and see the code of its lock right away.
 
 You log in with the same account and have the same rights as on the PC.

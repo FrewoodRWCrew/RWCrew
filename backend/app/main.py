@@ -23,6 +23,7 @@ from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
 from app.modules.module_10.router import router as module_10_router
 from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
+from app.modules.module_2.karcode_router import router as module_2_karcode_router
 from app.modules.module_2.router import router as module_2_router
 from app.modules.module_2.screens import sync_screens as sync_kartracker_screens
 from app.modules.module_3.public_router import router as module_3_public_router
@@ -94,6 +95,7 @@ app.include_router(modules_router)
 app.include_router(module_1_router)
 app.include_router(module_1_device_router)
 app.include_router(module_2_router)
+app.include_router(module_2_karcode_router)
 app.include_router(module_3_router)
 app.include_router(module_3_public_router)
 app.include_router(module_4_router)

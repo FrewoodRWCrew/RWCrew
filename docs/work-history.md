@@ -3,6 +3,43 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-25 — KarTracker: Karcode Simulator in the phone app (+ QR scan)
+**Request:** the Karcode Simulator also in KarTracker's phone app, only for the people allowed to use it; the kar
+number can be filled in by scanning the kar's existing QR code, and must also be possible to type manually.
+**Plan:** share the calculator between web and phone (`variant` prop), phone page + menu row gated by the existing
+`kartracker.karcodesimulator` right, a "Scan QR" key opening the existing `QrScanner` full screen; no backend change.
+**Changes:** `components/module-2/karcode-calculator.tsx` (was the body of `karcode-simulator.tsx`, now with the
+scan overlay, phone layout with bigger keys and no native keyboard popping up), `karcode-simulator.tsx` = web
+heading + calculator; phone `kartracker-phone-rights.ts` (`canViewKarcode`), `kartracker-phone-routes.ts`
+(`karcode`), `kartracker-phone-menu.tsx` (row with lock icon), new page `/m/(signed-in)/module-2/karcode`;
+translations (`scanQr`, `scanHint`, `scanCancel`, `phone.menu.karcodeDescription`); help manual (phone list +
+scan paragraph), CLAUDE.md.
+**Verification:** `tsc --noEmit` and eslint clean on the changed files; help tests 30 passed.
+**Notes:** a QR text that isn't only digits shows "a kar number consists of digits only" on the display. The scan
+button is on the web screen too (camera needs https or localhost). Not yet tried on a real phone.
+
+## 2026-10-25 — KarTracker: Karcode Simulator + Instellingen (karcode formula)
+**Request:** a "Karcode Simulator" screen under Acties (below Manuele karbeweging) that computes the code of a kar's
+lock from its kar number (Excel: `=LEFT((B5*500)+3118;4)`), styled like a calculator for user adoption, plus a new
+"Instellingen" menu where admins change the formula.
+**Plan:** one active formula as a free Excel-like expression in a single-row `KarTracker_settings` table, evaluated
+safely server-side (AST whitelist, never eval); two new screens with their own rights; the simulator never sees the
+formula itself; calculator-style UI with a seven-segment display, keypad, keyboard support and recent codes.
+**Changes:** model `kartracker_settings.py` + migration `a7c3e9f1b524` (row 1 = `LEFT(kar*500+3118; 4)`);
+`module_2/karcode_formula.py` (variable `kar`, + - * / ^, LEFT/RIGHT/MID/MOD/INT/ROUND/ABS, `;` between arguments,
+`,`/`.` decimals; errors `code|param`); `module_2/karcode_router.py` (`GET /karcode`, `GET /settings`,
+`POST /settings/karcode/preview`, `PUT /settings/karcode`), included in `main.py`; screens
+`kartracker.karcodesimulator` (20) and `kartracker.settings` (21); frontend pages
+`module-2/actions/karcode-simulator` and `module-2/settings`, components `karcode-simulator.tsx`,
+`kartracker-settings.tsx`, `karcode-common.ts`, sidebar link + new "Instellingen" group, help routes, nl/en
+translations, help manual chapters `karcode` and `settings`.
+**Verification:** `tests/modules/module_2/test_karcode.py` (34 tests: evaluator incl. kar 36 → 2111, refused input,
+rights per screen, preview doesn't save) and the full backend suite: 873 passed. `tsc --noEmit` and eslint clean on
+the changed files. Migration applied locally, backend restarted, `/api/health` ok and `/karcode` answers 401
+without login.
+**Notes:** not yet clicked through in the browser; no help screenshots yet for the two chapters
+(`npm run help:screenshots module-2`); no phone (`/m`) screen.
+
 ## 2026-10-24 — Product master data moved from MasterData to StockMaster
 **Request:** move MasterData's "Producten" group (Producten, Type, Magazijnen, Categorieën, Limieten) to StockMaster
 under a new "Masterdata" submenu.

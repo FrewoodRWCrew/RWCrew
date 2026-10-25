@@ -50,6 +50,8 @@ import type {
   KarTrackerAfleverlocatie,
   KarTrackerAfleverlocatieInput,
   KarTrackerDeliveryOrderLocation,
+  KarTrackerKarcode,
+  KarTrackerSettings,
   KarTrackerInitialDelivery,
   KarTrackerKarMoves,
   KarTrackerDistributiepunt,
@@ -2015,6 +2017,34 @@ export function saveDeliveryOrder(afleverlocatieIds: number[]): Promise<KarTrack
   return apiFetch<KarTrackerDeliveryOrderLocation[]>("/api/modules/module-2/delivery-order", {
     method: "PUT",
     body: JSON.stringify({ afleverlocatie_ids: afleverlocatieIds }),
+  });
+}
+
+// --- Karcode (module-2's "kartracker.karcodesimulator" + "kartracker.settings" screens) ---
+
+/** The lock code of one kar number, computed with the saved formula. */
+export function getKarcode(kar: string): Promise<KarTrackerKarcode> {
+  return apiFetch<KarTrackerKarcode>(`/api/modules/module-2/karcode?kar=${encodeURIComponent(kar)}`);
+}
+
+/** KarTracker's settings: the karcode formula and who last changed it. */
+export function getKarTrackerSettings(): Promise<KarTrackerSettings> {
+  return apiFetch<KarTrackerSettings>("/api/modules/module-2/settings");
+}
+
+/** Try a (not yet saved) karcode formula on one kar number. */
+export function previewKarcodeFormula(formula: string, kar: string): Promise<KarTrackerKarcode> {
+  return apiFetch<KarTrackerKarcode>("/api/modules/module-2/settings/karcode/preview", {
+    method: "POST",
+    body: JSON.stringify({ formula, kar }),
+  });
+}
+
+/** Save a new karcode formula (checked by the backend first). */
+export function updateKarcodeFormula(formula: string): Promise<KarTrackerSettings> {
+  return apiFetch<KarTrackerSettings>("/api/modules/module-2/settings/karcode", {
+    method: "PUT",
+    body: JSON.stringify({ formula }),
   });
 }
 
