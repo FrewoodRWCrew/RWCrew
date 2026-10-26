@@ -1837,7 +1837,10 @@
         "package": "pakket",
         "note": "opmerking",
         "changed": "gewijzigd"
-      }
+      },
+      "packageToggle": "Welke ploegen tonen",
+      "showAllTeams": "Alle ploegen ({count})",
+      "showWithPackage": "Enkel met pakket ({count})"
     },
     "preparation": {
       "title": "Voorbereiden",
@@ -2070,7 +2073,8 @@
       "scanChoose": "Kies Ophalen of Terugbrengen voor deze persoon.",
       "dismissScan": "Negeren",
       "scanWaiting": "Nieuwe scan wacht: {name} (na deze transactie)",
-      "missingBracelet": "Vul het polsbandnummer in (verplicht)."
+      "missingBracelet": "Vul het polsbandnummer in (verplicht).",
+      "scanAlert": "{count, plural, one {# polsbandscan wacht} other {# polsbandscans wachten}} aan de balie"
     },
     "open": {
       "title": "Openstaand",

@@ -51,7 +51,7 @@ Everything per festival on one page: per team **how many people** need clothing 
 
 **Festivals filled in**: per team how many of the festivals it picked in **Altsien Select** already have persons (e.g. *3 / 5*). Green = all filled in, orange = not yet; hover the number to see per festival what's missing. A team that picked nothing yet shows "no selection". A team that picked other festivals but not this one shows "not picked" next to its name.
 
-Every column has a **filter field** above it. A changed team that isn't saved yet always stays visible; the totals always count every team.
+The toggle above the table shows **All teams** or **Only with a package** (the teams with a package at this festival). Every column has a **filter field** above it. A changed team that isn't saved yet always stays visible; the totals always count every team.
 
 The package only applies to this festival. A team with persons but no package gets a warning. A reservation without persons, note and package disappears.
 

@@ -92,7 +92,10 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
   // The edits not saved yet, per team — only kept for the festival they were made on.
   const [edits, setEdits] = useState<{ festivalId: number; byTeam: Record<number, Draft> } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
-  const { filters, setFilter, matches, active: filtering } = useColumnFilters<FilterColumn>();
+  const { filters, setFilter, matches, active: columnFiltering } = useColumnFilters<FilterColumn>();
+  // The toggle above the table: every team, or only the ones with a package.
+  const [onlyWithPackage, setOnlyWithPackage] = useState(false);
+  const filtering = columnFiltering || onlyWithPackage;
 
   const articlesById = new Map(articles.map((article) => [article.id, article]));
   const pending = edits !== null && edits.festivalId === festival?.id ? edits.byTeam : {};
@@ -125,11 +128,14 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
     return { picked, done: picked.filter((item) => item.done).length };
   }
 
-  // The rows matching every column filter; rows with unsaved edits always stay visible.
+  // The rows matching the package toggle and every column filter; rows with
+  // unsaved edits always stay visible.
   const allRows = rows.data ?? [];
+  const withPackageCount = allRows.filter((row) => valueOf(row).lines.length > 0).length;
   const shownRows = allRows.filter((row) => {
     if (pending[row.team_id] !== undefined) return true;
     const value = valueOf(row);
+    if (onlyWithPackage && value.lines.length === 0) return false;
     const progress = progressOf(row);
     return matches({
       team: row.team_name,
@@ -204,6 +210,26 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
           {canEdit && previous.data?.festival && previous.data.rows.length > 0 && (
             <CopyFromLastYear previous={previous.data} articlesById={articlesById} onCopy={handleCopy} />
           )}
+
+          {/* Toggle right above the table: every team, or only the ones with a package. */}
+          <div className="inline-flex w-fit rounded-lg border p-0.5" role="group" aria-label={t("packageToggle")}>
+            <Button
+              size="sm"
+              variant={onlyWithPackage ? "ghost" : "default"}
+              aria-pressed={!onlyWithPackage}
+              onClick={() => setOnlyWithPackage(false)}
+            >
+              {t("showAllTeams", { count: allRows.length })}
+            </Button>
+            <Button
+              size="sm"
+              variant={onlyWithPackage ? "default" : "ghost"}
+              aria-pressed={onlyWithPackage}
+              onClick={() => setOnlyWithPackage(true)}
+            >
+              {t("showWithPackage", { count: withPackageCount })}
+            </Button>
+          </div>
 
           <TooltipProvider delay={200}>
           <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">

@@ -160,16 +160,14 @@ def process_message(db: Session, raw: str, *, source: str, expected_token: str |
     return ProcessResult(scan, 200)
 
 
-def waiting_scans(db: Session, device_id: str) -> list[AtelierScan]:
-    """The "new" scans of a scanner from the last DESK_WINDOW, newest first."""
+def waiting_scans(db: Session, device_id: str | None) -> list[AtelierScan]:
+    """The "new" scans of a scanner (None = of every scanner) from the last
+    DESK_WINDOW, newest first."""
     since = datetime.now(timezone.utc) - DESK_WINDOW
-    return list(
-        db.scalars(
-            select(AtelierScan)
-            .where(AtelierScan.device_id == device_id, AtelierScan.status == NEW, AtelierScan.received_at >= since)
-            .order_by(AtelierScan.id.desc())
-        ).all()
-    )
+    query = select(AtelierScan).where(AtelierScan.status == NEW, AtelierScan.received_at >= since)
+    if device_id is not None:
+        query = query.where(AtelierScan.device_id == device_id)
+    return list(db.scalars(query.order_by(AtelierScan.id.desc())).all())
 
 
 def mark_used(db: Session, scan: AtelierScan, person_id: int) -> None:

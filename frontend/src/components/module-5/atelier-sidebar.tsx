@@ -9,7 +9,8 @@
 // Maten nested under it, Data Upload/Download), "Instellingen" (settings,
 // Test-scan, E-mails) and "Access
 // Rights" (Roles/Users) — each link gated by the user's Atelier role. The
-// next blocks' screens get their own groups above Masterdata.
+// next blocks' screens get their own groups above Masterdata. A red count next
+// to "Uitgifte & inname" warns of wristband scans waiting at the counter.
 
 import { Boxes, CalendarCheck, Database, HandHelping, Settings, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -17,6 +18,7 @@ import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
 import { ModuleHelpMenuLink } from "@/components/shared/module-help";
+import { DeskScanAlert } from "@/components/module-5/desk-scan-alert";
 
 const BASE = "/modules/module-5";
 
@@ -25,6 +27,8 @@ interface MenuLink {
   href: string;
   label: string;
   level: 1 | 2;
+  /** Shown at the right of the link (e.g. the waiting-scans alert). */
+  badge?: React.ReactNode;
 }
 
 interface AtelierSidebarProps {
@@ -43,7 +47,9 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
   const ARTICLES = `${BASE}/masterdata/articles`;
   const DESK = `${BASE}/desk`;
   const deskLinks: MenuLink[] = [
-    ...(can("desk") ? [{ href: DESK, label: t("desk.title"), level: 1 as const }] : []),
+    ...(can("desk")
+      ? [{ href: DESK, label: t("desk.title"), level: 1 as const, badge: <DeskScanAlert enabled /> }]
+      : []),
     ...(can("open") ? [{ href: `${DESK}/open`, label: t("open.title"), level: 1 as const }] : []),
   ];
   const RESERVATIONS = `${BASE}/reservations`;
@@ -123,8 +129,13 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
               {group.label}
             </div>
             {group.links.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClassName(link.href, link.level)}>
+              <Link
+                key={link.href}
+                href={link.href}
+                className={cn(linkClassName(link.href, link.level), link.badge && "flex items-center gap-2")}
+              >
                 {link.label}
+                {link.badge}
               </Link>
             ))}
           </div>

@@ -272,11 +272,13 @@ def list_desk_scanners(
 
 @router.get("/desk/scans", response_model=list[ScanResponse])
 def list_desk_scans(
-    device_id: str = Query(min_length=1, max_length=100),
+    device_id: str | None = Query(default=None, min_length=1, max_length=100),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
 ) -> list[AtelierScan]:
-    """The scans waiting at this scanner (polled by the desk screen), newest first."""
+    """The scans waiting at this scanner (polled by the desk screen), newest
+    first; without a scanner, those of every scanner (the sidebar's alert in
+    a browser where no desk scanner is chosen)."""
     return waiting_scans(db, device_id)
 
 

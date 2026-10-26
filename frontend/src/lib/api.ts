@@ -2908,9 +2908,11 @@ export function listAtelierDeskScanners(): Promise<AtelierScanner[]> {
   return apiFetch<AtelierScanner[]>(`${ATELIER_BASE}/desk/scanners`);
 }
 
-/** The scans waiting at this scanner (polled by the desk screen). */
-export function listAtelierWaitingScans(deviceId: string): Promise<AtelierScan[]> {
-  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/desk/scans?device_id=${encodeURIComponent(deviceId)}`);
+/** The scans waiting at this scanner, or at every scanner with null (polled
+ *  by the desk screen and the sidebar's alert). */
+export function listAtelierWaitingScans(deviceId: string | null): Promise<AtelierScan[]> {
+  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
+  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/desk/scans${query}`);
 }
 
 export function dismissAtelierScan(scanId: number): Promise<void> {

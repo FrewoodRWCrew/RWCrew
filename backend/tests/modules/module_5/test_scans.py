@@ -68,6 +68,8 @@ def test_webhook_accepts_logs_and_registers(client: TestClient, as_atelier: Test
     )
     # Another scanner sees nothing.
     assert as_atelier.get(f"{BASE}/desk/scans", params={"device_id": "999"}).json() == []
+    # Without a scanner (the sidebar alert in a browser without desk scanner): every scanner's waiting scans.
+    assert [row["id"] for row in as_atelier.get(f"{BASE}/desk/scans").json()] == [scan["id"]]
 
 
 def test_webhook_refuses_and_ignores_but_logs(client: TestClient, as_atelier: TestClient, token: str) -> None:

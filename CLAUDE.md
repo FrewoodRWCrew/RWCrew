@@ -324,7 +324,9 @@ only that shell.
   name, ignoring case), optional email/size; only `event = crew_participation` becomes `new`. The desk screen picks its
   scanner (localStorage via `useSyncExternalStore`) and polls `GET /desk/scans?device_id=` every 2 s; a waiting scan
   shows as a card on the Ophalen/Terugbrengen choice and pre-fills the transaction, which sends `scan_id` (marked
-  used). Global switch `Atelier_settings.wristband_required` (`bracelet_required`). Screens `atelier.settings`
+  used). The browser's desk scanner lives in `components/module-5/desk-scanner.ts`; the sidebar shows a pulsing red
+  count next to "Uitgifte & inname" (`desk-scan-alert.tsx`, polls `GET /desk/scans` every 5 s for that scanner, or
+  without `device_id` = every scanner when the browser has none). Global switch `Atelier_settings.wristband_required` (`bracelet_required`). Screens `atelier.settings`
   (switch, scanners, message log) and **`atelier.scantest`** (form → company JSON, or drop/paste a .json; same
   processing without token, `source = "test"`) — the real company connects from May 2027. Endpoints in
   `module_5/scan_router.py`.

@@ -26,7 +26,7 @@
 //     after a confirmation) and book it; a pick-up of which nothing came back
 //     yet can be cancelled ("edit" right).
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useState } from "react";
 import { PackageMinus, PackagePlus, ScanLine, Search, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
@@ -70,41 +70,9 @@ import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/a
 import { ATELIER_STOCK_CHANGED_EVENT } from "@/components/module-5/atelier-stock-common";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 import { atelierDeskErrorMessage } from "@/components/module-5/desk-common";
+import { useDeskScanner, writeScanner } from "@/components/module-5/desk-scanner";
 
 type Mode = "pickup" | "return";
-
-// The scanner of this desk, remembered per browser (localStorage), read
-// through useSyncExternalStore so the server render and the first client
-// render agree (no scanner on the server).
-const SCANNER_STORAGE_KEY = "atelier-desk-scanner";
-const SCANNER_CHANGED_EVENT = "atelier-desk-scanner-changed";
-
-function readScanner(): string | null {
-  try {
-    return window.localStorage.getItem(SCANNER_STORAGE_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function writeScanner(deviceId: string | null) {
-  try {
-    if (deviceId) window.localStorage.setItem(SCANNER_STORAGE_KEY, deviceId);
-    else window.localStorage.removeItem(SCANNER_STORAGE_KEY);
-  } catch {
-    // Storage blocked: the choice simply isn't remembered.
-  }
-  window.dispatchEvent(new Event(SCANNER_CHANGED_EVENT));
-}
-
-function subscribeScanner(onChange: () => void) {
-  window.addEventListener(SCANNER_CHANGED_EVENT, onChange);
-  window.addEventListener("storage", onChange);
-  return () => {
-    window.removeEventListener(SCANNER_CHANGED_EVENT, onChange);
-    window.removeEventListener("storage", onChange);
-  };
-}
 
 /** "Balie 1 (SUN0410)", or the device name/id when it has no label. */
 function scannerName(scanner: AtelierScanner) {
@@ -136,7 +104,7 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
   const [activeScan, setActiveScan] = useState<AtelierScan | null>(null);
 
   // This desk's scanner and its waiting scans (polled every 2 seconds).
-  const scannerId = useSyncExternalStore(subscribeScanner, readScanner, () => null);
+  const scannerId = useDeskScanner();
   const scanners = useKeyedLoad<AtelierScanner[]>("desk-scanners", listAtelierDeskScanners);
   const wristbandRequired = useKeyedLoad<boolean>("wristband-required", getAtelierWristbandRequired).data ?? false;
   const [waiting, setWaiting] = useState<{ deviceId: string; scans: AtelierScan[] } | null>(null);

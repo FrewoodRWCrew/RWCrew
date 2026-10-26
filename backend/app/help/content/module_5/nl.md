@@ -51,7 +51,7 @@ Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig he
 
 **Festivals ingevuld**: per ploeg hoeveel van de festivals die de ploeg in **Altsien Select** koos al personen hebben (bv. *3 / 5*). Groen = alles ingevuld, oranje = nog niet; beweeg over het getal om per festival te zien wat ontbreekt. Koos de ploeg nog niets, dan staat er "geen selectie". Koos ze andere festivals maar niet dit, dan staat "niet gekozen" bij de ploegnaam.
 
-Boven elke kolom staat een **filterveld**. Een gewijzigde, nog niet opgeslagen ploeg blijft altijd zichtbaar; de totalen tellen altijd alle ploegen.
+Met de knop boven de tabel kies je **Alle ploegen** of **Enkel met pakket** (de ploegen die op dit festival een pakket hebben). Boven elke kolom staat een **filterveld**. Een gewijzigde, nog niet opgeslagen ploeg blijft altijd zichtbaar; de totalen tellen altijd alle ploegen.
 
 Het pakket geldt enkel voor dit festival. Een ploeg met personen maar zonder pakket krijgt een waarschuwing. Een reservatie zonder personen, opmerking en pakket verdwijnt.
 

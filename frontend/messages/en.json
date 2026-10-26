@@ -1837,7 +1837,10 @@
         "package": "package",
         "note": "note",
         "changed": "changed"
-      }
+      },
+      "packageToggle": "Which teams to show",
+      "showAllTeams": "All teams ({count})",
+      "showWithPackage": "Only with a package ({count})"
     },
     "preparation": {
       "title": "Preparation",
@@ -2070,7 +2073,8 @@
       "scanChoose": "Choose Pick up or Return for this person.",
       "dismissScan": "Ignore",
       "scanWaiting": "New scan waiting: {name} (after this transaction)",
-      "missingBracelet": "Enter the wristband number (required)."
+      "missingBracelet": "Enter the wristband number (required).",
+      "scanAlert": "{count, plural, one {# wristband scan is} other {# wristband scans are}} waiting at the counter"
     },
     "open": {
       "title": "Outstanding",
