@@ -25,6 +25,7 @@ export const ATELIER_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/masterdata/data-upload-download`, topic: "dataupload" },
   { path: `${BASE}/settings`, topic: "settings", exact: true },
   { path: `${BASE}/settings/scan-test`, topic: "scantest" },
+  { path: `${BASE}/settings/mails`, topic: "mailtemplates" },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },
 ];

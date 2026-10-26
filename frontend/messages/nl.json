@@ -1750,14 +1750,14 @@
       "sizes": {
         "tileTitle": "Maten",
         "dialogDescription": "Kolommen: id, name, fit (women/men/unisex of Dames/Heren/Unisex), sort_order, active.",
-        "hint": "Een rij met een id (de eerste kolom van de export) wijzigt die maat, een rij zonder id maakt een nieuwe aan. Kolommen die niet in het bestand staan, blijven ongewijzigd.",
+        "hint": "Een rij wordt gezocht op id (de eerste kolom van de export) en anders op naam + pasvorm: een gevonden maat wordt gewijzigd, anders komt er een nieuwe bij. Een export van een andere omgeving (bv. localhost naar test) kan dus zo opgeladen worden. Kolommen die niet in het bestand staan, blijven ongewijzigd.",
         "importColumnKey": "Maat",
         "exportButton": "Maten downloaden"
       },
       "articles": {
         "tileTitle": "Artikelen",
         "dialogDescription": "Kolommen: id, code, name, description, colour, cost, is_tag_managed, active.",
-        "hint": "Een rij met een id (de eerste kolom van de export) wijzigt dat artikel, een rij zonder id maakt een nieuw aan. Kolommen die niet in het bestand staan, blijven ongewijzigd.",
+        "hint": "Een rij wordt gezocht op id (de eerste kolom van de export) en anders op code: een gevonden artikel wordt gewijzigd, anders komt er een nieuw bij. Een export van een andere omgeving (bv. localhost naar test) kan dus zo opgeladen worden. Kolommen die niet in het bestand staan, blijven ongewijzigd.",
         "importColumnKey": "Code",
         "exportButton": "Artikelen downloaden"
       },
@@ -1822,7 +1822,22 @@
       "copied": "{count, plural, =0 {Niets te kopiëren: alles stond er al.} one {# ploeg bijgewerkt.} other {# ploegen bijgewerkt.}}",
       "copySkippedInactive": "{count, plural, one {# niet-actief artikel} other {# niet-actieve artikelen}} overgeslagen.",
       "copyFailed": "Kopiëren is mislukt.",
-      "quantityFixed": "Aan de balie krijgt elke persoon 1 stuk per artikel."
+      "quantityFixed": "Aan de balie krijgt elke persoon 1 stuk per artikel.",
+      "columnProgress": "Festivals ingevuld",
+      "progress": "{done} / {total}",
+      "noSelection": "geen selectie",
+      "notPicked": "niet gekozen",
+      "noMatch": "Geen ploegen die aan de filters voldoen.",
+      "filter": "Filter {column}",
+      "filteredOf": "({shown} van {total} ploegen getoond)",
+      "filterColumns": {
+        "team": "ploeg",
+        "progress": "ingevuld",
+        "persons": "personen",
+        "package": "pakket",
+        "note": "opmerking",
+        "changed": "gewijzigd"
+      }
     },
     "preparation": {
       "title": "Voorbereiden",
@@ -2029,7 +2044,8 @@
         "cannot_cancel": "Er is al iets teruggebracht: deze uitgifte kan niet meer geannuleerd worden.",
         "bracelet_in_use": "Polsbandnummer {p1} hoort al bij {p2}.",
         "bracelet_required": "Een polsbandnummer is verplicht bij Ophalen.",
-        "scan_not_waiting": "Deze scan werd al gebruikt of genegeerd."
+        "scan_not_waiting": "Deze scan werd al gebruikt of genegeerd.",
+        "person_not_found": "Deze persoon bestaat niet (meer)."
       },
       "firstNameLabel": "Voornaam",
       "lastNameLabel": "Familienaam",
@@ -2041,6 +2057,7 @@
       "missingArticle": "Kies minstens één maat.",
       "handOutCount": "Uitgeven ({count})",
       "notTaken": "niet meegenomen — klik een maat",
+      "noSizes": "Dit artikel heeft nog geen maten. Vink de maten aan bij het artikel (Masterdata › Artikelen) of laad de Artikelmaten op via Data Upload/Download.",
       "stillHasTitle": "{name} heeft nog (eerst terugbrengen):",
       "returnFirst": "Eerst terugbrengen",
       "stayingConfirm": "Deze stuks blijven bij de persoon: {pieces}. Toch terugnemen?",
@@ -2057,20 +2074,24 @@
     },
     "open": {
       "title": "Openstaand",
-      "description": "Kledij die opgehaald werd maar nog niet teruggebracht is.",
+      "description": "Kledij die opgehaald werd maar nog niet teruggebracht is, per ploeg en per persoon.",
       "dayLabel": "Dag",
       "allDays": "Alle dagen",
-      "teamLabel": "Ploeg",
-      "allTeams": "Alle ploegen",
       "person": "Persoon",
       "email": "E-mailadres",
       "team": "Ploeg",
       "day": "Dag",
-      "pieces": "Nog in bezit",
       "since": "Opgehaald",
       "loading": "Bezig met laden…",
       "empty": "Alles is teruggebracht.",
-      "totals": "{persons, plural, one {# persoon} other {# personen}} · {pieces, plural, one {# stuk} other {# stuks}}"
+      "totals": "{persons, plural, one {# persoon} other {# personen}} · {pieces, plural, one {# stuk} other {# stuks}}",
+      "bracelet": "Polsband",
+      "article": "Artikel",
+      "size": "Maat",
+      "filter": "Filter {column}",
+      "noMatch": "Geen stuks die aan de filters voldoen.",
+      "piecesCount": "{pieces, plural, one {# stuk} other {# stuks}} nog in bezit",
+      "filteredOf": "({shown} van {total} stuks getoond)"
     },
     "settings": {
       "title": "Instellingen",
@@ -2143,6 +2164,47 @@
       "teamMatched": "ploeg herkend: {team}",
       "teamNotMatched": "geen ploeg herkend — de balie kiest de ploeg",
       "onDesk": "verschijnt aan de balie met scanner {device}"
+    },
+    "mailTemplates": {
+      "title": "E-mails",
+      "description": "De mails die een persoon krijgt na een transactie aan de balie, naar het e-mailadres dat aan de balie ingevuld werd. Zonder e-mailadres wordt er niets verstuurd.",
+      "loading": "Bezig met laden…",
+      "kinds": {
+        "handout": {
+          "title": "Uitgifte",
+          "help": "Verstuurd na elke Ophalen."
+        },
+        "return": {
+          "title": "Inname",
+          "help": "Verstuurd na elke Terugbrengen (één mail per transactie)."
+        }
+      },
+      "active": "Versturen",
+      "subject": "Onderwerp",
+      "body": "Tekst",
+      "placeholdersHelp": "Klik op een veld om het in te voegen op de plaats van de cursor (in het onderwerp of de tekst):",
+      "placeholders": {
+        "voornaam": "Voornaam van de persoon",
+        "familienaam": "Familienaam van de persoon",
+        "ploeg": "Ploeg",
+        "festival": "Festival",
+        "dag": "Festivaldag (dd-mm-jjjj)",
+        "polsband": "Polsbandnummer op dit festival",
+        "stuks": "De stuks van deze transactie, één per lijn",
+        "openstaand": "Wat de persoon daarna nog in bezit heeft, één per lijn (of \"niets\")"
+      },
+      "preview": "Voorbeeld (met voorbeeldgegevens)",
+      "changed": "Laatst gewijzigd: {when} · {who}",
+      "unsaved": "Niet opgeslagen wijzigingen",
+      "save": "Opslaan",
+      "saved": "E-mail opgeslagen.",
+      "sendTest": "Stuur test naar mij",
+      "testSent": "Testmail verstuurd naar {email}.",
+      "errors": {
+        "generic": "Er ging iets mis.",
+        "unknown_placeholder": "Onbekend veld: {p1}. Gebruik enkel de velden hieronder.",
+        "no_own_email": "Je account heeft geen e-mailadres."
+      }
     }
   },
   "walkies": {

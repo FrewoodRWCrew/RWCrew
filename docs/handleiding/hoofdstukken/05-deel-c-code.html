@@ -121,7 +121,7 @@ De backend is een FastAPI-applicatie. <code>main.py</code> registreert per modul
 endpoints). Elk endpoint krijgt via <strong>dependencies</strong> een databasesessie en de ingelogde gebruiker, en
 controleert met <code>require_screen_permission</code> of die gebruiker het mag. Tabellen zijn
 <strong>SQLAlchemy-modellen</strong>, invoer en uitvoer zijn <strong>Pydantic-schema's</strong>, wijzigingen aan de
-database gaan via <strong>Alembic-migraties</strong>, en alles is gedekt door meer dan 600 <strong>pytest</strong>-tests
+database gaan via <strong>Alembic-migraties</strong>, en alles is gedekt door meer dan 900 <strong>pytest</strong>-tests
 die op een tijdelijke SQLite-database draaien.
 </div>
 
@@ -201,7 +201,8 @@ create-schema, zodat een client ze nooit kan meesturen.</p>
   <tr><td><code>*_pdf.py</code></td><td>PDF-generatoren (fpdf2).</td></tr>
   <tr><td><code>*_import.py</code></td><td>Excel-sjablonen, import en export (openpyxl).</td></tr>
   <tr><td><code>*_dashboard.py</code>, <code>dashboard.py</code></td><td>Berekeningen voor KPI- en dashboardschermen.</td></tr>
-  <tr><td><code>public_router.py</code>, <code>device_router.py</code></td><td>Endpoints zonder login (module 3: publiek formulier; module 1: Raspberry Pi).</td></tr>
+  <tr><td><code>*_router.py</code></td><td>Een grote module verdeelt haar endpoints over meerdere routers op hetzelfde voorvoegsel, elk opgenomen in <code>main.py</code> (bv. <code>module_4/product_masterdata_router.py</code>, <code>module_2/karcode_router.py</code>, <code>module_5/desk_router.py</code>).</td></tr>
+  <tr><td><code>public_router.py</code>, <code>device_router.py</code>, <code>scan_webhook_router.py</code></td><td>Endpoints zonder login (module 3: publiek formulier; module 1: Raspberry Pi; module 5: polsbandscans).</td></tr>
   <tr><td><code>notifications.py</code></td><td>Mails (module 3).</td></tr>
   <tr><td><code>steps.py</code>, <code>previous_season.py</code></td><td>Wizardstappen en "kopiëren van vorig seizoen" (module 8).</td></tr>
 </table>
@@ -259,15 +260,15 @@ de gebruiker opzoeken, dan de rechtenrij voor dat scherm, en de juiste vlag teru
 vier lijsten schermsleutels (<code>viewable_screen_keys</code>, <code>creatable_…</code>, <code>editable_…</code>, <code>deletable_…</code>).
 Daarmee toont het menu alleen de schermen die je mag zien, en verbergt een scherm de knoppen die je niet mag gebruiken.</p>
 <div class="kader dev"><span class="kader-titel"></span>
-Dit systeem is <strong>per module gekopieerd</strong> (modules 1, 2, 3, 4, 8 en 9 hebben elk hun eigen modellen, schema's,
+Dit systeem is <strong>per module gekopieerd</strong> (modules 1, 2, 3, 4, 5, 6, 8 en 9 hebben elk hun eigen modellen, schema's,
 <code>deps.py</code> en endpoints), in plaats van één gedeelde fabriek. Dat was een bewuste keuze: eerst echte varianten
-bouwen en pas veralgemenen als het patroon zich bewezen heeft. Nu het zes keer bestaat, is een gedeelde versie
+bouwen en pas veralgemenen als het patroon zich bewezen heeft. Nu het acht keer bestaat, is een gedeelde versie
 (geparametriseerd met modulesleutel en tabelvoorvoegsel, zoals <code>create_module_router</code>) een kandidaat voor
 een opkuis, maar geen verplichting. De volledige kopieerhandleiding staat in <code>docs/module-custom-roles-pattern.md</code>.
 </div>
 
 <h2 id="s-be-common">De gedeelde fabriek voor eenvoudige modules</h2>
-<p>Modules zonder eigen inhoud (5 tot 7) en module 10 gebruiken <code>create_module_router(module_key, module_label)</code> uit
+<p>Module 7 (zonder eigen inhoud) en module 10 gebruiken <code>create_module_router(module_key, module_label)</code> uit
 <code>app/modules/common.py</code>. Die maakt in één regel een router met drie endpoints: <code>GET /status</code> (voor de
 "binnenkort"-pagina), <code>GET /roles</code> en <code>PUT /roles/{user_id}</code> (de vaste rollen admin/editor/reader). Een
 module die echte inhoud krijgt, zet eigen endpoints naast die oproep in haar <code>router.py</code>, of stapt over op het
@@ -284,7 +285,12 @@ volledige rechtensysteem.</p>
   <tr><td><code>module_2/kar_action_service.py</code> (karbewegingen)</td><td>KarTracker-scherm én KarScan op de telefoon</td></tr>
   <tr><td><code>module_3/service.py</code> (aanvraagnummer, standaardstatus, ploegen)</td><td>Ingelogde router én publieke router van module 3</td></tr>
   <tr><td><code>module_4/stock_service.py</code> (de <em>enige</em> code die voorraad wijzigt)</td><td>Alle boekingsschermen van StockMaster; later ook automatische boekingen vanuit TagScan</td></tr>
-  <tr><td><code>module_4/requirement_service.py</code> (benodigdheden per kar)</td><td>StockMaster; later de productenstap van Altsien Select</td></tr>
+  <tr><td><code>module_4/requirement_service.py</code> (benodigdheden per kar)</td><td>StockMaster "Benodigdheden" én Altsien Select stap 4 (Producten)</td></tr>
+  <tr><td><code>module_4/delivery_entitlement.py</code> (wat "nu beschikbaar is voor levering")</td><td>Kar laden; het stroomdiagram van de organisatie staat enkel hier</td></tr>
+  <tr><td><code>module_4/tagscan_book_in.py</code> (TagScan-regels "Book In")</td><td>StockMaster Inboeken; zet de TagScan-regels in dezelfde transactie op <em>loaded</em></td></tr>
+  <tr><td><code>module_2/delivery_order_service.py</code> (levertoer)</td><td>Leveringsvolgorde; de planningsanalyses lezen <code>terrein_positie</code></td></tr>
+  <tr><td><code>module_2/karcode_formula.py</code> (karcodeformule, via <code>ast</code> en een witte lijst, nooit <code>eval</code>)</td><td>Karcode Simulator (web en telefoon) en Instellingen</td></tr>
+  <tr><td><code>module_5/stock_service.py</code>, <code>desk_service.py</code>, <code>scan_service.py</code></td><td>Atelier: de enige code die respectievelijk de stock, de personen/uitgiftes en de polsbandscans schrijft (zie <a class="ref" href="#s-be-atelier"></a>)</td></tr>
   <tr><td><code>module_1/line_processing.py</code> (acties van TagScan-regels)</td><td>Het verwerkingsvenster van TagScan; nieuwe acties komen hier als functie bij</td></tr>
 </table>
 
@@ -304,11 +310,35 @@ nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_
   <li>MasterData en KarTracker weigeren het verwijderen van een product met voorraadgeschiedenis of een kar met voorraad.</li>
 </ul>
 
+<h2 id="s-be-atelier">Atelier: stock, balie en polsbandscans</h2>
+<p>Atelier volgt hetzelfde boekhoudpatroon als StockMaster, maar met een eigen set tabellen:</p>
+<ul>
+  <li><strong>Stock</strong>: <code>Atelier_stock_document</code> (<code>AT-&lt;jaar&gt;-&lt;id&gt;</code>; ontvangst, wassen, afboeken, telling,
+  uitgifte, terugname, tegenboeking) met <code>Atelier_stock_movement</code> (van/naar-status: <code>available</code>, <code>to_wash</code>,
+  <code>handed_out</code>, leeg = buiten) en <code>Atelier_stock_balance</code> (één rij per artikelmaat en status, vergrendeld met
+  <code>FOR UPDATE</code>, nooit negatief). Alleen <code>module_5/stock_service.py</code> schrijft ze; foutcodes worden vertaald onder
+  <code>atelier.stock.errors.&lt;code&gt;</code>.</li>
+  <li><strong>Reservaties</strong>: <code>Atelier_reservation</code> (festival + ploeg: personen, opmerking) en
+  <code>Atelier_reservation_line</code> (het pakket), enkel via <code>reservation_service.py</code>. <code>preparation_service.py</code> berekent
+  de dagelijkse behoefte zonder iets op te slaan.</li>
+  <li><strong>Balie</strong>: <code>desk_service.py</code> is de enige die <code>Atelier_person</code> (sleutel <code>name_key</code> = voornaam|familienaam),
+  <code>Atelier_person_bracelet</code> (polsbandnummer per festival), <code>Atelier_handout</code> en <code>Atelier_handout_line</code> schrijft. Ophalen
+  boekt <em>beschikbaar → uitgegeven</em>, terugbrengen <em>uitgegeven → te wassen</em>.</li>
+  <li><strong>Polsbandscans</strong>: <code>scan_service.process_message</code> verwerkt elk bericht, van de webhook én van het testscherm
+  (dat de tokencontrole overslaat en het bericht als <code>test</code> markeert). Het logt alles in <code>Atelier_scan</code>, registreert de
+  scanner (<code>Atelier_scanner</code>, op <code>data.device.id</code>) en zoekt de ploeg op naam. De balie vraagt elke 2 seconden de wachtende
+  scans van haar scanner op (<code>GET /desk/scans?device_id=</code>); een transactie die een scan gebruikt, stuurt <code>scan_id</code> mee.</li>
+  <li><strong>Instelling</strong>: <code>Atelier_settings</code> (één rij) met <code>wristband_required</code>, de schakelaar "Polsband verplicht bij Ophalen".</li>
+</ul>
+
 <h2 id="s-be-pdf-excel">PDF's, Excel en QR-codes</h2>
 <ul>
   <li><strong>PDF's</strong> worden in Python opgebouwd met <strong>fpdf2</strong>: <code>module_3/intervention_request_pdf.py</code>
   (leveringsbon), <code>module_2/karblad_pdf.py</code> (karbladen), <code>module_1/tag_header_pdf.py</code>,
-  <code>module_8/ploegfiche_pdf.py</code>. Het endpoint stuurt de bytes terug met <code>media_type="application/pdf"</code>.</li>
+  <code>module_8/ploegfiche_pdf.py</code>, de StockMaster-PDF's in <code>module_4/stock_pdfs.py</code> (huisstijl in <code>pdf_layout.py</code>,
+  ook gebruikt door Atelier: <code>module_5/picklist_pdf.py</code> en <code>stock_pdfs.py</code>) en de planningen van KarTracker
+  (<code>module_2/delivery_planning_pdf.py</code>, <code>kar_moves_pdf.py</code>, <code>special_tour_pdf.py</code>, met een kaart die op het grondplan
+  getekend wordt zonder kaarttegels). Elke module heeft daarnaast een handleiding als PDF (<code>backend/app/help/</code>). Het endpoint stuurt de bytes terug met <code>media_type="application/pdf"</code>.</li>
   <li><strong>QR-codes</strong> komen van <strong>segno</strong>. Op karbladen worden ze als vectorvlakjes getekend, zodat ze bij elke
   afdrukresolutie scherp blijven.</li>
   <li><strong>Excel</strong>-import en -export gebruiken <strong>openpyxl</strong>. Een import is <em>best-effort</em>: elke rij

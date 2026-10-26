@@ -7,13 +7,16 @@
 # (/desk/scanners, /desk/scans) and can dismiss one; a pick-up or return made
 # from a scan sends its scan_id so the scan is marked used.
 #
+# After an Ophalen and after a Terugbrengen (the person-level return) the
+# person gets a mail, built by notifications.py from the admin's templates.
+#
 # All writes go through desk_service.py; a StockError becomes HTTP detail
 # "code|param|…", translated by the frontend under atelier.desk.errors.<code>
 # (or atelier.stock.errors.<code> for stock rules such as insufficient_stock).
 
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -44,9 +47,11 @@ from app.modules.module_5.desk_service import (
     package_for_desk,
     person_by_bracelet,
     return_lines,
+    return_person_lines,
     served_today,
     wristband_required,
 )
+from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
 from app.modules.module_5.scan_service import dismiss, waiting_scans
 from app.modules.module_5.stock_service import StockError
@@ -332,10 +337,12 @@ def get_desk_context(
 @router.post("/desk/handouts", response_model=HandoutResponse, status_code=status.HTTP_201_CREATED)
 def post_handout(
     payload: HandoutRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_screen_permission(DESK_SCREEN, "create")),
 ) -> HandoutResponse:
-    """Ophalen: hand out the package's pieces to a person."""
+    """Ophalen: hand out the package's pieces to a person (who then gets the
+    "Uitgifte" mail, when they have an email address)."""
     try:
         handout = create_handout(
             db,
@@ -354,6 +361,13 @@ def post_handout(
         db.rollback()
         raise _error(error) from error
     db.commit()
+    person = db.get(AtelierPerson, handout.person_id)
+    lines = db.scalars(
+        select(AtelierHandoutLine).where(AtelierHandoutLine.handout_id == handout.id).order_by(AtelierHandoutLine.id)
+    ).all()
+    queue_desk_mail(
+        db, HANDOUT, person, handout, list(lines), _bracelet_number(db, person.id, handout.festival_id), background_tasks
+    )
     return _handout_response(db, handout)
 
 
@@ -372,6 +386,37 @@ def list_person_open_handouts(
     return [_handout_response(db, handout) for handout in handouts]
 
 
+@router.post("/desk/persons/{person_id}/return", response_model=list[HandoutResponse])
+def post_person_return(
+    person_id: int,
+    payload: ReturnRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(DESK_SCREEN, "create")),
+) -> list[HandoutResponse]:
+    """Terugbrengen (the desk's call): the ticked pieces of one person come
+    back, from any of their open pick-ups, and the person gets one "Inname"
+    mail for the whole transaction."""
+    try:
+        handouts, lines = return_person_lines(db, current_user, person_id, payload.line_ids, payload.scan_id)
+    except StockError as error:
+        db.rollback()
+        raise _error(error) from error
+    db.commit()
+    # The mail names the festival/team/day of the latest pick-up returned.
+    latest = handouts[-1]
+    queue_desk_mail(
+        db,
+        RETURN,
+        db.get(AtelierPerson, person_id),
+        latest,
+        lines,
+        _bracelet_number(db, person_id, latest.festival_id),
+        background_tasks,
+    )
+    return [_handout_response(db, handout) for handout in handouts]
+
+
 @router.post("/desk/handouts/{handout_id}/return", response_model=HandoutResponse)
 def post_return(
     handout_id: int,
@@ -379,7 +424,8 @@ def post_return(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_screen_permission(DESK_SCREEN, "create")),
 ) -> HandoutResponse:
-    """Terugbrengen: the ticked pieces come back."""
+    """Terugbrengen of one pick-up (sends no mail; the desk uses the
+    person-level return above)."""
     try:
         handout = return_lines(db, current_user, handout_id, payload.line_ids, payload.scan_id)
     except StockError as error:

@@ -456,7 +456,9 @@ def start_browser(profiel_map: Path):
         poortbestand = profiel_map / "DevToolsActivePort"
         deadline = time.monotonic() + 30
         while not (poortbestand.exists() and poortbestand.read_text().strip()):
-            if time.monotonic() > deadline or proces.poll() is not None:
+            # Niet stoppen als het eerste proces eindigt: Edge geeft het soms door aan een nieuw
+            # browserproces, dat het poortbestand dan alsnog schrijft.
+            if time.monotonic() > deadline:
                 sys.exit("De browser startte niet in headless-modus.")
             time.sleep(0.2)
         poort = int(poortbestand.read_text().splitlines()[0])

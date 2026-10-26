@@ -1,25 +1,59 @@
 "use client";
 
 // Atelier's "Balie > Openstaand" screen: the pieces that were picked up and
-// not brought back yet — per person (with their bracelet number), with their email (to contact them),
-// team, festival day and since when. Filters: festival (+ day) and team.
+// not brought back yet, grouped per team (ploeg), then per person (with
+// bracelet number and email, to contact them), then one line per piece with
+// its festival day and since when. Filters: festival + day at the top (they
+// decide what's loaded) and a text filter above every column (client-side).
 // Writing off what never comes back stays manual (Stock > Afboeken).
 
-import { useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import { listAtelierDeskTeams, listAtelierOpenHandouts } from "@/lib/api";
+import { listAtelierOpenHandouts } from "@/lib/api";
 import { formatDateNl, formatDateTimeNl } from "@/lib/date-time";
-import type { AtelierDeskTeam, AtelierHandout, Season } from "@/lib/types";
-import { Badge } from "@/components/ui/badge";
+import type { AtelierHandout, Season } from "@/lib/types";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AtelierFestivalSelect, useAtelierFestival } from "@/components/module-5/atelier-festival-select";
 import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/atelier-season-select";
+import { FilterHeadCell, useColumnFilters } from "@/components/module-5/column-filters";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
-// The filters' "every day / every team" choice (Base UI's Select needs a non-empty value).
+// The day filter's "every day" choice (Base UI's Select needs a non-empty value).
 const ALL = "all";
+
+// The table's columns, in order (each has a text filter above it).
+const COLUMNS = ["team", "person", "bracelet", "email", "day", "article", "size", "since"] as const;
+type Column = (typeof COLUMNS)[number];
+
+// One open piece, with the texts its columns show (and filter on).
+interface PieceRow {
+  key: string;
+  teamName: string;
+  personId: number;
+  personName: string;
+  bracelet: string | null;
+  email: string | null;
+  day: string;
+  article: string;
+  size: string;
+  since: string;
+}
+
+// A person with their open pieces, and a team with its persons.
+interface PersonGroup {
+  personId: number;
+  personName: string;
+  bracelet: string | null;
+  email: string | null;
+  pieces: PieceRow[];
+}
+interface TeamGroup {
+  teamName: string;
+  persons: PersonGroup[];
+  pieces: number;
+}
 
 interface OpenHandoutsProps {
   seasons: Season[];
@@ -31,19 +65,71 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
   const seasonId = useAtelierSeasonId(seasons);
   const { festivals, festival } = useAtelierFestival(seasonId);
   const [day, setDay] = useState<string>(ALL);
-  const [teamId, setTeamId] = useState<string>(ALL);
+  const { filters, setFilter, matches, active } = useColumnFilters<Column>();
 
-  const teams = useKeyedLoad<AtelierDeskTeam[]>(festival ? String(festival.id) : null, () => listAtelierDeskTeams(festival!.id));
-  const key = festival ? `${festival.id}-${day}-${teamId}` : null;
+  const key = festival ? `${festival.id}-${day}` : null;
   const rows = useKeyedLoad<AtelierHandout[]>(key, () =>
-    listAtelierOpenHandouts({
-      festivalId: festival!.id,
-      day: day === ALL ? null : day,
-      teamId: teamId === ALL ? null : Number(teamId),
+    listAtelierOpenHandouts({ festivalId: festival!.id, day: day === ALL ? null : day, teamId: null }),
+  );
+
+  // Every open piece as one row, sorted by team, person, day and article.
+  const pieces = useMemo<PieceRow[]>(() => {
+    const list = (rows.data ?? []).flatMap((handout) =>
+      handout.lines
+        .filter((line) => line.returned_at === null)
+        .map((line) => ({
+          key: `${handout.id}-${line.id}`,
+          teamName: handout.team_name,
+          personId: handout.person_id,
+          personName: handout.person_name,
+          bracelet: handout.bracelet_number,
+          email: handout.email,
+          day: handout.day,
+          article: line.article_name,
+          size: `${line.size_name} · ${tFit(line.fit)}`,
+          since: handout.created_at,
+        })),
+    );
+    return list.sort(
+      (a, b) =>
+        a.teamName.localeCompare(b.teamName) ||
+        a.personName.localeCompare(b.personName) ||
+        a.day.localeCompare(b.day) ||
+        a.article.localeCompare(b.article),
+    );
+  }, [rows.data, tFit]);
+
+  // The pieces matching every column filter (dates matched as shown on screen).
+  const shown = pieces.filter((piece) =>
+    matches({
+      team: piece.teamName,
+      person: piece.personName,
+      bracelet: piece.bracelet,
+      email: piece.email,
+      day: formatDateNl(piece.day),
+      article: piece.article,
+      size: piece.size,
+      since: formatDateTimeNl(piece.since),
     }),
   );
-  const data = rows.data ?? [];
-  const pieces = data.reduce((sum, row) => sum + row.lines.length, 0);
+
+  // Group the shown pieces per team, then per person (already sorted that way).
+  const teams: TeamGroup[] = [];
+  for (const piece of shown) {
+    let team = teams.at(-1);
+    if (!team || team.teamName !== piece.teamName) {
+      team = { teamName: piece.teamName, persons: [], pieces: 0 };
+      teams.push(team);
+    }
+    let person = team.persons.at(-1);
+    if (!person || person.personId !== piece.personId) {
+      person = { personId: piece.personId, personName: piece.personName, bracelet: piece.bracelet, email: piece.email, pieces: [] };
+      team.persons.push(person);
+    }
+    person.pieces.push(piece);
+    team.pieces += 1;
+  }
+  const personCount = new Set(shown.map((piece) => piece.personId)).size;
 
   return (
     <div className="flex flex-col gap-4">
@@ -57,7 +143,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
           <div className="flex w-40 flex-col gap-2">
             <Label htmlFor="atelier-open-day">{t("dayLabel")}</Label>
             <Select value={day} onValueChange={(value) => setDay(value ?? ALL)}>
-              <SelectTrigger id="atelier-open-day">
+              <SelectTrigger id="atelier-open-day" className="w-full">
                 <SelectValue>{(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}</SelectValue>
               </SelectTrigger>
               <SelectContent>
@@ -65,28 +151,6 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                 {(festival?.days ?? []).map((item) => (
                   <SelectItem key={item} value={item}>
                     {formatDateNl(item)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex w-48 flex-col gap-2">
-            <Label htmlFor="atelier-open-team">{t("teamLabel")}</Label>
-            <Select value={teamId} onValueChange={(value) => setTeamId(value ?? ALL)}>
-              <SelectTrigger id="atelier-open-team">
-                <SelectValue>
-                  {(value: string | null) =>
-                    value && value !== ALL
-                      ? (teams.data?.find((team) => String(team.team_id) === value)?.team_name ?? "")
-                      : t("allTeams")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t("allTeams")}</SelectItem>
-                {(teams.data ?? []).map((team) => (
-                  <SelectItem key={team.team_id} value={String(team.team_id)}>
-                    {team.team_name}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -100,58 +164,87 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("person")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("email")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("team")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("day")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("pieces")}</TableHead>
-              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("since")}</TableHead>
+              {COLUMNS.map((column) => (
+                <TableHead key={column} className="sticky top-0 z-20 bg-background font-bold underline">
+                  {t(column)}
+                </TableHead>
+              ))}
+            </TableRow>
+            {/* One text filter above every column. */}
+            <TableRow>
+              {COLUMNS.map((column) => (
+                <FilterHeadCell
+                  key={column}
+                  label={t("filter", { column: t(column) })}
+                  value={filters[column]}
+                  onChange={(value) => setFilter(column, value)}
+                />
+              ))}
             </TableRow>
           </TableHeader>
           <TableBody>
-            {data.length === 0 && (
+            {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-center text-muted-foreground">
-                  {rows.isLoading ? t("loading") : t("empty")}
+                <TableCell colSpan={COLUMNS.length} className="text-center text-muted-foreground">
+                  {rows.isLoading ? t("loading") : pieces.length > 0 ? t("noMatch") : t("empty")}
                 </TableCell>
               </TableRow>
             )}
-            {data.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>
-                  <p className="font-medium">{row.person_name}</p>
-                  {row.bracelet_number && (
-                    <p className="font-mono text-xs text-muted-foreground">{row.bracelet_number}</p>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {/* The email is optional. */}
-                  {row.email && (
-                    <a href={`mailto:${row.email}`} className="text-primary hover:underline">
-                      {row.email}
-                    </a>
-                  )}
-                </TableCell>
-                <TableCell>{row.team_name}</TableCell>
-                <TableCell>{formatDateNl(row.day)}</TableCell>
-                <TableCell>
-                  <div className="flex flex-wrap gap-1">
-                    {row.lines.map((line) => (
-                      <Badge key={line.id} variant="outline">
-                        {line.article_name} · {line.size_name} · {tFit(line.fit)}
-                      </Badge>
+            {teams.map((team) => (
+              <Fragment key={team.teamName}>
+                {/* Team row: name + how many persons and pieces are still out. */}
+                <TableRow className="bg-muted/60 hover:bg-muted/60">
+                  <TableCell colSpan={COLUMNS.length} className="font-bold">
+                    {team.teamName}
+                    <span className="ml-3 text-sm font-normal text-muted-foreground">
+                      {t("totals", { persons: team.persons.length, pieces: team.pieces })}
+                    </span>
+                  </TableCell>
+                </TableRow>
+                {team.persons.map((person) => (
+                  <Fragment key={person.personId}>
+                    {/* Person row: who, with bracelet number and email to contact them. */}
+                    <TableRow className="bg-muted/20">
+                      <TableCell />
+                      <TableCell className="font-medium">{person.personName}</TableCell>
+                      <TableCell className="font-mono text-xs">{person.bracelet}</TableCell>
+                      <TableCell>
+                        {/* The email is optional. */}
+                        {person.email && (
+                          <a href={`mailto:${person.email}`} className="text-primary hover:underline">
+                            {person.email}
+                          </a>
+                        )}
+                      </TableCell>
+                      <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                        {t("piecesCount", { pieces: person.pieces.length })}
+                      </TableCell>
+                    </TableRow>
+                    {/* One line per piece the person still has. */}
+                    {person.pieces.map((piece) => (
+                      <TableRow key={piece.key}>
+                        <TableCell colSpan={4} />
+                        <TableCell>{formatDateNl(piece.day)}</TableCell>
+                        <TableCell>{piece.article}</TableCell>
+                        <TableCell>{piece.size}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">{formatDateTimeNl(piece.since)}</TableCell>
+                      </TableRow>
                     ))}
-                  </div>
-                </TableCell>
-                <TableCell className="text-sm text-muted-foreground">{formatDateTimeNl(row.created_at)}</TableCell>
-              </TableRow>
+                  </Fragment>
+                ))}
+              </Fragment>
             ))}
           </TableBody>
-          {data.length > 0 && (
+          {shown.length > 0 && (
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={6} className="font-bold">
-                  {t("totals", { persons: new Set(data.map((row) => row.person_id)).size, pieces })}
+                <TableCell colSpan={COLUMNS.length} className="font-bold">
+                  {t("totals", { persons: personCount, pieces: shown.length })}
+                  {active && (
+                    <span className="ml-3 font-normal text-muted-foreground">
+                      {t("filteredOf", { shown: shown.length, total: pieces.length })}
+                    </span>
+                  )}
                 </TableCell>
               </TableRow>
             </TableFooter>

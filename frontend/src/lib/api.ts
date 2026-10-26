@@ -24,6 +24,9 @@ import type {
   AtelierFestival,
   AtelierFestivalReservationStats,
   AtelierHandout,
+  AtelierMailTemplate,
+  AtelierMailTemplateKey,
+  AtelierMailTemplates,
   AtelierImportResponse,
   AtelierPreparation,
   AtelierReservationRow,
@@ -2853,11 +2856,39 @@ export function listAtelierPersonOpenHandouts(personId: number): Promise<Atelier
   return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/open`);
 }
 
-/** Terugbrengen: the ticked pieces come back. */
-export function returnAtelierHandoutLines(handoutId: number, lineIds: number[], scanId: number | null = null): Promise<AtelierHandout> {
-  return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts/${handoutId}/return`, {
+/** Terugbrengen: the ticked pieces of one person come back (from any of
+ *  their open pick-ups) in one go; the person gets one "Inname" mail. */
+export function returnAtelierPersonLines(personId: number, lineIds: number[], scanId: number | null = null): Promise<AtelierHandout[]> {
+  return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/return`, {
     method: "POST",
     body: JSON.stringify({ line_ids: lineIds, scan_id: scanId }),
+  });
+}
+
+// --- Atelier (module-5): the desk's mail texts (Instellingen > E-mails) ---
+
+export function getAtelierMailTemplates(): Promise<AtelierMailTemplates> {
+  return apiFetch<AtelierMailTemplates>(`${ATELIER_BASE}/mail-templates`);
+}
+
+export function saveAtelierMailTemplate(
+  key: AtelierMailTemplateKey,
+  payload: { subject: string; body: string; active: boolean },
+): Promise<AtelierMailTemplate> {
+  return apiFetch<AtelierMailTemplate>(`${ATELIER_BASE}/mail-templates/${key}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Send the text as typed, filled with the example values, to yourself. */
+export function sendAtelierTestMail(
+  key: AtelierMailTemplateKey,
+  payload: { subject: string; body: string },
+): Promise<{ sent_to: string }> {
+  return apiFetch<{ sent_to: string }>(`${ATELIER_BASE}/mail-templates/${key}/test`, {
+    method: "POST",
+    body: JSON.stringify(payload),
   });
 }
 

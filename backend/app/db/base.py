@@ -25,6 +25,7 @@ from app.db.models.atelier_role_permission import AtelierRolePermission  # noqa:
 from app.db.models.atelier_scan import AtelierScan  # noqa: F401
 from app.db.models.atelier_scanner import AtelierScanner  # noqa: F401
 from app.db.models.atelier_screen import AtelierScreen  # noqa: F401
+from app.db.models.atelier_mail_template import AtelierMailTemplate  # noqa: F401
 from app.db.models.atelier_settings import AtelierSettings  # noqa: F401
 from app.db.models.atelier_size import AtelierSize  # noqa: F401
 from app.db.models.atelier_stock_balance import AtelierStockBalance  # noqa: F401

@@ -59,10 +59,13 @@ export function AtelierFestivalSelect({ festivals, festival }: AtelierFestivalSe
   }
 
   return (
-    <div className="flex w-80 flex-col gap-2">
+    // At least w-80, but as wide as the label of a festival with a date range
+    // (never shrunk by the row around it: the row wraps instead), so it never
+    // runs over the fields next to it. The trigger fills the column.
+    <div className="flex max-w-full min-w-80 shrink-0 flex-col gap-2">
       <Label htmlFor="atelier-festival">{t("festivalLabel")}</Label>
       <Select value={festival ? String(festival.id) : ""} onValueChange={handleChange}>
-        <SelectTrigger id="atelier-festival">
+        <SelectTrigger id="atelier-festival" className="w-full" title={festival ? festivalLabel(festival) : undefined}>
           <SelectValue>
             {(value: string | null) => {
               const item = festivals.find((candidate) => String(candidate.id) === value);

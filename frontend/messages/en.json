@@ -1750,14 +1750,14 @@
       "sizes": {
         "tileTitle": "Sizes",
         "dialogDescription": "Columns: id, name, fit (women/men/unisex or Dames/Heren/Unisex), sort_order, active.",
-        "hint": "A row with an id (the export's first column) changes that size, a row without an id creates a new one. Columns left out of the file stay unchanged.",
+        "hint": "A row is looked up by id (the export's first column), otherwise by name + fit: a size that is found is changed, otherwise a new one is added. An export from another environment (e.g. localhost to test) can be uploaded as is. Columns left out of the file stay unchanged.",
         "importColumnKey": "Size",
         "exportButton": "Download sizes"
       },
       "articles": {
         "tileTitle": "Articles",
         "dialogDescription": "Columns: id, code, name, description, colour, cost, is_tag_managed, active.",
-        "hint": "A row with an id (the export's first column) changes that article, a row without an id creates a new one. Columns left out of the file stay unchanged.",
+        "hint": "A row is looked up by id (the export's first column), otherwise by code: an article that is found is changed, otherwise a new one is added. An export from another environment (e.g. localhost to test) can be uploaded as is. Columns left out of the file stay unchanged.",
         "importColumnKey": "Code",
         "exportButton": "Download articles"
       },
@@ -1822,7 +1822,22 @@
       "copied": "{count, plural, =0 {Nothing to copy: everything was already there.} one {# team updated.} other {# teams updated.}}",
       "copySkippedInactive": "{count, plural, one {# inactive article} other {# inactive articles}} skipped.",
       "copyFailed": "Copying failed.",
-      "quantityFixed": "At the counter every person gets 1 piece per article."
+      "quantityFixed": "At the counter every person gets 1 piece per article.",
+      "columnProgress": "Festivals filled in",
+      "progress": "{done} / {total}",
+      "noSelection": "no selection",
+      "notPicked": "not picked",
+      "noMatch": "No teams match the filters.",
+      "filter": "Filter {column}",
+      "filteredOf": "({shown} of {total} teams shown)",
+      "filterColumns": {
+        "team": "team",
+        "progress": "filled in",
+        "persons": "persons",
+        "package": "package",
+        "note": "note",
+        "changed": "changed"
+      }
     },
     "preparation": {
       "title": "Preparation",
@@ -2029,7 +2044,8 @@
         "cannot_cancel": "Something was already returned: this hand-out can't be cancelled any more.",
         "bracelet_in_use": "Wristband number {p1} already belongs to {p2}.",
         "bracelet_required": "A wristband number is required to pick up.",
-        "scan_not_waiting": "This scan was already used or ignored."
+        "scan_not_waiting": "This scan was already used or ignored.",
+        "person_not_found": "This person doesn't exist (any more)."
       },
       "firstNameLabel": "First name",
       "lastNameLabel": "Family name",
@@ -2041,6 +2057,7 @@
       "missingArticle": "Pick at least one size.",
       "handOutCount": "Hand out ({count})",
       "notTaken": "not taken — click a size",
+      "noSizes": "This article has no sizes yet. Tick its sizes on the article (Master data › Articles) or upload the Article sizes via Data Upload/Download.",
       "stillHasTitle": "{name} still has (return first):",
       "returnFirst": "Return first",
       "stayingConfirm": "These pieces stay with the person: {pieces}. Take back the rest?",
@@ -2057,20 +2074,24 @@
     },
     "open": {
       "title": "Outstanding",
-      "description": "Clothing that was picked up but not returned yet.",
+      "description": "Clothing that was picked up but not returned yet, per team and per person.",
       "dayLabel": "Day",
       "allDays": "All days",
-      "teamLabel": "Team",
-      "allTeams": "All teams",
       "person": "Person",
       "email": "Email address",
       "team": "Team",
       "day": "Day",
-      "pieces": "Still holding",
       "since": "Picked up",
       "loading": "Loading…",
       "empty": "Everything has been returned.",
-      "totals": "{persons, plural, one {# person} other {# persons}} · {pieces, plural, one {# piece} other {# pieces}}"
+      "totals": "{persons, plural, one {# person} other {# persons}} · {pieces, plural, one {# piece} other {# pieces}}",
+      "bracelet": "Wristband",
+      "article": "Article",
+      "size": "Size",
+      "filter": "Filter {column}",
+      "noMatch": "No pieces match the filters.",
+      "piecesCount": "{pieces, plural, one {# piece} other {# pieces}} still held",
+      "filteredOf": "({shown} of {total} pieces shown)"
     },
     "settings": {
       "title": "Settings",
@@ -2143,6 +2164,47 @@
       "teamMatched": "team recognised: {team}",
       "teamNotMatched": "no team recognised — the counter picks the team",
       "onDesk": "appears at the counter with scanner {device}"
+    },
+    "mailTemplates": {
+      "title": "Emails",
+      "description": "The mails a person gets after a transaction at the counter, to the email address entered at the counter. Without an email address nothing is sent.",
+      "loading": "Loading…",
+      "kinds": {
+        "handout": {
+          "title": "Hand-out",
+          "help": "Sent after every pick-up."
+        },
+        "return": {
+          "title": "Return",
+          "help": "Sent after every return (one mail per transaction)."
+        }
+      },
+      "active": "Send",
+      "subject": "Subject",
+      "body": "Text",
+      "placeholdersHelp": "Click a field to insert it at the cursor (in the subject or the text):",
+      "placeholders": {
+        "voornaam": "The person's first name",
+        "familienaam": "The person's family name",
+        "ploeg": "Team",
+        "festival": "Festival",
+        "dag": "Festival day (dd-mm-yyyy)",
+        "polsband": "Wristband number at this festival",
+        "stuks": "The pieces of this transaction, one per line",
+        "openstaand": "What the person still has afterwards, one per line (or \"niets\")"
+      },
+      "preview": "Preview (with example data)",
+      "changed": "Last changed: {when} · {who}",
+      "unsaved": "Unsaved changes",
+      "save": "Save",
+      "saved": "Email saved.",
+      "sendTest": "Send test to me",
+      "testSent": "Test mail sent to {email}.",
+      "errors": {
+        "generic": "Something went wrong.",
+        "unknown_placeholder": "Unknown field: {p1}. Only use the fields below.",
+        "no_own_email": "Your account has no email address."
+      }
     }
   },
   "walkies": {

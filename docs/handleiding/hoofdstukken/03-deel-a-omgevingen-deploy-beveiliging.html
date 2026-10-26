@@ -199,6 +199,7 @@ staat in Git.</p>
   <tr><td><code>TAGSCAN_SOURCE_DIR</code></td><td>backend</td><td>Map voor de TagScan-bestanden (op de server een Docker-volume)</td></tr>
   <tr><td><code>TAGSCAN_ENVIRONMENT</code></td><td>backend</td><td>Naam van deze omgeving voor de kolom <code>Mode</code> van TagScan-CSV's (<code>test</code> of <code>production</code>); leeg = nooit doorsturen</td></tr>
   <tr><td><code>TAGSCAN_FORWARD_URL</code>, <code>TAGSCAN_FORWARD_API_KEY</code></td><td>backend</td><td>Ontvangstadres van de <em>andere</em> omgeving en een scannersleutel die op die andere omgeving is aangemaakt</td></tr>
+  <tr><td><code>ATELIER_WEBHOOK_TOKEN</code></td><td>backend</td><td>Gedeeld geheim van het polsbandbedrijf: elk bericht op de Atelier-webhook moet deze waarde in zijn veld <code>token</code> hebben. Leeg = elk webhookbericht wordt geweigerd (het testscherm werkt wel). Per omgeving verschillend.</td></tr>
   <tr><td><code>TAGSCAN_AUTO_SCAN_WORKER</code></td><td>backend</td><td>Noodschakelaar: <code>false</code> start het automatisch scannen niet (standaard <code>true</code>)</td></tr>
   <tr><td><code>APP_COMMIT</code>, <code>APP_COMMIT_DATE</code></td><td>beide</td><td>Versielabel; wordt door <code>deploy.sh</code> zelf uit Git gezet, niet in <code>.env</code> (zie <a class="ref" href="#s-versielabel"></a>)</td></tr>
   <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>frontend</td><td>Adres van de backend zoals de browser het aanroept. Wordt bij het <em>bouwen</em> ingebakken.</td></tr>
@@ -589,7 +590,7 @@ gebouwd is, staat in <a class="ref" href="#s-be-rechten"></a>.</p>
 </figure>
 
 <h3 id="s-vaste-rollen">Modules met vaste rollen</h3>
-<p>Modules 5 tot 7 en module 10 gebruiken nog een eenvoudiger, ouder systeem: drie vaste rollen
+<p>Module 7 en module 10 gebruiken nog een eenvoudiger, ouder systeem: drie vaste rollen
 (<em>admin</em>, <em>editor</em>, <em>reader</em>) in één gedeelde tabel <code>Landing_module_roles</code>. Zodra zo'n
 module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per scherm (zie <a class="ref" href="#s-recept-module"></a>).</p>
 
@@ -605,12 +606,13 @@ module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per sch
 </ul>
 
 <h2 id="s-publieke-endpoints">Endpoints zonder login</h2>
-<p>Twee groepen endpoints zijn bewust bereikbaar zonder inloggen, elk met eigen beveiliging:</p>
+<p>Drie groepen endpoints zijn bewust bereikbaar zonder inloggen, elk met eigen beveiliging:</p>
 <table>
   <caption>Publieke endpoints en hun beveiliging</caption>
   <tr><th style="width:34%">Endpoint</th><th>Waarvoor</th><th style="width:34%">Beveiliging</th></tr>
   <tr><td><code>/api/public/intervention-requests</code></td><td>Het publieke interventieformulier (QR-code op het karblad)</td><td>Snelheidslimiet: max. 10 aanvragen per minuut per IP-adres; alle invoer wordt gecontroleerd en in mails ge-escaped</td></tr>
   <tr><td><code>/api/public/tagscan-intake</code></td><td>CSV-bestanden van de Raspberry Pi</td><td>API-sleutel per scanner (header <code>X-API-Key</code>, gehasht bewaard), max. 20 MB per bestand, Nginx-snelheidslimiet (30 per minuut)</td></tr>
+  <tr><td><code>/api/public/atelier/wristband-scan</code></td><td>De polsbandscans van het polsbandbedrijf aan de Atelier-balie (JSON per scan)</td><td>Gedeelde token in het bericht, vergeleken in constante tijd met <code>ATELIER_WEBHOOK_TOKEN</code> (geen token ingesteld = alles geweigerd, 401). Elk bericht, ook een geweigerd, wordt gelogd en is te zien op Atelier &gt; Instellingen. Een bericht maakt zelf nooit een persoon aan.</td></tr>
 </table>
 <p>Een API-sleutel van een scanner werkt alleen op de omgeving waar ze aangemaakt is (test of productie).</p>
 

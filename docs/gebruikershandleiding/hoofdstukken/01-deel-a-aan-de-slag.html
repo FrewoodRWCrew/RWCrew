@@ -39,21 +39,23 @@ en registreren wat er gebeurt.</p>
 overal in de app dezelfde kleur, zodat je altijd ziet waar je bent.</p>
 
 <div class="tegels">
-  <div class="tegel m-masterdata"><div class="tegel-naam">MasterData</div><div class="tegel-zin">De basisgegevens waar alle andere modules op steunen: jaartallen, festivals, ploegen, producten en magazijnen.</div></div>
-  <div class="tegel m-kartracker"><div class="tegel-naam">KarTracker</div><div class="tegel-zin">Het wagenpark: elke kar, zijn ploeg, zijn status en locatie, de planning van de afleverlocaties, kaarten en karbladen.</div></div>
+  <div class="tegel m-masterdata"><div class="tegel-naam">MasterData</div><div class="tegel-zin">De basisgegevens waar alle andere modules op steunen: jaartallen, festivals, ploegen en hun verantwoordelijken.</div></div>
+  <div class="tegel m-kartracker"><div class="tegel-naam">KarTracker</div><div class="tegel-zin">Het wagenpark: elke kar, zijn ploeg, zijn status en locatie, de planning van de afleverlocaties, de levertoer, kaarten, karbladen en de karcode.</div></div>
   <div class="tegel m-interventie"><div class="tegel-naam">Interventie Aanvragen</div><div class="tegel-zin">Hulpvragen van ploegen tijdens het festival registreren, opvolgen en afsluiten, ook via een QR-code op de kar.</div></div>
-  <div class="tegel m-stockmaster"><div class="tegel-naam">StockMaster</div><div class="tegel-zin">De magazijnvoorraad: inboeken, karren laden en laten vertrekken, terugname, tellingen en wat er besteld moet worden.</div></div>
+  <div class="tegel m-stockmaster"><div class="tegel-naam">StockMaster</div><div class="tegel-zin">De magazijnvoorraad en de producten: inboeken, karren laden en laten vertrekken, terugname, tellingen en wat er besteld moet worden.</div></div>
   <div class="tegel m-altsien"><div class="tegel-naam">Altsien Select</div><div class="tegel-zin">De Ploeg Wizard waarin Altsien Kernleden per ploeg en per jaartal hun keuzes maken, plus de Ploegfiche.</div></div>
   <div class="tegel m-tagscan"><div class="tegel-naam">TagScan</div><div class="tegel-zin">RFID-tags op het materiaal: scanbestanden ontvangen en verwerken, tags registreren en aan producten koppelen.</div></div>
   <div class="tegel m-mobiel"><div class="tegel-naam">Mobile App</div><div class="tegel-zin">De installatiepagina van de telefoon-app: een QR-code en de stappen om RWCrew op je beginscherm te zetten.</div></div>
-  <div class="tegel"><div class="tegel-naam" style="color:#5d6863">Module 5, 6 en 7</div><div class="tegel-zin">Gereserveerd voor toekomstige modules. Ze tonen voorlopig enkel "Deze module is nog in ontwikkeling."</div></div>
+  <div class="tegel m-atelier"><div class="tegel-naam">Atelier</div><div class="tegel-zin">Werkkledij voor de festivalmedewerkers: reservaties per ploeg, de stock en de balie waar kledij opgehaald en teruggebracht wordt.</div></div>
+  <div class="tegel m-walkies"><div class="tegel-naam">Walkies</div><div class="tegel-zin">De walkietalkies van het festival. Nog in opbouw: voorlopig enkel een startpagina.</div></div>
+  <div class="tegel"><div class="tegel-naam" style="color:#5d6863">Module 7</div><div class="tegel-zin">Gereserveerd voor een toekomstige module. Toont voorlopig enkel "Deze module is nog in ontwikkeling."</div></div>
 </div>
 
 <h2 id="s-samenhang">Hoe de modules samenhangen</h2>
 <p>De modules zijn geen losse programma's: ze delen hun gegevens. Een ploeg die je in MasterData aanmaakt, kun je meteen
 aan een kar koppelen in KarTracker, kiezen in een interventieaanvraag en openen in de Ploeg Wizard. Een afleverlocatie die
 een Kernlid in Altsien Select kiest, verschijnt meteen in de planning van KarTracker. Je voert iets dus maar
-<strong>één keer</strong> in.</p>
+<strong>één keer</strong> in. De producten en magazijnen staan in StockMaster; TagScan en KarTracker lezen ze daar.</p>
 
 <figure class="diagram" id="fig-samenhang">
 <svg viewBox="0 0 680 330" xmlns="http://www.w3.org/2000/svg">
@@ -79,7 +81,7 @@ een Kernlid in Altsien Select kiest, verschijnt meteen in de planning van KarTra
   <rect x="250" y="134" width="180" height="64" rx="7" style="fill:#0891b2;stroke:none"/>
   <text x="340" y="157" text-anchor="middle" class="t-titel t-wit">MasterData</text>
   <text x="340" y="174" text-anchor="middle" style="font-size:10.5px;fill:#e0f7fb">jaartallen · festivals</text>
-  <text x="340" y="188" text-anchor="middle" style="font-size:10.5px;fill:#e0f7fb">ploegen · producten</text>
+  <text x="340" y="188" text-anchor="middle" style="font-size:10.5px;fill:#e0f7fb">ploegen · verantwoordelijken</text>
   <rect x="20" y="246" width="180" height="64" rx="7" style="fill:#eff6ff;stroke:#2563eb;stroke-width:1.4"/>
   <text x="110" y="273" text-anchor="middle" class="t-titel" style="fill:#1d4ed8">TagScan</text>
   <text x="110" y="292" text-anchor="middle" class="t-klein">RFID-tags op materiaal</text>

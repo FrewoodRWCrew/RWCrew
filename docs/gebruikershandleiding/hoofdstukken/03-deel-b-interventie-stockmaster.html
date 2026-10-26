@@ -102,7 +102,7 @@ De voorraad kan nooit onder nul gaan.
 
 <h2 id="s-sm-begrippen">De belangrijkste begrippen</h2>
 <dl class="woordenlijst">
-  <dt>Vrije voorraad</dt><dd>Wat los in het magazijn ligt, op de vaste <em>locatie</em> van het product (ingesteld in MasterData).</dd>
+  <dt>Vrije voorraad</dt><dd>Wat los in het magazijn ligt, op de vaste <em>locatie</em> van het product (ingesteld bij het product, onder Masterdata).</dd>
   <dt>In karren</dt><dd>Wat al in een kar geladen is die in het magazijn staat. Eén product kan tegelijk in de vrije voorraad én in meerdere karren zitten.</dd>
   <dt>Totale voorraad</dt><dd>Vrije voorraad + alles in de karren in het magazijn.</dd>
   <dt>Onderweg</dt><dd>Een kar die vertrokken is (naar een festival). Zijn inhoud telt niet meer mee in de voorraad tot hij terug is, en hij kan
@@ -179,7 +179,23 @@ De voorraad kan nooit onder nul gaan.
   <span class="knop">Bon afdrukken</span> en <span class="knop">Ongedaan maken</span>.</td></tr>
   <tr><td>Redenen</td><td>De redenen die je kiest bij uitboeken of bij een telling (bijvoorbeeld "Kapot", "Verloren", "Verbruikt"), per type boeking,
   met een volgorde en actief/inactief.</td></tr>
+  <tr><td colspan="2" style="background:#e6f6f4;font-weight:600;color:#0f766e">Masterdata</td></tr>
+  <tr><td>Producten</td><td>Alle producten met hun type, magazijn, locatie, categorie, limiet, foto en vinkjes (zie <a class="ref" href="#s-md-product"></a>).
+  Daaronder de keuzelijsten <em>Type</em>, <em>Magazijnen</em>, <em>Categorieën</em> en <em>Limieten</em>.</td></tr>
+  <tr><td>Data Upload/Download</td><td>Excel-sjablonen, import en export van de producten en hun keuzelijsten.</td></tr>
 </table>
+
+<h2 id="s-sm-nieuw">Inboeken vanuit TagScan, Kar laden en naleveringen</h2>
+<ul>
+  <li><strong>Inboeken vanuit een TagScan-scan.</strong> Werden er tags gescand met de actie <em>Book In</em>, dan toont elk StockMaster-scherm (en de
+  hoofdpagina) een melding. <span class="knop">In Inboeken laden</span> zet die scan klaar als inboeklijnen: elke gescande tag is één stuk van zijn product.
+  Tags die niet gekend zijn of geen product hebben, blijven wachten.</li>
+  <li><strong>Kar laden.</strong> Het scherm opent op een overzicht van alle karren (hoe ver elk geladen is), waar je ook de laadlijsten van meerdere karren
+  in één keer afdrukt. <span class="knop">Laden</span> opent de inhoud van één kar: per product de benodigdheden uit Altsien Select en eventuele
+  <em>manuele aanvragen</em> (iets wat de ploeg extra vroeg). De kolom <em>Op dit moment beschikbaar voor levering</em> toont hoeveel je mag meegeven
+  volgens de regels van de organisatie (blokkering, logistieke producten, de limiet van het product); het icoontje ernaast toont hoe dat getal berekend werd.</li>
+  <li><strong>Nalevering.</strong> Is een kar al vertrokken, dan kun je ze toch nog laden: dat wordt een nalevering bij die rit, die meetelt wanneer de kar terugkomt.</li>
+</ul>
 
 <p>Staan er verbruiksgoederen onder hun minimum, dan verschijnt bovenaan elk StockMaster-scherm een oranje balk, bijvoorbeeld
 <em>"3 producten onder minimum stock"</em>. <span class="knop">Bekijken</span> opent het Voorraadoverzicht met enkel die producten.</p>
@@ -230,7 +246,7 @@ al terug is (maak dan eerst "Kar terug" ongedaan) of opnieuw vertrokken.
 
 <h2 id="s-sm-planning">Plannen en bestellen</h2>
 <ol class="stappen">
-  <li><strong>Benodigdheden invullen.</strong> Kies in <span class="menu">Planning<span class="sep">›</span>Benodigdheden</span> een ploeg en klik op een kar.
+  <li><strong>Benodigdheden invullen.</strong> De Altsien Kernleden vullen ze in stap 4 van de Ploeg Wizard in; je kunt ze hier aanvullen. Kies in <span class="menu">Planning<span class="sep">›</span>Benodigdheden</span> een ploeg en klik op een kar.
   Vul per product het <em>Aantal</em> (en eventueel een <em>Opmerking</em>) in en klik op <span class="knop">Opslaan</span>. Met
   <em>Kopieer van vorig seizoen</em> neem je de lijst van vorig jaar over: vink aan wat je wilt, klik op <span class="knop">Kopiëren</span> en vergeet niet op te slaan.</li>
   <li><strong>Te bestellen bekijken.</strong> <span class="menu">Planning<span class="sep">›</span>Te bestellen</span> zet alle benodigdheden van het seizoen tegenover

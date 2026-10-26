@@ -1,4 +1,4 @@
-<!-- Deel B: hoofdstuk 8 (Altsien Select), 9 (TagScan) en 10 (telefoon-app). -->
+<!-- Deel B: Altsien Select, TagScan, Atelier en de telefoon-app. -->
 
 <!-- ===================================================================== -->
 <h1 class="hoofdstuk" id="h-altsien">Altsien Select: de Ploeg Wizard</h1>
@@ -70,7 +70,8 @@ PDF kunt downloaden. De organisatie volgt jullie speciale aanvragen op en antwoo
   toont de gekozen locaties op het grondplan van het terrein, zodat je kunt controleren of ze kloppen.</td><td>Elk gekozen festival heeft een locatie.</td></tr>
   <tr><td><strong>3. Ploegverantwoordelijken</strong></td><td>Voeg de verantwoordelijken van de ploeg toe met naam, e-mail, telefoonnummer en eventueel opmerkingen
   (<span class="knop">Verantwoordelijke toevoegen</span>). Ze hoeven geen RWCrew-gebruiker te zijn.</td><td>Minstens één persoon.</td></tr>
-  <tr><td><strong>4. Producten</strong></td><td>Komt later: welke producten de ploeg nodig heeft en hoeveel.</td><td>Zelf afvinken.</td></tr>
+  <tr><td><strong>4. Producten</strong></td><td>Per kar van de ploeg welke producten nodig zijn en hoeveel (de <em>benodigdheden</em> van StockMaster). Met
+  <em>Kopieer van vorig seizoen</em> per kar en een import via Excel.</td><td>Minstens één product op één kar.</td></tr>
   <tr><td><strong>5. Speciale aanvragen</strong></td><td>Beschrijf wat de ploeg extra nodig heeft of wat de organisatie moet weten (<span class="knop">Aanvraag toevoegen</span>).
   Je ziet per aanvraag de status en het <em>Antwoord organisatie</em>. Met <span class="knop">Intrekken</span> trek je een aanvraag terug.</td><td>Zelf afronden (aanvragen zijn niet verplicht).</td></tr>
   <tr><td><strong>6. Walkie-talkies</strong></td><td>Komt later: of de ploeg walkie-talkies nodig heeft.</td><td>Zelf afvinken.</td></tr>
@@ -212,6 +213,123 @@ op welke omgeving een bestand uiteindelijk terechtkomt.
 </div>
 
 <!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-atelier">Atelier: werkkledij</h1>
+
+<div class="module-kaart m-atelier">
+  <div><span class="vak-titel">Waarvoor</span><p>De werkkledij (T-shirts, hoodies, schorten, …) die medewerkers van sommige ploegen bij het begin van hun shift ophalen en na de shift terugbrengen.</p></div>
+  <div><span class="vak-titel">Voor wie</span><p>Het atelierteam aan de balie en in de winkel, en de organisatie die de reservaties invult.</p></div>
+  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-atelier">Atelier</span>. Enkel op de computer.</p></div>
+  <div><span class="vak-titel">Seizoen</span><p>Eigen keuzelijsten <em>Seizoen</em> en <em>Festival</em> bovenaan de schermen die ze nodig hebben.</p></div>
+</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en welk <strong>pakket</strong> elke persoon krijgt
+(<em>Reservaties</em>). De winkel legt elke dag klaar wat nodig is (<em>Voorbereiden</em>). Aan de <strong>balie</strong> begint elke transactie met
+<span class="knop">Ophalen</span> of <span class="knop">Terugbrengen</span>. Wat terugkomt gaat naar <em>Te wassen</em>, en na het wassen weer naar
+<em>Beschikbaar</em>. De medewerkers zijn geen RWCrew-gebruikers: ze worden herkend aan hun voornaam en familienaam, of aan hun polsband.
+</div>
+
+<h2 id="s-at-schermen">De schermen</h2>
+<table class="schermen">
+  <caption>Schermen in Atelier</caption>
+  <tr><th>Scherm</th><th>Wat je er doet</th></tr>
+  <tr><td>KPI overzicht</td><td>Tellers voor de balie (vandaag uitgegeven, nog niet terug, personen met kledij), de masterdata, de reservaties per festival
+  (met de kolom <em>Vergeten?</em>) en de stock.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Balie</td></tr>
+  <tr><td>Uitgifte &amp; inname</td><td>De balie: kledij meegeven en terugnemen (zie <a class="ref" href="#s-at-balie"></a>).</td></tr>
+  <tr><td>Openstaand</td><td>Alle kledij die opgehaald werd maar nog niet terug is, per persoon, met filters op festival, dag en ploeg.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Reservaties</td></tr>
+  <tr><td>Reservaties</td><td>Per festival en per ploeg het aantal personen, een opmerking en het pakket.</td></tr>
+  <tr><td>Voorbereiden</td><td>Wat de winkel elke festivaldag klaarlegt: totalen per artikel met geschatte maten, en een bundel per ploeg. Picklijst als PDF.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Stock</td></tr>
+  <tr><td>Stock</td><td>Per artikel en maat: <em>beschikbaar</em>, <em>te wassen</em>, <em>uitgegeven</em>, totaal en minimumstock.</td></tr>
+  <tr><td>Ontvangst, Wassen, Afboeken, Telling</td><td>Nieuwe stuks inboeken, gewassen stuks terug beschikbaar zetten, stuks afboeken (kapot, verloren, niet teruggebracht, andere)
+  en de stock tellen.</td></tr>
+  <tr><td>Boekingen</td><td>Alle stockboekingen, met boekingsbon en <span class="knop">Ongedaan maken</span> (behalve die van de balie).</td></tr>
+  <tr><td>Te bestellen</td><td>Per artikel en maat wat het drukste festival van het seizoen nodig heeft, min wat het atelier bezit. Bestellijst als PDF.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Masterdata</td></tr>
+  <tr><td>Artikelen</td><td>De kledingstukken (code, naam, foto, minimumstock) en per artikel de maten waarin het bestaat, met een maatverdeling in %.</td></tr>
+  <tr><td>Maten</td><td>De maten met hun pasvorm (dames, heren, unisex), bijvoorbeeld S · Unisex of OneSize.</td></tr>
+  <tr><td>Data Upload/Download</td><td>Excel voor maten, artikelen, artikelmaten, reservaties en pakketlijnen.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Instellingen</td></tr>
+  <tr><td>Instellingen</td><td>Of een polsbandnummer verplicht is bij Ophalen, de scanners van het polsbandbedrijf en de ontvangen berichten.</td></tr>
+  <tr><td>Test-scan</td><td>Een polsbandscan naspelen zonder het polsbandbedrijf (zie <a class="ref" href="#s-at-polsband"></a>).</td></tr>
+</table>
+
+<h2 id="s-at-reservaties">Reservaties en voorbereiden</h2>
+<ol class="stappen">
+  <li>Open <span class="menu">Reservaties<span class="sep">›</span>Reservaties</span> en kies bovenaan het seizoen en het festival. Je ziet alle actieve ploegen.</li>
+  <li>Vul per ploeg het aantal <em>Personen</em> in en eventueel een <em>Opmerking</em>.</li>
+  <li>Klik bij de ploeg op <span class="knop">Pakket</span> en kies de artikelen. Elke persoon krijgt <strong>één stuk per artikel</strong>; de maat kiest de balie.</li>
+  <li>Gewijzigde lijnen kleuren geel. Klik op <span class="knop">Opslaan</span>.</li>
+</ol>
+<p>Bestond hetzelfde festival vorig seizoen, dan kun je de reservaties van toen <strong>kopiëren</strong>: het pakket wordt aangevuld (nooit iets verwijderd), het
+aantal personen enkel als het nog 0 is. Een ploeg werkt <strong>elke festivaldag</strong> en brengt de kledij <strong>elke avond terug</strong>, dus elke dag is
+er opnieuw <em>personen × pakket</em> nodig.</p>
+<div class="kader tip"><span class="kader-titel"></span>
+Op de KPI-pagina telt de kolom <em>Vergeten?</em> de ploegen die op een ander festival van dit seizoen wel een reservatie hebben, maar hier niet. Komt
+een ploeg echt niet, vul dan 0 personen in met een opmerking (bijvoorbeeld "komt niet"); dan telt ze niet meer mee.
+</div>
+<p><span class="menu">Reservaties<span class="sep">›</span>Voorbereiden</span> toont wat de winkel elke dag klaarlegt. De maten zijn een <strong>schatting</strong>
+op basis van de maatverdeling (%) van het artikel; ernaast staat de stock: <strong>rood</strong> als het atelier te weinig stuks heeft, <strong>oranje</strong> als
+er genoeg zijn maar nog niet alles gewassen of terug is. Kies een dag en klik op <span class="knop">Picklijst afdrukken</span> (voor alle ploegen, of enkel de aangevinkte).</p>
+
+<h2 id="s-at-balie">Aan de balie: ophalen en terugbrengen</h2>
+<p>Kies op <span class="menu">Balie<span class="sep">›</span>Uitgifte &amp; inname</span> bovenaan het <em>Festival</em>, de <em>Dag</em> en eventueel de
+<em>Scanner van deze balie</em>. <strong>Elke transactie begint met een keuze tussen twee grote knoppen</strong>: <span class="knop">Ophalen</span> (toets 1) of
+<span class="knop">Terugbrengen</span> (toets 2). Na het boeken of annuleren kom je terug bij die keuze.</p>
+<p><strong>Ophalen</strong></p>
+<ol class="stappen">
+  <li>Vul <em>Voornaam</em> en <em>Familienaam</em> in: samen bepalen ze wie de persoon is. Is de persoon al gekend, dan worden e-mailadres, polsbandnummer
+  en ploeg ingevuld en zie je wat hij of zij nog in bezit heeft.</li>
+  <li>Vul eventueel het <em>E-mailadres</em> (optioneel) en het <em>Polsbandnummer</em> in. Een polsbandnummer geldt voor één festival; het is verplicht als
+  dat in de instellingen aanstaat.</li>
+  <li>Kies de <em>Ploeg</em> (enkel ploegen met een pakket op dit festival).</li>
+  <li>Kies per artikel van het pakket de <em>maat</em>; tussen haakjes staat hoeveel er beschikbaar zijn. Elk artikel is optioneel: klik de gekozen maat
+  nog eens om het over te slaan.</li>
+  <li>Klik op <span class="knop">Uitgeven</span> (of Enter).</li>
+</ol>
+<div class="kader letop"><span class="kader-titel"></span>
+Een artikel dat de persoon nog niet terugbracht, kan niet opnieuw meegegeven worden. Een oranje kader toont wat de persoon nog heeft, met de knop
+<span class="knop">Eerst terugbrengen</span>. Alle andere artikelen kan de persoon wel ophalen, ook meerdere keren per dag. Komen er meer mensen van
+een ploeg dan gereserveerd, dan kleurt de teller oranje, maar uitgeven blijft mogelijk.
+</div>
+<p><strong>Terugbrengen</strong></p>
+<ol class="stappen">
+  <li>Zoek de persoon op naam, e-mailadres of polsbandnummer (enkel wie nog kledij heeft).</li>
+  <li>Alle stuks staan aangevinkt; vink af wat niet terug is. Dat blijft openstaan, en de balie vraagt eerst bevestiging.</li>
+  <li>Klik op <span class="knop">Terugnemen</span>: de stuks gaan naar <em>Te wassen</em>.</li>
+</ol>
+<p>Komt iets nooit terug, boek het dan af via <span class="menu">Stock<span class="sep">›</span>Afboeken</span> met de reden "Niet teruggebracht".
+Een uitgifte waarvan nog niets terug is, kan met het recht <em>Wijzigen</em> geannuleerd worden.</p>
+
+<h2 id="s-at-stock">De stock: ontvangen, wassen, tellen</h2>
+<p>Elk stuk heeft een status: <strong>beschikbaar</strong> (in de winkel), <strong>uitgegeven</strong> (bij een medewerker) of <strong>te wassen</strong> (teruggebracht).
+Zoals in StockMaster is elke wijziging een boeking op jouw naam die nooit gewist wordt, en kan de stock nooit onder nul gaan.</p>
+<table>
+  <caption>De stockboekingen van Atelier</caption>
+  <tr><th style="width:22%">Scherm</th><th>Wat er gebeurt</th></tr>
+  <tr><td>Ontvangst</td><td>Nieuwe stuks komen binnen en worden <em>beschikbaar</em>.</td></tr>
+  <tr><td>Wassen</td><td>Gewassen stuks gaan van <em>te wassen</em> naar <em>beschikbaar</em>.</td></tr>
+  <tr><td>Afboeken</td><td>Stuks verdwijnen uit de stock, met een reden: kapot, verloren, niet teruggebracht of andere (met verplichte opmerking).</td></tr>
+  <tr><td>Telling</td><td>Je telt per artikel en maat; het verschil wordt geboekt.</td></tr>
+</table>
+<p>Zakt een maat onder haar minimumstock, dan verschijnt bovenaan elk Atelier-scherm een oranje melding. <em>Te bestellen</em> toont per maat wat er
+bijgekocht moet worden.</p>
+
+<h2 id="s-at-polsband">Polsbandscans</h2>
+<p>Medewerkers dragen een festivalpolsband van een extern bedrijf. Scant iemand zijn polsband aan de scanner van het bedrijf aan onze balie, dan stuurt het
+bedrijf dat bericht naar RWCrew. Binnen enkele seconden verschijnt aan de balie die die scanner koos een kaart <em>"Gescand: …"</em> boven de twee knoppen.
+Kies dan <span class="knop">Ophalen</span> (naam, polsbandnummer, ploeg en maat staan al ingevuld) of <span class="knop">Terugbrengen</span> (de stuks van de
+persoon staan meteen klaar). Met <span class="knop">Negeren</span> verdwijnt de scan. Komt er een scan binnen tijdens een transactie, dan wacht hij tot je klaar bent.</p>
+<div class="kader beheer"><span class="kader-titel"></span>
+Op <span class="menu">Instellingen<span class="sep">›</span>Instellingen</span> zet je <em>Polsband verplicht bij Ophalen</em> aan of uit, geef je elke scanner
+een naam (bijvoorbeeld "Balie 1") en zie je alle <em>Ontvangen berichten</em>, ook de geweigerde. "geen ploeg met deze naam" betekent dat de ploegnaam van het
+bedrijf niet overeenkomt met een ploeg in MasterData: de balie kiest de ploeg dan zelf. De echte koppeling met het bedrijf volgt vanaf mei 2027; tot dan speel je
+berichten na met <span class="menu">Instellingen<span class="sep">›</span>Test-scan</span>, via een formulier of een JSON-bestand.
+</div>
+
+<!-- ===================================================================== -->
 <h1 class="hoofdstuk" id="h-telefoon">De telefoon-app</h1>
 
 <div class="module-kaart m-mobiel">
@@ -247,11 +365,12 @@ De telefoonversie bevat bewust enkel het werk dat je op het terrein doet: niets 
 <table class="niet-breken">
   <caption>De schermen van de telefoon-app</caption>
   <tr><th style="width:22%">Module</th><th style="width:22%">Scherm</th><th>Wat je doet</th></tr>
-  <tr><td rowspan="3"><strong>KarTracker</strong></td><td>KarScan</td><td>Scan de QR-code op een kar. Je ziet de kar en zijn ploeg; kies de <em>Nieuwe status</em>. De GPS-locatie wordt
+  <tr><td rowspan="4"><strong>KarTracker</strong></td><td>KarScan</td><td>Scan de QR-code op een kar. Je ziet de kar en zijn ploeg; kies de <em>Nieuwe status</em>. De GPS-locatie wordt
   automatisch bepaald (met de nauwkeurigheid, bijvoorbeeld "nauwkeurig tot ± 8 m"); tik op <em>Locatie opnieuw bepalen</em> als ze niet klopt.
   Opslaan registreert de beweging. Onderaan de <em>Laatste bewegingen</em> van die kar.</td></tr>
   <tr><td>Kar Planning</td><td>Alle karren met hun ploeg, transporttype, locatie en per festival de geplande afleverlocatie, met <em>Toon op kaart</em>.</td></tr>
   <tr><td>Kar Map</td><td>De kaart met karren, afleverlocaties en distributiepunten, ideaal om een kar op het terrein terug te vinden.</td></tr>
+  <tr><td>Karcode Simulator</td><td>De code van het slot van een kar: typ het karnummer of scan de QR-code van de kar.</td></tr>
   <tr><td rowspan="2"><strong>Interventie Aanvragen</strong></td><td>Akties</td><td>De lijst van aanvragen (filter <em>Open</em> of <em>Alle</em>), een nieuwe aanvraag registreren en een aanvraag
   wijzigen (status, uitvoerder…). Mag je enkel lezen, dan zie je <em>"Je mag deze aanvraag bekijken maar niet wijzigen."</em></td></tr>
   <tr><td>KPI overzicht</td><td>Dezelfde cijfers als op de computer: totaal, open en afgesloten aanvragen.</td></tr>

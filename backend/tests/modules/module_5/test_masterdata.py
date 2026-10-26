@@ -228,12 +228,13 @@ def _upload(client: TestClient, path: str, content: bytes) -> list[dict]:
 
 
 def test_xlsx_imports_and_round_trip(as_atelier: TestClient, world: dict) -> None:
-    # Sizes: Dutch fit names are accepted; a duplicate and a bad fit are row errors.
+    # Sizes: Dutch fit names are accepted; an existing name + fit without id is
+    # updated (not duplicated); a bad fit is a row error.
     results = _upload(
         as_atelier, "sizes",
         _xlsx(["id", "name", "fit", "sort_order", "active"], [[None, "S", "Heren", 20, "ja"], [None, "M", "men", 30, None], [None, "XS", "kids", 10, None]]),
     )
-    assert [row["outcome"] for row in results] == ["created", "error", "error"]
+    assert [row["outcome"] for row in results] == ["created", "updated", "error"]
 
     # Articles, then their sizes by natural key.
     results = _upload(as_atelier, "articles", _xlsx(["id", "code", "name", "cost"], [[None, "TS", "T-shirt", "7,50"]]))
@@ -253,3 +254,20 @@ def test_xlsx_imports_and_round_trip(as_atelier: TestClient, world: dict) -> Non
     template = as_atelier.get(f"{BASE}/articles-import/template")
     rows = list(load_workbook(io.BytesIO(template.content)).active.iter_rows(values_only=True))
     assert rows == [("id", "code", "name", "description", "colour", "cost", "is_tag_managed", "active")]
+
+
+def test_xlsx_import_of_another_environments_export(as_atelier: TestClient, world: dict) -> None:
+    # An export from another environment carries ids that don't exist here:
+    # those rows are matched by their natural key (code / name + fit) instead.
+    results = _upload(as_atelier, "articles", _xlsx(["id", "code", "name"], [[9001, "HOOD", "Hoodie"]]))
+    assert results[0]["outcome"] == "created"
+    results = _upload(as_atelier, "articles", _xlsx(["id", "code", "name"], [[9002, "hood", "Hoodie zwart"]]))
+    assert results[0]["outcome"] == "updated"
+    assert [article["name"] for article in as_atelier.get(f"{BASE}/articles").json() if article["code"].upper() == "HOOD"] == ["Hoodie zwart"]
+
+    results = _upload(as_atelier, "sizes", _xlsx(["id", "name", "fit", "sort_order"], [[9003, "M", "men", 35]]))
+    assert results[0]["outcome"] == "updated"
+
+    # An id that isn't a number is still a row error.
+    results = _upload(as_atelier, "articles", _xlsx(["id", "code", "name"], [["abc", "CAP", "Pet"]]))
+    assert results[0]["outcome"] == "error"

@@ -238,7 +238,7 @@ is still linked is refused (400) — deactivate it instead (inactive tours stay 
 Started as a **shell**: tile with name + icon (`Shirt` / custom `components/icons/walkie-talkie-icon.tsx`), a KPI
 landing page, and Access Rights (Roles/Users) with the same custom-roles-per-screen system as StockMaster
 (`Atelier_*` / `Walkies_*` tables, screens in `module_5/screens.py` / `module_6/screens.py`). Translations under
-`atelier.*` / `walkies.*`, help manuals in `app/help/content/module_5|6/` (no screenshots yet). Walkies is still
+`atelier.*` / `walkies.*`, help manuals in `app/help/content/module_5|6/` (Atelier with screenshots, Walkies without). Walkies is still
 only that shell.
 
 - **Atelier**: the atelier team hands out festival work clothing (T-shirts, hoodies for VIP, RW terras, …) at the
@@ -254,7 +254,7 @@ only that shell.
   picture like products, `is_tag_managed` for block 6); `Atelier_article_size` = the stock-keeping unit of the later
   blocks (managed from the article form's size checklist, with `size_share_pct`; unticking deletes it — refuse once
   stock exists). Used things are deactivated, not deleted (400). XLSX per table in `module_5/xlsx_imports.py`
-  (sizes/articles by `id`, the rest by natural key; columns left out stay unchanged). The module has its own season
+  (sizes/articles by `id`, falling back to name+fit / code when the id is blank or unknown here — so an export from another environment imports cleanly; the rest by natural key; columns left out stay unchanged). The module has its own season
   dropdown (`atelier-season-select.tsx`, `?season=`) and `GET /seasons`; `/articles` is readable with the
   Reservaties screen too.
 - **Atelier reservations** (sidebar group "Reservaties", `/modules/module-5/reservations[/preparation]`, screens
@@ -264,7 +264,9 @@ only that shell.
   desk**). The package is **per festival** (there is no season package any more: the old Ploegpakketten screen and
   `Atelier_team_package` were removed on 2026-10-25, migration `d7f1b4c8e253` copied them onto every festival of
   their season). Written only by `module_5/reservation_service.py`; a reservation without persons, note and
-  package is deleted. Every active team is listed (`offered_teams`). "Copy from last year" =
+  package is deleted. Every active team is listed (`offered_teams`), each with `festivals_picked`
+  (`reservation_service.festival_progress`: the season's festivals the team picked in Altsien Select via
+  `festivals_by_team`, done = persons > 0; empty = "geen selectie") shown as "Festivals ingevuld x / y". "Copy from last year" =
   `previous_festival` (previous season, same `normalize_festival_name`): package lines added/updated (never
   removed, inactive articles skipped), persons only while still 0. The team works **every festival day** and
   returns the clothing **every evening**, so each day needs persons × package. `preparation_service.py` computes
@@ -300,7 +302,18 @@ only that shell.
   wash). `stock_service.hand_out` / `return_pieces`; those documents can't be undone on Boekingen (`use_desk`) — only
   "Uitgifte annuleren" (`edit` on the desk, while nothing was returned). **Package quantity is always 1**
   (`reservation_service.PACKAGE_QUANTITY`, forced on save/copy/XLSX; migration `f9b3d6e1a475` set existing lines to 1;
-  the field stays visible, read-only). "Openstaand" = open pieces per person; write-offs stay manual.
+  the field stays visible, read-only). "Openstaand" = open pieces grouped per team → person → piece (client-side);
+  write-offs stay manual. Openstaand and Reservaties have a text filter above every column
+  (`components/module-5/column-filters.tsx`).
+- **Atelier desk mails**: after Ophalen (`POST /desk/handouts`) and after Terugbrengen the person gets the "Uitgifte" /
+  "Inname" mail (only with an email; `module_5/notifications.py` `queue_desk_mail`, background task like module-3). The
+  desk returns through **`POST /desk/persons/{id}/return`** (`desk_service.return_person_lines`, all ticked pieces of
+  every pick-up in one transaction = one mail); the per-handout `/desk/handouts/{id}/return` stays but never mails.
+  Texts in `Atelier_mail_template` (key `handout`/`return`, subject, body, active; seeded by migration `c8e2a5f1d394`,
+  defaults also in `DEFAULT_TEMPLATES`), edited on "Instellingen > E-mails" (screen `atelier.mailtemplates`,
+  `module_5/mail_template_router.py`, test mail to yourself). Placeholders = `notifications.PLACEHOLDERS`
+  ({voornaam} {familienaam} {ploeg} {festival} {dag} {polsband} {stuks} {openstaand}); an unknown one is refused
+  (`unknown_placeholder|name`). A new placeholder needs a value in `desk_values`, `EXAMPLE_VALUES` and a translation.
 - **Atelier wristband scans** (block 5): the wristband company scans at our counter and posts one JSON message per
   scan to the **public webhook** `POST /api/public/atelier/wristband-scan` (`module_5/scan_webhook_router.py`, body read
   raw). Its `token` must equal **`ATELIER_WEBHOOK_TOKEN`** (config `atelier_webhook_token`; also in
@@ -399,7 +412,7 @@ Lines start `new` at scan time; the file's status is derived from its lines
 
 Each module can have a user manual, generated as PDF by the backend (`backend/app/help/`, fpdf2, module's own
 accent colour). Every module with its own screens has one: TagScan (module-1), KarTracker (module-2), Interventies
-(module-3), StockMaster (module-4), Altsien Select (module-8) and MasterData (module-9).
+(module-3), StockMaster (module-4), Atelier (module-5), Walkies (module-6), Altsien Select (module-8) and MasterData (module-9).
 
 - **Text** lives in `backend/app/help/content/<module_N>/{nl,en}.md` (small Markdown subset, see `content.py`):
   `## [topic | screen.key] Title` per chapter. A chapter is only in the PDF when the user may *view* that screen
@@ -411,7 +424,12 @@ accent colour). Every module with its own screens has one: TagScan (module-1), K
   `<module>-help.ts` route → topic list).
 - **Screenshots** in `content/<module_N>/images/`, made from localhost with `npm run help:screenshots [module-N]`
   (`frontend/scripts/help-screenshots.mjs`, playwright-core + the installed Edge, needs `HELP_SHOTS_EMAIL` /
-  `HELP_SHOTS_PASSWORD` of a local login that sees every screen). Re-run it after a screen changes.
+  `HELP_SHOTS_PASSWORD` of a local login that sees every screen). Re-run it after a screen changes. Easiest login: the
+  temporary user of `docs/handleiding/screenshot_user.py setup` (all modules, all rights; `cleanup` afterwards); while its
+  `.screenshot-namen.json` exists, the script masks real names/emails/phones on the shots.
+- **The two handbooks** (`docs/RWCrew-Gebruikershandleiding.pdf`, `docs/RWCrew-Ontwikkelaarshandleiding-v2.pdf`) are HTML
+  chapters in `docs/gebruikershandleiding/` and `docs/handleiding/`, built with their `build_pdf.py` (headless Edge);
+  developer-handbook screenshots via `docs/handleiding/screenshots.py`. Update them when a module or screen is added.
 
 ## Outgoing email (Resend)
 

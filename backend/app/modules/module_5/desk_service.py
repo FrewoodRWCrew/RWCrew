@@ -337,6 +337,35 @@ def return_lines(
     return handout
 
 
+def return_person_lines(
+    db: Session, user: User, person_id: int, line_ids: list[int], scan_id: int | None = None
+) -> tuple[list[AtelierHandout], list[AtelierHandoutLine]]:
+    """Terugbrengen of one person in one go: the ticked pieces may belong to
+    several of their open pick-ups (one return booking per pick-up, as with
+    return_lines). Gives the pick-ups touched (oldest first) and the pieces
+    returned, so the desk can send one mail for the whole transaction."""
+    if db.get(AtelierPerson, person_id) is None:
+        raise StockError("person_not_found", status_code=404)
+    wanted = set(line_ids)
+    if not wanted:
+        raise StockError("line_not_found", status_code=404)
+    # The ticked pieces, grouped per pick-up; each must be the person's.
+    lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.id.in_(wanted))).all()
+    if len(lines) != len(wanted):
+        raise StockError("line_not_found", status_code=404)
+    per_handout: dict[int, list[int]] = {}
+    for line in lines:
+        per_handout.setdefault(line.handout_id, []).append(line.id)
+    handouts = [_get_handout(db, handout_id) for handout_id in sorted(per_handout)]
+    if any(handout.person_id != person_id for handout in handouts):
+        raise StockError("line_not_found", status_code=404)
+
+    # The scan (if any) goes with the first booking only: it can be used once.
+    for index, handout in enumerate(handouts):
+        return_lines(db, user, handout.id, per_handout[handout.id], scan_id if index == 0 else None)
+    return handouts, sorted(lines, key=lambda line: line.id)
+
+
 def cancel_handout(db: Session, user: User, handout_id: int) -> AtelierHandout:
     """Uitgifte annuleren: undo a pick-up of which nothing was returned yet
     (its stock booking is reversed; the pick-up stays, marked cancelled)."""

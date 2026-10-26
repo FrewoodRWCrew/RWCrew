@@ -31,6 +31,7 @@ from app.modules.module_5.reservation_service import (
     ReservationError,
     copy_from_previous_festival,
     festival_days,
+    festival_progress,
     lines_by_reservation,
     offered_teams,
     previous_festival,
@@ -43,6 +44,7 @@ from app.schemas.atelier import (
     FestivalReservationStatsResponse,
     FestivalSummaryResponse,
     PackageLine,
+    PickedFestivalResponse,
     PreparationResponse,
     PreviousReservationsResponse,
     ReservationRowResponse,
@@ -92,6 +94,8 @@ def _rows(db: Session, festival: Festival, *, only_reserved: bool = False) -> li
     reservations = reservations_by_team(db, festival.id)
     lines = lines_by_reservation(db, [row.id for row in reservations.values()])
     article_names = {article.id: article.name.lower() for article in db.scalars(select(AtelierArticle)).all()}
+    # Per team its Altsien Select festivals with their "filled in" state.
+    progress = festival_progress(db, festival.season_id)
 
     rows = []
     for team in offered_teams(db, festival):
@@ -111,6 +115,10 @@ def _rows(db: Session, festival: Festival, *, only_reserved: bool = False) -> li
                 note=reservation.note if reservation else None,
                 updated_by_name=reservation.updated_by_name if reservation else None,
                 updated_at=reservation.updated_at if reservation else None,
+                festivals_picked=[
+                    PickedFestivalResponse(festival_id=picked.id, name=picked.name, done=done)
+                    for picked, done in progress.get(team.id, [])
+                ],
             )
         )
     return rows

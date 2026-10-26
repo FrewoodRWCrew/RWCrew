@@ -13,27 +13,25 @@
 <h1 class="hoofdstuk" id="h-masterdata">MasterData: de basisgegevens</h1>
 
 <div class="module-kaart m-masterdata">
-  <div><span class="vak-titel">Waarvoor</span><p>De lijsten die overal in RWCrew gebruikt worden: jaartallen, festivals, ploegen en hun verantwoordelijken, producten en magazijnen.</p></div>
+  <div><span class="vak-titel">Waarvoor</span><p>De lijsten die overal in RWCrew gebruikt worden: jaartallen, festivals, ploegen en hun verantwoordelijken.</p></div>
   <div><span class="vak-titel">Voor wie</span><p>De organisatie en de beheerders die de stamgegevens bijhouden. Anderen hebben meestal enkel leesrechten.</p></div>
   <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-masterdata">MasterData</span> op de hoofdpagina.</p></div>
   <div><span class="vak-titel">Belangrijk</span><p>Wat hier staat, verschijnt in de keuzelijsten van alle andere modules. Houd het daarom juist en volledig.</p></div>
 </div>
 
 <div class="kader kort"><span class="kader-titel"></span>
-In MasterData beheer je de "woordenlijsten" van RWCrew. Een ploeg, festival of product dat je hier aanmaakt, kun je meteen kiezen
-in KarTracker, Altsien Select, StockMaster en Interventie Aanvragen. Bij het begin van een nieuw seizoen begin je hier: nieuw
+In MasterData beheer je de "woordenlijsten" van RWCrew. Een ploeg of festival dat je hier aanmaakt, kun je meteen kiezen
+in KarTracker, Altsien Select, StockMaster, Atelier en Interventie Aanvragen. De producten en magazijnen beheer je sinds oktober 2026
+in StockMaster (zie <a class="ref" href="#s-md-product"></a>). Bij het begin van een nieuw seizoen begin je hier: nieuw
 jaartal, festivals, ploegen nakijken.
 </div>
 
 <h2 id="s-md-kpi">Masterdata Overzicht</h2>
-<p>De startpagina toont tellers (<em>Totaal aantal producten</em>, <em>Totaal aantal jaartallen</em>, <em>Geblokkeerde producten</em>,
-<em>Consumeerbare producten</em>, <em>Logistieke producten</em> en <em>Onvolledige classificatie</em>: producten zonder type, categorie
-of magazijn) en grafieken met het aantal producten per type, per categorie en per magazijn. Zo zie je snel of er producten
-zijn die nog aangevuld moeten worden.</p>
+<p>De startpagina toont de kerncijfers van de basisgegevens: jaartallen, festivals en ploegen. De cijfers over de producten
+(geblokkeerd, consumeerbaar, logistiek, onvolledige classificatie) staan sinds de verhuis van de producten op de KPI-pagina van StockMaster.</p>
 
 <h2 id="s-md-schermen">De schermen</h2>
-<p>Het menu van MasterData is opgebouwd in drie blokken: jaartallen en festivals, ploegen (met hun hulplijsten) en producten
-(met hun hulplijsten).</p>
+<p>Het menu van MasterData is opgebouwd in twee blokken: jaartallen en festivals, en ploegen (met hun hulplijsten).</p>
 
 <table class="schermen">
   <caption>Schermen in MasterData</caption>
@@ -44,23 +42,24 @@ zijn die nog aangevuld moeten worden.</p>
   Enkel actieve festivals verschijnen in de planning van KarTracker en in de Ploeg Wizard.</td></tr>
   <tr><td>Ploegen</td><td>De ploegen (teams/verenigingen): naam, <em>Locatie</em>, <em>Leverwijze</em>, <em>Taken</em>, <em>Kernleden</em>,
   <em>Beschrijving</em> en <em>Actief</em>. Bij <em>Kernleden</em> kies je de Altsien Kernleden die deze ploeg in Altsien Select mogen
-  opvolgen (zie <a class="ref" href="#h-altsien"></a>).</td></tr>
+  opvolgen (zie <a class="ref" href="#h-altsien"></a>). Bij <em>Levertoeren</em> kies je de speciale levertoeren van KarTracker die langs deze
+  ploeg komen (bijvoorbeeld de wastoer).</td></tr>
   <tr><td>Ploegverantwoordelijken</td><td>Per ploeg en per jaartal de verantwoordelijken met <em>E-mail</em>, <em>Telefoonnummer</em> en
   <em>Opmerkingen</em>. Zij hoeven geen RWCrew-gebruiker te zijn. Bovenaan filter je op <em>Jaartal</em> en <em>Ploeg</em>. Dezelfde lijst
   wordt ook ingevuld door de Kernleden in stap 3 van de Ploeg Wizard.</td></tr>
   <tr><td>Teamlocatie, Leveringsmethode, Teamtaken</td><td>Eenvoudige keuzelijsten die je bij een ploeg kunt kiezen (waar de ploeg zit,
   hoe er geleverd wordt, welke taken ze heeft).</td></tr>
-  <tr><td>Producten</td><td>Alle producten (materiaal) met <em>Type</em>, <em>Magazijn</em>, <em>Magazijn locatie</em> (de vaste plaats in
-  het rek), <em>Categorie</em>, <em>Limiet</em> en <em>Beschrijving</em>, en de vinkjes <em>Consumeerbaar</em>, <em>Blokkeer</em> en
-  <em>Is logistiek product</em>. Twee velden zijn voor StockMaster: <em>na 'Kar terug'</em> en <em>minimum voorraad</em> (zie hieronder).</td></tr>
-  <tr><td>Type, Magazijnen, Categorieën, Limieten</td><td>De keuzelijsten die je bij een product kiest. Ze dienen om producten te
-  groeperen en te filteren.</td></tr>
-  <tr><td>Data Upload/Download</td><td>Excel-sjablonen, bulkimport en export voor jaartallen, festivals, ploegen, teamlocaties, leverwijzen,
-  teamtaken, producten, types, magazijnen, categorieën en limieten (zie <a class="ref" href="#s-excel"></a>). Bij ploegen gaan enkel naam,
+  <tr><td>Data Upload/Download</td><td>Excel-sjablonen, bulkimport en export voor jaartallen, festivals, ploegen, teamlocaties, leverwijzen
+  en teamtaken (zie <a class="ref" href="#s-excel"></a>). Bij ploegen gaan enkel naam,
   locatie, leverwijze, beschrijving en actief mee; taken en kernleden stel je in op het scherm Ploegen zelf.</td></tr>
 </table>
 
-<h2 id="s-md-product">Een product goed instellen</h2>
+<h2 id="s-md-product">Een product goed instellen (in StockMaster)</h2>
+<p>De producten (materiaal) staan sinds 24 oktober 2026 in StockMaster, onder <span class="menu">Masterdata<span class="sep">›</span>Producten</span>,
+met daaronder de keuzelijsten <em>Type</em>, <em>Magazijnen</em>, <em>Categorieën</em> en <em>Limieten</em> en het scherm <em>Data Upload/Download</em>
+voor Excel. Een product heeft een <em>Type</em>, <em>Magazijn</em>, <em>Magazijn locatie</em> (de vaste plaats in het rek), <em>Categorie</em>,
+<em>Limiet</em>, <em>Beschrijving</em> en een foto, en de vinkjes <em>Consumeerbaar</em>, <em>Blokkeer</em> en <em>Is logistiek product</em>.
+TagScan en KarTracker tonen dezelfde producten in hun keuzelijsten; wie daar een product kiest, heeft daarom ook leesrechten in StockMaster nodig.</p>
 <p>Omdat StockMaster op de productgegevens steunt, loont het om een product volledig in te vullen:</p>
 <table>
   <caption>Productvelden die het gedrag van StockMaster bepalen</caption>
@@ -73,6 +72,8 @@ zijn die nog aangevuld moeten worden.</p>
   <tr><td><em>StockMaster: na 'Kar terug'</em></td><td>Waar het product standaard naartoe gaat als een kar terugkomt: <em>Terug in de kar</em> (het blijft in de
   kar voor de volgende keer) of <em>Naar de vrije voorraad</em> (het gaat terug in het rek).</td></tr>
   <tr><td><em>StockMaster: minimum voorraad</em></td><td>Enkel voor verbruiksgoederen. Zakt de voorraad onder dit aantal, dan toont StockMaster een oranje waarschuwing.</td></tr>
+  <tr><td><em>Limiet</em></td><td>Hoeveel een ploeg van dit product mag krijgen (bijvoorbeeld <em>Ongelimiteerd</em>, <em>Automatisch</em>, <em>Percentage</em>
+  of <em>Toegewezen aantal</em>). <em>Kar laden</em> rekent hiermee uit wat "op dit moment beschikbaar is voor levering".</td></tr>
 </table>
 
 <div class="kader letop"><span class="kader-titel"></span>
@@ -86,7 +87,7 @@ daarvan op <em>Blokkeer</em>. Hetzelfde geldt voor jaartallen, ploegen en festiv
 <div class="module-kaart m-kartracker">
   <div><span class="vak-titel">Waarvoor</span><p>Het volledige wagenpark: welke kar bij welke ploeg hoort, waar hij moet geleverd worden, waar hij nu staat en wat er met hem gebeurde.</p></div>
   <div><span class="vak-titel">Voor wie</span><p>De logistiek, de chauffeurs en iedereen die op het terrein karren verplaatst of zoekt.</p></div>
-  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-kartracker">KarTracker</span>, en op de telefoon: KarScan, Kar Planning en Kar Map.</p></div>
+  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-kartracker">KarTracker</span>, en op de telefoon: KarScan, Kar Planning, Kar Map en Karcode Simulator.</p></div>
   <div><span class="vak-titel">Jaartal</span><p>Volgt het jaartal dat je in de kopbalk kiest.</p></div>
 </div>
 
@@ -111,18 +112,27 @@ een afleverlocatie hebben per festival. Die laatste grafiek is je beste hulp om 
   <tr><td>Manuele kar beweging</td><td>Een verplaatsing van een kar registreren: kar, nieuwe status en GPS-locatie. Onderaan de lijst van alle geregistreerde bewegingen.</td></tr>
   <tr><td>Kar Planning</td><td>Overzicht van alle karren met per actief festival de geplande afleverlocatie. Hier druk je de karbladen af.</td></tr>
   <tr><td>Kar Map</td><td>Kaart met karren, afleverlocaties, distributiepunten en het grondplan van het terrein.</td></tr>
-  <tr><td>Plan een kar</td><td>Per ploeg de afleverlocatie kiezen voor elk actief festival van het jaartal.</td></tr>
+  <tr><td>Plan een kar</td><td>Opent op een overzicht per kar met "x/y festivals" gepland per ploeg; klik een ploeg aan om per festival de afleverlocatie te kiezen.</td></tr>
+  <tr><td>Karcode Simulator</td><td>De code van het cijferslot van een kar: typ het karnummer of scan de QR-code van de kar (ook op de telefoon).</td></tr>
+  <tr><td colspan="2" style="background:#f1ecf8;font-weight:600;color:#7e22ce">Planningsanalyses</td></tr>
+  <tr><td>Initiële leverplanning</td><td>Welke karren bij de start van het jaar waar geleverd worden, per distributiepunt en afleverlocatie in de volgorde van de levertoer. Afdrukbaar.</td></tr>
+  <tr><td>Verplaatsingen tussen festivals</td><td>Welke karren tussen twee festivals verplaatst moeten worden omdat hun ploeg een andere afleverlocatie heeft. Afdrukbaar.</td></tr>
+  <tr><td>Speciale levertoeren-planning</td><td>De stops van een speciale levertoer (bijvoorbeeld de wastoer) op een festival. Afdrukbaar.</td></tr>
   <tr><td colspan="2" style="background:#f1ecf8;font-weight:600;color:#7e22ce">Masterdata</td></tr>
   <tr><td>KarManagement</td><td>Het wagenpark: <em>Karnummer</em>, <em>Status</em>, <em>Ploeg</em>, <em>Transporttype</em>, laatste locatie en tijdstip.</td></tr>
   <tr><td>Distributiepunten</td><td>De distributiepunten op het terrein, met coördinaten, <em>TerreinPositie</em> en het verantwoordelijke Altsien Kernlid.</td></tr>
   <tr><td>Zone</td><td>De leveringszones waarin het terrein is opgedeeld.</td></tr>
   <tr><td>Afleverlocatie</td><td>De plaatsen waar karren geleverd worden: naam, <em>Omschrijving</em>, <em>Zone</em>, <em>Distributiepunt</em>, coördinaten,
   <em>TerreinPositie</em>, Altsien Kernlid en <em>Actief</em>. Enkel actieve locaties kun je plannen.</td></tr>
+  <tr><td>Leveringsvolgorde</td><td>De volgorde van de levertoer over het terrein: welke afleverlocatie eerst, tweede, … geleverd wordt.</td></tr>
+  <tr><td>Speciale levertoeren</td><td>Toeren die regelmatig langs ploegen komen (bijvoorbeeld "Kleine wastoer", "IJsblokken"). Welke ploegen erbij horen, kies je op de ploegfiche in MasterData.</td></tr>
   <tr><td>KarStatussen</td><td>De mogelijke statussen van een kar (bijvoorbeeld "In magazijn", "Geleverd", "Opgehaald").</td></tr>
   <tr><td>Leverdata</td><td>Per actief festival de <em>Leverdatum</em> en de <em>Ophaaldatum</em>. Die komen op het karblad.</td></tr>
   <tr><td>Gegevens uploaden/downloaden</td><td>Excel-import en -export van karren, karstatussen, distributiepunten, zones, afleverlocaties en leverdata, plus
   <span class="knop">Volledige databank downloaden</span>.</td></tr>
   <tr><td>Grondplan</td><td>De plattegronden van de festivalsite (afbeelding + coördinaten van twee hoeken), die als laag op de kaarten verschijnen.</td></tr>
+  <tr><td colspan="2" style="background:#f1ecf8;font-weight:600;color:#7e22ce">Instellingen</td></tr>
+  <tr><td>Karcode formule</td><td>De formule waarmee de karcode uit het karnummer berekend wordt. Enkel voor beheerders.</td></tr>
 </table>
 
 <h2 id="s-kt-plannen">Karren plannen: Plan een kar en Leverdata</h2>
@@ -181,4 +191,48 @@ Een grondplan toevoegen: <span class="menu">Masterdata<span class="sep">›</spa
 de afbeelding (de plattegrond) en vul de coördinaten in van de <em>zuidwest</em>- en <em>noordoosthoek</em> van die afbeelding. Je vindt
 coördinaten door in een online kaart (bijvoorbeeld Google Maps) rechts te klikken op de hoek van het terrein. Alle grondplannen
 worden samen als één laag getoond.
+</div>
+
+<h2 id="s-kt-volgorde">De levertoer: Leveringsvolgorde</h2>
+<p>Alle karren worden in één toer over het terrein geleverd. Op <span class="menu">Masterdata<span class="sep">›</span>Leveringsvolgorde</span> leg je
+die volgorde vast:</p>
+<ol class="stappen">
+  <li>Links staat de <em>Levertoer (in volgorde)</em>, rechts de actieve afleverlocaties die nog <em>niet in de toer</em> zitten. Zoek rechts een locatie
+  en sleep ze naar links, of gebruik het pijltje (of <span class="knop">Alle getoonde toevoegen</span>).</li>
+  <li>Sleep links de lijnen in de volgorde van levering. Het grote getal is de nieuwe positie; ernaast zie je de opgeslagen positie
+  (<em>was 3</em>, <em>nieuw</em> of <em>wordt leeg</em>).</li>
+  <li>Met <span class="knop">Kaart</span> zie je de genummerde locaties en de route op het grondplan.</li>
+  <li>Klik op <span class="knop">Opslaan</span>. Elke locatie links krijgt haar positie 1, 2, 3, …; de actieve locaties rechts hebben daarna geen positie.</li>
+</ol>
+<p>De positie heet ook <em>TerreinPositie</em> en kan ook in het formulier van een afleverlocatie of via Excel ingevuld worden (een geheel getal vanaf 1).</p>
+
+<h2 id="s-kt-analyses">Planningsanalyses: leveren, verplaatsen, speciale toeren</h2>
+<p>De groep <em>Planningsanalyses</em> berekent uit de planning (Plan een kar, de festivals die een ploeg in Altsien Select koos en de levertoer)
+wat er op het terrein moet gebeuren. Je wijzigt er niets; je bekijkt, filtert en drukt af.</p>
+<table>
+  <caption>De drie planningsanalyses</caption>
+  <tr><th style="width:26%">Scherm</th><th>Wat je ziet</th></tr>
+  <tr><td>Initiële leverplanning</td><td>Per distributiepunt en per afleverlocatie (in de volgorde van de levertoer) de karren die bij de start geleverd worden.
+  Een kar gaat naar de afleverlocatie van het <em>eerste festival</em> van zijn ploeg in het jaartal. Karren zonder ploeg of zonder planning staan er niet in.</td></tr>
+  <tr><td>Verplaatsingen tussen festivals</td><td>Kies <em>Van festival</em> en <em>Naar festival</em>: je ziet de karren waarvan de ploeg op beide festivals speelt en
+  een andere afleverlocatie heeft, gegroepeerd per <em>ophaallocatie</em>, met telkens de nieuwe afleverlocatie.</td></tr>
+  <tr><td>Speciale levertoeren-planning</td><td>Kies een festival en één of meer speciale levertoeren: je ziet de stops (genummerd 1, 2, 3, …) met de karren van
+  de ploegen die bij die toer horen.</td></tr>
+</table>
+<ol class="stappen">
+  <li>Filter met de vakjes onder de kolomkoppen (karnummer, ploeg, status, …).</li>
+  <li>Vink de karren aan die je wilt afdrukken: een groepslijn vinkt al haar karren aan, en <em>Shift-klik</em> selecteert een reeks.</li>
+  <li>Vink eventueel <em>Kaart toevoegen</em> aan en klik op <span class="knop">Print leverplanning</span> (of <span class="knop">Print verplaatsingen</span>,
+  <span class="knop">Print</span>). De PDF heeft per lijn een vakje om af te vinken (<em>Geleverd</em> of <em>Verplaatst</em>) en, als je dat koos, een kaart op het grondplan.</li>
+</ol>
+
+<h2 id="s-kt-karcode">De karcode van het slot</h2>
+<p>Elke kar is afgesloten met een cijferslot. De code volgt uit het karnummer via een vaste formule. Op
+<span class="menu">Acties<span class="sep">›</span>Karcode Simulator</span> (of op de telefoon) tik of typ je het karnummer, of klik je op
+<span class="knop">Scan QR-code van de kar</span>: enkel de laatste 3 cijfers van de QR-code tellen. De code verschijnt groot op het scherm; met het
+kopieer-icoon zet je ze op het klembord. Je laatste berekeningen blijven eronder staan.</p>
+<div class="kader beheer"><span class="kader-titel"></span>
+De formule zelf zien en wijzigen kan enkel op <span class="menu">Instellingen<span class="sep">›</span>Karcode formule</span>. Ze werkt zoals een
+Excel-formule, met <em>kar</em> als karnummer, bijvoorbeeld <code>LEFT(kar*500+3118; 4)</code>. Voor je opslaat, toont het scherm de code van enkele
+voorbeeldkarren, zodat je kunt controleren dat de uitkomst klopt met de sloten.
 </div>

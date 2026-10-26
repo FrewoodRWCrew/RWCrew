@@ -43,7 +43,7 @@ import {
   listAtelierDeskTeams,
   listAtelierPersonOpenHandouts,
   lookupAtelierDeskPerson,
-  returnAtelierHandoutLines,
+  returnAtelierPersonLines,
   searchAtelierDeskPersons,
 } from "@/lib/api";
 import { formatDate, formatDateNl, formatDateTimeNl } from "@/lib/date-time";
@@ -222,7 +222,9 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    // At least as tall as the space under the topbar (minus the page padding and
+    // help link), so the Ophalen / Terugbrengen choice can sit in its middle.
+    <div className="flex min-h-[calc(100vh-8rem)] flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
@@ -280,8 +282,9 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
       ) : !canBook ? (
         <p className="text-sm text-muted-foreground">{t("noRight")}</p>
       ) : mode === null ? (
-        // The choice that starts every transaction (for the scanned person, when a scan waits).
-        <div className="flex flex-col gap-4">
+        // The choice that starts every transaction (for the scanned person, when a scan waits),
+        // centred vertically in the rest of the screen.
+        <div className="flex flex-1 flex-col justify-center gap-4">
           {newestScan && (
             <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border-2 border-primary bg-primary/5 px-4 py-3">
               <div className="flex items-center gap-3">
@@ -314,20 +317,20 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
           <button
             type="button"
             onClick={() => void start("pickup")}
-            className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl bg-emerald-600 p-8 text-white shadow-md transition hover:bg-emerald-700 focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:outline-none"
+            className="flex min-h-96 flex-col items-center justify-center gap-4 rounded-xl bg-emerald-600 p-8 text-white shadow-md transition hover:bg-emerald-700 focus-visible:ring-4 focus-visible:ring-emerald-300 focus-visible:outline-none"
           >
-            <PackagePlus className="size-14" />
-            <span className="text-4xl font-bold">{t("pickup")}</span>
-            <span className="text-sm opacity-90">{t("pickupHint")}</span>
+            <PackagePlus className="size-20" />
+            <span className="text-5xl font-bold">{t("pickup")}</span>
+            <span className="text-base opacity-90">{t("pickupHint")}</span>
           </button>
           <button
             type="button"
             onClick={() => void start("return")}
-            className="flex min-h-48 flex-col items-center justify-center gap-3 rounded-xl bg-sky-600 p-8 text-white shadow-md transition hover:bg-sky-700 focus-visible:ring-4 focus-visible:ring-sky-300 focus-visible:outline-none"
+            className="flex min-h-96 flex-col items-center justify-center gap-4 rounded-xl bg-sky-600 p-8 text-white shadow-md transition hover:bg-sky-700 focus-visible:ring-4 focus-visible:ring-sky-300 focus-visible:outline-none"
           >
-            <PackageMinus className="size-14" />
-            <span className="text-4xl font-bold">{t("return")}</span>
-            <span className="text-sm opacity-90">{t("returnHint")}</span>
+            <PackageMinus className="size-20" />
+            <span className="text-5xl font-bold">{t("return")}</span>
+            <span className="text-base opacity-90">{t("returnHint")}</span>
           </button>
         </div>
         </div>
@@ -664,7 +667,10 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
             return (
               <Card key={article.article_id} className={out ? "opacity-50" : undefined}>
                 <CardContent className="flex flex-wrap items-center gap-4">
-                  <ArticleThumb article={{ id: article.article_id, ...article }} />
+                  {/* Wrapped: the thumb centres itself (mx-auto), which in this row would push the rest away. */}
+                  <div className="shrink-0">
+                    <ArticleThumb article={{ id: article.article_id, ...article }} />
+                  </div>
                   <div className="w-48">
                     <p className="font-medium">{article.name}</p>
                     <p className="text-xs text-muted-foreground">
@@ -672,6 +678,8 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
+                    {/* An article without active sizes can't be handed out: say how to fix it. */}
+                    {article.sizes.length === 0 && <p className="text-sm text-destructive">{t("noSizes")}</p>}
                     {article.sizes.map((size) => {
                       const selected = selectedSize(article) === size.article_size_id;
                       return (
@@ -768,15 +776,12 @@ function ReturnForm({ canCancel, initialPerson, initialQuery, scan, onDone }: Re
     }
     setIsBusy(true);
     try {
-      let count = 0;
-      for (const handout of handouts) {
-        const lineIds = handout.lines.filter((line) => !line.returned_at && ticked.includes(line.id)).map((line) => line.id);
-        if (lineIds.length === 0) continue;
-        // The scan (if any) goes with the first booking only: it can be used once.
-        await returnAtelierHandoutLines(handout.id, lineIds, count === 0 ? (scan?.id ?? null) : null);
-        count += lineIds.length;
+      // Every ticked piece in one call (whatever pick-up it came from), so the
+      // person gets one "Inname" mail; the scan (if any) is marked used.
+      if (person && ticked.length > 0) {
+        await returnAtelierPersonLines(person.id, ticked, scan?.id ?? null);
       }
-      toast.success(t("returned", { name: person?.name ?? "", count }));
+      toast.success(t("returned", { name: person?.name ?? "", count: ticked.length }));
       onDone();
     } catch (error) {
       toast.error(atelierDeskErrorMessage(t, tStock, error));

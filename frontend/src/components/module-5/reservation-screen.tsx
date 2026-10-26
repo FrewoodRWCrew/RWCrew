@@ -7,9 +7,11 @@
 // clothing every evening. Every active team is listed; persons, notes and
 // packages (edited in a dialog per team) are saved together with one Save.
 // Above the table: last year's reservations of the same festival, to copy.
+// Per ploeg "Festivals ingevuld" = how many of the festivals it picked in
+// Altsien Select have persons filled in here; a text filter above every column.
 
 import { useState } from "react";
-import { Copy, Package, Plus, Trash2 } from "lucide-react";
+import { Check, Copy, Package, Plus, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -43,9 +45,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArticleThumb } from "@/components/module-5/article-management";
 import { AtelierFestivalSelect, useAtelierFestival } from "@/components/module-5/atelier-festival-select";
 import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/atelier-season-select";
+import { FilterHeadCell, useColumnFilters } from "@/components/module-5/column-filters";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 /** One team's values as edited on screen. */
@@ -64,6 +68,10 @@ function sameLines(a: AtelierPackageLine[], b: AtelierPackageLine[]) {
       .join(",");
   return key(a) === key(b);
 }
+
+// The columns with a text filter above them (Actions has none).
+const FILTER_COLUMNS = ["team", "progress", "persons", "package", "note", "changed"] as const;
+type FilterColumn = (typeof FILTER_COLUMNS)[number];
 
 interface ReservationScreenProps {
   seasons: Season[];
@@ -84,6 +92,7 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
   // The edits not saved yet, per team — only kept for the festival they were made on.
   const [edits, setEdits] = useState<{ festivalId: number; byTeam: Record<number, Draft> } | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const { filters, setFilter, matches, active: filtering } = useColumnFilters<FilterColumn>();
 
   const articlesById = new Map(articles.map((article) => [article.id, article]));
   const pending = edits !== null && edits.festivalId === festival?.id ? edits.byTeam : {};
@@ -106,6 +115,31 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
     }
     setEdits({ festivalId: festival.id, byTeam });
   }
+
+  // A team's Altsien Select festivals with their "filled in" state; the
+  // festival on screen follows the persons typed in (even before saving).
+  function progressOf(row: AtelierReservationRow) {
+    const picked = row.festivals_picked.map((item) =>
+      item.festival_id === festival?.id ? { ...item, done: valueOf(row).persons > 0 } : item,
+    );
+    return { picked, done: picked.filter((item) => item.done).length };
+  }
+
+  // The rows matching every column filter; rows with unsaved edits always stay visible.
+  const allRows = rows.data ?? [];
+  const shownRows = allRows.filter((row) => {
+    if (pending[row.team_id] !== undefined) return true;
+    const value = valueOf(row);
+    const progress = progressOf(row);
+    return matches({
+      team: row.team_name,
+      progress: progress.picked.length === 0 ? t("noSelection") : `${progress.done}/${progress.picked.length}`,
+      persons: value.persons,
+      package: value.lines.map((line) => articlesById.get(line.article_id)?.name ?? "").join(" "),
+      note: value.note,
+      changed: row.updated_at ? `${formatDateTimeNl(row.updated_at)} ${row.updated_by_name ?? ""}` : "",
+    });
+  });
 
   // Persons per festival day, including the edits not saved yet.
   const totalPersons = (rows.data ?? []).reduce((sum, row) => sum + valueOf(row).persons, 0);
@@ -157,7 +191,7 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
           <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
-        <div className="flex items-end gap-3">
+        <div className="flex flex-wrap items-end gap-3">
           <AtelierFestivalSelect festivals={festivals} festival={festival} />
           <AtelierSeasonSelect seasons={seasons} seasonId={seasonId} />
         </div>
@@ -171,11 +205,13 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
             <CopyFromLastYear previous={previous.data} articlesById={articlesById} onCopy={handleCopy} />
           )}
 
+          <TooltipProvider delay={200}>
           <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTeam")}</TableHead>
+                  <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnProgress")}</TableHead>
                   <TableHead className="sticky top-0 z-20 w-28 bg-background font-bold underline">
                     {t("columnPersons")}
                   </TableHead>
@@ -190,25 +226,41 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
                     {t("tableActions")}
                   </TableHead>
                 </TableRow>
+                {/* One text filter above every column (the Actions corner stays empty). */}
+                <TableRow>
+                  {FILTER_COLUMNS.map((column) => (
+                    <FilterHeadCell
+                      key={column}
+                      label={t("filter", { column: t(`filterColumns.${column}`) })}
+                      value={filters[column]}
+                      onChange={(value) => setFilter(column, value)}
+                    />
+                  ))}
+                  <TableHead className="sticky top-10 right-0 z-30 bg-background" />
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {rows.isLoading && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
                       {t("loading")}
                     </TableCell>
                   </TableRow>
                 )}
-                {!rows.isLoading && (rows.data ?? []).length === 0 && (
+                {!rows.isLoading && shownRows.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center text-muted-foreground">
-                      {t("noTeams")}
+                    <TableCell colSpan={7} className="text-center text-muted-foreground">
+                      {allRows.length === 0 ? t("noTeams") : t("noMatch")}
                     </TableCell>
                   </TableRow>
                 )}
-                {(rows.data ?? []).map((row) => {
+                {shownRows.map((row) => {
                   const value = valueOf(row);
                   const changed = pending[row.team_id] !== undefined;
+                  const progress = progressOf(row);
+                  // The team picked festivals in Altsien Select, but not this one.
+                  const notPicked =
+                    progress.picked.length > 0 && !progress.picked.some((item) => item.festival_id === festival?.id);
                   return (
                     <TableRow
                       key={row.team_id}
@@ -216,6 +268,44 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
                     >
                       <TableCell className="font-medium">
                         <span className={row.team_active ? undefined : "italic"}>{row.team_name}</span>
+                        {notPicked && (
+                          <Badge variant="outline" className="ml-2 font-normal text-muted-foreground">
+                            {t("notPicked")}
+                          </Badge>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {progress.picked.length === 0 ? (
+                          <span className="text-sm text-muted-foreground italic">{t("noSelection")}</span>
+                        ) : (
+                          // Green when every picked festival is filled in, orange otherwise;
+                          // the tooltip lists the festivals with a tick or a cross.
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={
+                                <span
+                                  className={
+                                    progress.done === progress.picked.length
+                                      ? "rounded bg-emerald-100 px-2 py-0.5 font-medium text-emerald-800 dark:bg-emerald-500/20 dark:text-emerald-300"
+                                      : "rounded bg-amber-100 px-2 py-0.5 font-medium text-amber-800 dark:bg-amber-500/20 dark:text-amber-300"
+                                  }
+                                />
+                              }
+                            >
+                              {t("progress", { done: progress.done, total: progress.picked.length })}
+                            </TooltipTrigger>
+                            <TooltipContent className="text-sm">
+                              <ul className="flex flex-col gap-1">
+                                {progress.picked.map((item) => (
+                                  <li key={item.festival_id} className="flex items-center gap-1.5">
+                                    {item.done ? <Check className="size-4" /> : <X className="size-4" />}
+                                    {item.name}
+                                  </li>
+                                ))}
+                              </ul>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
                       </TableCell>
                       <TableCell>
                         {canEdit ? (
@@ -280,13 +370,22 @@ export function ReservationScreen({ seasons, articles, canEdit }: ReservationScr
               </TableBody>
               <TableFooter>
                 <TableRow>
-                  <TableCell className="font-bold">{t("totalPerDay", { days: dayCount })}</TableCell>
+                  <TableCell colSpan={2} className="font-bold">
+                    {t("totalPerDay", { days: dayCount })}
+                    {/* The totals always count every team, also the ones hidden by a filter. */}
+                    {filtering && (
+                      <span className="ml-3 font-normal text-muted-foreground">
+                        {t("filteredOf", { shown: shownRows.length, total: allRows.length })}
+                      </span>
+                    )}
+                  </TableCell>
                   <TableCell className="font-bold">{totalPersons}</TableCell>
                   <TableCell colSpan={4} />
                 </TableRow>
               </TableFooter>
             </Table>
           </div>
+          </TooltipProvider>
 
           {canEdit && (
             <div className="flex items-center justify-end gap-3">

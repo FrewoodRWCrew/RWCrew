@@ -7,7 +7,7 @@
 // (Uitgifte & inname, Openstaand), "Reservaties" (Reservaties, Voorbereiden), "Stock" (overview, Ontvangst,
 // Wassen, Afboeken, Telling, Boekingen, Te bestellen), "Masterdata" (Artikelen with
 // Maten nested under it, Data Upload/Download), "Instellingen" (settings,
-// Test-scan) and "Access
+// Test-scan, E-mails) and "Access
 // Rights" (Roles/Users) — each link gated by the user's Atelier role. The
 // next blocks' screens get their own groups above Masterdata.
 
@@ -69,6 +69,7 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
   const settingsLinks: MenuLink[] = [
     ...(can("settings") ? [{ href: SETTINGS, label: t("settings.title"), level: 1 as const }] : []),
     ...(can("scantest") ? [{ href: `${SETTINGS}/scan-test`, label: t("scanTest.title"), level: 1 as const }] : []),
+    ...(can("mailtemplates") ? [{ href: `${SETTINGS}/mails`, label: t("mailTemplates.title"), level: 1 as const }] : []),
   ];
   // The Masterdata links this user may open (level 2 = nested under Artikelen).
   const masterdataLinks: MenuLink[] = [

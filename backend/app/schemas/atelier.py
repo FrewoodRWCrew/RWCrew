@@ -161,6 +161,15 @@ class PackageLine(BaseModel):
     quantity_per_person: int = Field(ge=1, le=99)
 
 
+class PickedFestivalResponse(BaseModel):
+    """A festival the team picked in Altsien Select, and whether the team's
+    Atelier reservation there has persons filled in."""
+
+    festival_id: int
+    name: str
+    done: bool
+
+
 class ReservationRowResponse(BaseModel):
     """One team on a festival's Reservaties table: persons + package."""
 
@@ -173,6 +182,9 @@ class ReservationRowResponse(BaseModel):
     note: str | None
     updated_by_name: str | None
     updated_at: datetime | None
+    # The season's festivals the team picked in Altsien Select (calendar
+    # order) with their "filled in" state; empty = it picked none yet.
+    festivals_picked: list[PickedFestivalResponse] = []
 
 
 class ReservationInput(BaseModel):
@@ -653,6 +665,49 @@ class AtelierSettingsRequest(BaseModel):
     """Change Atelier's settings."""
 
     wristband_required: bool
+
+
+class MailTemplateResponse(BaseModel):
+    """One mail text of the counter desk ("handout" or "return")."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    key: str
+    subject: str
+    body: str
+    active: bool
+    updated_by_name: str | None = None
+    updated_at: datetime | None = None
+
+
+class MailTemplatesResponse(BaseModel):
+    """The E-mails screen: both templates, the placeholders they may use and
+    example values for the preview."""
+
+    templates: list[MailTemplateResponse]
+    placeholders: list[str]
+    example_values: dict[str, str]
+
+
+class MailTemplateRequest(BaseModel):
+    """Save one mail text."""
+
+    subject: str = Field(min_length=1, max_length=255)
+    body: str = Field(min_length=1, max_length=20_000)
+    active: bool
+
+
+class MailTestRequest(BaseModel):
+    """Send a (possibly unsaved) mail text with the example values to yourself."""
+
+    subject: str = Field(min_length=1, max_length=255)
+    body: str = Field(min_length=1, max_length=20_000)
+
+
+class MailTestResponse(BaseModel):
+    """Where the test mail went."""
+
+    sent_to: str
 
 
 class TestScanRequest(BaseModel):

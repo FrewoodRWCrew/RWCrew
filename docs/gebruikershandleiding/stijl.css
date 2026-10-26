@@ -43,7 +43,7 @@
     border-bottom: 0.4pt solid var(--lijn);
   }
   @bottom-left {
-    content: "Gebruikershandleiding · versie 1.0 · oktober 2026";
+    content: "Gebruikershandleiding · versie 1.1 · oktober 2026";
     font: 8pt var(--body-font);
     color: var(--grijs);
   }
@@ -384,6 +384,8 @@ dl.woordenlijst dd { margin: 0.5mm 0 0 0; padding-left: 5mm; border-left: 0.8pt 
   --m-altsien: #c026d3;
   --m-masterdata: #0891b2;
   --m-mobiel: #059669;
+  --m-atelier: #dc2626;
+  --m-walkies: #4f46e5;
 }
 
 /* Een knop of menu-item uit de app, zoals de gebruiker het op het scherm ziet. */
@@ -442,6 +444,8 @@ dl.woordenlijst dd { margin: 0.5mm 0 0 0; padding-left: 5mm; border-left: 0.8pt 
 .m-altsien { --modulekleur: var(--m-altsien); }
 .m-masterdata { --modulekleur: var(--m-masterdata); }
 .m-mobiel { --modulekleur: var(--m-mobiel); }
+.m-atelier { --modulekleur: var(--m-atelier); }
+.m-walkies { --modulekleur: var(--m-walkies); }
 
 /* Modulebadge in de lopende tekst. */
 .mod {

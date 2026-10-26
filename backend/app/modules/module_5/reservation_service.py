@@ -18,6 +18,7 @@ from app.db.models.festival import Festival
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.user import User
+from app.modules.module_2.plan_kar_service import festivals_by_team
 from app.modules.module_8.previous_season import normalize_festival_name, previous_season_of
 
 # At the counter every package article is exactly one piece per person
@@ -65,6 +66,26 @@ def offered_teams(db: Session, festival: Festival) -> list[Team]:
     reserved = set(reservations_by_team(db, festival.id))
     teams = db.scalars(select(Team).order_by(Team.name)).all()
     return [team for team in teams if team.active or team.id in reserved]
+
+
+def festival_progress(db: Session, season_id: int) -> dict[int, list[tuple[Festival, bool]]]:
+    """Per team the active festivals of the season it picked in Altsien Select
+    (calendar order), each with whether its Atelier reservation is filled in
+    (persons > 0; package and note aren't checked). Teams that picked nothing
+    are missing from the dict ("no selection" on screen)."""
+    _festivals, per_team = festivals_by_team(db, season_id)
+    # Which (team, festival) pairs of the season have persons reserved.
+    filled = set(
+        db.execute(
+            select(AtelierReservation.team_id, AtelierReservation.festival_id)
+            .join(Festival, Festival.id == AtelierReservation.festival_id)
+            .where(Festival.season_id == season_id, AtelierReservation.persons > 0)
+        ).all()
+    )
+    return {
+        team_id: [(festival, (team_id, festival.id) in filled) for festival in festivals]
+        for team_id, festivals in per_team.items()
+    }
 
 
 def _get_or_create(db: Session, user: User, festival: Festival, team_id: int) -> tuple[AtelierReservation, bool]:

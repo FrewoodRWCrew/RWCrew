@@ -115,6 +115,7 @@ const SHOTS = {
     { file: "data-upload.png", path: "/modules/module-5/masterdata/data-upload-download" },
     { file: "settings.png", path: "/modules/module-5/settings" },
     { file: "scan-test.png", path: "/modules/module-5/settings/scan-test" },
+    { file: "mails.png", path: "/modules/module-5/settings/mails" },
     { file: "roles.png", path: "/modules/module-5/access-rights/roles" },
     { file: "users.png", path: "/modules/module-5/access-rights/users" },
   ],

@@ -1736,6 +1736,8 @@ export interface AtelierReservationRow {
   note: string | null;
   updated_by_name: string | null;
   updated_at: string | null;
+  /** The season's festivals the team picked in Altsien Select, with "persons filled in"; empty = none picked. */
+  festivals_picked: { festival_id: number; name: string; done: boolean }[];
 }
 
 /** What to prepare for a festival — the same every festival day. */
@@ -1959,6 +1961,26 @@ export interface AtelierHandout {
     fit: AtelierFit;
     returned_at: string | null;
   }[];
+}
+
+/** Which desk mail: "handout" (Uitgifte, after Ophalen) or "return" (Inname, after Terugbrengen). */
+export type AtelierMailTemplateKey = "handout" | "return";
+
+/** One desk mail text, with placeholders such as {voornaam}. */
+export interface AtelierMailTemplate {
+  key: AtelierMailTemplateKey;
+  subject: string;
+  body: string;
+  active: boolean;
+  updated_by_name: string | null;
+  updated_at: string | null;
+}
+
+/** The E-mails screen: both texts, the placeholders and example values for the preview. */
+export interface AtelierMailTemplates {
+  templates: AtelierMailTemplate[];
+  placeholders: string[];
+  example_values: Record<string, string>;
 }
 
 /** One received wristband-scan message (desk card and settings log). */

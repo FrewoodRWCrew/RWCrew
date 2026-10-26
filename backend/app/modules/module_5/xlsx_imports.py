@@ -103,6 +103,21 @@ def _find_article(db: Session, code: str) -> AtelierArticle:
     return article
 
 
+def _find_by_id_or_key(db: Session, model: type, row: UploadedRow, by_key: Callable[[], object | None]):
+    """The record named by the row's id, or — when that id doesn't exist in
+    this database (e.g. an export from another environment, where the ids
+    differ) — the record with the same natural key, or None (= create).
+    A blank id also matches by natural key, so re-uploading a template row
+    never creates a duplicate; a non-number id stays a row error."""
+    try:
+        record = find_by_id(db, model, row)
+    except ValueError as error:
+        if not str(error).endswith("not found"):
+            raise
+        record = None
+    return record if record is not None else by_key()
+
+
 def _sizes_by_id(db: Session) -> dict[int, AtelierSize]:
     """Every size by id, for the exports."""
     return {size.id: size for size in db.scalars(select(AtelierSize)).all()}
@@ -119,10 +134,10 @@ def _import_sizes(db: Session, file_bytes: bytes, _user: User) -> list[AtelierIm
         try:
             name = _required(row, "name")
             fit = _parse_fit(row)
-            size = find_by_id(db, AtelierSize, row)
             clash = db.scalar(
                 select(AtelierSize).where(func.lower(AtelierSize.name) == name.lower(), AtelierSize.fit == fit)
             )
+            size = _find_by_id_or_key(db, AtelierSize, row, lambda: clash)
             if clash is not None and clash is not size:
                 raise ValueError("This size already exists for this fit")
             # Optional columns left out of the file keep their current value.
@@ -173,8 +188,8 @@ def _import_articles(db: Session, file_bytes: bytes, _user: User) -> list[Atelie
         code = row.text("code")
         try:
             code = _required(row, "code")
-            article = find_by_id(db, AtelierArticle, row)
             clash = db.scalar(select(AtelierArticle).where(func.lower(AtelierArticle.code) == code.lower()))
+            article = _find_by_id_or_key(db, AtelierArticle, row, lambda: clash)
             if clash is not None and clash is not article:
                 raise ValueError("An article with this code already exists")
             # Optional columns left out of the file keep their current value.

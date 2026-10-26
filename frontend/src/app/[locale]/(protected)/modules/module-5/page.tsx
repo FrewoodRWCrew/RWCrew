@@ -26,6 +26,7 @@ const FALLBACK_SCREENS: [string, string][] = [
   ["atelier.dataupload", "/modules/module-5/masterdata/data-upload-download"],
   ["atelier.settings", "/modules/module-5/settings"],
   ["atelier.scantest", "/modules/module-5/settings/scan-test"],
+  ["atelier.mailtemplates", "/modules/module-5/settings/mails"],
   ["atelier.roles", "/modules/module-5/access-rights/roles"],
   ["atelier.users", "/modules/module-5/access-rights/users"],
 ];

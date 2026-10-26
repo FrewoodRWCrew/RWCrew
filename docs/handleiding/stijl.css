@@ -43,7 +43,7 @@
     border-bottom: 0.4pt solid var(--lijn);
   }
   @bottom-left {
-    content: "Intern document · versie 2.0 · oktober 2026";
+    content: "Intern document · versie 2.1 · oktober 2026";
     font: 8pt var(--body-font);
     color: var(--grijs);
   }

@@ -30,12 +30,14 @@ When the team already has as many or more people served today than reserved, the
 2. Every piece is ticked; untick what didn't come back (that stays outstanding). When something is unticked, the counter first asks for confirmation with the list of what stays with the person.
 3. Click **Take back**: the pieces go to **To wash**.
 
+**Email**: when the person has an email address, they get a **Hand-out** mail after every pick-up and one **Return** mail after every return (also when the pieces come from several hand-outs). The texts are set on **Settings > Emails**.
+
 With the Edit right you can **cancel** a hand-out of which nothing came back yet (the pieces go back to available).
 
 ![The counter: Pick up or Return](desk.png)
 
 ## [open | atelier.open] Outstanding
-All clothing that was picked up but hasn't come back: person, email address (click to mail), team, day, what they still hold and when it was picked up. Filter by festival, day and team. If something never comes back, write it off via **Stock > Write-off** (reason "Not returned").
+All clothing that was picked up but hasn't come back, **grouped per team and then per person** (with wristband number and email address — click to mail), with every piece below it: day, article, size and when it was picked up. Pick the festival and optionally the day at the top. Every column has a **filter field** above it: type part of a name, team, article, … to narrow the list; the totals follow the filter. If something never comes back, write it off via **Stock > Write-off** (reason "Not returned").
 
 ![Outstanding](open.png)
 
@@ -46,6 +48,10 @@ Everything per festival on one page: per team **how many people** need clothing 
 2. Enter the number of **persons** per team, optionally with a **note**.
 3. Click **Package** on a team to choose the articles (Add article, remove a line). The **quantity per person** is always **1**: at the counter every person gets one piece per article.
 4. Changed lines turn yellow. Click **Save** to store everything at once. Every team shows who changed it last and when.
+
+**Festivals filled in**: per team how many of the festivals it picked in **Altsien Select** already have persons (e.g. *3 / 5*). Green = all filled in, orange = not yet; hover the number to see per festival what's missing. A team that picked nothing yet shows "no selection". A team that picked other festivals but not this one shows "not picked" next to its name.
+
+Every column has a **filter field** above it. A changed team that isn't saved yet always stays visible; the totals always count every team.
 
 The package only applies to this festival. A team with persons but no package gets a warning. A reservation without persons, note and package disappears.
 
@@ -127,7 +133,7 @@ A size used by an article can't be deleted: set it to not active instead.
 ## [dataupload | atelier.dataupload] Data Upload/Download
 One tile per table to download a **template**, **upload** a filled-in file and **export** the current data.
 
-- **Sizes** and **Articles**: a row with an existing **id** (the export's first column) changes that record, a row without an id creates a new one.
+- **Sizes** and **Articles**: a row is looked up by **id** (the export's first column), otherwise by name + fit (sizes) or code (articles); a record that is found is changed, otherwise a new one is added. So an export from another environment (e.g. localhost to test) can be uploaded too.
 - **Article sizes** (article code + size + fit), **Reservations** (season + festival + team) and **Package lines** (season + festival + team + article code): a known combination is updated, a new one added.
 - The fit may be written as women/men/unisex or Dames/Heren/Unisex.
 
@@ -150,6 +156,17 @@ To test everything before the real connection with the wristband company (from M
 Click **Send**: under the button you see what happened to the message, and a valid scan appears right away at the counter that picked that scanner.
 
 ![Test scan](scan-test.png)
+
+## [mailtemplates | atelier.mailtemplates] Emails
+The mails a person gets after a transaction at the counter, to the email address entered at the counter (without an email address nothing is sent):
+- **Hand-out**: after every pick-up;
+- **Return**: after every return (one mail per transaction).
+
+Per mail you set the **subject** and the **text**, and **Send** switches it on or off. Click a field such as **{voornaam}** or **{stuks}** to insert it at the cursor; when sending it is replaced by the transaction's data. **{stuks}** = the pieces of this transaction, **{openstaand}** = what the person still holds afterwards. An unknown field can't be saved.
+
+On the right you see a **preview** with example data. **Send test to me** mails the text as it is now (also unsaved) to your own email address. Saving and testing need the Edit right.
+
+![Emails](mails.png)
 
 ## [roles | atelier.roles] Roles
 A role decides what someone may do in Atelier, per screen: **View**, **Create**, **Edit** and **Delete**.

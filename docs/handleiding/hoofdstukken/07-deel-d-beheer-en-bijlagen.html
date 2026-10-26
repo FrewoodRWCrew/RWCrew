@@ -89,7 +89,7 @@ pogingen te herkennen (veel mislukte pogingen op één e-mailadres of van één 
   <li>MasterData &gt; <em>Years</em>: een nieuw seizoen toevoegen (bv. "2027"). Namen worden alfabetisch gesorteerd, en "vorig seizoen"
   is het seizoen dat net vóór het huidige sorteert; gebruik dus altijd hetzelfde formaat (vier cijfers).</li>
   <li>Zet <em>periode open</em> aan zodra ploegen hun keuzes mogen maken. Open seizoenen verschijnen in de seizoenkiezer bovenaan.</li>
-  <li>Kijk festivals, ploegen, locaties en producten na voor het nieuwe jaar. Grote aantallen gaan het snelst via
+  <li>Kijk festivals, ploegen en locaties (MasterData) en de producten (StockMaster &gt; Masterdata) na voor het nieuwe jaar. Grote aantallen gaan het snelst via
   <em>Data Upload/Download</em>: sjabloon downloaden, invullen, uploaden. Je krijgt per rij te zien of het gelukt is.</li>
   <li>In Altsien Select kunnen kernleden bij verschillende stappen de keuzes van vorig seizoen overnemen.</li>
   <li>Na de inschrijvingsperiode: <em>periode open</em> uitzetten. Vanaf dan kunnen alleen gebruikers met het recht "organisatie" in
@@ -138,6 +138,21 @@ op verwerken, of annuleer een foute regel met een reden.</p>
   <img src="afbeeldingen/08-tagscan-scanners.png" alt="">
   <figcaption>TagScan · Scanners: de geregistreerde scanners; via het sleutelpictogram maak je een nieuwe API-sleutel aan.</figcaption>
 </figure>
+
+<h2 id="s-beheer-polsband">De polsbandscans van Atelier koppelen</h2>
+<p>Het polsbandbedrijf stuurt elke scan aan de Atelier-balie naar <code>https://&lt;adres&gt;/api/public/atelier/wristband-scan</code>.
+Zo zet je de koppeling op (de echte koppeling kan pas vanaf mei 2027 getest worden):</p>
+<ol class="stappen">
+  <li>Spreek met het bedrijf de <strong>token</strong> af die in elk bericht staat, en zet die als <code>ATELIER_WEBHOOK_TOKEN</code> in de
+  <code>.env</code> van de omgeving (test en productie elk hun eigen). De variabele staat al in <code>docker-compose.prod.yml</code>; herstart daarna de backend.</li>
+  <li>Geef het bedrijf het webhookadres; je vindt het op Atelier &gt; <em>Instellingen</em>, samen met de melding of de token ingesteld is.</li>
+  <li>Na de eerste scan verschijnt elke scanner vanzelf in de lijst <em>Scanners</em>; geef hem een naam (bv. "Balie 1"). Aan elke
+  balie kies je bovenaan welke scanner daar staat.</li>
+  <li>Kijk bij <em>Ontvangen berichten</em> na wat er echt binnenkomt: geweigerde berichten (verkeerde token, geen JSON) en berichten
+  waarvan de ploegnaam niet overeenkomt met een ploeg uit MasterData zijn daar te zien, met het bericht zoals het binnenkwam.</li>
+  <li>Zonder het bedrijf test je met <em>Instellingen &gt; Test-scan</em>: een formulier of een JSON-bestand gaat door dezelfde verwerking,
+  zonder token, en verschijnt live aan de balie van die scanner.</li>
+</ol>
 
 <h2 id="s-beheer-telefoon">De telefoon-app laten installeren</h2>
 <p>Geef de gebruiker toegang tot module 10 (<em>Mobile App</em>). Die pagina toont het adres en een QR-code. De gebruiker scant de
@@ -304,6 +319,7 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   <tr><td><code>tagscan.tag-management</code></td><td>(TagManagement) register van tags, Excel-import</td></tr>
   <tr><td><code>tagscan.scanners</code></td><td>(Scanners) scanners en API-sleutels</td></tr>
   <tr><td><code>tagscan.settings</code></td><td>(Settings) instellingen van de module</td></tr>
+  <tr><td><code>tagscan.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
   <tr><td><code>tagscan.roles</code>, <code>tagscan.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
 </table>
 
@@ -322,6 +338,13 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   <tr><td><code>kartracker.groundplan</code></td><td>(Grondplan)</td></tr>
   <tr><td><code>kartracker.actions</code></td><td>(Manuele kar beweging) bewegingen registreren; telefoon: KarScan</td></tr>
   <tr><td><code>kartracker.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
+  <tr><td><code>kartracker.leveringsvolgorde</code></td><td>(Leveringsvolgorde) de levertoer ordenen, met kaart</td></tr>
+  <tr><td><code>kartracker.initieleleverplanning</code></td><td>(Initiële leverplanning) planningsanalyse + PDF</td></tr>
+  <tr><td><code>kartracker.karverplaatsingen</code></td><td>(Verplaatsingen tussen festivals) planningsanalyse + PDF</td></tr>
+  <tr><td><code>kartracker.specialelevertoeren</code></td><td>(Speciale levertoeren) masterdata van de toeren</td></tr>
+  <tr><td><code>kartracker.levertoerplanning</code></td><td>(Speciale levertoeren-planning) stops per toer en festival + PDF</td></tr>
+  <tr><td><code>kartracker.karcodesimulator</code></td><td>(Karcode Simulator) code van het slot; ook op de telefoon</td></tr>
+  <tr><td><code>kartracker.settings</code></td><td>(Instellingen) de karcodeformule: <em>zien</em> en <em>wijzigen</em></td></tr>
   <tr><td><code>kartracker.roles</code>, <code>kartracker.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
 </table>
 
@@ -377,7 +400,33 @@ verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes
   <tr><td><code>stockmaster.roles</code>, <code>stockmaster.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
 </table>
 
-<p>Modules 5 tot 7 en 10 hebben geen schermregister; daar gelden de vaste rollen admin/editor/reader (zie <a class="ref" href="#s-vaste-rollen"></a>).</p>
+<table class="compact">
+  <caption>Atelier (module 5)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>atelier.kpi</code></td><td>(KPI) balie, masterdata, reservaties en stock in cijfers</td></tr>
+  <tr><td><code>atelier.desk</code></td><td>(Uitgifte &amp; inname) de balie: ophalen en terugbrengen; <em>wijzigen</em> = een uitgifte annuleren</td></tr>
+  <tr><td><code>atelier.open</code></td><td>(Openstaand) kledij die nog niet terug is</td></tr>
+  <tr><td><code>atelier.reservations</code></td><td>(Reservaties) personen en pakket per ploeg en festival</td></tr>
+  <tr><td><code>atelier.preparation</code></td><td>(Voorbereiden) dagelijkse behoefte, geschatte maten, picklijst-PDF</td></tr>
+  <tr><td><code>atelier.stock</code></td><td>(Stock) overzicht per artikel en maat</td></tr>
+  <tr><td><code>atelier.receipt</code>, <code>atelier.wash</code>, <code>atelier.writeoff</code>, <code>atelier.count</code></td><td>(Ontvangst, Wassen, Afboeken, Telling) de stockboekingen</td></tr>
+  <tr><td><code>atelier.bookings</code></td><td>(Boekingen) alle boekingen, boekingsbon; <em>wijzigen</em> = ongedaan maken</td></tr>
+  <tr><td><code>atelier.orderneeds</code></td><td>(Te bestellen) behoefte min eigen stock, bestellijst-PDF</td></tr>
+  <tr><td><code>atelier.articles</code>, <code>atelier.sizes</code></td><td>(Artikelen, Maten) masterdata</td></tr>
+  <tr><td><code>atelier.dataupload</code></td><td>(Data Upload/Download) Excel</td></tr>
+  <tr><td><code>atelier.settings</code></td><td>(Instellingen) polsband verplicht, scanners, ontvangen berichten</td></tr>
+  <tr><td><code>atelier.scantest</code></td><td>(Test-scan) polsbandscans naspelen zonder het polsbandbedrijf</td></tr>
+  <tr><td><code>atelier.roles</code>, <code>atelier.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<table class="compact">
+  <caption>Walkies (module 6)</caption>
+  <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
+  <tr><td><code>walkies.kpi</code></td><td>(KPI) startpagina</td></tr>
+  <tr><td><code>walkies.roles</code>, <code>walkies.users</code></td><td>(Roles, Users) toegangsrechten</td></tr>
+</table>
+
+<p>Modules 7 en 10 hebben geen schermregister; daar gelden de vaste rollen admin/editor/reader (zie <a class="ref" href="#s-vaste-rollen"></a>).</p>
 
 <h1 class="hoofdstuk bijlage" id="bijlage-bijwerken">Deze handleiding bijwerken</h1>
 <p>De bron van deze handleiding staat in de repository, in <code>docs/handleiding/</code>, zodat ze samen met de code kan meegroeien.</p>

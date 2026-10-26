@@ -3,6 +3,73 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-26 — Atelier: bigger desk buttons, Openstaand grouped, desk mails, Reservaties progress
+**Request:** four Atelier needs: (1) Ophalen/Terugbrengen buttons twice as tall and vertically centred; (2) Openstaand without
+overlapping fields, a filter above every column, grouped ploeg → persoon → open pieces; (3) a mail to the person after every
+Uitgifte and Inname, with subject/body per mail editable by admins on a new Instellingen screen; (4) Reservaties without
+overlapping fields, a filter above every column and per ploeg how many of its Altsien Select festivals are filled in.
+**Plan:**
+- Shared: festival dropdown never shrunk (`shrink-0`, trigger `w-full`); reusable `column-filters.tsx` for the filter rows.
+- Desk choice: `min-h-96` buttons, the screen fills the height under the topbar and centres the choice.
+- Openstaand: one row per open piece, grouped client-side per team and person; Ploeg dropdown replaced by the column filter.
+- Mails: `Atelier_mail_template` (handout/return: subject, body with placeholders, active), `notifications.py` renders them
+  (HTML-escaped) and queues `send_email` as a background task; one person-level return call so a return = one mail;
+  screen "Instellingen > E-mails" (`atelier.mailtemplates`) with placeholder buttons, live preview and test mail to yourself.
+- Reservaties: `festivals_picked` per row (picks via `festivals_by_team`, done = persons > 0); "x / y" column with tooltip,
+  "geen selectie" without picks, "niet gekozen" badge; filter row; unsaved rows stay visible.
+**Changes:**
+- Backend: model `atelier_mail_template.py` + migration `c8e2a5f1d394` (seeds both default Dutch texts),
+  `module_5/notifications.py`, `module_5/mail_template_router.py` (`GET /mail-templates`, `PUT /mail-templates/{key}`,
+  `POST /mail-templates/{key}/test`, included in `main.py`), `desk_service.return_person_lines` + `POST /desk/persons/{id}/return`
+  (mails; the per-handout return endpoint stays, without mail), `POST /desk/handouts` mails, `reservation_service.festival_progress`
+  + `festivals_picked` on `ReservationRowResponse`, screen `atelier.mailtemplates`.
+- Frontend: `desk-screen.tsx` (buttons, centring, one return call), `open-handouts.tsx` (rewritten), `reservation-screen.tsx`,
+  `atelier-festival-select.tsx`, new `column-filters.tsx`, `mail-templates-screen.tsx` + page `settings/mails`, sidebar link,
+  `FALLBACK_SCREENS`, help route, `lib/api.ts` / `lib/types.ts`, `messages/{nl,en}.json`.
+- Help manual `module_5/{nl,en}.md` (desk mail, Openstaand, Reservaties progress/filters, new E-mails chapter) + refreshed
+  module-5 screenshots (new `mails.png`, added to `help-screenshots.mjs`).
+- Tests: `tests/modules/module_5/test_mails.py` (new), `test_reservations.py` (`festivals_picked`).
+**Verification:** full pytest suite 918 passed; `alembic upgrade head` on local Postgres; tsc (no errors in `src/`) and eslint
+clean; backend restarted and the four screens checked on localhost via the help screenshots (temporary screenshot user removed).
+**Notes:** the PDF handbooks (Gebruikershandleiding / Ontwikkelaarshandleiding) don't yet describe the new E-mails screen.
+Mails only go out where Resend is configured (`RESEND_API_KEY`/`MAIL_FROM`); locally they're logged as skipped.
+
+## 2026-10-26 — Atelier desk: message for an article without sizes
+**Request:** on test the desk showed the package articles without any size to pick (the articles were imported, their
+Artikelmaten not).
+**Plan:** no code bug — sizes come from `Atelier_article_size`; show a clear message on such an article and keep the thumb left.
+**Changes:** `components/module-5/desk-screen.tsx` (`desk.noSizes` message, thumb wrapped so its `mx-auto` doesn't push
+the name right), `messages/{nl,en}.json`.
+**Verification:** tsc (no errors in `src/`) and eslint clean.
+
+## 2026-10-26 — Atelier: XLSX import of an export from another environment; festival box width
+**Request:** uploading Atelier's article export (made on localhost) on test.rwcrew.eu gave "id … not found" on every row; the
+desk's festival box overlapped the day box.
+**Plan:**
+- Sizes/articles import: an id that doesn't exist here (or a blank id) falls back to the natural key (name + fit / code):
+  found = update, else create. A non-number id stays a row error.
+- Festival select: minimum width instead of a fixed width.
+**Changes:** `module_5/xlsx_imports.py` (`_find_by_id_or_key`), dialog hints (nl/en), help `module_5/{nl,en}.md`, CLAUDE.md,
+`tests/modules/module_5/test_masterdata.py` (blank id + existing size is now "updated"; new test for foreign ids),
+`components/module-5/atelier-festival-select.tsx` (`min-w-80`).
+**Verification:** full pytest suite 911 passed; eslint clean on the festival select.
+
+## 2026-10-25 — Documentation update: handbooks, help manuals, technical setup
+**Request:** update all PDF documentation (Gebruikershandleiding, Ontwikkelaarshandleiding incl. technical setup, the module help manuals) with screenshots.
+**Plan:**
+- Screenshot tooling: Atelier/Walkies in the temporary screenshot user, Atelier personal data masked, module-5 + new KarTracker shots in the help script.
+- Help manuals: screenshots for every Atelier chapter and the new KarTracker screens; refreshed KarTracker shots.
+- Developer handbook v2.1 and user manual v1.1: Atelier, Walkies, new KarTracker screens, products moved to StockMaster, Altsien products step, `ATELIER_WEBHOOK_TOKEN` + public webhook, screens/rights appendices.
+**Changes:**
+- `docs/handleiding/screenshot_user.py` (atelier + walkies roles, Atelier names/emails exported for masking), `screenshots.py` (shots 48–56), `build_pdf.py` (keeps waiting for Edge's DevTools port when the first Edge process hands off — headless start failed otherwise).
+- `frontend/scripts/help-screenshots.mjs`: module-5 list, 7 new module-2 shots, Plan een kar without the old team pick, masking via `.screenshot-namen.json`.
+- `backend/app/help/content/module_5/*` (19 images + references, KPI text no longer says "next blocks"), `module_2/*` (7 new images, all refreshed).
+- Developer handbook chapters 00–07: module table, KarTracker/StockMaster/Atelier sections, Walkies, env var table, public endpoints, module package/services/Atelier code section, recipes, Atelier wristband admin steps, screen-key appendix (KarTracker, TagScan, Atelier, Walkies); all screenshots retaken + 9 new. PDF 126 pages.
+- User manual: Atelier chapter (screens, reservations, desk, stock, wristband scans), KarTracker Leveringsvolgorde/Planningsanalyses/Karcode/Speciale levertoeren, products under StockMaster, StockMaster TagScan book-in/Kar laden/nalevering, Altsien step 4, phone Karcode, festival-year checklist, FAQ, glossary, screen-name appendix. PDF 53 pages.
+- CLAUDE.md: help manual list + screenshot login/masking + handbooks note.
+**Verification:** `pytest tests/help` 28 passed; eslint on the screenshot script clean; both PDFs built without unknown cross-references; screenshots checked for masking (names/emails replaced). Temporary screenshot user removed (`cleanup`: nothing left).
+**Notes:** the PDFs could not be page-rendered here for a visual check (no poppler) — worth a quick read-through. The user manual stays without screenshots, as before.
+
 ## 2026-10-26 — Atelier: block 5 (wristband scans via webhook + Test-scan)
 **Request:** the next block: the wristband. It turned out we don't scan ourselves: the wristband company scans at our
 counter and sends us a small JSON message via a webhook (example given). Also a screen to type the data or drop a JSON

@@ -30,12 +30,14 @@ Staan er vandaag al evenveel of meer personen van de ploeg genoteerd dan gereser
 2. Alle stuks staan aangevinkt; vink af wat niet terug is (dat blijft openstaan). Is er iets afgevinkt, dan vraagt de balie eerst bevestiging met de lijst van wat bij de persoon blijft.
 3. Klik op **Terugnemen**: de stuks gaan naar **Te wassen**.
 
+**E-mail**: heeft de persoon een e-mailadres, dan krijgt hij of zij na elke Ophalen een mail **Uitgifte** en na elke Terugbrengen één mail **Inname** (ook als de stuks van verschillende uitgiftes komen). De teksten stel je in op **Instellingen > E-mails**.
+
 Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annuleren** (de stuks gaan terug naar beschikbaar).
 
 ![De balie: Ophalen of Terugbrengen](desk.png)
 
 ## [open | atelier.open] Openstaand
-Alle kledij die opgehaald werd maar nog niet terug is: persoon, e-mailadres (klik om te mailen), ploeg, dag, wat nog in bezit is en wanneer het opgehaald werd. Filter op festival, dag en ploeg. Komt iets nooit terug, boek het dan af via **Stock > Afboeken** (reden "Niet teruggebracht").
+Alle kledij die opgehaald werd maar nog niet terug is, **gegroepeerd per ploeg en dan per persoon** (met polsbandnummer en e-mailadres — klik om te mailen), met daaronder elk stuk: dag, artikel, maat en wanneer het opgehaald werd. Kies bovenaan het festival en eventueel de dag. Boven elke kolom staat een **filterveld**: typ er een deel van een naam, ploeg, artikel, … in om de lijst te verkleinen; de totalen volgen de filter. Komt iets nooit terug, boek het dan af via **Stock > Afboeken** (reden "Niet teruggebracht").
 
 ![Openstaand](open.png)
 
@@ -46,6 +48,10 @@ Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig he
 2. Vul per ploeg het aantal **personen** in, eventueel met een **opmerking**.
 3. Klik bij de ploeg op **Pakket** om de artikelen te kiezen (Artikel toevoegen, lijn verwijderen). Het **aantal per persoon** is altijd **1**: aan de balie krijgt elke persoon één stuk per artikel.
 4. Gewijzigde lijnen kleuren geel. Klik op **Opslaan** om alles in één keer te bewaren. Bij elke ploeg zie je wie het laatst iets wijzigde en wanneer.
+
+**Festivals ingevuld**: per ploeg hoeveel van de festivals die de ploeg in **Altsien Select** koos al personen hebben (bv. *3 / 5*). Groen = alles ingevuld, oranje = nog niet; beweeg over het getal om per festival te zien wat ontbreekt. Koos de ploeg nog niets, dan staat er "geen selectie". Koos ze andere festivals maar niet dit, dan staat "niet gekozen" bij de ploegnaam.
+
+Boven elke kolom staat een **filterveld**. Een gewijzigde, nog niet opgeslagen ploeg blijft altijd zichtbaar; de totalen tellen altijd alle ploegen.
 
 Het pakket geldt enkel voor dit festival. Een ploeg met personen maar zonder pakket krijgt een waarschuwing. Een reservatie zonder personen, opmerking en pakket verdwijnt.
 
@@ -127,7 +133,7 @@ Een maat die bij een artikel gebruikt wordt, kan niet verwijderd worden: zet ze 
 ## [dataupload | atelier.dataupload] Data Upload/Download
 Per tabel een tegel om een **sjabloon** te downloaden, een ingevuld bestand te **uploaden** en de huidige gegevens te **exporteren**.
 
-- **Maten** en **Artikelen**: een rij met een bestaand **id** (de eerste kolom van de export) wijzigt dat record, een rij zonder id maakt een nieuw.
+- **Maten** en **Artikelen**: een rij wordt gezocht op **id** (de eerste kolom van de export) en anders op naam + pasvorm (maten) of code (artikelen); een gevonden record wordt gewijzigd, anders komt er een nieuw bij. Zo kan je ook een export van een andere omgeving (bv. localhost naar test) opladen.
 - **Artikelmaten** (artikelcode + maat + pasvorm), **Reservaties** (seizoen + festival + ploeg) en **Pakketlijnen** (seizoen + festival + ploeg + artikelcode): een bestaande combinatie wordt bijgewerkt, een nieuwe toegevoegd.
 - Pasvorm mag als women/men/unisex of Dames/Heren/Unisex.
 
@@ -150,6 +156,17 @@ Om alles te testen voor de echte koppeling met het polsbandbedrijf (vanaf mei 20
 Klik op **Versturen**: onder de knop zie je wat er met het bericht gebeurde, en een geldige scan verschijnt meteen aan de balie die die scanner gekozen heeft.
 
 ![Test-scan](scan-test.png)
+
+## [mailtemplates | atelier.mailtemplates] E-mails
+De mails die een persoon na een transactie aan de balie krijgt, naar het e-mailadres dat aan de balie ingevuld werd (zonder e-mailadres wordt niets verstuurd):
+- **Uitgifte**: na elke Ophalen;
+- **Inname**: na elke Terugbrengen (één mail per transactie).
+
+Per mail stel je het **onderwerp** en de **tekst** in, en met **Versturen** zet je hem aan of uit. Klik op een veld zoals **{voornaam}** of **{stuks}** om het op de plaats van de cursor in te voegen; bij het versturen wordt het vervangen door de gegevens van de transactie. **{stuks}** = de stuks van deze transactie, **{openstaand}** = wat de persoon daarna nog in bezit heeft. Een onbekend veld kan niet opgeslagen worden.
+
+Rechts zie je een **voorbeeld** met voorbeeldgegevens. **Stuur test naar mij** stuurt de tekst zoals hij nu staat (ook niet opgeslagen) naar je eigen e-mailadres. Opslaan en testen vragen het recht Wijzigen.
+
+![E-mails](mails.png)
 
 ## [roles | atelier.roles] Rollen
 Een rol bepaalt wat iemand in Atelier mag doen, per scherm: **Bekijken**, **Aanmaken**, **Wijzigen** en **Verwijderen**.

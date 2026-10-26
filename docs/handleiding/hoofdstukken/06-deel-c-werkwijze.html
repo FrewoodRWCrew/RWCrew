@@ -163,18 +163,19 @@ de rechten om het te testen.</p>
   <li>Draai alle tests.</li>
 </ol>
 
-<h2 id="s-recept-module">Een nieuwe module bouwen (bv. module 5 echt maken)</h2>
+<h2 id="s-recept-module">Een nieuwe module bouwen (bv. module 7 echt maken)</h2>
+<p>Zo werden Atelier (module 5) en Walkies (module 6) gebouwd; kopieer bij twijfel van Walkies, de kleinste volledige module.</p>
 <ol class="stappen">
   <li><strong>Naam</strong>: voeg de naam toe aan <code>_MODULE_NAMES</code> in <code>app/modules/registry.py</code>, en maak een migratie die
-  <code>UPDATE "Landing_modules" SET name = '…' WHERE key = 'module-5'</code> uitvoert (met de omgekeerde wijziging in <code>downgrade()</code>).</li>
+  <code>UPDATE "Landing_modules" SET name = '…' WHERE key = 'module-7'</code> uitvoert (met de omgekeerde wijziging in <code>downgrade()</code>).</li>
   <li><strong>Rechtensysteem</strong>: volg <code>docs/module-custom-roles-pattern.md</code> stap voor stap: vier modellen
   (<code>&lt;Naam&gt;_screens</code>, <code>_roles</code>, <code>_role_permissions</code>, <code>_user_roles</code>), migratie, schema's,
   <code>screens.py</code>, <code>deps.py</code>, <code>router.py</code>. Kopieer van de module die het meest lijkt op wat je bouwt (module 3 is het
-  meest overzichtelijke voorbeeld; module 4 StockMaster is het meest recente).</li>
+  meest overzichtelijke voorbeeld; module 6 Walkies is de kleinste en meest recente).</li>
   <li><strong>main.py</strong>: importeer de nieuwe router en <code>sync_screens</code>, en roep die in <code>lifespan</code> aan.</li>
   <li><strong>Tests</strong>: kopieer <code>tests/modules/module_3/test_roles.py</code> en <code>helpers.py</code> en pas sleutels en namen aan.</li>
-  <li><strong>Frontend</strong>: types en API-functies; <code>components/module-5/</code> met sidebar, <code>roles-management.tsx</code>,
-  <code>users-management.tsx</code>; <code>app/[locale]/(protected)/modules/module-5/layout.tsx</code> (rechten ophalen, menu, accentkleur)
+  <li><strong>Frontend</strong>: types en API-functies; <code>components/module-7/</code> met sidebar, <code>roles-management.tsx</code>,
+  <code>users-management.tsx</code>; <code>app/[locale]/(protected)/modules/module-7/layout.tsx</code> (rechten ophalen, menu, accentkleur)
   en de pagina's onder <code>access-rights/roles</code> en <code>access-rights/users</code>.</li>
   <li><strong>Uitstraling</strong>: kleur en eventueel pictogram in <code>lib/module-theme.ts</code>.</li>
   <li><strong>Teksten</strong>: een nieuwe namespace in beide vertaalbestanden.</li>
@@ -193,8 +194,9 @@ die toe aan de toekomstige modulebeheerder.</p>
   <li>Optioneel een eigen sectie in <code>module_8/ploegfiche_pdf.py</code>.</li>
   <li>Optioneel "kopiëren van vorig seizoen": een paar <code>list_lines</code>/<code>copy_lines</code> in <code>module_8/previous_season.py</code>, geregistreerd in <code>COPYABLE_STEPS</code>.</li>
 </ol>
-<p>De voortgang wordt per stapsleutel bewaard; er is geen migratie nodig. Wanneer de productenmodule klaar is, wordt de
-stap "products" op deze manier van plaatshouder naar echte stap gebracht (en kan ze aan <code>COPYABLE_STEPS</code> toegevoegd worden).</p>
+<p>De voortgang wordt per stapsleutel bewaard; er is geen migratie nodig. Zo werd de stap "products" van plaatshouder een echte
+stap: ze schrijft via <code>module_4/requirement_service.py</code> de benodigdheden per kar van StockMaster, met eigen endpoints in
+module 8 zodat een kernlid geen StockMaster-rechten nodig heeft, en een eigen "kopiëren van vorig seizoen" per kar.</p>
 
 <h2 id="s-recept-telefoon">Een module toevoegen aan de telefoon-app</h2>
 <ol class="stappen">

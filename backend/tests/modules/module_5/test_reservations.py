@@ -16,6 +16,7 @@ from sqlalchemy.orm import Session
 
 from app.db.models.festival import Festival
 from app.db.models.team import Team
+from app.db.models.team_festival import TeamFestival
 from app.modules.module_5.preparation_service import split_by_shares
 
 # The block-1 fixtures and helpers (module, seasons, teams, sizes, a user with every right).
@@ -312,3 +313,35 @@ def test_kpi_shows_teams_forgotten_at_another_festival(
     world["vip"].active = False
     db_session.commit()
     assert missing()["TW Classic"] == []
+
+
+def test_festivals_picked_shows_progress_per_team(
+    as_atelier: TestClient, db_session: Session, world: dict, festivals: dict
+) -> None:
+    season = world["season"].id
+    rw, tw = festivals["rw"], festivals["tw"]
+    # Terras picked both festivals in Altsien Select; VIP picked none. An
+    # inactive festival picked by terras is left out.
+    closed = Festival(name="Gesloten", start_date=date(2026, 8, 1), end_date=date(2026, 8, 1), season_id=season, active=False)
+    db_session.add(closed)
+    db_session.flush()
+    for festival in (rw, tw, closed):
+        db_session.add(TeamFestival(season_id=season, team_id=world["terras"].id, festival_id=festival.id))
+    db_session.commit()
+
+    def picked(team_name: str) -> list[tuple[str, bool]]:
+        rows = as_atelier.get(f"{BASE}/reservations", params={"festival_id": tw.id}).json()
+        return [(item["name"], item["done"]) for item in _row(rows, team_name)["festivals_picked"]]
+
+    # Calendar order, nothing filled in yet; VIP has no selection.
+    assert picked("RW terras") == [("TW Classic", False), ("Rock Werchter 2026", False)]
+    assert picked("VIP") == []
+
+    # A note with 0 persons doesn't count; persons > 0 does (package not needed).
+    _save(as_atelier, tw.id, [{"team_id": world["terras"].id, "persons": 0, "note": "komt niet"}])
+    _save(as_atelier, rw.id, [{"team_id": world["terras"].id, "persons": 4}])
+    assert picked("RW terras") == [("TW Classic", False), ("Rock Werchter 2026", True)]
+
+    # The save response carries the new state too.
+    rows = _save(as_atelier, tw.id, [{"team_id": world["terras"].id, "persons": 3}]).json()
+    assert [item["done"] for item in _row(rows, "RW terras")["festivals_picked"]] == [True, True]

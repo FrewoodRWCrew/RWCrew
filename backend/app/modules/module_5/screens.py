@@ -38,8 +38,9 @@ class ScreenDefinition:
 # - articles / sizes / dataupload: the "Masterdata" group (the clothing
 #   catalogue, its sizes, and the bulk XLSX import/export); what each team
 #   gets is part of its reservation (the old "teampackages" screen is gone);
-# - settings / scantest: the "Instellingen" group (the wristband switch,
-#   scanners, webhook log; and sending a test wristband scan);
+# - settings / scantest / mailtemplates: the "Instellingen" group (the
+#   wristband switch, scanners, webhook log; sending a test wristband scan;
+#   the texts of the mails sent after Ophalen / Terugbrengen);
 # - roles / users: the access-rights screens.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.kpi", label="KPI", sort_order=1),
@@ -59,6 +60,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.dataupload", label="Data Upload/Download", sort_order=22),
     ScreenDefinition(key="atelier.settings", label="Instellingen", sort_order=30),
     ScreenDefinition(key="atelier.scantest", label="Test-scan", sort_order=31),
+    ScreenDefinition(key="atelier.mailtemplates", label="E-mails", sort_order=32),
     ScreenDefinition(key="atelier.roles", label="Roles", sort_order=90),
     ScreenDefinition(key="atelier.users", label="Users", sort_order=91),
 ]

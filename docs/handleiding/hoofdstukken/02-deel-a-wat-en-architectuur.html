@@ -47,12 +47,14 @@ thema (standaard donker) en het gebruikersmenu (wachtwoord wijzigen, uitloggen).
   <caption>De modules van RWCrew</caption>
   <tr><th class="nowrap" style="width:15%">Sleutel</th><th style="width:20%">Naam</th><th>Waarvoor</th><th style="width:13%">Telefoon</th></tr>
   <tr><td><code>module-1</code></td><td><strong>TagScan</strong></td><td>RFID-tags: CSV-bestanden van scanners inlezen, tag-gegevens bekijken, tags beheren, scanners en hun API-sleutels registreren.</td><td>Nee</td></tr>
-  <tr><td><code>module-2</code></td><td><strong>KarTracker</strong></td><td>Karren (rolcontainers): registratie, statussen, distributiepunten, zones, afleverlocaties, planning per festival, karbladen met QR-code, kaart, grondplan, manuele bewegingen (scannen).</td><td>Ja: KarScan, Kar Planning, Kar Map</td></tr>
+  <tr><td><code>module-2</code></td><td><strong>KarTracker</strong></td><td>Karren (rolcontainers): registratie, statussen, distributiepunten, zones, afleverlocaties, planning per festival, karbladen met QR-code, kaart, grondplan, manuele bewegingen (scannen), leveringsvolgorde, planningsanalyses (initiële levering, verplaatsingen tussen festivals, speciale levertoeren) en de karcode van het slot.</td><td>Ja: KarScan, Kar Planning, Kar Map, Karcode Simulator</td></tr>
   <tr><td><code>module-3</code></td><td><strong>Interventie Aanvragen</strong> <span class="klein">(Intervention Requests)</span></td><td>Aanvragen van ploegen tijdens het festival: registreren, opvolgen met statussen, toewijzen aan TeamKar, mail met PDF-leveringsbon naar een mailinglijst. Ook een publiek formulier via QR-code, zonder inloggen.</td><td>Ja: Akties (lijst, nieuw, wijzigen), KPI</td></tr>
-  <tr><td><code>module-4</code></td><td><strong>StockMaster</strong></td><td>Magazijnvoorraad van de MasterData-producten: vrije voorraad op de vaste plaats van een product en voorraad geladen in karren. Inboeken, uitboeken, karren laden en uitladen, kar vertrekt en kar terug, tellingen, benodigdheden per kar, "Te bestellen", PDF's.</td><td>Nee</td></tr>
-  <tr><td><code>module-5</code> tot <code>module-7</code></td><td>Module 5 tot 7</td><td>Plaatshouders voor toekomstige modules: tonen nu een "binnenkort"-pagina.</td><td>Nee</td></tr>
+  <tr><td><code>module-4</code></td><td><strong>StockMaster</strong></td><td>Magazijnvoorraad van de producten (de productstamgegevens worden sinds 24 oktober 2026 hier beheerd): vrije voorraad op de vaste plaats van een product en voorraad geladen in karren. Inboeken, uitboeken, karren laden en uitladen, kar vertrekt en kar terug, tellingen, benodigdheden per kar, "Te bestellen", PDF's.</td><td>Nee</td></tr>
+  <tr><td><code>module-5</code></td><td><strong>Atelier</strong></td><td>Werkkledij (T-shirts, hoodies, …) voor festivalmedewerkers: artikelen en maten, reservaties per festival en ploeg, stock met wascyclus, de balie (ophalen en terugbrengen) en polsbandscans via een webhook van het polsbandbedrijf.</td><td>Nee</td></tr>
+  <tr><td><code>module-6</code></td><td><strong>Walkies</strong></td><td>Beheer van de walkietalkies. Nu enkel een lege module met KPI-pagina en eigen rechten; de inhoud volgt later.</td><td>Nee</td></tr>
+  <tr><td><code>module-7</code></td><td>Module 7</td><td>Plaatshouder voor een toekomstige module: toont een "binnenkort"-pagina.</td><td>Nee</td></tr>
   <tr><td><code>module-8</code></td><td><strong>Altsien Select</strong></td><td>De "Ploeg Wizard": per ploeg en per seizoen doorloopt een Altsien-kernlid stappen (festivals, afleverlocaties, ploegverantwoordelijken, producten, speciale vragen, walkietalkies). Resultaat op de "Ploegfiche" (scherm en PDF). Opvolging van speciale vragen.</td><td>Nee</td></tr>
-  <tr><td><code>module-9</code></td><td><strong>MasterData</strong></td><td>Stamgegevens die alle modules delen: seizoenen (jaren), festivals, ploegen, ploeglocaties, leveringswijzen, ploegtaken, ploegverantwoordelijken, producten met types, categorieën, magazijnen en limieten. Bulk import/export via Excel.</td><td>Nee</td></tr>
+  <tr><td><code>module-9</code></td><td><strong>MasterData</strong></td><td>Stamgegevens die alle modules delen: seizoenen (jaren), festivals, ploegen (met hun speciale levertoeren), ploeglocaties, leveringswijzen, ploegtaken, ploegverantwoordelijken. Bulk import/export via Excel. (De producten staan sinds 24 oktober 2026 in StockMaster.)</td><td>Nee</td></tr>
   <tr><td><code>module-10</code></td><td><strong>Mobile App</strong></td><td>Installatiepagina voor de telefoon-app: het adres met QR-code en de stappen voor iPhone en Android.</td><td>(is de app)</td></tr>
 </table>
 
@@ -106,6 +108,17 @@ toegewezen worden en op festivals afgeleverd en opgehaald worden. Belangrijkste 
   <li><strong>Kar Map</strong> en <strong>Grondplan</strong>: de karren op een kaart (OpenStreetMap via Leaflet) en op een geüpload grondplan.</li>
   <li><strong>Manuele kar beweging</strong>: een beweging van een kar registreren, op de pc of met de telefooncamera (KarScan).</li>
   <li><strong>Data Upload/Download</strong>: bulkgegevens via Excel.</li>
+  <li><strong>Leveringsvolgorde</strong>: de volgorde van de ene levertoer over het terrein, door afleverlocaties te slepen
+  (<code>KarTracker_afleverlocaties.terrein_positie</code>, een geheel getal; 1 = eerst geleverd), met een kaart van de route.</li>
+  <li><strong>Planningsanalyses</strong>: <em>Initiële leverplanning</em> (welke karren bij de start waar geleverd worden, per
+  distributiepunt en in tourvolgorde), <em>Verplaatsingen tussen festivals</em> (karren waarvan de afleverlocatie tussen twee
+  festivals verandert) en <em>Speciale levertoeren-planning</em> (de stops van bv. de wastoer). Elk scherm drukt een PDF af,
+  optioneel met een kaart op het grondplan die de backend zelf tekent.</li>
+  <li><strong>Speciale levertoeren</strong>: toeren zoals "Kleine wastoer" die regelmatig langs ploegen komen; de koppeling met
+  ploegen gebeurt op de ploegfiche in MasterData.</li>
+  <li><strong>Karcode Simulator</strong> en <strong>Instellingen</strong>: de code van het slot van een kar volgt uit het karnummer via één
+  formule in Excel-stijl (bv. <code>LEFT(kar*500+3118; 4)</code>), die enkel beheerders zien en wijzigen. De simulator (ook op de
+  telefoon) toont de code, na het intypen of scannen van het karnummer.</li>
 </ul>
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-karren">
@@ -116,6 +129,16 @@ toegewezen worden en op festivals afgeleverd en opgehaald worden. Belangrijkste 
 <figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-kaart">
   <img src="afbeeldingen/14-kartracker-kaart.png" alt="">
   <figcaption>KarTracker · Kar Map: karren, afleverlocaties en distributiepunten op de kaart (OpenStreetMap), met een tabel van de getoonde punten eronder.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-leveringsvolgorde">
+  <img src="afbeeldingen/48-kartracker-leveringsvolgorde.png" alt="">
+  <figcaption>KarTracker · Leveringsvolgorde: links de levertoer (slepen om te ordenen, met de vorige positie ernaast), rechts de actieve afleverlocaties zonder positie.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-kartracker-initiele-levering">
+  <img src="afbeeldingen/49-kartracker-initiele-levering.png" alt="">
+  <figcaption>KarTracker · Initiële leverplanning: per distributiepunt en afleverlocatie (in tourvolgorde) de karren die bij de start geleverd worden, met filters en selectie om af te drukken.</figcaption>
 </figure>
 
 <h3 id="s-mod-interventie">Interventie Aanvragen (module 3)</h3>
@@ -158,7 +181,14 @@ acties in het menu: <em>Inboeken</em>, <em>Kar laden</em>, <em>Kar vertrekt</em>
 </ul>
 <p>Onder <em>Benodigdheden</em> leg je per seizoen en per kar vast wat een ploeg nodig heeft. Dat vult "Kar laden" vooraf in,
 toont op de karkaarten hoe ver een kar geladen is ("18 / 20") en berekent <em>Te bestellen</em>: benodigdheden min wat er al
-in voorraad is. Producten onder hun minimumvoorraad (verbruiksgoederen) geven een oranje waarschuwing bovenaan de module.
+in voorraad is. De benodigdheden worden ook door de Altsien-kernleden ingevuld (stap "Producten" van de Ploeg Wizard).
+Producten onder hun minimumvoorraad (verbruiksgoederen) geven een oranje waarschuwing bovenaan de module.</p>
+<p>Sinds 24 oktober 2026 beheert StockMaster ook de <strong>productstamgegevens</strong> (menu <em>Masterdata</em>: producten met
+type, magazijn, categorie en limiet, plus Excel-import en -export); de tabellen houden hun naam <code>MasterData_product…</code>.
+Verder: <em>Inboeken</em> kan een TagScan-scan met actie "Book In" overnemen (een melding bovenaan elk StockMaster-scherm),
+<em>Kar laden</em> toont per product wat "op dit moment beschikbaar is voor levering" volgens het stroomdiagram van de organisatie
+(limieten, blokkering, logistieke producten), met naast de benodigdheden ook <em>manuele aanvragen</em>, en een kar die al vertrok
+kan een <em>nalevering</em> krijgen.
 Elke actie heeft een PDF: laadlijst, vertrekbon, bestellijst, telblad en boekingsbon. Het volledige ontwerp staat in
 <code>docs/stockmaster-design.md</code>.</p>
 
@@ -187,7 +217,7 @@ vlag "Altsien Kernlid", gekoppeld aan één of meer ploegen) doorloopt daarvoor 
   <tr><td>1</td><td>Festivals</td><td>Op welke festivals is de ploeg actief (minstens één)</td><td>MasterData (<code>MasterData_team_festival</code>)</td></tr>
   <tr><td>2</td><td>Afleverlocaties</td><td>Per gekozen festival een afleverlocatie</td><td>KarTracker (Plan a kar)</td></tr>
   <tr><td>3</td><td>Ploegverantwoordelijken</td><td>Minstens één verantwoordelijke met contactgegevens</td><td>MasterData (<code>MasterData_team_responsible</code>)</td></tr>
-  <tr><td>4</td><td>Producten</td><td>Plaatshouder tot de productenmodule bestaat</td><td>(nog niet)</td></tr>
+  <tr><td>4</td><td>Producten</td><td>Per kar van de ploeg de benodigde producten</td><td>StockMaster (<code>StockMaster_kar_requirement</code>)</td></tr>
   <tr><td>5</td><td>Speciale vragen</td><td>Vrije vragen, die daarna met een status opgevolgd worden</td><td>Altsien Select</td></tr>
   <tr><td>6</td><td>Walkietalkies</td><td>Plaatshouder tot de walkiemodule bestaat</td><td>(nog niet)</td></tr>
 </table>
@@ -209,7 +239,8 @@ behalve wie het recht "organisatie" heeft (zie <a class="ref" href="#s-altsien-r
 <h3 id="s-mod-masterdata">MasterData (module 9)</h3>
 <p>MasterData beheert de <strong>stamgegevens</strong>: de gegevens die alle andere modules delen en die
 zelden veranderen. Denk aan de seizoenen (op het scherm "Years"), festivals, ploegen en hun locatie,
-leveringswijze, taken en verantwoordelijken, en de productcatalogus. Bijna elk scherm heeft een
+leveringswijze, taken, verantwoordelijken en speciale levertoeren. (De productcatalogus verhuisde op 24 oktober 2026 naar
+StockMaster.) Bijna elk scherm heeft een
 <strong>Excel-import en -export</strong>: je downloadt een sjabloon, vult het in en uploadt het; elke rij wordt
 apart gecontroleerd zodat één foute rij niet de hele import tegenhoudt.</p>
 
@@ -218,11 +249,53 @@ apart gecontroleerd zodat één foute rij niet de hele import tegenhoudt.</p>
   <figcaption>MasterData · Ploegen: de stamgegevens van alle ploegen, met locatie, leveringswijze en of ze actief zijn.</figcaption>
 </figure>
 
-<h3 id="s-mod-mobile">Mobile App (module 10) en de plaatshouders (modules 5 tot 7)</h3>
-<p>Module 10 toont het adres van de telefoon-app (<code>https://rwcrew.eu/m</code>), een QR-code om dat adres
-met de telefoon te openen, en de stappen om de app op het beginscherm te zetten. Modules 5 tot 7 zijn
-voorbereide, lege plaatsen: ze hebben al een tegel, een kleur en toegangsrechten, en tonen een
-"binnenkort"-pagina tot hun inhoud ontworpen is.</p>
+<h3 id="s-mod-atelier">Atelier (module 5)</h3>
+<p>Medewerkers van ploegen die met eigen kledij werken (VIP, RW terras, …) halen bij het begin van hun shift
+<strong>werkkledij</strong> op aan de balie van het atelier en brengen <strong>alles</strong> na de shift terug. De medewerkers zijn
+geen RWCrew-gebruikers: ze horen bij een ploeg, en het pakket van die ploeg bepaalt wat ze krijgen. De module werd in blokken
+gebouwd:</p>
+<table class="compact">
+  <caption>De blokken van Atelier</caption>
+  <tr><th style="width:24%">Blok</th><th>Wat</th></tr>
+  <tr><td>1 Masterdata</td><td>Eigen <strong>artikelen</strong> (geen StockMaster-producten) en <strong>maten</strong> (naam + pasvorm dames/heren/unisex). Een artikelmaat
+  (<code>Atelier_article_size</code>) is de eenheid van de stock, met een maatverdeling in % voor de schattingen en een minimumstock.</td></tr>
+  <tr><td>2 Reservaties</td><td>Per festival en per ploeg het <strong>aantal personen</strong> en het <strong>pakket</strong> (artikelen, altijd 1 stuk per persoon; de
+  maat wordt aan de balie gekozen). <em>Voorbereiden</em> berekent wat elke dag klaargelegd moet worden, met geschatte maten en een picklijst-PDF.
+  "Kopiëren van vorig jaar" en een waarschuwing voor ploegen die op één festival vergeten werden.</td></tr>
+  <tr><td>3 Stock</td><td>Stuks per artikelmaat met de status <em>beschikbaar</em>, <em>te wassen</em> of <em>uitgegeven</em>: ontvangst, wassen, afboeken,
+  telling, boekingen (met ongedaan maken) en "Te bestellen".</td></tr>
+  <tr><td>4 Balie</td><td>Elke transactie begint met de keuze <strong>Ophalen</strong> of <strong>Terugbrengen</strong>. Een persoon is gekend aan voornaam +
+  familienaam; e-mail is optioneel en het polsbandnummer geldt per festival. "Openstaand" toont wat nog niet terug is.</td></tr>
+  <tr><td>5 Polsbandscans</td><td>Het polsbandbedrijf stuurt elke scan aan onze balie als JSON naar een <strong>webhook</strong>; de balie toont de persoon
+  binnen enkele seconden en vult de transactie in. Een testscherm speelt berichten na tot de echte koppeling (vanaf mei 2027).</td></tr>
+  <tr><td>6 RFID</td><td>Elk kledingstuk opvolgen via TagScan (nog niet gebouwd).</td></tr>
+</table>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-atelier-balie">
+  <img src="afbeeldingen/51-atelier-balie.png" alt="">
+  <figcaption>Atelier · Uitgifte &amp; inname: festival, dag en de scanner van deze balie, en de twee grote knoppen waarmee elke transactie begint.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-atelier-reservaties">
+  <img src="afbeeldingen/52-atelier-reservaties.png" alt="">
+  <figcaption>Atelier · Reservaties: per festival alle actieve ploegen, met het aantal personen, een opmerking en het pakket.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-atelier-stock">
+  <img src="afbeeldingen/54-atelier-stock.png" alt="">
+  <figcaption>Atelier · Stock: per artikel en maat beschikbaar, te wassen en uitgegeven, met de minimumstock.</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-atelier-instellingen">
+  <img src="afbeeldingen/55-atelier-instellingen.png" alt="">
+  <figcaption>Atelier · Instellingen: polsband verplicht of niet, het webhookadres en of de token ingesteld is, de scanners en alle ontvangen berichten.</figcaption>
+</figure>
+
+<h3 id="s-mod-mobile">Walkies (module 6), Mobile App (module 10) en de plaatshouder (module 7)</h3>
+<p><strong>Walkies</strong> heeft al een tegel, een KPI-pagina en het volledige rechtensysteem met rollen per scherm; het beheer van
+de walkietalkies volgt later. Module 10 toont het adres van de telefoon-app (<code>https://rwcrew.eu/m</code>), een QR-code om dat adres
+met de telefoon te openen, en de stappen om de app op het beginscherm te zetten. Module 7 is een voorbereide, lege plaats: ze
+heeft al een tegel, een kleur en toegangsrechten, en toont een "binnenkort"-pagina tot haar inhoud ontworpen is.</p>
 
 <h2 id="s-gedeelde-begrippen">Gedeelde begrippen</h2>
 <table>
@@ -235,6 +308,9 @@ voorbereide, lege plaatsen: ze hebben al een tegel, een kleur en toegangsrechten
   <tr><td><strong>Altsien-kernlid</strong></td><td>Een RWCrew-gebruiker met de vlag "Altsien Kernlid", gekoppeld aan ploegen; vult de Ploeg Wizard in.</td></tr>
   <tr><td><strong>Ploegverantwoordelijke</strong></td><td>Een contactpersoon van een ploeg per seizoen. Is <em>geen</em> RWCrew-gebruiker; enkel naam en contactgegevens.</td></tr>
   <tr><td><strong>TeamKar</strong></td><td>De RWCrew-medewerkers die de leverkar bemannen en aan interventie-aanvragen gekoppeld worden.</td></tr>
+  <tr><td><strong>Levertoer</strong></td><td>De ene route over het terrein waarin karren geleverd worden; de positie van een afleverlocatie erin heet <code>terrein_positie</code>. Daarnaast zijn er <em>speciale levertoeren</em> (bv. de wastoer) die langs ploegen komen.</td></tr>
+  <tr><td><strong>Pakket</strong> (Atelier)</td><td>De artikelen die elke persoon van een ploeg op een festival krijgt, één stuk per artikel.</td></tr>
+  <tr><td><strong>Polsband</strong> (Atelier)</td><td>Het festivalpolsbandje van een medewerker; elk festival heeft nieuwe polsbanden, dus het nummer is uniek binnen één festival.</td></tr>
 </table>
 
 <h2 id="s-talen-thema">Talen en weergave</h2>

@@ -36,6 +36,7 @@ from app.modules.module_5.desk_router import router as module_5_desk_router
 from app.modules.module_5.masterdata_router import router as module_5_masterdata_router
 from app.modules.module_5.reservation_router import router as module_5_reservation_router
 from app.modules.module_5.router import router as module_5_router
+from app.modules.module_5.mail_template_router import router as module_5_mail_template_router
 from app.modules.module_5.scan_router import router as module_5_scan_router
 from app.modules.module_5.scan_webhook_router import router as module_5_scan_webhook_router
 from app.modules.module_5.screens import sync_screens as sync_atelier_screens
@@ -112,6 +113,7 @@ app.include_router(module_5_reservation_router)
 app.include_router(module_5_stock_router)
 app.include_router(module_5_desk_router)
 app.include_router(module_5_scan_router)
+app.include_router(module_5_mail_template_router)
 app.include_router(module_5_scan_webhook_router)
 app.include_router(module_6_router)
 app.include_router(module_7_router)
