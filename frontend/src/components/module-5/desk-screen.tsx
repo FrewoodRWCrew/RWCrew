@@ -8,7 +8,8 @@
 // that choice for the next person.
 //   - Ophalen: first name, family name (together they are the person: a
 //     known worker is recognised and their email, bracelet number, team and
-//     pieces still out are filled in), email (required, not unique), the
+//     pieces still out are filled in), email (optional, not unique; a filled-in
+//     one is only shown masked, "Wijzig" types a new one), the
 //     optional bracelet number (unique), team; then per package article a size
 //     (1 piece each). Every article is optional: click the chosen size again to
 //     skip it; an article with only one size in stock is pre-selected. At
@@ -47,6 +48,7 @@ import {
   searchAtelierDeskPersons,
 } from "@/lib/api";
 import { formatDate, formatDateNl, formatDateTimeNl } from "@/lib/date-time";
+import { maskEmail } from "@/lib/mask-email";
 import type {
   AtelierDeskContext,
   AtelierDeskPerson,
@@ -376,6 +378,10 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
   const [firstName, setFirstName] = useState(scan?.first_name ?? "");
   const [lastName, setLastName] = useState(scan?.last_name ?? "");
   const [email, setEmail] = useState(scan?.email ?? "");
+  // The address the scan or a known worker filled in: while the box still
+  // holds it, it's only shown masked (GDPR) until the desk clicks "Wijzig".
+  const [prefilledEmail, setPrefilledEmail] = useState(scan?.email ?? "");
+  const emailLocked = email !== "" && email === prefilledEmail;
   const [bracelet, setBracelet] = useState(scan?.wristband_number ?? "");
   const [teamChoice, setTeamId] = useState<number | null>(scan?.team_id ?? null);
   // The worker recognised by the typed first + family name (null = a new one).
@@ -405,6 +411,7 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
           setPerson(match);
           if (match) {
             setEmail((current) => current || (match.email ?? ""));
+            setPrefilledEmail((current) => current || (match.email ?? ""));
             setBracelet((current) => current || (match.bracelet_number ?? ""));
             setTeamId((current) => current ?? (teams.data?.some((team) => team.team_id === match.last_team_id) ? match.last_team_id : null));
           }
@@ -534,13 +541,36 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="atelier-desk-email">{t("emailLabel")}</Label>
-          <Input
-            id="atelier-desk-email"
-            type="email"
-            autoComplete="off"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-          />
+          {emailLocked ? (
+            // A filled-in address: masked and read-only; "Wijzig" empties the box for a new one.
+            <div className="flex items-center gap-2">
+              <span
+                id="atelier-desk-email"
+                className="flex h-8 min-w-0 flex-1 items-center truncate rounded-lg border bg-muted/50 px-2.5 text-sm text-muted-foreground"
+              >
+                {maskEmail(email)}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  setEmail("");
+                  setPrefilledEmail("");
+                }}
+              >
+                {t("changeEmail")}
+              </Button>
+            </div>
+          ) : (
+            <Input
+              id="atelier-desk-email"
+              type="email"
+              autoComplete="off"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+            />
+          )}
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="atelier-desk-bracelet">
@@ -800,7 +830,7 @@ function ReturnForm({ canCancel, initialPerson, initialQuery, scan, onDone }: Re
             <span>
               <span className="font-medium">{item.name}</span>
               <span className="text-sm text-muted-foreground">
-                {item.email && ` · ${item.email}`}
+                {item.email && ` · ${maskEmail(item.email)}`}
                 {item.bracelet_number && ` · ${t("braceletShort", { number: item.bracelet_number })}`}
               </span>
             </span>
@@ -815,7 +845,7 @@ function ReturnForm({ canCancel, initialPerson, initialQuery, scan, onDone }: Re
     <div className="flex flex-col gap-4">
       <p>
         <span className="text-lg font-semibold">{person.name}</span>
-        {person.email && <span className="text-muted-foreground"> · {person.email}</span>}
+        {person.email && <span className="text-muted-foreground"> · {maskEmail(person.email)}</span>}
         {person.bracelet_number && (
           <span className="text-muted-foreground"> · {t("braceletShort", { number: person.bracelet_number })}</span>
         )}

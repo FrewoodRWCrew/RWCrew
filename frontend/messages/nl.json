@@ -1573,6 +1573,16 @@
         "belowMin": "Maten onder minimumstock",
         "loadFailed": "Laden van de stock is mislukt."
       },
+      "wash": {
+        "title": "Gewassen — seizoen {season}",
+        "total": "Stuks gewassen dit seizoen",
+        "columnDay": "Festival / dag",
+        "columnPieces": "Stuks gewassen",
+        "noFestival": "Geen festival",
+        "loading": "Bezig met laden…",
+        "empty": "Dit seizoen is nog niets gewassen.",
+        "loadFailed": "Laden van de wasstatistieken is mislukt."
+      },
       "desk": {
         "title": "Balie",
         "handedOutToday": "Vandaag uitgegeven (stuks)",
@@ -2011,6 +2021,7 @@
       "cancelTransaction": "Annuleren",
       "loading": "Bezig met laden…",
       "emailLabel": "E-mailadres",
+      "changeEmail": "Wijzig",
       "teamLabel": "Ploeg",
       "pickTeam": "Kies een ploeg",
       "knownPerson": "Gekend: {name}",
@@ -2082,7 +2093,6 @@
       "dayLabel": "Dag",
       "allDays": "Alle dagen",
       "person": "Persoon",
-      "email": "E-mailadres",
       "team": "Ploeg",
       "day": "Dag",
       "since": "Opgehaald",

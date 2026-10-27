@@ -449,6 +449,29 @@ class StockTotalsResponse(BaseModel):
     below_min_stock: int
 
 
+class WashDayResponse(BaseModel):
+    """The pieces washed on one day."""
+
+    day: date
+    pieces: int
+
+
+class WashFestivalResponse(BaseModel):
+    """One festival's washed days; festival_id None = days outside every festival."""
+
+    festival_id: int | None
+    festival_name: str | None
+    pieces: int
+    days: list[WashDayResponse]
+
+
+class WashStatsResponse(BaseModel):
+    """The KPI page's wash statistics for one season (see module_5/wash_stats.py)."""
+
+    total: int
+    festivals: list[WashFestivalResponse]
+
+
 # --- Counter desk (block 4) -------------------------------------------------------
 
 

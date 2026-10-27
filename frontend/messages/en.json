@@ -1573,6 +1573,16 @@
         "belowMin": "Sizes below minimum stock",
         "loadFailed": "Failed to load the stock."
       },
+      "wash": {
+        "title": "Washed — season {season}",
+        "total": "Pieces washed this season",
+        "columnDay": "Festival / day",
+        "columnPieces": "Pieces washed",
+        "noFestival": "No festival",
+        "loading": "Loading…",
+        "empty": "Nothing washed yet this season.",
+        "loadFailed": "Failed to load the wash statistics."
+      },
       "desk": {
         "title": "Counter",
         "handedOutToday": "Handed out today (pieces)",
@@ -2011,6 +2021,7 @@
       "cancelTransaction": "Cancel",
       "loading": "Loading…",
       "emailLabel": "Email address",
+      "changeEmail": "Change",
       "teamLabel": "Team",
       "pickTeam": "Pick a team",
       "knownPerson": "Known: {name}",
@@ -2082,7 +2093,6 @@
       "dayLabel": "Day",
       "allDays": "All days",
       "person": "Person",
-      "email": "Email address",
       "team": "Team",
       "day": "Day",
       "since": "Picked up",

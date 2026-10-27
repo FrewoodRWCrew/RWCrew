@@ -1889,6 +1889,26 @@ export interface AtelierStockTotals {
   below_min_stock: number;
 }
 
+/** The pieces washed on one day (Atelier KPI page). */
+export interface AtelierWashDay {
+  day: string;
+  pieces: number;
+}
+
+/** One festival's washed days; festival_id null = days outside every festival. */
+export interface AtelierWashFestival {
+  festival_id: number | null;
+  festival_name: string | null;
+  pieces: number;
+  days: AtelierWashDay[];
+}
+
+/** The KPI page's wash statistics for one season. */
+export interface AtelierWashStats {
+  total: number;
+  festivals: AtelierWashFestival[];
+}
+
 /** A piece a worker still has (Atelier counter desk). */
 export interface AtelierDeskOpenLine {
   line_id: number;

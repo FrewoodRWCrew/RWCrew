@@ -42,6 +42,7 @@ from app.modules.module_5.stock_service import (
     wash,
     write_off,
 )
+from app.modules.module_5.wash_stats import wash_stats
 from app.schemas.atelier import (
     CountRequest,
     MinStockLine,
@@ -53,6 +54,7 @@ from app.schemas.atelier import (
     StockMovementResponse,
     StockTotalsResponse,
     WashRequest,
+    WashStatsResponse,
     WriteOffRequest,
 )
 
@@ -369,3 +371,15 @@ def get_stock_totals(
         handed_out=int(totals.get(HANDED_OUT, 0)),
         below_min_stock=len(min_stock_alerts(db)),
     )
+
+
+@router.get("/stock/wash-stats", response_model=WashStatsResponse)
+def get_wash_stats(
+    season_id: int = Query(...),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(KPI_SCREEN, "view")),
+) -> WashStatsResponse:
+    """The KPI page's wash statistics: pieces washed per day, grouped per
+    festival, and the season total (see wash_stats.py)."""
+    stats = wash_stats(db, season_id)
+    return WashStatsResponse.model_validate(stats, from_attributes=True)

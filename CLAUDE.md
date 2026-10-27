@@ -290,6 +290,9 @@ only that shell.
   layout, re-counted on `ATELIER_STOCK_CHANGED_EVENT`). Voorbereiden's size estimates carry `available`/`owned` (red =
   not owned, orange = still in the wash). An article size with stock bookings can't be unticked and its article can't
   be deleted. PDFs in `module_5/stock_pdfs.py` (Boekingsbon, Bestellijst).
+  **Wash statistics** on the KPI page (`module_5/wash_stats.py`, `GET /stock/wash-stats?season_id=`, KPI right,
+  `wash-stats-section.tsx`): posted `washed` documents per Belgian day, nothing stored; a day belongs to the season of the
+  latest festival started on/before it and to the festival running that day, else the season's "no festival" group.
 - **Atelier counter desk** (sidebar group "Balie", `/modules/module-5/desk[/open]`, screens `atelier.desk|open`,
   endpoints in `module_5/desk_router.py`, rules in `module_5/desk_service.py` — the only writer of `Atelier_person`
   (**first name + family name** = the person's key, `name_key` "first|last" lowercase unique; email **optional**, not
@@ -305,6 +308,8 @@ only that shell.
   the field stays visible, read-only). "Openstaand" = open pieces grouped per team → person → piece (client-side);
   write-offs stay manual. Openstaand and Reservaties have a text filter above every column
   (`components/module-5/column-filters.tsx`).
+  **Emails are shown masked** on the desk, Openstaand has no email column at all (`lib/mask-email.ts`, `fr***@gm***.com`, GDPR); the database,
+  API and mails keep the full address. Ophalen shows a filled-in address read-only with "Wijzig" (empties the box).
 - **Atelier desk mails**: after Ophalen (`POST /desk/handouts`) and after Terugbrengen the person gets the "Uitgifte" /
   "Inname" mail (only with an email; `module_5/notifications.py` `queue_desk_mail`, background task like module-3). The
   desk returns through **`POST /desk/persons/{id}/return`** (`desk_service.return_person_lines`, all ticked pieces of

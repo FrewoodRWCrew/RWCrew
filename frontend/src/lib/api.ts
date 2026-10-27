@@ -45,6 +45,7 @@ import type {
   AtelierStockDocument,
   AtelierStockLineInput,
   AtelierStockTotals,
+  AtelierWashStats,
   AtelierTestScanResult,
   AtelierUserSummary,
   WalkiesRole,
@@ -2807,6 +2808,11 @@ export function getAtelierMinStock(): Promise<AtelierMinStockLine[]> {
 
 export function getAtelierStockTotals(): Promise<AtelierStockTotals> {
   return apiFetch<AtelierStockTotals>(`${ATELIER_BASE}/stock/totals`);
+}
+
+/** The KPI page's wash statistics: pieces washed per day, grouped per festival, for one season. */
+export function getAtelierWashStats(seasonId: number): Promise<AtelierWashStats> {
+  return apiFetch<AtelierWashStats>(`${ATELIER_BASE}/stock/wash-stats?season_id=${seasonId}`);
 }
 
 // --- Atelier (module-5): counter desk (block 4) ---

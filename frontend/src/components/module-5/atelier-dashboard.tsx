@@ -1,7 +1,8 @@
 // Atelier's landing dashboard ("KPI overzicht"): the "Balie" section (pieces
 // handed out today, not returned yet), the "Masterdata" section (catalogue counts), the "Reservaties" section (per
 // festival of a season: persons, pieces per day, teams without package), the
-// "Stock" section (pieces per status, sizes below their minimum) and a notice
+// "Stock" section (pieces per status, sizes below their minimum), the
+// "Gewassen" section (pieces washed per day / festival / season) and a notice
 // about the blocks still to come.
 
 import { Shirt } from "lucide-react";
@@ -14,6 +15,7 @@ import { DeskStatsSection } from "@/components/module-5/desk-stats-section";
 import { MasterdataStatsSection } from "@/components/module-5/masterdata-stats-section";
 import { ReservationStatsSection } from "@/components/module-5/reservation-stats-section";
 import { StockTotalsSection } from "@/components/module-5/stock-totals-section";
+import { WashStatsSection } from "@/components/module-5/wash-stats-section";
 
 interface AtelierDashboardProps {
   seasons: Season[];
@@ -38,6 +40,8 @@ export async function AtelierDashboard({ seasons }: AtelierDashboardProps) {
       <ReservationStatsSection seasons={seasons} />
 
       <StockTotalsSection />
+
+      <WashStatsSection seasons={seasons} />
 
       <Card>
         <CardContent className="flex items-center gap-4">

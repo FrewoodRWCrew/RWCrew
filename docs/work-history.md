@@ -3,6 +3,27 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-27 — Atelier: masked emails on screen, wash statistics on the KPI page
+**Request:** (1) email addresses on Uitgifte & inname must not be fully visible on screen (GDPR), the database keeps them in
+full; (2) keep track of how many clothes are washed, per day / festival / year.
+**Plan:**
+- Step 1: shared `maskEmail` (`fr***@gm***.com`); desk search results + chosen person masked; Ophalen shows a filled-in
+  address (scan / known worker) masked read-only with "Wijzig" (empties the box); Openstaand's email column removed
+  (follow-up request the same day, instead of masking it).
+- Step 2: nothing stored; posted wash documents per Belgian day, linked to a festival by date (days after a festival stay
+  in that season, "Geen festival" group); "Gewassen" section on the KPI page following its season dropdown.
+**Changes:**
+- Frontend: `lib/mask-email.ts` (new), `components/module-5/desk-screen.tsx`, `open-handouts.tsx`,
+  `wash-stats-section.tsx` (new), `atelier-dashboard.tsx`, `lib/api.ts` (`getAtelierWashStats`), `lib/types.ts`,
+  translations `atelier.desk.changeEmail` and `atelier.landing.wash.*` (nl + en).
+- Backend: `module_5/wash_stats.py` (new), `GET /api/modules/module-5/stock/wash-stats?season_id=` in `stock_router.py`
+  (KPI view right), `WashStatsResponse` schemas; tests `tests/modules/module_5/test_wash_stats.py`. No migration.
+- Docs: Atelier help manual (KPI, desk, Openstaand chapters, nl + en), CLAUDE.md Atelier bullets.
+**Verification:** `pytest tests/modules/module_5 tests/help` passed; `npx tsc --noEmit` (only pre-existing stale `.next`
+type errors for module-9 routes) and eslint on the changed files clean. Not yet clicked through on localhost.
+**Notes:** Washes before the season's first
+festival are in no season. Next: "Maten double" on Data Upload/Download, waiting for the user's screenshots.
+
 ## 2026-10-26 — Atelier: bigger desk buttons, Openstaand grouped, desk mails, Reservaties progress
 **Request:** four Atelier needs: (1) Ophalen/Terugbrengen buttons twice as tall and vertically centred; (2) Openstaand without
 overlapping fields, a filter above every column, grouped ploeg → persoon → open pieces; (3) a mail to the person after every

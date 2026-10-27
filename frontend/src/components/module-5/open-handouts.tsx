@@ -2,7 +2,7 @@
 
 // Atelier's "Balie > Openstaand" screen: the pieces that were picked up and
 // not brought back yet, grouped per team (ploeg), then per person (with
-// bracelet number and email, to contact them), then one line per piece with
+// bracelet number; no email column, for privacy — GDPR), then one line per piece with
 // its festival day and since when. Filters: festival + day at the top (they
 // decide what's loaded) and a text filter above every column (client-side).
 // Writing off what never comes back stays manual (Stock > Afboeken).
@@ -24,7 +24,7 @@ import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 const ALL = "all";
 
 // The table's columns, in order (each has a text filter above it).
-const COLUMNS = ["team", "person", "bracelet", "email", "day", "article", "size", "since"] as const;
+const COLUMNS = ["team", "person", "bracelet", "day", "article", "size", "since"] as const;
 type Column = (typeof COLUMNS)[number];
 
 // One open piece, with the texts its columns show (and filter on).
@@ -34,7 +34,6 @@ interface PieceRow {
   personId: number;
   personName: string;
   bracelet: string | null;
-  email: string | null;
   day: string;
   article: string;
   size: string;
@@ -46,7 +45,6 @@ interface PersonGroup {
   personId: number;
   personName: string;
   bracelet: string | null;
-  email: string | null;
   pieces: PieceRow[];
 }
 interface TeamGroup {
@@ -83,7 +81,6 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
           personId: handout.person_id,
           personName: handout.person_name,
           bracelet: handout.bracelet_number,
-          email: handout.email,
           day: handout.day,
           article: line.article_name,
           size: `${line.size_name} · ${tFit(line.fit)}`,
@@ -105,7 +102,6 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
       team: piece.teamName,
       person: piece.personName,
       bracelet: piece.bracelet,
-      email: piece.email,
       day: formatDateNl(piece.day),
       article: piece.article,
       size: piece.size,
@@ -123,7 +119,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
     }
     let person = team.persons.at(-1);
     if (!person || person.personId !== piece.personId) {
-      person = { personId: piece.personId, personName: piece.personName, bracelet: piece.bracelet, email: piece.email, pieces: [] };
+      person = { personId: piece.personId, personName: piece.personName, bracelet: piece.bracelet, pieces: [] };
       team.persons.push(person);
     }
     person.pieces.push(piece);
@@ -203,19 +199,11 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                 </TableRow>
                 {team.persons.map((person) => (
                   <Fragment key={person.personId}>
-                    {/* Person row: who, with bracelet number and email to contact them. */}
+                    {/* Person row: who, with their bracelet number. */}
                     <TableRow className="bg-muted/20">
                       <TableCell />
                       <TableCell className="font-medium">{person.personName}</TableCell>
                       <TableCell className="font-mono text-xs">{person.bracelet}</TableCell>
-                      <TableCell>
-                        {/* The email is optional. */}
-                        {person.email && (
-                          <a href={`mailto:${person.email}`} className="text-primary hover:underline">
-                            {person.email}
-                          </a>
-                        )}
-                      </TableCell>
                       <TableCell colSpan={4} className="text-sm text-muted-foreground">
                         {t("piecesCount", { pieces: person.pieces.length })}
                       </TableCell>
@@ -223,7 +211,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                     {/* One line per piece the person still has. */}
                     {person.pieces.map((piece) => (
                       <TableRow key={piece.key}>
-                        <TableCell colSpan={4} />
+                        <TableCell colSpan={3} />
                         <TableCell>{formatDateNl(piece.day)}</TableCell>
                         <TableCell>{piece.article}</TableCell>
                         <TableCell>{piece.size}</TableCell>
