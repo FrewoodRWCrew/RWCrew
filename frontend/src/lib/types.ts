@@ -1958,6 +1958,16 @@ export interface AtelierDeskContext {
     image_updated_at: string | null;
     sizes: { article_size_id: number; size_name: string; fit: AtelierFit; available: number }[];
   }[];
+  /** The team's leads (Ploegverantwoordelijken) in the festival's season. */
+  team_responsibles: AtelierDeskTeamResponsible[];
+}
+
+/** A team lead as on MasterData's Ploegverantwoordelijken screen. */
+export interface AtelierDeskTeamResponsible {
+  name: string;
+  email: string;
+  phone: string;
+  comments: string | null;
 }
 
 /** One pick-up with its pieces. */

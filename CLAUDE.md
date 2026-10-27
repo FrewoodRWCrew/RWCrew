@@ -310,6 +310,8 @@ only that shell.
   (`components/module-5/column-filters.tsx`).
   **Emails are shown masked** on the desk, Openstaand has no email column at all (`lib/mask-email.ts`, `fr***@gm***.com`, GDPR); the database,
   API and mails keep the full address. Ophalen shows a filled-in address read-only with "Wijzig" (empties the box).
+  `GET /desk/context` also returns `team_responsibles` (MasterData's Ploegverantwoordelijken of the festival's season, via
+  `module_9/team_responsible_service.list_team_responsibles`), shown behind a contact icon on Ophalen (only on click).
 - **Atelier desk mails**: after Ophalen (`POST /desk/handouts`) and after Terugbrengen the person gets the "Uitgifte" /
   "Inname" mail (only with an email; `module_5/notifications.py` `queue_desk_mail`, background task like module-3). The
   desk returns through **`POST /desk/persons/{id}/return`** (`desk_service.return_person_lines`, all ticked pieces of

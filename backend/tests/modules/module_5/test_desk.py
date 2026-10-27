@@ -12,6 +12,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.db.models.festival import Festival
+from app.db.models.team_responsible import TeamResponsible
 
 # The block-1 fixtures and helpers (module, seasons, teams, sizes, a user with every right).
 from tests.modules.module_5.test_masterdata import (  # noqa: F401  (fixtures)
@@ -88,6 +89,7 @@ def test_context_teams_and_pick_up(as_atelier: TestClient, world: dict, desk: di
     assert [article["name"] for article in context["articles"]] == ["Schort", "T-shirt"]
     assert [(size["size_name"], size["available"]) for size in context["articles"][1]["sizes"]] == [("M", 3), ("L", 0)]
     assert (context["persons_reserved"], context["served_today"]) == (2, 0)
+    assert context["team_responsibles"] == []
 
     response = _pick_up(as_atelier, world, desk, [("tshirt", "m"), ("apron", "apron_size")])
     assert response.status_code == 201
@@ -228,3 +230,22 @@ def test_pick_up_twice_a_day_and_only_some_articles(as_atelier: TestClient, worl
     assert again.status_code == 201
     persons = as_atelier.get(f"{BASE}/desk/persons", params={"q": "jan peeters"}).json()
     assert len(persons) == 1 and len(persons[0]["open_lines"]) == 2
+
+
+def test_context_shows_team_responsibles(as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    # The team's leads of the festival's season are on the desk context; other seasons' and teams' are not.
+    db_session.add_all([
+        TeamResponsible(season_id=world["season"].id, team_id=world["terras"].id, name="Piet", email="piet@example.com",
+                        phone="0470 11 22 33", comments="Ploegbaas"),
+        TeamResponsible(season_id=world["previous"].id, team_id=world["terras"].id, name="Oud", email="oud@example.com",
+                        phone="1"),
+        TeamResponsible(season_id=world["season"].id, team_id=world["vip"].id, name="Vip", email="vip@example.com",
+                        phone="2"),
+    ])
+    db_session.commit()
+    context = as_atelier.get(
+        f"{BASE}/desk/context", params={"festival_id": desk["festival"], "team_id": world["terras"].id, "day": DAY}
+    ).json()
+    assert context["team_responsibles"] == [
+        {"name": "Piet", "email": "piet@example.com", "phone": "0470 11 22 33", "comments": "Ploegbaas"}
+    ]

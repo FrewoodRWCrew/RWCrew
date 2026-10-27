@@ -55,8 +55,10 @@ from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
 from app.modules.module_5.scan_service import dismiss, waiting_scans
 from app.modules.module_5.stock_service import StockError
+from app.modules.module_9.team_responsible_service import list_team_responsibles
 from app.schemas.atelier import (
     DeskContextResponse,
+    DeskTeamResponsible,
     DeskOpenLine,
     DeskPackageArticle,
     DeskPersonResponse,
@@ -305,7 +307,8 @@ def get_desk_context(
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
 ) -> DeskContextResponse:
     """The team's package (articles + sizes with available pieces), its
-    reserved persons and how many people already picked up that day."""
+    reserved persons, how many people already picked up that day and the
+    team's leads (Ploegverantwoordelijken) in the festival's season."""
     team = db.get(Team, team_id)
     if team is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
@@ -324,12 +327,23 @@ def get_desk_context(
         )
         for article, sizes in package_for_desk(db, festival_id, team_id)
     ]
+    # The team leads of the festival's season, read from MasterData (no Atelier copy).
+    festival = db.get(Festival, festival_id)
+    responsibles = (
+        [
+            DeskTeamResponsible(name=row.name, email=row.email, phone=row.phone, comments=row.comments)
+            for row in list_team_responsibles(db, festival.season_id, team_id)
+        ]
+        if festival is not None
+        else []
+    )
     return DeskContextResponse(
         team_id=team.id,
         team_name=team.name,
         persons_reserved=reservation.persons if reservation else 0,
         served_today=served_today(db, festival_id, team_id, day),
         articles=articles,
+        team_responsibles=responsibles,
     )
 
 

@@ -533,6 +533,16 @@ class DeskPackageArticle(BaseModel):
     sizes: list[DeskSizeOption]
 
 
+class DeskTeamResponsible(BaseModel):
+    """A team lead ("ploegverantwoordelijke") of the team in the festival's
+    season, as on MasterData's Ploegverantwoordelijken screen."""
+
+    name: str
+    email: str
+    phone: str
+    comments: str | None
+
+
 class DeskContextResponse(BaseModel):
     """What the desk needs for a team at a festival on a day."""
 
@@ -542,6 +552,8 @@ class DeskContextResponse(BaseModel):
     persons_reserved: int
     served_today: int
     articles: list[DeskPackageArticle]
+    # The team's leads in the festival's season (shown behind an icon at the desk).
+    team_responsibles: list[DeskTeamResponsible] = []
 
 
 class HandoutLineInput(BaseModel):

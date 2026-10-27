@@ -17,6 +17,8 @@
 //     picked up again: an orange box lists what they still have, with
 //     "Eerst terugbrengen" to switch straight to the return for that person.
 //     "x / y persons today" turns orange above the reservation (warning only).
+//     An icon on the right (level with "Gekend: …") opens the team's leads
+//     (Ploegverantwoordelijken of the festival's season), only on click.
 //   Wristband scans (block 5): the desk picks its scanner (remembered in this
 //   browser) and polls that scanner's waiting scans every 2 seconds. On the
 //   choice screen a new scan shows as a card; choosing Ophalen fills in the
@@ -28,7 +30,7 @@
 //     yet can be cancelled ("edit" right).
 
 import { useEffect, useState } from "react";
-import { PackageMinus, PackagePlus, ScanLine, Search, TriangleAlert, X } from "lucide-react";
+import { Contact, PackageMinus, PackagePlus, ScanLine, Search, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
@@ -53,6 +55,7 @@ import type {
   AtelierDeskContext,
   AtelierDeskPerson,
   AtelierDeskTeam,
+  AtelierDeskTeamResponsible,
   AtelierFestival,
   AtelierHandout,
   AtelierScan,
@@ -63,6 +66,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -613,11 +617,17 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         </div>
       </div>
 
-      {person && (
-        <p className="text-sm text-muted-foreground">
-          {t("knownPerson", { name: person.name })}
-          {person.bracelet_number && ` · ${t("braceletShort", { number: person.bracelet_number })}`}
-        </p>
+      {/* "Gekend: …" on the left, the team's leads behind an icon on the right. */}
+      {(person || context.data) && (
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm text-muted-foreground">
+            {person && t("knownPerson", { name: person.name })}
+            {person?.bracelet_number && ` · ${t("braceletShort", { number: person.bracelet_number })}`}
+          </p>
+          {teamId !== null && context.data && (
+            <TeamResponsiblesButton teamName={context.data.team_name} responsibles={context.data.team_responsibles} />
+          )}
+        </div>
       )}
 
       {/* What the person still has: those articles can't be picked up again until returned. */}
@@ -711,6 +721,50 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         {missing && <span className="text-sm text-muted-foreground">{missing}</span>}
       </div>
     </form>
+  );
+}
+
+interface TeamResponsiblesButtonProps {
+  teamName: string;
+  responsibles: AtelierDeskTeamResponsible[];
+}
+
+/** An icon that opens the team's leads (name, phone, email, comments) — not shown until clicked. */
+function TeamResponsiblesButton({ teamName, responsibles }: TeamResponsiblesButtonProps) {
+  const t = useTranslations("atelier.desk");
+  return (
+    <Dialog>
+      <DialogTrigger
+        render={
+          <Button type="button" variant="outline" size="icon" title={t("teamResponsibles")} aria-label={t("teamResponsibles")} />
+        }
+      >
+        <Contact className="size-4" />
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("teamResponsiblesTitle", { team: teamName })}</DialogTitle>
+        </DialogHeader>
+        {responsibles.length === 0 && <p className="text-sm text-muted-foreground">{t("noTeamResponsibles")}</p>}
+        <ul className="flex flex-col gap-3">
+          {responsibles.map((responsible, index) => (
+            <li key={index} className="rounded-md border px-3 py-2 text-sm">
+              <p className="font-medium">{responsible.name}</p>
+              <p>
+                <a href={`tel:${responsible.phone}`} className="text-primary hover:underline">
+                  {responsible.phone}
+                </a>
+                {" · "}
+                <a href={`mailto:${responsible.email}`} className="text-primary hover:underline">
+                  {responsible.email}
+                </a>
+              </p>
+              {responsible.comments && <p className="text-muted-foreground">{responsible.comments}</p>}
+            </li>
+          ))}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }
 

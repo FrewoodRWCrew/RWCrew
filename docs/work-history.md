@@ -3,6 +3,25 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-27 — Atelier: team leads behind an icon on Ophalen; Openstaand without email column
+**Request:** (1) Openstaand: hide the email column; (2) Uitgifte & inname: right-aligned, level with "Gekend", the team's
+ploegverantwoordelijken as in MasterData — not shown directly, behind an icon that opens them on click.
+**Plan:**
+- Openstaand: remove the email column, its filter and the mail link (instead of the masking of the entry below).
+- Desk context returns the team leads of the festival's season (read from MasterData, no Atelier copy); Ophalen shows a
+  contact icon right of the "Gekend" line that opens a dialog with name, phone (tel:), email (mailto:) and comments.
+**Changes:**
+- Frontend: `components/module-5/open-handouts.tsx` (email column gone, `atelier.open.email` translation removed),
+  `desk-screen.tsx` (`TeamResponsiblesButton` + dialog), `lib/types.ts` (`AtelierDeskTeamResponsible`), translations
+  `atelier.desk.teamResponsibles|teamResponsiblesTitle|noTeamResponsibles` (nl + en).
+- Backend: `DeskTeamResponsible` + `DeskContextResponse.team_responsibles` (`schemas/atelier.py`), filled in
+  `desk_router.get_desk_context` via `module_9/team_responsible_service.list_team_responsibles`; test
+  `test_context_shows_team_responsibles`. No migration.
+- Docs: help manual (desk, Openstaand; nl + en), CLAUDE.md.
+**Verification:** `pytest tests/modules/module_5` (65 passed) + help tests passed; `npx tsc --noEmit` (only stale `.next`
+module-9 errors) and eslint clean. Not yet clicked through on localhost.
+**Notes:** The team leads' contact details are shown in full in the dialog (they are contact persons, not workers).
+
 ## 2026-10-27 — Atelier: masked emails on screen, wash statistics on the KPI page
 **Request:** (1) email addresses on Uitgifte & inname must not be fully visible on screen (GDPR), the database keeps them in
 full; (2) keep track of how many clothes are washed, per day / festival / year.
