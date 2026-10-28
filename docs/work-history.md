@@ -3,6 +3,37 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-28 — StockMaster: voice count of a kar on the phone (phase 1)
+**Request:** For non-tagged items, count by voice in the phone app: scan the kar's QR code, choose Ophalen or Terugbrengen,
+speak, list the counted items and save; writing them into StockMaster stock comes in a later phase. Speech recognition =
+the browser's free Web Speech API (option A of the feasibility analysis).
+**Plan:**
+- Phone screen `/m/module-4/voice-count` (first StockMaster phone screen): scan kar → Ophalen/Terugbrengen → hold-to-talk
+  microphone → lines (product + quantity, +/−, delete, orange = needs confirming) → Opslaan; hand-add fallback.
+- Pure parser (number words nl/en, product matching) in the frontend; saved counts in two new StockMaster tables, status
+  `new`; desktop list "Spraaktellingen" with detail, CSV download and cancel. No stock change yet.
+**Changes:**
+- Backend: models `StockMaster_voice_count` + `StockMaster_voice_count_line` (migration `a4e7c2d9f610`),
+  `module_4/voice_count_service.py` (only writer), `module_4/voice_count_router.py` (included in `main.py`):
+  `GET /voice-count/lookups`, `POST /voice-counts`, `GET /voice-counts?season_id=`, `GET /voice-counts/{id}`,
+  `POST /voice-counts/{id}/cancel`, `GET /voice-counts/{id}/csv`; screen `stockmaster.voicecount` (create = count on the
+  phone, view = list, edit = cancel); schemas in `schemas/stockmaster.py`; tests `tests/modules/module_4/test_voice_counts.py`.
+- Frontend phone: `module-4` added to `phone-modules.ts`; `m/(signed-in)/module-4/{layout,page}.tsx` + `voice-count/page.tsx`;
+  `components/phone/module-4/` (rights, routes, menu, `voice-count-screen.tsx`, `use-speech-recognition.ts`,
+  `voice-count-parser.ts`).
+- Frontend desktop: `/modules/module-4/voice-counts` (`components/module-4/voice-counts-list.tsx`), sidebar link under
+  Historiek, help route, landing `FALLBACK_SCREENS`; API functions + types; translations `stockMaster.phone.*`,
+  `stockMaster.voiceCounts.*`, `stockMaster.errors.voice_count_*` (nl + en).
+- Docs: help manual chapter "Spraaktellingen" (nl + en, no screenshot yet), CLAUDE.md.
+**Verification:** full backend suite 928 passed (module-4: 6 new tests); migration applied locally and `alembic check`
+reports no differences; parser tried on sample sentences with Node ("20 rollen tape en 5 kabelhaspels",
+"drieëntwintig vuilniszakken", "zwarte tape 4" → gaffer tape, "verwijder laatste"); `npx tsc --noEmit` (only stale
+`.next` module-9 errors) and eslint clean. Not yet tried on a real phone with the microphone.
+**Notes:** Phase 2 = booking a `new` count via `stock_service.py` (Ophalen ≈ Kar laden, Terugbrengen ≈ Kar terug / count
+of the kar; exact mapping still to decide), filling `document_id` and status `booked`. Possible improvements: spoken
+aliases per product, a screenshot for the help chapter. Every StockMaster user now sees the StockMaster tile on the
+phone; without the voice count right the menu says there's nothing for them.
+
 ## 2026-10-27 — Atelier: team leads behind an icon on Ophalen; Openstaand without email column
 **Request:** (1) Openstaand: hide the email column; (2) Uitgifte & inname: right-aligned, level with "Gekend", the team's
 ploegverantwoordelijken as in MasterData — not shown directly, behind an icon that opens them on click.

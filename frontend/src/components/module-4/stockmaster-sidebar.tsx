@@ -4,8 +4,9 @@
 // same visual pattern as Altsien Select's and MasterData's sidebars (see
 // docs/module-custom-roles-pattern.md): a header bar in the module's tile
 // colour, the KPI main page, then the groups Voorraad, Akties (in the
-// order of the warehouse process), Planning, Historiek, Masterdata,
-// Instellingen and Toegangsrechten — each link gated by the user's
+// order of the warehouse process), Planning, Historiek (Boekingen and the
+// phone's Spraaktellingen), Masterdata, Instellingen and Toegangsrechten —
+// each link gated by the user's
 // StockMaster role — and the "Handleiding (PDF)" link to the module's help
 // manual at the bottom. Masterdata holds Producten with its four lookup
 // lists (Type, Magazijnen, Categorieën, Limieten) indented one level deeper
@@ -107,7 +108,10 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
     {
       icon: ScrollText,
       label: t("menu.historyGroup"),
-      links: can("bookings") ? [{ href: `${BASE}/bookings`, label: t("bookings.title") }] : [],
+      links: [
+        ...(can("bookings") ? [{ href: `${BASE}/bookings`, label: t("bookings.title") }] : []),
+        ...(can("voicecount") ? [{ href: `${BASE}/voice-counts`, label: t("voiceCounts.title") }] : []),
+      ],
     },
     {
       icon: Database,

@@ -197,6 +197,9 @@ import type {
   StockMasterRequirementInput,
   StockMasterRole,
   StockMasterUserSummary,
+  StockMasterVoiceCount,
+  StockMasterVoiceCountInput,
+  StockMasterVoiceCountLookups,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -3288,6 +3291,32 @@ export function stockMasterOrderListPdfUrl(
 
 export function stockMasterCountSheetPdfUrl(scope: StockMasterCountScope, seasonId: number | null, locale: string): string {
   return `${API_BASE_URL}${STOCKMASTER_BASE}/count-sheet/pdf${stockMasterQuery({ ...scope, season_id: seasonId, locale })}`;
+}
+
+// Voice counts (the phone's "Spraaktelling" and the desktop "Spraaktellingen").
+
+export function getStockMasterVoiceCountLookups(): Promise<StockMasterVoiceCountLookups> {
+  return apiFetch<StockMasterVoiceCountLookups>(`${STOCKMASTER_BASE}/voice-count/lookups`);
+}
+
+export function createStockMasterVoiceCount(payload: StockMasterVoiceCountInput): Promise<StockMasterVoiceCount> {
+  return apiFetch<StockMasterVoiceCount>(`${STOCKMASTER_BASE}/voice-counts`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function listStockMasterVoiceCounts(seasonId: number): Promise<StockMasterVoiceCount[]> {
+  return apiFetch<StockMasterVoiceCount[]>(`${STOCKMASTER_BASE}/voice-counts${stockMasterQuery({ season_id: seasonId })}`);
+}
+
+export function cancelStockMasterVoiceCount(voiceCountId: number): Promise<StockMasterVoiceCount> {
+  return apiFetch<StockMasterVoiceCount>(`${STOCKMASTER_BASE}/voice-counts/${voiceCountId}/cancel`, { method: "POST" });
+}
+
+/** The CSV download of one voice count. */
+export function stockMasterVoiceCountCsvUrl(voiceCountId: number): string {
+  return `${API_BASE_URL}${STOCKMASTER_BASE}/voice-counts/${voiceCountId}/csv`;
 }
 
 // Custom roles with per-screen permissions (same shapes as module-3's).

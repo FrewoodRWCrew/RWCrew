@@ -82,6 +82,8 @@ from app.db.models.stockmaster_role import StockMasterRole  # noqa: F401
 from app.db.models.stockmaster_role_permission import StockMasterRolePermission  # noqa: F401
 from app.db.models.stockmaster_screen import StockMasterScreen  # noqa: F401
 from app.db.models.stockmaster_user_role import StockMasterUserRole  # noqa: F401
+from app.db.models.stockmaster_voice_count import StockMasterVoiceCount  # noqa: F401
+from app.db.models.stockmaster_voice_count_line import StockMasterVoiceCountLine  # noqa: F401
 from app.db.models.tag_header_data import TagHeaderData  # noqa: F401
 from app.db.models.tag_line_data import TagLineData  # noqa: F401
 from app.db.models.tagscan_role import TagscanRole  # noqa: F401

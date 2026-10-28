@@ -2465,7 +2465,10 @@
       "tagscan_already_booked": "Deze gescande lijnen werden intussen al ingeboekt of geannuleerd. Laad de scan opnieuw.",
       "manual_request_not_found": "Deze manuele aanvraag bestaat niet meer.",
       "kar_has_deliveries": "{p1} kreeg al een nalevering op deze rit. Maak die eerst ongedaan.",
-      "trip_other_season": "Kar {p1} vertrok in een ander seizoen. Kies dat seizoen voor een nalevering."
+      "trip_other_season": "Kar {p1} vertrok in een ander seizoen. Kies dat seizoen voor een nalevering.",
+      "voice_count_not_found": "Deze spraaktelling bestaat niet (meer).",
+      "voice_count_not_new": "Deze spraaktelling is niet meer nieuw en kan niet geannuleerd worden.",
+      "voice_count_empty": "Een spraaktelling heeft minstens één lijn nodig."
     },
     "booking": {
       "quantityTooLow": "Vul een heel aantal vanaf 1 in.",
@@ -3061,6 +3064,79 @@
         "importColumnKey": "Naam",
         "exportButton": "Limieten downloaden"
       }
+    },
+    "phone": {
+      "noRights": "Je hebt geen recht om spraaktellingen te maken.",
+      "menu": {
+        "actionsGroup": "Akties",
+        "noScreens": "Er zijn geen StockMaster-schermen voor jou op de telefoon.",
+        "voiceCountTitle": "Spraaktelling",
+        "voiceCountDescription": "Scan een kar en zeg wat erin zit"
+      },
+      "voiceCount": {
+        "noSeason": "Kies eerst een jaar op het startscherm.",
+        "scanTitle": "Scan de QR-code op de kar",
+        "scanHint": "Houd de code in het vierkant.",
+        "karNotFound": "Kar {kar} is niet gekend.",
+        "otherKar": "Andere kar",
+        "chooseDirection": "Wat wil je tellen?",
+        "directions": {
+          "pickup": "Ophalen",
+          "return": "Terugbrengen"
+        },
+        "holdToTalk": "Houd ingedrukt om te spreken",
+        "holdToTalkHint": "Houd de microfoon ingedrukt en zeg bv. \"20 rollen tape en 5 kabelhaspels\". Laat los als je klaar bent. \"Verwijder laatste\" wist de laatste lijn.",
+        "listening": "Ik luister…",
+        "noSpeechSupport": "Deze browser kan geen spraak herkennen (gebruik Chrome op Android of Safari op iPhone). Je kan lijnen wel met de hand toevoegen.",
+        "speechErrors": {
+          "denied": "Geen toegang tot de microfoon. Sta de microfoon toe in de instellingen van je browser.",
+          "network": "Spraakherkenning heeft internet nodig. Controleer je verbinding.",
+          "failed": "Spraakherkenning lukte niet. Probeer opnieuw."
+        },
+        "notUnderstood": "Niet begrepen: \"{text}\"",
+        "noLines": "Nog niets geteld.",
+        "product": "Product",
+        "chooseProduct": "Kies een product…",
+        "confirmLine": "Lijn bevestigen",
+        "quantity": "Aantal",
+        "less": "Eén minder",
+        "more": "Eén meer",
+        "removeLine": "Lijn verwijderen",
+        "addByHand": "Met de hand toevoegen",
+        "add": "Toevoegen",
+        "checkOrangeLines": "{count, plural, one {Bevestig de oranje lijn} other {Bevestig de # oranje lijnen}} (kies het product en tik op ✓).",
+        "save": "Opslaan ({count, plural, one {# stuk} other {# stuks}})",
+        "saving": "Bezig met opslaan…",
+        "saved": "Telling van kar {kar} opgeslagen."
+      }
+    },
+    "voiceCounts": {
+      "title": "Spraaktellingen",
+      "description": "Karren die met de telefoon geteld werden (Spraaktelling). Ze veranderen de voorraad (nog) niet.",
+      "date": "Datum",
+      "direction": "Ophalen / Terugbrengen",
+      "directions": {
+        "pickup": "Ophalen",
+        "return": "Terugbrengen"
+      },
+      "lines": "Lijnen",
+      "pieces": "Stuks",
+      "countedBy": "Geteld door",
+      "status": "Status",
+      "statuses": {
+        "new": "Nieuw",
+        "booked": "Geboekt",
+        "cancelled": "Geannuleerd"
+      },
+      "cancelledBy": "Geannuleerd door {name} op {date}",
+      "empty": "Nog geen spraaktellingen in dit seizoen.",
+      "addedByHand": "met de hand toegevoegd",
+      "csv": "Download als CSV",
+      "cancel": "Telling annuleren",
+      "keep": "Behouden",
+      "cancelTitle": "Spraaktelling annuleren?",
+      "cancelDescription": "De telling van kar {kar} blijft zichtbaar als \"Geannuleerd\" en kan later niet meer geboekt worden.",
+      "cancelled": "Telling van kar {kar} geannuleerd."
     }
   },
   "karTracker": {

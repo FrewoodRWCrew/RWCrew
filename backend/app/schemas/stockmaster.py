@@ -515,3 +515,69 @@ class ProductStatsResponse(BaseModel):
     products_by_type: list[ProductStatsBreakdownItem]
     products_by_category: list[ProductStatsBreakdownItem]
     products_by_warehouse: list[ProductStatsBreakdownItem]
+
+
+# --- Voice counts (phone "Spraaktelling") ---------------------------------
+
+
+class VoiceCountKarOption(BaseModel):
+    """A kar the phone can recognise from its QR code."""
+
+    id: int
+    kar_nummer: str
+
+
+class VoiceCountLookupsResponse(BaseModel):
+    """What the phone's voice count needs: the kars (QR scan) and the
+    products the spoken words are matched against.
+    """
+
+    kars: list[VoiceCountKarOption]
+    products: list[NamedItem]
+
+
+class VoiceCountLineRequest(BaseModel):
+    """One recognised (or hand-added) product with its counted quantity."""
+
+    product_id: int
+    quantity: int = Field(ge=1)
+    spoken_text: str | None = Field(default=None, max_length=500)
+
+
+class VoiceCountCreateRequest(BaseModel):
+    """What the phone sends on Save."""
+
+    season_id: int
+    kar_id: int
+    direction: Literal["pickup", "return"]
+    lines: list[VoiceCountLineRequest] = Field(min_length=1)
+
+
+class VoiceCountLineResponse(BaseModel):
+    """One saved line of a voice count."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int | None
+    product_name: str
+    quantity: int
+    spoken_text: str | None
+
+
+class VoiceCountResponse(BaseModel):
+    """One voice count with its lines (list and detail)."""
+
+    id: int
+    season_id: int
+    kar_id: int | None
+    kar_nummer: str
+    direction: str
+    status: str
+    document_id: int | None
+    created_by_name: str | None
+    created_at: datetime
+    cancelled_by_name: str | None
+    cancelled_at: datetime | None
+    total_quantity: int
+    lines: list[VoiceCountLineResponse]

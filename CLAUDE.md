@@ -88,7 +88,7 @@ the history of the work on the project.
 
 The warehouse stock of MasterData products (whole pieces only), as **free stock** on the product's fixed
 bin (`MasterData_product.warehouse_id` + `warehouse_location`, no bin table) and **loaded in KarTracker's
-kars** while they stand in the warehouse. Web only (no `/m` screens). Full design: `docs/stockmaster-design.md`.
+kars** while they stand in the warehouse. Web only, except the phone's voice count (below). Full design: `docs/stockmaster-design.md`.
 Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `module_4/screens.py`).
 
 - **Product master data lives here** (moved from MasterData on 2026-10-24): sidebar group "Masterdata" =
@@ -140,6 +140,14 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   `entitlement_trace` (values + path of diagram nodes) per kar line and manual request; the frontend's
   `availableForDelivery` only caps it by the physical stock, and `availability-flow-dialog.tsx` draws the trace
   (icon next to each row's value). A new diagram node needs a path key in both files.
+- **Voice count ("Spraaktelling", phase 1)**: phone screen `/m/module-4/voice-count` (the only StockMaster phone screen):
+  scan a kar's QR code → Ophalen/Terugbrengen → hold the microphone (browser's free Web Speech API, `nl-BE`/`en-GB`,
+  `components/phone/module-4/use-speech-recognition.ts`) → `voice-count-parser.ts` turns sentences into quantity +
+  product (number words nl/en, fuzzy name match; unsure = orange line to confirm) → Opslaan. Stored only through
+  `module_4/voice_count_service.py` in `StockMaster_voice_count` + `_line` (status `new`/`booked`/`cancelled`,
+  `document_id` for the later booking); **doesn't change stock yet** (phase 2). Screen `stockmaster.voicecount`:
+  create = count on the phone (its `GET /voice-count/lookups` brings kars + products, no other rights needed), view =
+  desktop "Spraaktellingen" (`/modules/module-4/voice-counts`, CSV download), edit = cancel.
 - **Minimum stock** = MasterData product `min_stock` (consumables only) → orange banner in the module layout.
 - Seasons: the module's own dropdown (`?season=`); bookings in a closed season need "edit" on the
   `stockmaster.closedseason` switch-screen. MasterData/KarTracker refuse deleting a product with stock history
@@ -460,8 +468,8 @@ accent colour). Every module with its own screens has one: TagScan (module-1), K
 
 The phone version of the app is a Progressive Web App served by the same Next.js frontend: `src/app/manifest.ts`
 makes the site installable ("Add to Home Screen"), and the installed app opens `/m`, a separate section that
-shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map, Karcode Simulator) and
-Interventies (Akties list/create/edit, KPI overzicht). No desktop sidebar/topbar, no delete, no PDFs.
+shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map, Karcode Simulator),
+Interventies (Akties list/create/edit, KPI overzicht) and StockMaster (Spraaktelling; the microphone needs HTTPS too). No desktop sidebar/topbar, no delete, no PDFs.
 This is the only phone app: there is no native (App Store / Play Store) app, no separate phone API, no Bearer
 tokens and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed
 until October 2026 and was removed entirely; only old login-history rows still mention it, see below.)

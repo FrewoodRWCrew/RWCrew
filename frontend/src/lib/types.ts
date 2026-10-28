@@ -2611,3 +2611,64 @@ export interface StockMasterDashboard {
   consumption_per_team: { name: string; quantity: number }[];
   top_consumed_products: { name: string; quantity: number }[];
 }
+
+// --- StockMaster (module-4): voice counts (the phone's "Spraaktelling") ---
+
+/** Why a kar was counted: goods picked up (Ophalen) or brought back (Terugbrengen). */
+export type StockMasterVoiceCountDirection = "pickup" | "return";
+
+/** new = saved, waiting; booked = booked into stock (later phase); cancelled = thrown away. */
+export type StockMasterVoiceCountStatus = "new" | "booked" | "cancelled";
+
+/** A kar the phone recognises from its QR code. */
+export interface StockMasterVoiceCountKar {
+  id: number;
+  kar_nummer: string;
+}
+
+/** The kars and products the phone's voice count needs. */
+export interface StockMasterVoiceCountLookups {
+  kars: StockMasterVoiceCountKar[];
+  products: StockMasterNamedItem[];
+}
+
+/** One recognised (or hand-added) product as sent on Save. */
+export interface StockMasterVoiceCountLineInput {
+  product_id: number;
+  quantity: number;
+  spoken_text: string | null;
+}
+
+/** What the phone sends on Save. */
+export interface StockMasterVoiceCountInput {
+  season_id: number;
+  kar_id: number;
+  direction: StockMasterVoiceCountDirection;
+  lines: StockMasterVoiceCountLineInput[];
+}
+
+/** One saved line of a voice count. */
+export interface StockMasterVoiceCountLine {
+  id: number;
+  product_id: number | null;
+  product_name: string;
+  quantity: number;
+  spoken_text: string | null;
+}
+
+/** One saved voice count with its lines. */
+export interface StockMasterVoiceCount {
+  id: number;
+  season_id: number;
+  kar_id: number | null;
+  kar_nummer: string;
+  direction: StockMasterVoiceCountDirection;
+  status: StockMasterVoiceCountStatus;
+  document_id: number | null;
+  created_by_name: string | null;
+  created_at: string;
+  cancelled_by_name: string | null;
+  cancelled_at: string | null;
+  total_quantity: number;
+  lines: StockMasterVoiceCountLine[];
+}

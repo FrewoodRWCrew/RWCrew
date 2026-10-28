@@ -15,6 +15,7 @@ const FALLBACK_SCREENS: [string, string][] = [
   ["stockmaster.requirements", "/modules/module-4/requirements"],
   ["stockmaster.orderneeds", "/modules/module-4/order-needs"],
   ["stockmaster.bookings", "/modules/module-4/bookings"],
+  ["stockmaster.voicecount", "/modules/module-4/voice-counts"],
   ["stockmaster.products", "/modules/module-4/masterdata/products"],
   ["stockmaster.product-types", "/modules/module-4/masterdata/products/types"],
   ["stockmaster.warehouses", "/modules/module-4/masterdata/products/warehouses"],

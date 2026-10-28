@@ -208,6 +208,19 @@ All bookings, newest first, with who made them and when.
 
 > Undo isn't possible once the goods have been booked further (e.g. the cart has already left). Undo that later booking first.
 
+## [voice-counts | stockmaster.voicecount] Voice counts
+Count kars with your voice on the phone (the app on your home screen, see Mobile App), for products without an RFID tag.
+
+1. On the phone, open **StockMaster > Voice count** and scan the QR code on the kar.
+2. Choose **Pick up** or **Bring back**.
+3. Hold the microphone and say what is there, e.g. "20 rolls of tape and 5 cable reels". Let go: the products and quantities appear in the list. "Delete last" removes the last line.
+4. An **orange** line wasn't recognised for sure: choose the right product and tap the tick. Change quantities with the minus and plus buttons, or add a line by hand.
+5. Tap **Save**.
+
+This screen shows every saved count of the season. Click the date for the products and what was said, download a count as **CSV**, or **cancel** a count that was wrong.
+
+> Voice counts don't change the stock (yet): booking them follows later. Speech recognition works in Chrome on Android and Safari on iPhone, with internet and the microphone allowed.
+
 ## [products | stockmaster.products] Products
 All products with their picture, type, warehouse, category and properties.
 

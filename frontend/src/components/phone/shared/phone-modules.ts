@@ -3,7 +3,7 @@
 // screens then live in app/[locale]/m/(signed-in)/module-N/ and
 // components/phone/module-N/ (see CLAUDE.md, "Phone section (PWA)").
 
-export const PHONE_MODULE_KEYS: readonly string[] = ["module-2", "module-3"];
+export const PHONE_MODULE_KEYS: readonly string[] = ["module-2", "module-3", "module-4"];
 
 /** The phone home page, with the module tiles. */
 export const PHONE_HOME_HREF = "/m";

@@ -2465,7 +2465,10 @@
       "tagscan_already_booked": "These scanned lines were already booked in or cancelled in the meantime. Load the scan again.",
       "manual_request_not_found": "This manual request no longer exists.",
       "kar_has_deliveries": "{p1} already got a follow-up delivery on this trip. Undo that first.",
-      "trip_other_season": "Cart {p1} left in another season. Choose that season for a follow-up delivery."
+      "trip_other_season": "Cart {p1} left in another season. Choose that season for a follow-up delivery.",
+      "voice_count_not_found": "This voice count does not exist (any more).",
+      "voice_count_not_new": "This voice count is no longer new and cannot be cancelled.",
+      "voice_count_empty": "A voice count needs at least one line."
     },
     "booking": {
       "quantityTooLow": "Enter a whole quantity from 1.",
@@ -3061,6 +3064,79 @@
         "importColumnKey": "Name",
         "exportButton": "Download limits"
       }
+    },
+    "phone": {
+      "noRights": "You are not allowed to make voice counts.",
+      "menu": {
+        "actionsGroup": "Actions",
+        "noScreens": "There are no StockMaster screens for you on the phone.",
+        "voiceCountTitle": "Voice count",
+        "voiceCountDescription": "Scan a kar and say what is in it"
+      },
+      "voiceCount": {
+        "noSeason": "Choose a year on the home screen first.",
+        "scanTitle": "Scan the QR code on the kar",
+        "scanHint": "Keep the code inside the square.",
+        "karNotFound": "Kar {kar} is not known.",
+        "otherKar": "Other kar",
+        "chooseDirection": "What are you counting?",
+        "directions": {
+          "pickup": "Pick up",
+          "return": "Bring back"
+        },
+        "holdToTalk": "Hold to speak",
+        "holdToTalkHint": "Hold the microphone and say e.g. \"20 rolls of tape and 5 cable reels\". Let go when you are done. \"Delete last\" removes the last line.",
+        "listening": "Listening…",
+        "noSpeechSupport": "This browser cannot recognise speech (use Chrome on Android or Safari on iPhone). You can still add lines by hand.",
+        "speechErrors": {
+          "denied": "No access to the microphone. Allow the microphone in your browser settings.",
+          "network": "Speech recognition needs internet. Check your connection.",
+          "failed": "Speech recognition failed. Please try again."
+        },
+        "notUnderstood": "Not understood: \"{text}\"",
+        "noLines": "Nothing counted yet.",
+        "product": "Product",
+        "chooseProduct": "Choose a product…",
+        "confirmLine": "Confirm line",
+        "quantity": "Quantity",
+        "less": "One less",
+        "more": "One more",
+        "removeLine": "Remove line",
+        "addByHand": "Add by hand",
+        "add": "Add",
+        "checkOrangeLines": "{count, plural, one {Confirm the orange line} other {Confirm the # orange lines}} (choose the product and tap ✓).",
+        "save": "Save ({count, plural, one {# piece} other {# pieces}})",
+        "saving": "Saving…",
+        "saved": "Count of kar {kar} saved."
+      }
+    },
+    "voiceCounts": {
+      "title": "Voice counts",
+      "description": "Kars counted with the phone (Voice count). They do not change the stock (yet).",
+      "date": "Date",
+      "direction": "Pick up / Bring back",
+      "directions": {
+        "pickup": "Pick up",
+        "return": "Bring back"
+      },
+      "lines": "Lines",
+      "pieces": "Pieces",
+      "countedBy": "Counted by",
+      "status": "Status",
+      "statuses": {
+        "new": "New",
+        "booked": "Booked",
+        "cancelled": "Cancelled"
+      },
+      "cancelledBy": "Cancelled by {name} on {date}",
+      "empty": "No voice counts in this season yet.",
+      "addedByHand": "added by hand",
+      "csv": "Download as CSV",
+      "cancel": "Cancel count",
+      "keep": "Keep",
+      "cancelTitle": "Cancel voice count?",
+      "cancelDescription": "The count of kar {kar} stays visible as \"Cancelled\" and can no longer be booked later.",
+      "cancelled": "Count of kar {kar} cancelled."
     }
   },
   "karTracker": {
