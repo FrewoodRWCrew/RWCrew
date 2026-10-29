@@ -3084,14 +3084,14 @@
           "pickup": "Ophalen",
           "return": "Terugbrengen"
         },
-        "holdToTalk": "Houd ingedrukt om te spreken",
-        "holdToTalkHint": "Houd de microfoon ingedrukt en zeg bv. \"20 rollen tape en 5 kabelhaspels\". Laat los als je klaar bent. \"Verwijder laatste\" wist de laatste lijn.",
         "listening": "Ik luister…",
         "noSpeechSupport": "Deze browser kan geen spraak herkennen (gebruik Chrome op Android of Safari op iPhone). Je kan lijnen wel met de hand toevoegen.",
         "speechErrors": {
           "denied": "Geen toegang tot de microfoon. Sta de microfoon toe in de instellingen van je browser.",
           "network": "Spraakherkenning heeft internet nodig. Controleer je verbinding.",
-          "failed": "Spraakherkenning lukte niet. Probeer opnieuw."
+          "failed": "Spraakherkenning lukte niet. Probeer opnieuw.",
+          "unavailable": "Spraakherkenning werkt hier niet. Gebruik het vak \"Dicteren of typen\" met de microfoon van je toetsenbord.",
+          "dictationOff": "Zet Dicteren aan (Instellingen > Algemeen > Toetsenbord) of gebruik het vak \"Dicteren of typen\"."
         },
         "notUnderstood": "Niet begrepen: \"{text}\"",
         "noLines": "Nog niets geteld.",
@@ -3107,7 +3107,14 @@
         "checkOrangeLines": "{count, plural, one {Bevestig de oranje lijn} other {Bevestig de # oranje lijnen}} (kies het product en tik op ✓).",
         "save": "Opslaan ({count, plural, one {# stuk} other {# stuks}})",
         "saving": "Bezig met opslaan…",
-        "saved": "Telling van kar {kar} opgeslagen."
+        "saved": "Telling van kar {kar} opgeslagen.",
+        "tapToTalk": "Tik om te spreken",
+        "tapToStop": "Tik om te stoppen",
+        "tapToTalkHint": "Tik op de microfoon en zeg bv. \"20 rollen tape en 5 kabelhaspels\". Tik opnieuw als je klaar bent. \"Verwijder laatste\" wist de laatste lijn.",
+        "dictateLabel": "Dicteren of typen",
+        "dictateHint": "Werkt de knop niet (bv. in de app op je iPhone)? Tik in het vak, gebruik de microfoon van je toetsenbord en tik op Verwerk.",
+        "dictatePlaceholder": "20 rollen tape en 5 kabelhaspels",
+        "process": "Verwerk"
       }
     },
     "voiceCounts": {

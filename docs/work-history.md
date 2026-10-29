@@ -3,6 +3,25 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-10-29 — Voice count: works on iPhone (home-screen app)
+**Request:** Testing the voice count in the test app: on an iPhone, opened from the home-screen icon, the microphone button
+gave no text and no lines (no error either).
+**Plan:**
+- Speech hook: keep the last interim text when no final text comes (iOS), one sentence per turn on iOS (its continuous
+  mode loses results), report a start that dies without audio as "unavailable", `service-not-allowed` = Dictation off.
+- Screen: tap to start/stop instead of hold-to-talk; a "Dicteren of typen" box that uses the keyboard's own dictation
+  (always works on iPhone), shown first in an iPhone home-screen app; `?debug=1` event log.
+**Changes:**
+- Frontend: `components/phone/module-4/use-speech-recognition.ts` (`isIos`, interim fallback, `onstart`/`onaudiostart`,
+  failures `unavailable`/`dictationOff`, `onDebug`), `voice-count-screen.tsx` (tap button, dictation form, debug log);
+  translations `stockMaster.phone.voiceCount.tapToTalk|tapToStop|tapToTalkHint|dictateLabel|dictateHint|
+  dictatePlaceholder|process|speechErrors.unavailable|dictationOff` (nl + en; `holdToTalk*` removed).
+- Docs: help chapter "Spraaktellingen" (nl + en), CLAUDE.md. No backend change, no migration.
+**Verification:** `npx tsc --noEmit` (only stale `.next` module-9 errors) and eslint clean. Not yet tried on the iPhone:
+after deploying to test, check the home-screen app (with `?debug=1`), Safari and Android Chrome.
+**Notes:** Cause found by reasoning about known WebKit limitations, not yet confirmed on the device; the debug log is
+there to confirm it. The parked product-alias/expected-products plan (better matching) is still open.
+
 ## 2026-10-28 — StockMaster: voice count of a kar on the phone (phase 1)
 **Request:** For non-tagged items, count by voice in the phone app: scan the kar's QR code, choose Ophalen or Terugbrengen,
 speak, list the counted items and save; writing them into StockMaster stock comes in a later phase. Speech recognition =

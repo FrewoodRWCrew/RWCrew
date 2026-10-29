@@ -3084,14 +3084,14 @@
           "pickup": "Pick up",
           "return": "Bring back"
         },
-        "holdToTalk": "Hold to speak",
-        "holdToTalkHint": "Hold the microphone and say e.g. \"20 rolls of tape and 5 cable reels\". Let go when you are done. \"Delete last\" removes the last line.",
         "listening": "Listening…",
         "noSpeechSupport": "This browser cannot recognise speech (use Chrome on Android or Safari on iPhone). You can still add lines by hand.",
         "speechErrors": {
           "denied": "No access to the microphone. Allow the microphone in your browser settings.",
           "network": "Speech recognition needs internet. Check your connection.",
-          "failed": "Speech recognition failed. Please try again."
+          "failed": "Speech recognition failed. Please try again.",
+          "unavailable": "Speech recognition doesn't work here. Use the \"Dictate or type\" box with your keyboard's microphone.",
+          "dictationOff": "Turn on Dictation (Settings > General > Keyboard) or use the \"Dictate or type\" box."
         },
         "notUnderstood": "Not understood: \"{text}\"",
         "noLines": "Nothing counted yet.",
@@ -3107,7 +3107,14 @@
         "checkOrangeLines": "{count, plural, one {Confirm the orange line} other {Confirm the # orange lines}} (choose the product and tap ✓).",
         "save": "Save ({count, plural, one {# piece} other {# pieces}})",
         "saving": "Saving…",
-        "saved": "Count of kar {kar} saved."
+        "saved": "Count of kar {kar} saved.",
+        "tapToTalk": "Tap to speak",
+        "tapToStop": "Tap to stop",
+        "tapToTalkHint": "Tap the microphone and say e.g. \"20 rolls of tape and 5 cable reels\". Tap again when you are done. \"Delete last\" removes the last line.",
+        "dictateLabel": "Dictate or type",
+        "dictateHint": "Button not working (e.g. in the app on your iPhone)? Tap the box, use your keyboard's microphone and tap Process.",
+        "dictatePlaceholder": "20 rolls of tape and 5 cable reels",
+        "process": "Process"
       }
     },
     "voiceCounts": {

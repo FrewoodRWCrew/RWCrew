@@ -141,8 +141,11 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   `availableForDelivery` only caps it by the physical stock, and `availability-flow-dialog.tsx` draws the trace
   (icon next to each row's value). A new diagram node needs a path key in both files.
 - **Voice count ("Spraaktelling", phase 1)**: phone screen `/m/module-4/voice-count` (the only StockMaster phone screen):
-  scan a kar's QR code → Ophalen/Terugbrengen → hold the microphone (browser's free Web Speech API, `nl-BE`/`en-GB`,
-  `components/phone/module-4/use-speech-recognition.ts`) → `voice-count-parser.ts` turns sentences into quantity +
+  scan a kar's QR code → Ophalen/Terugbrengen → tap the microphone (browser's free Web Speech API, `nl-BE`/`en-GB`,
+  `components/phone/module-4/use-speech-recognition.ts`) **or** dictate into the "Dicteren of typen" box with the
+  keyboard's own microphone — on an iPhone home-screen app the Web Speech API often stays silent, so that box comes
+  first there (iOS: one sentence per turn, last interim text counts; `?debug=1` shows the recognition's events) →
+  `voice-count-parser.ts` turns sentences into quantity +
   product (number words nl/en, fuzzy name match; unsure = orange line to confirm) → Opslaan. Stored only through
   `module_4/voice_count_service.py` in `StockMaster_voice_count` + `_line` (status `new`/`booked`/`cancelled`,
   `document_id` for the later booking); **doesn't change stock yet** (phase 2). Screen `stockmaster.voicecount`:

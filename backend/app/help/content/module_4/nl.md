@@ -213,13 +213,14 @@ Karren tellen met je stem, op de telefoon (de app op je beginscherm, zie Mobile 
 
 1. Open op de telefoon **StockMaster > Spraaktelling** en scan de QR-code op de kar.
 2. Kies **Ophalen** of **Terugbrengen**.
-3. Houd de microfoon ingedrukt en zeg wat er is, bv. "20 rollen tape en 5 kabelhaspels". Laat los: de producten en aantallen verschijnen in de lijst. "Verwijder laatste" wist de laatste lijn.
+3. Tik op de microfoon en zeg wat er is, bv. "20 rollen tape en 5 kabelhaspels". Tik opnieuw (of zwijg even): de producten en aantallen verschijnen in de lijst. "Verwijder laatste" wist de laatste lijn.
+   Werkt de knop niet (vaak in de app op een iPhone)? Tik in het vak **Dicteren of typen**, spreek in met de microfoon van je toetsenbord en tik op **Verwerk**.
 4. Een **oranje** lijn werd niet zeker herkend: kies het juiste product en tik op het vinkje. Pas aantallen aan met de knoppen min en plus, of voeg een lijn met de hand toe.
 5. Tik op **Opslaan**.
 
 Op dit scherm zie je alle opgeslagen tellingen van het seizoen. Klik op de datum voor de producten en wat er gezegd werd, download een telling als **CSV**, of **annuleer** een telling die fout was.
 
-> Spraaktellingen veranderen de voorraad (nog) niet: het boeken ervan volgt later. Spraakherkenning werkt in Chrome op Android en Safari op iPhone, met internet en de microfoon toegestaan.
+> Spraaktellingen veranderen de voorraad (nog) niet: het boeken ervan volgt later. De microfoonknop werkt in Chrome op Android en Safari op iPhone, met internet, de microfoon toegestaan en (iPhone) Dicteren aan. Het vak Dicteren of typen werkt altijd.
 
 ## [products | stockmaster.products] Producten
 Alle producten met hun foto, type, magazijn, categorie en eigenschappen.

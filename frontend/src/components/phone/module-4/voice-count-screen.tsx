@@ -3,17 +3,22 @@
 // The phone's voice count ("Spraaktelling"), in three steps:
 // 1. scan the QR code on a kar (only the kar number; unknown → scan again);
 // 2. choose Ophalen or Terugbrengen;
-// 3. hold the microphone and say what is there ("twintig rollen tape en 5
-//    kabelhaspels"): each sentence becomes lines of product + quantity
-//    (voice-count-parser.ts). Lines can be corrected (+/−, other product,
-//    delete); an orange line wasn't recognised for sure and needs a tap.
+// 3. say what is there ("twintig rollen tape en 5 kabelhaspels"), either with
+//    the microphone button (tap to start, tap to stop; the browser's speech
+//    recognition) or by dictating into the text box with the keyboard's own
+//    microphone (always works on iPhone, also in the home-screen app, where
+//    the browser's recognition often stays silent). Each sentence becomes
+//    lines of product + quantity (voice-count-parser.ts). Lines can be
+//    corrected (+/−, other product, delete); an orange line wasn't
+//    recognised for sure and needs a tap.
 // "Opslaan" stores the count in StockMaster (it doesn't change stock yet)
-// and starts again at the scan. Without speech recognition in the browser
-// lines can still be added by hand.
+// and starts again at the scan. Lines can also be added by hand.
+// With ?debug=1 a log of the speech recognition's events shows under the button.
 
-import { useMemo, useRef, useState } from "react";
-import { ArrowDownToLine, ArrowUpFromLine, Check, Mic, Minus, Plus, Trash2 } from "lucide-react";
+import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { ArrowDownToLine, ArrowUpFromLine, Check, Mic, MicOff, Minus, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { createStockMasterVoiceCount } from "@/lib/api";
 import type {
@@ -29,7 +34,7 @@ import { QrScanner } from "@/components/module-2/qr-scanner";
 import { stockErrorMessage } from "@/components/module-4/stockmaster-common";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 import { matchProduct, parsePhrase, type MatchConfidence } from "@/components/phone/module-4/voice-count-parser";
-import { useSpeechRecognition, type SpeechFailure } from "@/components/phone/module-4/use-speech-recognition";
+import { isIos, useSpeechRecognition, type SpeechFailure } from "@/components/phone/module-4/use-speech-recognition";
 import { PhoneNotice } from "@/components/phone/shared/phone-notice";
 import { PhoneSelect } from "@/components/phone/shared/phone-select";
 
@@ -39,6 +44,19 @@ const RESCAN_DELAY_MS = 1500;
 const NO_PRODUCT_VALUE = "";
 // Speech recognition language per app language.
 const SPEECH_LANG: Record<string, string> = { nl: "nl-BE", en: "en-GB" };
+// How many lines the ?debug=1 log keeps.
+const DEBUG_LINES = 30;
+
+/** True in an iPhone's home-screen app, where the browser's speech recognition
+ *  is unreliable: the keyboard-dictation box then comes first. */
+function isIosHomeScreenApp(): boolean {
+  if (typeof window === "undefined" || !isIos()) return false;
+  const standalone = (navigator as Navigator & { standalone?: boolean }).standalone === true;
+  return standalone || window.matchMedia("(display-mode: standalone)").matches;
+}
+
+// The display mode doesn't change while the page is open: nothing to subscribe to.
+const subscribeNever = () => () => {};
 
 /** One line on the screen, before saving. */
 interface CountLine {
@@ -62,6 +80,8 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   const tStock = useTranslations("stockMaster");
   const locale = useLocale();
   const { selectedSeasonId } = useSelectedSeason();
+  const debugMode = useSearchParams().get("debug") === "1";
+  const dictationFirst = useSyncExternalStore(subscribeNever, isIosHomeScreenApp, () => false);
 
   const [kar, setKar] = useState<StockMasterVoiceCountKar | null>(null);
   const [direction, setDirection] = useState<StockMasterVoiceCountDirection | null>(null);
@@ -71,6 +91,10 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   // The hand-add row (also the fallback without speech recognition).
   const [manualProductId, setManualProductId] = useState(NO_PRODUCT_VALUE);
   const [manualQuantity, setManualQuantity] = useState("1");
+  // The keyboard-dictation box (iPhone: the keyboard's own microphone).
+  const [dictatedText, setDictatedText] = useState("");
+  // The speech recognition's events, shown with ?debug=1.
+  const [debugLog, setDebugLog] = useState<string[]>([]);
   const nextKeyRef = useRef(1);
 
   const productNames = useMemo(
@@ -131,11 +155,28 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
     toast.error(t(`speechErrors.${failure}`));
   }
 
+  function handleDebug(line: string) {
+    const time = new Date().toLocaleTimeString("nl-BE", { hour12: false });
+    setDebugLog((current) => [`${time} ${line}`, ...current].slice(0, DEBUG_LINES));
+  }
+
   const speech = useSpeechRecognition({
     lang: SPEECH_LANG[locale] ?? "nl-BE",
-    onFinal: handleSentence,
+    onFinal: (text) => {
+      if (debugMode) handleDebug(`text: ${text}`);
+      handleSentence(text);
+    },
     onFailure: handleSpeechFailure,
+    onDebug: debugMode ? handleDebug : undefined,
   });
+
+  /** "Verwerk" (or Enter) in the dictation box: same handling as a spoken sentence. */
+  function processDictatedText() {
+    const text = dictatedText.trim();
+    if (!text) return;
+    handleSentence(text);
+    setDictatedText("");
+  }
 
   function handleScanned(text: string) {
     setIsScanning(false);
@@ -245,33 +286,61 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
         changeLabel={t("otherKar")}
       />
 
-      {speech.supported ? (
-        <div className="flex flex-col items-center gap-2">
-          {/* Hold to talk: pressing starts listening, releasing ends the sentence. */}
-          <button
-            type="button"
-            aria-label={t("holdToTalk")}
-            className={cn(
-              "flex size-32 touch-none items-center justify-center rounded-full shadow-md select-none",
-              speech.listening ? "scale-105 bg-red-600 text-white" : "bg-primary text-primary-foreground",
-            )}
-            onPointerDown={(event) => {
-              event.preventDefault();
-              event.currentTarget.setPointerCapture(event.pointerId);
-              speech.start();
-            }}
-            onPointerUp={speech.stop}
-            onPointerCancel={speech.stop}
-            onContextMenu={(event) => event.preventDefault()}
-          >
-            <Mic className={cn("size-14", speech.listening && "animate-pulse")} />
-          </button>
-          <p className="min-h-10 text-center text-sm text-muted-foreground">
-            {speech.listening ? speech.interimText || t("listening") : t("holdToTalkHint")}
-          </p>
-        </div>
-      ) : (
-        <PhoneNotice>{t("noSpeechSupport")}</PhoneNotice>
+      {/* The two ways to speak; in an iPhone home-screen app the keyboard's dictation comes first. */}
+      <div className={cn("flex gap-4", dictationFirst ? "flex-col-reverse" : "flex-col")}>
+        {speech.supported ? (
+          <div className="flex flex-col items-center gap-2">
+            {/* Tap to start listening, tap again to stop (the browser also stops after a pause). */}
+            <button
+              type="button"
+              aria-label={speech.listening ? t("tapToStop") : t("tapToTalk")}
+              className={cn(
+                "flex size-28 items-center justify-center rounded-full shadow-md select-none",
+                speech.listening ? "bg-red-600 text-white" : "bg-primary text-primary-foreground",
+              )}
+              onClick={speech.listening ? speech.stop : speech.start}
+            >
+              {speech.listening ? <MicOff className="size-12 animate-pulse" /> : <Mic className="size-12" />}
+            </button>
+            <p className="min-h-10 text-center text-sm text-muted-foreground">
+              {speech.listening ? speech.interimText || t("listening") : t("tapToTalkHint")}
+            </p>
+          </div>
+        ) : (
+          <PhoneNotice>{t("noSpeechSupport")}</PhoneNotice>
+        )}
+
+        {/* Dictate with the keyboard's microphone (or type), then "Verwerk". */}
+        <form
+          className="flex flex-col gap-2 rounded-xl border p-3"
+          onSubmit={(event) => {
+            event.preventDefault();
+            processDictatedText();
+          }}
+        >
+          <Label htmlFor="voice-count-dictation">{t("dictateLabel")}</Label>
+          <p className="text-xs text-muted-foreground">{t("dictateHint")}</p>
+          <div className="flex gap-2">
+            <Input
+              id="voice-count-dictation"
+              enterKeyHint="done"
+              autoComplete="off"
+              className="h-11 flex-1 text-base"
+              placeholder={t("dictatePlaceholder")}
+              value={dictatedText}
+              onChange={(event) => setDictatedText(event.target.value)}
+            />
+            <Button type="submit" className="h-11" disabled={!dictatedText.trim()}>
+              {t("process")}
+            </Button>
+          </div>
+        </form>
+      </div>
+
+      {debugMode && (
+        <pre className="max-h-48 overflow-auto rounded-md bg-muted p-2 text-[11px] leading-tight whitespace-pre-wrap">
+          {[`supported=${speech.supported} ios=${isIos()} homeScreen=${dictationFirst}`, ...debugLog].join("\n")}
+        </pre>
       )}
 
       {/* The recognised lines. */}
