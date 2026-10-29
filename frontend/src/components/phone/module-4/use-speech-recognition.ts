@@ -121,8 +121,20 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
   /** Start listening (first tap). */
   const start = useCallback(() => {
     const Recognition = getRecognitionClass();
-    if (!Recognition || recognitionRef.current) return;
+    if (!Recognition) return;
     const debug = (line: string) => onDebugRef.current?.(line);
+
+    // A previous turn that never reported its end (iOS sometimes doesn't):
+    // throw it away instead of silently ignoring every tap from now on.
+    const stale = recognitionRef.current;
+    if (stale) {
+      debug("previous turn still open: aborted");
+      stale.onresult = null;
+      stale.onerror = null;
+      stale.onend = null;
+      stale.abort();
+      recognitionRef.current = null;
+    }
 
     const recognition = new Recognition();
     recognition.lang = lang;
@@ -165,6 +177,8 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
       else onFailureRef.current("failed");
     };
     recognition.onend = () => {
+      // A turn that was replaced by a newer one no longer counts.
+      if (recognitionRef.current !== recognition) return;
       const elapsed = Date.now() - startedAtRef.current;
       debug(`end after ${elapsed} ms`);
       recognitionRef.current = null;

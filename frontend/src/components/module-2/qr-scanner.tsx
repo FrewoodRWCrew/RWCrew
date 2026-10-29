@@ -75,6 +75,11 @@ export function QrScanner({ active, onScanned, className }: QrScannerProps) {
     return () => {
       stopped = true;
       controls?.stop();
+      // Release the camera for sure: on an iPhone a capture session left open
+      // keeps the phone's speech recognition (voice count) from hearing anything.
+      const stream = video.srcObject;
+      if (stream instanceof MediaStream) stream.getTracks().forEach((track) => track.stop());
+      video.srcObject = null;
       // Forget any camera error, so the next session tries again afresh.
       setCameraError(null);
     };
