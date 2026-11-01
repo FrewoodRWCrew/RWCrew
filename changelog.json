@@ -475,5 +475,18 @@
     "title": "Kar Map: icons instead of colour dots",
     "description": "Each layer of the Kar Map has its own icon on the switches and pins, for people who cannot tell the colours apart.",
     "commits": []
+  },
+  {
+    "id": 38,
+    "issues": [
+      "PR_0019"
+    ],
+    "date": "2026-11-01",
+    "type": "update",
+    "status": "in_progress",
+    "module": "General",
+    "title": "Search in every dropdown",
+    "description": "Every dropdown list on the website and the phone app gets a search box.",
+    "commits": []
   }
 ]
