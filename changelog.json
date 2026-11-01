@@ -546,10 +546,10 @@
     ],
     "date": "2026-11-01",
     "type": "feature",
-    "status": "done",
+    "status": "in_progress",
     "module": "Scans",
     "title": "TagScan becomes Scans, with wristbands as a shared part",
-    "description": "TagScan is renamed to Scans with separate RFID and wristband parts, wristband messages are kept as JSON files and a table, and scans only show at a counter when the team has reservations.",
+    "description": "TagScan is renamed to Scans with separate RFID and wristband parts, wristband messages are kept as JSON files and a table, scans only show at a counter when the team has reservations, and the webhook token is generated in the settings with an explanation PDF for the wristband company.",
     "commits": []
   },
   {
