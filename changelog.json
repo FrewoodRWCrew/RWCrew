@@ -470,7 +470,7 @@
     ],
     "date": "2026-11-01",
     "type": "update",
-    "status": "in_progress",
+    "status": "done",
     "module": "KarTracker",
     "title": "Kar Map: icons instead of colour dots",
     "description": "Each layer of the Kar Map has its own icon on the switches and pins, for people who cannot tell the colours apart.",
