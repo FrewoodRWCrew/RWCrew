@@ -462,5 +462,18 @@
     "title": "Wijzigingen screen for the super admin",
     "description": "Read-only list of all updates, corrections and new functionalities, the same on localhost, test and production.",
     "commits": []
+  },
+  {
+    "id": 37,
+    "issues": [
+      "PR_0018"
+    ],
+    "date": "2026-11-01",
+    "type": "update",
+    "status": "in_progress",
+    "module": "KarTracker",
+    "title": "Kar Map: icons instead of colour dots",
+    "description": "Each layer of the Kar Map has its own icon on the switches and pins, for people who cannot tell the colours apart.",
+    "commits": []
   }
 ]
