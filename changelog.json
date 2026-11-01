@@ -488,5 +488,44 @@
     "title": "Search in every dropdown",
     "description": "Every dropdown list on the website and the phone app gets a search box.",
     "commits": []
+  },
+  {
+    "id": 39,
+    "issues": [
+      "PR_0026"
+    ],
+    "date": "2026-11-01",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Return status per piece",
+    "description": "The desk can note per returned piece why it is a problem, from a list kept in Masterdata, with an overview of those pieces.",
+    "commits": []
+  },
+  {
+    "id": 40,
+    "issues": [
+      "PR_0027"
+    ],
+    "date": "2026-11-01",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Read the wristband QR code with the PC camera",
+    "description": "A camera icon next to the wristband number reads its QR code when the wristband scanners are not working.",
+    "commits": []
+  },
+  {
+    "id": 41,
+    "issues": [
+      "PR_0028"
+    ],
+    "date": "2026-11-01",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Inname from the Openstaand screen",
+    "description": "A return can be booked per person directly from the Openstaand list.",
+    "commits": []
   }
 ]
