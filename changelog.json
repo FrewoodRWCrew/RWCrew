@@ -1,0 +1,466 @@
+[
+  {
+    "id": 1,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "General",
+    "title": "Work-history log introduced",
+    "description": "Every accepted plan is now logged in docs/work-history.md.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 2,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Leveringsvolgorde screen",
+    "description": "Put the delivery locations in tour order with drag and drop; the order is saved in terreinpositie.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 3,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Leveringsvolgorde: saved vs new number and Kaart",
+    "description": "Shows the saved number next to the new one, plus a ground-plan map with numbered locations and the route.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 4,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Leveringsvolgorde: description, name and zone on the lines",
+    "description": "Lines and map tooltip show description, name and zone instead of name, zone and distributiepunt.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 5,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Leveringsvolgorde: tour column on the left",
+    "description": "The tour moved to the left, the locations not in the tour to the right.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 6,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Planningsanalyses group and Initiële leverplanning",
+    "description": "New menu group with a first screen: the karren to deliver per afleverlocatie, in tour order.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 7,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Initiële leverplanning: grouped by distributiepunt",
+    "description": "Grouped by distributiepunt first, then afleverlocatie in tour order, then karren.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 8,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Initiële leverplanning: selection and PDF with route map",
+    "description": "Checkboxes with Shift range and a landscape PDF for the driver, optionally with a route map.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 9,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Leverroute map: zoom and legend",
+    "description": "The PDF map zooms in on the printed points; the legend shows description and zone.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 10,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Initiële leverplanning: column filters",
+    "description": "Filter row under the headings: a Status dropdown and text filters per column.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 11,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Verplaatsingen tussen festivals",
+    "description": "Lists the karren to move between two festivals, grouped per pick-up location, with a PDF and optional map.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 12,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Speciale levertoeren",
+    "description": "New tour master data, a Levertoeren field on MasterData's team fiche and a planning screen with PDF.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 13,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "fix",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Speciale levertoeren-planning: stops and working route map",
+    "description": "The PDF map was nearly empty; the tour now has its own numbered stops, without distributiepunten.",
+    "commits": [
+      "019b854fe9d10083271a17a2b8b22fc372369b3b"
+    ]
+  },
+  {
+    "id": 14,
+    "issues": [],
+    "date": "2026-10-24",
+    "type": "update",
+    "status": "done",
+    "module": "StockMaster",
+    "title": "Product master data moved from MasterData to StockMaster",
+    "description": "Producten, Type, Magazijnen, Categorieën and Limieten moved to StockMaster's Masterdata menu, with new rights.",
+    "commits": [
+      "06a089353bd504ffdb489bf805b7e98fe9cb6a97"
+    ]
+  },
+  {
+    "id": 15,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Karcode Simulator and Instellingen",
+    "description": "Calculator-style screen for a kar's lock code, plus an admin-editable karcode formula.",
+    "commits": [
+      "34c058cc76dd8a26540a579c0eec803d4741593a"
+    ]
+  },
+  {
+    "id": 16,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Karcode Simulator in the phone app",
+    "description": "The simulator on the phone, for people with the right; the kar number can be scanned from its QR code or typed.",
+    "commits": [
+      "34c058cc76dd8a26540a579c0eec803d4741593a"
+    ]
+  },
+  {
+    "id": 17,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Karcode Simulator: scan uses the last 3 digits",
+    "description": "Only the last 3 digits of a scanned QR value are used.",
+    "commits": [
+      "eb11edd7365ae10092e66d3e6e18869a2e34c69e"
+    ]
+  },
+  {
+    "id": 18,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Block 1: Masterdata",
+    "description": "Article catalogue, sizes with a fit, XLSX upload and download, KPI counts.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 19,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Block 2: Reservations and Voorbereiden",
+    "description": "Persons per team and festival, size estimates, totals per day and a picklist PDF.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 20,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "update",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Ploegpakketten merged into Reservaties",
+    "description": "The package is now per festival and entered on one page; the Ploegpakketten screen is gone.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 21,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "KPI: teams forgotten at a festival",
+    "description": "Flags a team with persons at one festival of the season and nothing at another.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 22,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Block 3: Stock",
+    "description": "Receipt, washing, write-off, count, undo, Te bestellen and a minimum-stock warning.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 23,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Block 4: counter desk",
+    "description": "Hand-out and return at the counter, starting with the Ophalen / Terugbrengen choice.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 24,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "update",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Desk: first and family name, bracelet number",
+    "description": "The person is identified by first and family name; email is no longer unique; bracelet number added.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 25,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "fix",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Desk: optional articles, clear still-has box, return warning",
+    "description": "Uitgeven stayed disabled and a second pick-up was refused unclearly; articles are optional and the reason is shown.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 26,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Block 5: wristband scans via webhook and Test-scan",
+    "description": "Public webhook for the wristband company, scanners per desk, and a screen to simulate scans.",
+    "commits": [
+      "ed6ae3f4556fa5be920059cf2aa0b36670d9dbf4"
+    ]
+  },
+  {
+    "id": 27,
+    "issues": [],
+    "date": "2026-10-25",
+    "type": "update",
+    "status": "done",
+    "module": "General",
+    "title": "Documentation update",
+    "description": "Handbooks, module help manuals and technical setup refreshed, with new screenshots.",
+    "commits": [
+      "853f1d25f3aab160c005c19d9ceeddb5df4ef1e7"
+    ]
+  },
+  {
+    "id": 28,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "fix",
+    "status": "done",
+    "module": "Atelier",
+    "title": "XLSX import of an export from another environment; festival box width",
+    "description": "Articles exported on localhost gave 'id not found' on test; rows now fall back to the natural key.",
+    "commits": [
+      "853f1d25f3aab160c005c19d9ceeddb5df4ef1e7"
+    ]
+  },
+  {
+    "id": 29,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "fix",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Desk: message for an article without sizes",
+    "description": "An article without sizes now shows a clear message at the desk.",
+    "commits": [
+      "853f1d25f3aab160c005c19d9ceeddb5df4ef1e7"
+    ]
+  },
+  {
+    "id": 30,
+    "issues": [],
+    "date": "2026-10-26",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Desk mails, Openstaand grouped, Reservaties progress",
+    "description": "Mails after Uitgifte and Inname with editable texts, bigger desk buttons, column filters and festivals filled in per team.",
+    "commits": [
+      "853f1d25f3aab160c005c19d9ceeddb5df4ef1e7"
+    ]
+  },
+  {
+    "id": 31,
+    "issues": [],
+    "date": "2026-10-27",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Masked emails and wash statistics",
+    "description": "Email addresses are masked on screen (GDPR); washed clothes per day, festival and year on the KPI page.",
+    "commits": [
+      "a005eec3680a3c5192f54fe11aebad465c3f188a"
+    ]
+  },
+  {
+    "id": 32,
+    "issues": [],
+    "date": "2026-10-27",
+    "type": "update",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Team leads behind an icon on Ophalen; no email column on Openstaand",
+    "description": "The team's ploegverantwoordelijken open from a contact icon; Openstaand has no email column any more.",
+    "commits": [
+      "9ca967e7de1728c78df25a2599112acf9a4e49fe"
+    ]
+  },
+  {
+    "id": 33,
+    "issues": [],
+    "date": "2026-10-28",
+    "type": "feature",
+    "status": "done",
+    "module": "StockMaster",
+    "title": "Voice count of a kar on the phone (phase 1)",
+    "description": "Scan a kar, choose Ophalen or Terugbrengen and count by voice; saved counts don't change stock yet.",
+    "commits": [
+      "4807cbb66bc19a22baee87ff1efa489951207f86"
+    ]
+  },
+  {
+    "id": 34,
+    "issues": [],
+    "date": "2026-10-29",
+    "type": "fix",
+    "status": "done",
+    "module": "StockMaster",
+    "title": "Voice count on iPhone home-screen app",
+    "description": "The microphone gave no text on iPhone; added tap to start/stop and a dictation box.",
+    "commits": [
+      "bb81f09f339d58e924f3b819af0e94bc8cd30945"
+    ]
+  },
+  {
+    "id": 35,
+    "issues": [],
+    "date": "2026-10-29",
+    "type": "update",
+    "status": "open",
+    "module": "StockMaster",
+    "title": "Voice count: spoken product aliases and expected products",
+    "description": "Parked plan for better product matching in the voice count.",
+    "commits": []
+  },
+  {
+    "id": 36,
+    "issues": [],
+    "date": "2026-11-01",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "General",
+    "title": "Wijzigingen screen for the super admin",
+    "description": "Read-only list of all updates, corrections and new functionalities, the same on localhost, test and production.",
+    "commits": []
+  }
+]
