@@ -10,7 +10,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import Boolean, DateTime, Integer, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 from sqlalchemy.sql import func
 
@@ -36,6 +36,12 @@ class TagscanSettings(Base):
     # 0 skipped, 0 errors"), shown on the Settings screen.
     last_auto_scan_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_auto_scan_summary: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # The wristband company's webhook token: only its hash, plus when it was
+    # generated and last used (see app/modules/wristband/webhook_token.py).
+    wristband_token_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    wristband_token_generated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    wristband_token_last_used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False

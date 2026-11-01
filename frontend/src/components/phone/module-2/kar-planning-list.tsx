@@ -15,11 +15,11 @@ import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { karTrackerPhoneRoutes } from "@/components/phone/module-2/kartracker-phone-routes";
 import { PhoneNotice } from "@/components/phone/shared/phone-notice";
-import { PhoneSelect } from "@/components/phone/shared/phone-select";
 
-// The season dropdown's "no season" entry (a <select> value is always a string).
+// The season dropdown's "no season" entry (a dropdown value is always a string).
 const NO_SEASON_VALUE = "";
 
 interface KarPlanningListProps {
@@ -103,18 +103,16 @@ export function KarPlanningList({ seasons, initialSeasonId, initialReport, canVi
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
         <Label htmlFor="phone-planning-season">{t("seasonLabel")}</Label>
-        <PhoneSelect
+        <SearchableSelect
           id="phone-planning-season"
-          value={seasonId ?? NO_SEASON_VALUE}
-          onChange={(event) => handleSeasonChange(event.target.value)}
-        >
-          <option value={NO_SEASON_VALUE}>{t("noSeason")}</option>
-          {seasons.map((season) => (
-            <option key={season.id} value={season.id}>
-              {season.name}
-            </option>
-          ))}
-        </PhoneSelect>
+          size="phone"
+          value={String(seasonId ?? NO_SEASON_VALUE)}
+          onValueChange={(value) => handleSeasonChange(value ?? NO_SEASON_VALUE)}
+          options={[
+            { value: NO_SEASON_VALUE, label: t("noSeason") },
+            ...seasons.map((season) => ({ value: String(season.id), label: season.name })),
+          ]}
+        />
       </div>
       <Input
         value={search}

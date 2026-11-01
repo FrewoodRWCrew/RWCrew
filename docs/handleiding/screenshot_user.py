@@ -121,7 +121,7 @@ def exporteer_persoonsgegevens() -> None:
             ('"Atelier_person"', "first_name || ' ' || last_name"),
             ('"Atelier_person"', "first_name"),
             ('"Atelier_person"', "last_name"),
-            ('"Atelier_scan"', "first_name || ' ' || last_name"),
+            ('"Wristband_scan"', "first_name || ' ' || last_name"),
             ('"Atelier_handout"', "created_by_name"),
             ('"Atelier_stock_document"', "created_by_name"),
             ('"Atelier_reservation"', "updated_by_name"),
@@ -132,7 +132,7 @@ def exporteer_persoonsgegevens() -> None:
             ('"InterventionRequests_mailing_recipient"', "email"),
             ('"Landing_login_history"', "email_attempted"),
             ('"Atelier_person"', "email"),
-            ('"Atelier_scan"', "email"),
+            ('"Wristband_scan"', "email"),
         ],
         "telefoons": [
             ('"Landing_users"', "phone"),

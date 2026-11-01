@@ -1,6 +1,7 @@
 # Atelier's (module-5) master data — the sidebar's "Masterdata" group:
 # Artikelen (the clothing catalogue, each article with the sizes it comes
-# in and an optional picture), Maten (the size list: name + fit) and the
+# in and an optional picture), Maten (the size list: name + fit),
+# Retourstatussen (what can be wrong with a returned piece) and the
 # bulk XLSX import/export ("Data Upload/Download", which also holds the
 # Reservaties and Pakketlijnen tiles). What each team gets is part of its
 # reservation per festival (reservation_router.py). Its own
@@ -20,7 +21,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_article_size import AtelierArticleSize
+from app.db.models.atelier_handout_line import AtelierHandoutLine
 from app.db.models.atelier_reservation_line import AtelierReservationLine
+from app.db.models.atelier_return_status import AtelierReturnStatus
 from app.db.models.atelier_size import FITS, AtelierSize
 from app.db.models.atelier_stock_movement import AtelierStockMovement
 from app.db.models.user import User
@@ -37,6 +40,8 @@ from app.schemas.atelier import (
     ArticleSizeResponse,
     AtelierImportResponse,
     MasterdataStatsResponse,
+    ReturnStatusRequest,
+    ReturnStatusResponse,
     SizeRequest,
     SizeResponse,
 )
@@ -48,6 +53,7 @@ ARTICLES_SCREEN = "atelier.articles"
 SIZES_SCREEN = "atelier.sizes"
 RESERVATIONS_SCREEN = "atelier.reservations"
 DATA_UPLOAD_SCREEN = "atelier.dataupload"
+RETURN_STATUSES_SCREEN = "atelier.returnstatuses"
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -159,6 +165,81 @@ def delete_size(
             detail=f"This size is used by {used_by} article(s) and can't be deleted (deactivate it instead)",
         )
     db.delete(size)
+    db.commit()
+
+
+# --- Return statuses (Retourstatussen) ------------------------------------------
+
+
+@router.get("/return-statuses", response_model=list[ReturnStatusResponse])
+def list_return_statuses(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_STATUSES_SCREEN, "view")),
+) -> list[AtelierReturnStatus]:
+    """Every return status, active and inactive, by name."""
+    return list(db.scalars(select(AtelierReturnStatus).order_by(func.lower(AtelierReturnStatus.name))).all())
+
+
+def _check_return_status_unique(db: Session, name: str, status_id: int | None = None) -> None:
+    """A name may exist once, ignoring case."""
+    clash = db.scalar(select(AtelierReturnStatus).where(func.lower(AtelierReturnStatus.name) == name.lower()))
+    if clash is not None and clash.id != status_id:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="This return status already exists")
+
+
+@router.post("/return-statuses", response_model=ReturnStatusResponse, status_code=status.HTTP_201_CREATED)
+def create_return_status(
+    payload: ReturnStatusRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_STATUSES_SCREEN, "create")),
+) -> AtelierReturnStatus:
+    """Add a return status."""
+    name = payload.name.strip()
+    _check_return_status_unique(db, name)
+    return_status = AtelierReturnStatus(name=name, active=payload.active)
+    db.add(return_status)
+    db.commit()
+    db.refresh(return_status)
+    return return_status
+
+
+@router.put("/return-statuses/{status_id}", response_model=ReturnStatusResponse)
+def update_return_status(
+    status_id: int,
+    payload: ReturnStatusRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_STATUSES_SCREEN, "edit")),
+) -> AtelierReturnStatus:
+    """Change a return status (rename, (de)activate)."""
+    return_status = db.get(AtelierReturnStatus, status_id)
+    if return_status is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return status not found")
+    name = payload.name.strip()
+    _check_return_status_unique(db, name, status_id)
+    return_status.name = name
+    return_status.active = payload.active
+    db.commit()
+    db.refresh(return_status)
+    return return_status
+
+
+@router.delete("/return-statuses/{status_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_return_status(
+    status_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_STATUSES_SCREEN, "delete")),
+) -> None:
+    """Delete a return status no piece has; a used one can only be deactivated."""
+    return_status = db.get(AtelierReturnStatus, status_id)
+    if return_status is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Return status not found")
+    used_by = db.scalar(select(func.count(AtelierHandoutLine.id)).where(AtelierHandoutLine.return_status_id == status_id))
+    if used_by:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"This return status is used by {used_by} piece(s) and can't be deleted (deactivate it instead)",
+        )
+    db.delete(return_status)
     db.commit()
 
 

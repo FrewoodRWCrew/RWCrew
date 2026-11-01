@@ -15,10 +15,10 @@ import type { InterventionRequest, InterventionRequestInput, InterventionRequest
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { defaultStatusId, formatDateTime, toDateTimeLocalValue } from "@/components/module-3/request-dates";
 import { interventionRequestsPhoneRoutes } from "@/components/phone/module-3/intervention-requests-phone-routes";
-import { PhoneSelect } from "@/components/phone/shared/phone-select";
 
 // The "Ploeg" choice for a team that isn't in the list (typed by name).
 const OTHER_TEAM = "other";
@@ -150,15 +150,18 @@ export function RequestForm({ request, lookups, canSave }: RequestFormProps) {
       {/* Fieldset switches every input to read-only in one go. */}
       <fieldset disabled={readOnly || isSaving} className="flex flex-col gap-4">
         <Field label={t("associationNameLabel")} htmlFor="phone-request-team" error={showErrors && teamMissing ? tPhone("teamRequired") : null}>
-          <PhoneSelect id="phone-request-team" value={values.teamChoice} onChange={(event) => update("teamChoice", event.target.value)}>
-            <option value="">{tPhone("choose")}</option>
-            {lookups.teams.map((team) => (
-              <option key={team.id} value={team.id}>
-                {team.name}
-              </option>
-            ))}
-            <option value={OTHER_TEAM}>{t("otherTeamOption")}</option>
-          </PhoneSelect>
+          <SearchableSelect
+            id="phone-request-team"
+            size="phone"
+            value={values.teamChoice}
+            onValueChange={(value) => update("teamChoice", value ?? "")}
+            disabled={readOnly || isSaving}
+            options={[
+              { value: "", label: tPhone("choose") },
+              ...lookups.teams.map((team) => ({ value: String(team.id), label: team.name })),
+              { value: OTHER_TEAM, label: t("otherTeamOption") },
+            ]}
+          />
           {values.teamChoice === OTHER_TEAM && (
             <Input
               value={values.teamName}
@@ -223,13 +226,14 @@ export function RequestForm({ request, lookups, canSave }: RequestFormProps) {
         </Field>
 
         <Field label={t("statusLabel")} htmlFor="phone-request-status">
-          <PhoneSelect id="phone-request-status" value={values.statusId} onChange={(event) => update("statusId", event.target.value)}>
-            {lookups.statuses.map((status) => (
-              <option key={status.id} value={status.id}>
-                {status.name}
-              </option>
-            ))}
-          </PhoneSelect>
+          <SearchableSelect
+            id="phone-request-status"
+            size="phone"
+            value={values.statusId}
+            onValueChange={(value) => update("statusId", value ?? "")}
+            disabled={readOnly || isSaving}
+            options={lookups.statuses.map((status) => ({ value: String(status.id), label: status.name }))}
+          />
         </Field>
 
         <Field label={t("handledByLabel")} htmlFor="phone-request-handled-by">
@@ -237,14 +241,17 @@ export function RequestForm({ request, lookups, canSave }: RequestFormProps) {
         </Field>
 
         <Field label={t("teamCartLabel")} htmlFor="phone-request-team-cart">
-          <PhoneSelect id="phone-request-team-cart" value={values.teamCartUserId} onChange={(event) => update("teamCartUserId", event.target.value)}>
-            <option value="">{t("noneOption")}</option>
-            {lookups.teamkar_members.map((member) => (
-              <option key={member.id} value={member.id}>
-                {member.display_name}
-              </option>
-            ))}
-          </PhoneSelect>
+          <SearchableSelect
+            id="phone-request-team-cart"
+            size="phone"
+            value={values.teamCartUserId}
+            onValueChange={(value) => update("teamCartUserId", value ?? "")}
+            disabled={readOnly || isSaving}
+            options={[
+              { value: "", label: t("noneOption") },
+              ...lookups.teamkar_members.map((member) => ({ value: String(member.id), label: member.display_name })),
+            ]}
+          />
         </Field>
       </fieldset>
 

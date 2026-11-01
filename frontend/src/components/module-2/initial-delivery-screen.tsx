@@ -39,7 +39,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // The number of columns (checkbox included), so a header row can span all of them.
@@ -346,21 +346,19 @@ export function InitialDeliveryScreen() {
                     </TableHead>
                   ))}
                   <TableHead className="sticky top-10 z-20 bg-background">
-                    <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}>
-                      <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full min-w-36 font-normal">
-                        <SelectValue>
-                          {(value: string | null) => (value && value !== ALL_STATUSES ? value : t("allStatuses"))}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={ALL_STATUSES}>{t("allStatuses")}</SelectItem>
-                        {statusOptions.map((status) => (
-                          <SelectItem key={status} value={status}>
-                            {status}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <SearchableSelect
+                      value={statusFilter}
+                      onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}
+                      aria-label={t("filterStatus")}
+                      className="h-8 w-full min-w-36 font-normal"
+                      renderValue={(value: string | null) =>
+                        (value && value !== ALL_STATUSES ? value : t("allStatuses"))
+                      }
+                      options={[
+                        { value: ALL_STATUSES, label: t("allStatuses") },
+                        ...statusOptions.map((status) => ({ value: status, label: status })),
+                      ]}
+                    />
                   </TableHead>
                   {(
                     [

@@ -118,9 +118,9 @@ aan, zie dan <a class="ref" href="#tab-storingen"></a>.</p>
   <figcaption>Interventie Aanvragen · Mailinglijst: wie een mail krijgt bij elke nieuwe aanvraag.</figcaption>
 </figure>
 
-<h2 id="s-beheer-scanner">Een TagScan-scanner toevoegen</h2>
+<h2 id="s-beheer-scanner">Een Scans-scanner toevoegen</h2>
 <ol class="stappen">
-  <li>TagScan &gt; <em>Scanners</em>: de scanner toevoegen en een <strong>API-sleutel genereren</strong>. De sleutel wordt maar één keer
+  <li>Scans &gt; <em>Scanners</em>: de scanner toevoegen en een <strong>API-sleutel genereren</strong>. De sleutel wordt maar één keer
   getoond; kopieer hem meteen.</li>
   <li>Zet de sleutel in het configuratiebestand van de watcher op de Raspberry Pi (<code>/etc/tagscan-watcher/prod.env</code> voor
   productie of <code>dev.env</code> voor test; zie <code>scripts/pi-watcher/README.md</code>) en herstart de watcher.</li>
@@ -129,23 +129,23 @@ aan, zie dan <a class="ref" href="#tab-storingen"></a>.</p>
 <p>Een sleutel werkt alleen op de omgeving waar hij gemaakt is. Kwijt of gelekt? Genereer een nieuwe; de oude werkt dan niet meer.
 De volledige installatie van een Pi staat in <code>docs/tagscan-raspi-setup-guide.pdf</code>.</p>
 
-<p><strong>Automatisch scannen en acties verwerken.</strong> Op het scherm <em>Instellingen</em> van TagScan zet je het
+<p><strong>Automatisch scannen en acties verwerken.</strong> Op het scherm <em>Instellingen</em> van Scans zet je het
 automatisch scannen aan of uit en kies je het interval (standaard 60 seconden). Staat er een oranje balk boven de
-TagScan-schermen, dan wachten er regels met een actie op verwerking: open de balk, kies per bestand het product en klik
+Scans-schermen, dan wachten er regels met een actie op verwerking: open de balk, kies per bestand het product en klik
 op verwerken, of annuleer een foute regel met een reden.</p>
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-beheer-scanners">
   <img src="afbeeldingen/08-tagscan-scanners.png" alt="">
-  <figcaption>TagScan · Scanners: de geregistreerde scanners; via het sleutelpictogram maak je een nieuwe API-sleutel aan.</figcaption>
+  <figcaption>Scans · Scanners: de geregistreerde scanners; via het sleutelpictogram maak je een nieuwe API-sleutel aan.</figcaption>
 </figure>
 
 <h2 id="s-beheer-polsband">De polsbandscans van Atelier koppelen</h2>
-<p>Het polsbandbedrijf stuurt elke scan aan de Atelier-balie naar <code>https://&lt;adres&gt;/api/public/atelier/wristband-scan</code>.
+<p>Het polsbandbedrijf stuurt elke scan aan de Atelier-balie naar <code>https://&lt;adres&gt;/api/public/wristband-scan</code>.
 Zo zet je de koppeling op (de echte koppeling kan pas vanaf mei 2027 getest worden):</p>
 <ol class="stappen">
-  <li>Spreek met het bedrijf de <strong>token</strong> af die in elk bericht staat, en zet die als <code>ATELIER_WEBHOOK_TOKEN</code> in de
-  <code>.env</code> van de omgeving (test en productie elk hun eigen). De variabele staat al in <code>docker-compose.prod.yml</code>; herstart daarna de backend.</li>
-  <li>Geef het bedrijf het webhookadres; je vindt het op Atelier &gt; <em>Instellingen</em>, samen met de melding of de token ingesteld is.</li>
+  <li>Maak op Scans &gt; <em>Instellingen</em> met <strong>Genereer token</strong> de token aan die in elk bericht moet staan (test en productie
+  elk hun eigen). Hij wordt maar één keer getoond; bewaard wordt enkel een hash in <code>Tagscan_settings</code>.</li>
+  <li>Geef het bedrijf het webhookadres en de PDF <em>Uitleg koppeling polsbandbedrijf</em> van dat scherm, en bezorg de token apart en beveiligd.</li>
   <li>Na de eerste scan verschijnt elke scanner vanzelf in de lijst <em>Scanners</em>; geef hem een naam (bv. "Balie 1"). Aan elke
   balie kies je bovenaan welke scanner daar staat.</li>
   <li>Kijk bij <em>Ontvangen berichten</em> na wat er echt binnenkomt: geweigerde berichten (verkeerde token, geen JSON) en berichten
@@ -193,7 +193,7 @@ Wie meer nodig heeft en toegang kreeg, kan met pgAdmin en de read-only gebruiker
   <tr><td>Eén gebruiker kan niet inloggen</td><td>Login History voor zijn e-mailadres</td><td>Fout wachtwoord → resetten. Account verwijderd of inactief.</td></tr>
   <tr><td>"Geen toegang" in een module</td><td>Manage Access: vinkje? Access Rights: rol?</td><td>Moduletoegang of rol ontbreekt, of de rol heeft geen "zien" op dat scherm.</td></tr>
   <tr><td>Geen mails bij nieuwe aanvragen</td><td>Mailinglijst: actieve adressen? Spam? Backend-log ("skip" of fout van Resend)?</td><td><code>RESEND_API_KEY</code>/<code>MAIL_FROM</code> leeg of fout; domein niet geverifieerd bij Resend; instelling niet in <code>docker-compose.prod.yml</code>.</td></tr>
-  <tr><td>TagScan-bestanden komen niet binnen</td><td>Draait de watcher op de Pi? Netwerk? Juiste sleutel en omgeving?</td><td>Sleutel van de andere omgeving; Nginx 413 bij grote bestanden; watcher gestopt.</td></tr>
+  <tr><td>Scans-bestanden komen niet binnen</td><td>Draait de watcher op de Pi? Netwerk? Juiste sleutel en omgeving?</td><td>Sleutel van de andere omgeving; Nginx 413 bij grote bestanden; watcher gestopt.</td></tr>
   <tr><td>Camera of GPS werkt niet op de telefoon</td><td>Adres begint met <code>https://</code>? Toestemming in de browser?</td><td>Alleen HTTPS geeft toegang; toestemming voor de site opnieuw toestaan in de browserinstellingen.</td></tr>
   <tr><td>Foutmelding met "500"</td><td>Backend-log op het tijdstip van de fout</td><td>Fout in de code: noteer wat je deed, maak een GitHub Issue met de logregels, en verwittig een ontwikkelaar.</td></tr>
 </table>
@@ -257,7 +257,7 @@ volgen. Los het op via een commit, of vraag hulp.
   <dt>Merge</dt><dd>Wijzigingen van de ene branch samenvoegen in een andere.</dd>
   <dt>Migratie</dt><dd>Een genummerd script dat de structuur van de database aanpast. Zie <a class="ref" href="#s-database-basis"></a>.</dd>
   <dt>Model (SQLAlchemy)</dt><dd>Een Python-klasse die een databasetabel beschrijft.</dd>
-  <dt>Module</dt><dd>Een afgerond deel van RWCrew met een eigen tegel, menu en rechten (TagScan, KarTracker, …).</dd>
+  <dt>Module</dt><dd>Een afgerond deel van RWCrew met een eigen tegel, menu en rechten (Scans, KarTracker, …).</dd>
   <dt>Moduletoegang</dt><dd>Het ja/nee-recht om een module te openen, toegekend door de superbeheerder.</dd>
   <dt>Namespace (vertalingen)</dt><dd>Een groep schermteksten in <code>nl.json</code>/<code>en.json</code>, meestal één per module.</dd>
   <dt>Next.js</dt><dd>Raamwerk rond React, gebruikt voor de frontend.</dd>
@@ -311,7 +311,7 @@ volgen. Los het op via een commit, of vraag hulp.
 verschijnt als rij in de rechtenmatrix van zijn module. Het label tussen haakjes is wat in de matrix staat.</p>
 
 <table class="compact">
-  <caption>TagScan (module 1)</caption>
+  <caption>Scans (module 1)</caption>
   <tr><th style="width:42%">Schermsleutel</th><th>Label en functie</th></tr>
   <tr><td><code>tagscan.dashboard</code></td><td>(CSV Source Files) ontvangen CSV-bestanden, knop Scan</td></tr>
   <tr><td><code>tagscan.tag-headerdata</code></td><td>(Tag Headerdata) één rij per ingelezen bestand, PDF</td></tr>

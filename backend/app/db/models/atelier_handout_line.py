@@ -28,3 +28,8 @@ class AtelierHandoutLine(Base):
     return_document_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Atelier_stock_document.id"), nullable=True
     )
+
+    # What was wrong with it when it came back (NULL = no remark).
+    return_status_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("Atelier_return_status.id"), nullable=True
+    )

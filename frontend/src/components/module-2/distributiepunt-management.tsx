@@ -38,7 +38,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface DistributiepuntManagementProps {
@@ -265,29 +265,21 @@ function DistributiepuntFormDialog({ distributiepunt, trigger, onSaved, altsienK
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="distributiepunt-altsien-kernlid">{t("altsienKernlidLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.altsien_kernlid_id ? String(form.altsien_kernlid_id) : NO_KERNLID_VALUE}
               onValueChange={(value) =>
                 updateField("altsien_kernlid_id", value && value !== NO_KERNLID_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="distributiepunt-altsien-kernlid">
-                <SelectValue>
-                  {(value: string | null) => {
-                    const kernlid = altsienKernleden.find((item) => String(item.id) === value);
-                    return kernlid ? kernlidLabel(kernlid) : t("noKernlid");
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_KERNLID_VALUE}>{t("noKernlid")}</SelectItem>
-                {altsienKernleden.map((kernlid) => (
-                  <SelectItem key={kernlid.id} value={String(kernlid.id)}>
-                    {kernlidLabel(kernlid)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="distributiepunt-altsien-kernlid"
+              renderValue={(value: string | null) => {
+                const kernlid = altsienKernleden.find((item) => String(item.id) === value);
+                return kernlid ? kernlidLabel(kernlid) : t("noKernlid");
+              }}
+              options={[
+                { value: NO_KERNLID_VALUE, label: t("noKernlid") },
+                ...altsienKernleden.map((kernlid) => ({ value: String(kernlid.id), label: kernlidLabel(kernlid) })),
+              ]}
+            />
           </div>
         </div>
 

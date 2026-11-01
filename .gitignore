@@ -26,3 +26,6 @@ docs/RWCrew-Brochure-NL.pdf
 docs/handleiding/.screenshot-login
 docs/handleiding/__pycache__/
 docs/handleiding/.screenshot-namen.json
+
+# Wristband messages kept as .json files on a developer machine (names, emails).
+WristbandScans/

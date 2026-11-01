@@ -19,3 +19,6 @@ Iedereen met toegang tot Walkies en zijn huidige rol.
 
 1. Kies bij een gebruiker de **rol** in de keuzelijst. De wijziging is meteen bewaard.
 2. Klik op **Nieuwe gebruiker** om iemand toegang te geven. Bestaat het e-mailadres nog niet, dan wordt er een account gemaakt met de naam en het tijdelijke wachtwoord dat je invult.
+
+## [scantest | walkies.scantest] Test-scan
+Stuur een polsbandscan alsof het polsbandbedrijf hem stuurt. Het bericht gaat door dezelfde verwerking als de webhook, zonder token, en is gemarkeerd als **Test**. Walkies heeft nog geen balie: je ziet het resultaat onder de knop en in de lijst eronder, en het bericht staat ook in de module **Scans**.

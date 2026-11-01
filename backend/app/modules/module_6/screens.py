@@ -28,12 +28,15 @@ class ScreenDefinition:
 
 # Every screen Walkies currently has. Each is gated independently:
 # - kpi: the module's main page;
-# - roles / users: the access-rights screens.
+# - roles / users: the access-rights screens;
+# - scantest: sending a test wristband scan (the shared scans live in the
+#   Scans module; Walkies' own counter follows in phase 2).
 # The walkie-talkie screens are added here in phase 2.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="walkies.kpi", label="KPI", sort_order=1),
     ScreenDefinition(key="walkies.roles", label="Roles", sort_order=2),
     ScreenDefinition(key="walkies.users", label="Users", sort_order=3),
+    ScreenDefinition(key="walkies.scantest", label="Test-scan", sort_order=4),
 ]
 
 

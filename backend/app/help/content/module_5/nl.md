@@ -2,7 +2,7 @@
 
 In Atelier volgt het atelierteam tijdens de festivaldagen de werkkledij op. Medewerkers van ploegen die op een plaats werken met eigen kledij (VIP, RW terras, ...) krijgen die kledij (T-shirts, hoodies, ...) bij het begin van hun shift en geven ze na de shift terug. Atelier houdt bij wat uitgegeven en teruggebracht werd, zodat alles traceerbaar blijft.
 
-> Deze module wordt in blokken gebouwd. Nu klaar: de masterdata (artikelen en maten), de reservaties (personen en pakket per ploeg per festival), de stock (ontvangst, wassen, afboeken, telling, te bestellen), de balie (ophalen en terugbrengen) en de polsbandscans (webhook, instellingen en Test-scan). Daarna volgt het opvolgen van elk kledingstuk via RFID (TagScan).
+> Deze module wordt in blokken gebouwd. Nu klaar: de masterdata (artikelen en maten), de reservaties (personen en pakket per ploeg per festival), de stock (ontvangst, wassen, afboeken, telling, te bestellen), de balie (ophalen en terugbrengen) en de polsbandscans (aan de balie en via Test-scan; de scans zelf staan in de module Scans). Daarna volgt het opvolgen van elk kledingstuk via RFID (Scans).
 
 ## [overview | atelier.kpi] KPI overzicht
 De startpagina van Atelier. Het blok **Balie** toont hoeveel stuks vandaag uitgegeven werden, hoeveel stuks nog niet terug zijn en hoeveel personen nog kledij in bezit hebben. Het blok **Masterdata** toont hoeveel actieve artikelen en maten er zijn en hoeveel artikelmaten uitgegeven kunnen worden. Het blok **Reservaties** toont per festival van het gekozen **seizoen** de personen en stuks per dag, het aantal ploegen met een reservatie en hoeveel daarvan nog geen pakket hebben. De kolom **Vergeten?** telt de ploegen die op een ander festival van dit seizoen een reservatie hebben, maar hier nog niets (geen personen, geen opmerking). Klik op het getal voor de namen en een link naar de reservaties van dat festival. Komt een ploeg echt niet, vul dan 0 personen in met een opmerking (bv. "komt niet"). Het blok **Stock** toont de stuks die beschikbaar zijn, te wassen zijn en uitgegeven zijn, en hoeveel maten onder hun minimumstock zitten. Het blok **Gewassen** toont voor hetzelfde seizoen hoeveel stuks er gewassen werden: het totaal, en per festival per dag. Een wasbeurt telt voor het festival dat op die dag liep; wat in de dagen na een festival gewassen werd, staat onder **Geen festival** van dat seizoen. Ongedaan gemaakte wasbeurten tellen niet mee.
@@ -16,7 +16,7 @@ De balie. Kies bovenaan het **festival**, de **dag** (standaard vandaag) en de *
 
 **Ophalen**
 1. Vul **voornaam** en **familienaam** in: samen bepalen ze wie de persoon is. Is de persoon al gekend, dan worden e-mailadres, polsbandnummer en ploeg ingevuld en zie je wat hij of zij nog in bezit heeft.
-2. Vul eventueel het **e-mailadres** in (optioneel; meerdere personen mogen hetzelfde adres hebben) en het **polsbandnummer** (het nummer op de polsband van dit festival; uniek binnen het festival — elk festival heeft nieuwe polsbanden). Het polsbandnummer is verplicht als dat in **Instellingen** aanstaat. Een ingevuld e-mailadres (gekende persoon of scan) wordt om privacyredenen (GDPR) maar deels getoond, bv. fr***@gm***.com; met **Wijzig** maak je het vak leeg en typ je een nieuw adres. Ook bij Terugbrengen staat het e-mailadres zo afgeschermd. Zodra er een ploeg gekozen is, staat rechts (op de hoogte van "Gekend: …") een **contacticoon**: klik erop voor de **ploegverantwoordelijken** van die ploeg in dit seizoen (naam, telefoon, e-mail, opmerkingen), zoals ingevuld bij MasterData > Teams > Ploegverantwoordelijken.
+2. Vul eventueel het **e-mailadres** in (optioneel; meerdere personen mogen hetzelfde adres hebben) en het **polsbandnummer** (het nummer op de polsband van dit festival; uniek binnen het festival — elk festival heeft nieuwe polsbanden). Het polsbandnummer is verplicht als dat in **Instellingen** aanstaat. Een ingevuld e-mailadres (gekende persoon of scan) wordt om privacyredenen (GDPR) maar deels getoond, bv. fr***@gm***.com; met **Wijzig** maak je het vak leeg en typ je een nieuw adres. Ook bij Terugbrengen staat het e-mailadres zo afgeschermd. Zodra er een ploeg gekozen is, staat rechts (op de hoogte van "Gekend: …") een **contacticoon**: klik erop voor de **ploegverantwoordelijken** van die ploeg in dit seizoen (naam, telefoon, e-mail, opmerkingen), zoals ingevuld bij MasterData > Teams > Ploegverantwoordelijken. Lukt scannen met de scanners niet? Klik dan op het **camera-icoon** naast het polsbandnummer en houd de QR-code van de polsband voor de camera van de pc: het nummer wordt ingevuld.
 3. Kies de **ploeg** (enkel ploegen met een pakket op dit festival).
 4. Per artikel van het pakket kies je de **maat** (1 stuk per artikel); tussen haakjes staat hoeveel er beschikbaar zijn. Elk artikel is **optioneel**: klik de gekozen maat nog eens om het artikel over te slaan. Heeft een artikel maar één maat in stock (bv. OneSize), dan staat die al aangeduid. Minstens één artikel is nodig; naast de knop staat wat nog ontbreekt.
 
@@ -28,7 +28,8 @@ Staan er vandaag al evenveel of meer personen van de ploeg genoteerd dan gereser
 **Terugbrengen**
 1. Zoek de persoon op naam, e-mailadres of polsbandnummer (enkel wie nog kledij heeft).
 2. Alle stuks staan aangevinkt; vink af wat niet terug is (dat blijft openstaan). Is er iets afgevinkt, dan vraagt de balie eerst bevestiging met de lijst van wat bij de persoon blijft.
-3. Klik op **Terugnemen**: de stuks gaan naar **Te wassen**.
+3. Heeft een stuk een probleem (beschadigd, zeer vuil, ...), kies dan per stuk een **retourstatus** in de keuzelijst. Dat is enkel een opmerking: het stuk gaat gewoon naar **Te wassen**, en je ziet het terug op **Retourproblemen**.
+4. Klik op **Terugnemen**: de stuks gaan naar **Te wassen**.
 
 **E-mail**: heeft de persoon een e-mailadres, dan krijgt hij of zij na elke Ophalen een mail **Uitgifte** en na elke Terugbrengen één mail **Inname** (ook als de stuks van verschillende uitgiftes komen). De teksten stel je in op **Instellingen > E-mails**.
 
@@ -39,7 +40,14 @@ Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annulere
 ## [open | atelier.open] Openstaand
 Alle kledij die opgehaald werd maar nog niet terug is, **gegroepeerd per ploeg en dan per persoon** (met polsbandnummer; het e-mailadres staat er om privacyredenen (GDPR) niet bij), met daaronder elk stuk: dag, artikel, maat en wanneer het opgehaald werd. Kies bovenaan het festival en eventueel de dag. Boven elke kolom staat een **filterveld**: typ er een deel van een naam, ploeg, artikel, … in om de lijst te verkleinen; de totalen volgen de filter. Komt iets nooit terug, boek het dan af via **Stock > Afboeken** (reden "Niet teruggebracht").
 
+Heb je de rechten van de balie, dan staat bij elke persoon de knop **Inname**: die opent hetzelfde scherm als Terugbrengen aan de balie, voor deze persoon, met alles wat die nog in bezit heeft (ook buiten de gekozen dag). De persoon krijgt de gewone Inname-mail.
+
+Met de knop **Excel** download je wat op het scherm staat, ook met de filters die je gebruikt (zonder e-mailadressen).
+
 ![Openstaand](open.png)
+
+## [returnissues | atelier.returnissues] Retourproblemen
+Alle kledij die teruggebracht werd met een **retourstatus**, de nieuwste bovenaan: status, artikel, maat, ploeg, persoon, polsband, dag, wanneer teruggebracht en door wie geboekt. Kies bovenaan het festival en eventueel de dag; boven elke kolom staat een tekstfilter. Dit scherm is enkel om te bekijken: een stuk dat niet meer bruikbaar is, boek je af via **Afboeken**. Met de knop **Excel** download je wat op het scherm staat, ook met de filters die je gebruikt.
 
 ## [reservations | atelier.reservations] Reservaties
 Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig hebben en **wat elke persoon krijgt** (het pakket, bv. 2 T-shirts en 1 hoodie). Een ploeg werkt **elke festivaldag** met dat aantal mensen en brengt de kledij **elke avond terug**, dus elke dag is er opnieuw *personen × pakket* nodig. De maat zit niet in het pakket: die wordt aan de balie gekozen.
@@ -130,6 +138,12 @@ Een maat die bij een artikel gebruikt wordt, kan niet verwijderd worden: zet ze 
 ![Maten](sizes.png)
 
 
+## [returnstatuses | atelier.returnstatuses] Retourstatussen
+De lijst met wat er mis kan zijn met een teruggebracht stuk, zoals "Beschadigd" of "Zeer vuil". De balie kiest dit per stuk bij **Terugbrengen**.
+
+1. Klik op **Nieuwe retourstatus** en vul de naam in.
+2. Een status die al gebruikt werd, kan niet verwijderd worden: zet ze dan op niet actief. Ze staat dan niet meer in de keuzelijst, maar blijft zichtbaar bij de stuks die ze al hebben.
+
 ## [dataupload | atelier.dataupload] Data Upload/Download
 Per tabel een tegel om een **sjabloon** te downloaden, een ingevuld bestand te **uploaden** en de huidige gegevens te **exporteren**.
 
@@ -143,17 +157,14 @@ Na het uploaden zie je per rij of ze aangemaakt, bijgewerkt, ongewijzigd of fout
 
 ## [settings | atelier.settings] Instellingen
 - **Polsband verplicht bij Ophalen**: staat dit aan, dan kan aan de balie niets opgehaald worden zonder polsbandnummer (gescand of getypt). Elk festival heeft nieuwe polsbanden: een nummer is uniek binnen één festival.
-- **Webhook**: het adres waarop het polsbandbedrijf zijn scans stuurt, en of de token op deze server ingesteld is. Zonder token wordt elk bericht geweigerd (Test-scan werkt wel).
-- **Scanners**: elke scanner van het polsbandbedrijf verschijnt automatisch bij zijn eerste bericht. Geef hem een naam (bv. "Balie 1"); aan de balie kies je bovenaan welke scanner bij die balie staat.
-- **Ontvangen berichten**: elk bericht dat binnenkwam — ook geweigerde (verkeerde token, geen leesbare JSON) en berichten die niet voor de balie zijn — met status, scanner, persoon, polsband en ploeg. Met het oog-icoon zie je het bericht zoals het binnenkwam. "geen ploeg met deze naam" betekent dat de ploegnaam niet overeenkomt met een ploeg uit MasterData; de balie kiest dan zelf de ploeg.
 
-![Instellingen](settings.png)
+De polsbandscans zelf (de webhook, de scanners met hun naam en alle ontvangen berichten) staan in de module **Scans**. Aan de balie verschijnt een scan enkel als de ploeg een reservatie met pakket heeft op een festival van het seizoen, of als de ploegnaam niet herkend werd: dan kiest de balie zelf de ploeg.
 
 ## [scantest | atelier.scantest] Test-scan
 Om alles te testen voor de echte koppeling met het polsbandbedrijf (vanaf mei 2027). Het bericht gaat door **dezelfde verwerking** als de webhook, zonder token, en is gemarkeerd als **Test**.
 - **Formulier**: kies een bestaande scanner of typ een nieuw toestel-id, vul voornaam, familienaam, polsbandnummer, ploeg (kies of typ een naam om een niet-bestaande ploeg te testen), profiel en eventueel e-mail en maat in. Rechts zie je het bericht dat verstuurd wordt.
 - **JSON-bestand**: sleep een .json-bestand in het vak, kies een bestand of plak het bericht — het wordt verstuurd zoals het is (handig om een echt voorbeeld van het bedrijf opnieuw af te spelen).
-Klik op **Versturen**: onder de knop zie je wat er met het bericht gebeurde, en een geldige scan verschijnt meteen aan de balie die die scanner gekozen heeft.
+Klik op **Versturen**: onder de knop zie je wat er met het bericht gebeurde, en een geldige scan verschijnt meteen aan de balie die die scanner gekozen heeft, als de ploeg een reservatie heeft.
 
 ![Test-scan](scan-test.png)
 

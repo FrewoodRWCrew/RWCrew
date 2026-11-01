@@ -269,7 +269,7 @@ def test_team_export_does_not_include_task_or_kernlid_columns(client: TestClient
     assert response.status_code == 200
     workbook = load_workbook(io.BytesIO(response.content))
     header_row = [cell.value for cell in workbook.active[1]]
-    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description", "active"]
+    assert header_row == ["id", "name", "location_name", "delivery_method_name", "description", "active", "aliases"]
 
 
 # --- get_my_permissions: creatable_screen_keys -----------------------------

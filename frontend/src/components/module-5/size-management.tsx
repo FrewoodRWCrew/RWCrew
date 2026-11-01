@@ -37,7 +37,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ATELIER_FITS, sortSizes } from "@/components/module-5/atelier-sizes";
 
@@ -84,21 +84,18 @@ export function SizeManagement({ initialSizes, canCreate, canEdit, canDelete }: 
 
       <div className="flex w-48 flex-col gap-2">
         <Label htmlFor="atelier-size-fit-filter">{t("fitFilterLabel")}</Label>
-        <Select value={fitFilter} onValueChange={(value) => setFitFilter(value ?? ALL_FITS)}>
-          <SelectTrigger id="atelier-size-fit-filter">
-            <SelectValue>
-              {(value: string | null) => (value && value !== ALL_FITS ? tFit(value as AtelierFit) : t("allFits"))}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_FITS}>{t("allFits")}</SelectItem>
-            {ATELIER_FITS.map((fit) => (
-              <SelectItem key={fit} value={fit}>
-                {tFit(fit)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={fitFilter}
+          onValueChange={(value) => setFitFilter(value ?? ALL_FITS)}
+          id="atelier-size-fit-filter"
+          renderValue={(value: string | null) =>
+            (value && value !== ALL_FITS ? tFit(value as AtelierFit) : t("allFits"))
+          }
+          options={[
+            { value: ALL_FITS, label: t("allFits") },
+            ...ATELIER_FITS.map((fit) => ({ value: fit, label: tFit(fit) })),
+          ]}
+        />
       </div>
 
       <div className="rounded-md border [&>div]:max-h-[65vh] [&>div]:overflow-y-auto">
@@ -225,21 +222,14 @@ function SizeFormDialog({ size, trigger, onSaved }: SizeFormDialogProps) {
             <Label htmlFor="atelier-size-fit">
               {t("fitLabel")} <span aria-hidden="true" className="text-destructive">*</span>
             </Label>
-            <Select
+            <SearchableSelect
               value={form.fit}
               onValueChange={(value) => value && setForm((current) => ({ ...current, fit: value as AtelierFit }))}
-            >
-              <SelectTrigger id="atelier-size-fit" className="w-full">
-                <SelectValue>{(value: string | null) => (value ? tFit(value as AtelierFit) : "")}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {ATELIER_FITS.map((fit) => (
-                  <SelectItem key={fit} value={fit}>
-                    {tFit(fit)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="atelier-size-fit"
+              className="w-full"
+              renderValue={(value: string | null) => (value ? tFit(value as AtelierFit) : "")}
+              options={ATELIER_FITS.map((fit) => ({ value: fit, label: tFit(fit) }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="atelier-size-order">{t("orderLabel")}</Label>

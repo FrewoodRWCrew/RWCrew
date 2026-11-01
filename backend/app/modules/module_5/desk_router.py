@@ -1,6 +1,7 @@
 # Atelier's (module-5) counter desk — block 4, the sidebar's "Balie" group:
 # "Uitgifte & inname" (every transaction starts with the choice Ophalen /
-# Terugbrengen) and "Openstaand" (pieces not returned yet). Its own APIRouter
+# Terugbrengen), "Openstaand" (pieces not returned yet) and "Retourproblemen"
+# (pieces that came back with a return status). Its own APIRouter
 # on the module's /api/modules/module-5 prefix (included in app/main.py).
 #
 # Block 5: the desk screen polls the wristband scans of its scanner
@@ -16,7 +17,7 @@
 
 from datetime import date
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
@@ -28,13 +29,16 @@ from app.db.models.atelier_handout import AtelierHandout
 from app.db.models.atelier_handout_line import AtelierHandoutLine
 from app.db.models.atelier_person import AtelierPerson
 from app.db.models.atelier_person_bracelet import AtelierPersonBracelet
-from app.db.models.atelier_scan import AtelierScan
-from app.db.models.atelier_scanner import AtelierScanner
+from app.db.models.atelier_return_status import AtelierReturnStatus
 from app.db.models.atelier_size import AtelierSize
+from app.db.models.atelier_stock_document import AtelierStockDocument
 from app.db.models.festival import Festival
 from app.db.models.team import Team
 from app.db.models.user import User
+from app.db.models.wristband_scan import WristbandScan
+from app.db.models.wristband_scanner import WristbandScanner
 from app.modules.module_5.deps import require_screen_permission, require_view_on_any
+from app.modules.module_5.desk_export import open_pieces_xlsx, return_issues_xlsx
 from app.modules.module_5.desk_service import (
     CANCELLED,
     OPEN,
@@ -53,11 +57,14 @@ from app.modules.module_5.desk_service import (
 )
 from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
-from app.modules.module_5.scan_service import dismiss, waiting_scans
+from app.modules.wristband.scan_service import dismiss, waiting_scans
+from app.modules.wristband.visibility import atelier_team_ids, default_season_id
 from app.modules.module_5.stock_service import StockError
 from app.modules.module_9.team_responsible_service import list_team_responsibles
+from app.schemas.wristband import ScannerResponse, ScanResponse
 from app.schemas.atelier import (
     DeskContextResponse,
+    DeskExportRequest,
     DeskTeamResponsible,
     DeskOpenLine,
     DeskPackageArticle,
@@ -68,16 +75,19 @@ from app.schemas.atelier import (
     HandoutLineResponse,
     HandoutRequest,
     HandoutResponse,
+    ReturnIssueResponse,
     ReturnRequest,
-    ScannerResponse,
-    ScanResponse,
+    ReturnStatusResponse,
 )
 
 router = APIRouter(prefix="/api/modules/module-5", tags=["Atelier"])
 
 DESK_SCREEN = "atelier.desk"
 OPEN_SCREEN = "atelier.open"
+RETURN_ISSUES_SCREEN = "atelier.returnissues"
 KPI_SCREEN = "atelier.kpi"
+
+XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
 def _error(error: StockError) -> HTTPException:
@@ -267,21 +277,24 @@ def get_wristband_required(
 def list_desk_scanners(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
-) -> list[AtelierScanner]:
+) -> list[WristbandScanner]:
     """The scanners known from their messages (the desk's "this desk = …" dropdown)."""
-    return list(db.scalars(select(AtelierScanner).order_by(AtelierScanner.label, AtelierScanner.device_name)).all())
+    return list(db.scalars(select(WristbandScanner).order_by(WristbandScanner.label, WristbandScanner.device_name)).all())
 
 
 @router.get("/desk/scans", response_model=list[ScanResponse])
 def list_desk_scans(
     device_id: str | None = Query(default=None, min_length=1, max_length=100),
+    season_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
-) -> list[AtelierScan]:
+) -> list[WristbandScan]:
     """The scans waiting at this scanner (polled by the desk screen), newest
     first; without a scanner, those of every scanner (the sidebar's alert in
-    a browser where no desk scanner is chosen)."""
-    return waiting_scans(db, device_id)
+    a browser where no desk scanner is chosen). Only those of teams with a
+    reservation in the season (default: the last open one) or without a
+    matched team (see scan_service.waiting_scans)."""
+    return waiting_scans(db, device_id, atelier_team_ids(db, season_id or default_season_id(db)))
 
 
 @router.post("/desk/scans/{scan_id}/dismiss", status_code=status.HTTP_204_NO_CONTENT)
@@ -291,7 +304,7 @@ def dismiss_desk_scan(
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "create")),
 ) -> None:
     """"Negeren": the scan no longer waits at the desk."""
-    scan = db.get(AtelierScan, scan_id)
+    scan = db.get(WristbandScan, scan_id)
     if scan is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Scan not found")
     dismiss(scan)
@@ -387,6 +400,21 @@ def post_handout(
     return _handout_response(db, handout)
 
 
+@router.get("/desk/return-statuses", response_model=list[ReturnStatusResponse])
+def list_desk_return_statuses(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
+) -> list[AtelierReturnStatus]:
+    """The active return statuses, for Terugbrengen's dropdown."""
+    return list(
+        db.scalars(
+            select(AtelierReturnStatus)
+            .where(AtelierReturnStatus.active.is_(True))
+            .order_by(func.lower(AtelierReturnStatus.name))
+        ).all()
+    )
+
+
 @router.get("/desk/persons/{person_id}/open", response_model=list[HandoutResponse])
 def list_person_open_handouts(
     person_id: int,
@@ -414,7 +442,9 @@ def post_person_return(
     back, from any of their open pick-ups, and the person gets one "Inname"
     mail for the whole transaction."""
     try:
-        handouts, lines = return_person_lines(db, current_user, person_id, payload.line_ids, payload.scan_id)
+        handouts, lines = return_person_lines(
+            db, current_user, person_id, payload.line_ids, payload.scan_id, payload.line_statuses
+        )
     except StockError as error:
         db.rollback()
         raise _error(error) from error
@@ -443,7 +473,7 @@ def post_return(
     """Terugbrengen of one pick-up (sends no mail; the desk uses the
     person-level return above)."""
     try:
-        handout = return_lines(db, current_user, handout_id, payload.line_ids, payload.scan_id)
+        handout = return_lines(db, current_user, handout_id, payload.line_ids, payload.scan_id, payload.line_statuses)
     except StockError as error:
         db.rollback()
         raise _error(error) from error
@@ -470,16 +500,19 @@ def post_cancel(
 # --- Openstaand and KPI ---------------------------------------------------------------------
 
 
-@router.get("/desk/open", response_model=list[HandoutResponse])
-def list_open_handouts(
-    festival_id: int | None = Query(default=None),
-    day: date | None = Query(default=None),
-    team_id: int | None = Query(default=None),
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_screen_permission(OPEN_SCREEN, "view")),
+def _xlsx(content: bytes, filename: str) -> Response:
+    """An Excel file as a download."""
+    return Response(
+        content=content,
+        media_type=XLSX_MEDIA_TYPE,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+def _open_handouts(
+    db: Session, festival_id: int | None, day: date | None, team_id: int | None = None
 ) -> list[HandoutResponse]:
-    """Pick-ups with pieces not returned yet, oldest first, optionally per
-    festival / day / team. Only the pieces still out are listed."""
+    """Pick-ups with pieces not returned yet, with only the pieces still out."""
     query = select(AtelierHandout).where(AtelierHandout.status == OPEN).order_by(AtelierHandout.day, AtelierHandout.id)
     if festival_id is not None:
         query = query.where(AtelierHandout.festival_id == festival_id)
@@ -493,6 +526,87 @@ def list_open_handouts(
         response.lines = [line for line in response.lines if line.returned_at is None]
         result.append(response)
     return result
+
+
+@router.get("/desk/open", response_model=list[HandoutResponse])
+def list_open_handouts(
+    festival_id: int | None = Query(default=None),
+    day: date | None = Query(default=None),
+    team_id: int | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(OPEN_SCREEN, "view")),
+) -> list[HandoutResponse]:
+    """Pick-ups with pieces not returned yet, oldest first, optionally per
+    festival / day / team. Only the pieces still out are listed."""
+    return _open_handouts(db, festival_id, day, team_id)
+
+
+@router.post("/desk/open/export")
+def export_open_handouts(
+    payload: DeskExportRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(OPEN_SCREEN, "view")),
+) -> Response:
+    """Openstaand's Excel download: the pieces the screen shows."""
+    handouts = _open_handouts(db, payload.festival_id, payload.day)
+    return _xlsx(open_pieces_xlsx(handouts, set(payload.line_ids), payload.locale), "atelier-openstaand.xlsx")
+
+
+def _return_issues(db: Session, festival_id: int | None, day: date | None) -> list[ReturnIssueResponse]:
+    """The pieces that came back with a return status, newest first."""
+    query = (
+        select(AtelierHandoutLine, AtelierHandout, AtelierReturnStatus)
+        .join(AtelierHandout, AtelierHandout.id == AtelierHandoutLine.handout_id)
+        .join(AtelierReturnStatus, AtelierReturnStatus.id == AtelierHandoutLine.return_status_id)
+        .order_by(AtelierHandoutLine.returned_at.desc(), AtelierHandoutLine.id)
+    )
+    if festival_id is not None:
+        query = query.where(AtelierHandout.festival_id == festival_id)
+    if day is not None:
+        query = query.where(AtelierHandout.day == day)
+    result = []
+    for line, handout, return_status in db.execute(query).all():
+        article_name, size_name, fit = _line_parts(db, line)
+        document = db.get(AtelierStockDocument, line.return_document_id)
+        result.append(
+            ReturnIssueResponse(
+                line_id=line.id,
+                team_name=db.get(Team, handout.team_id).name,
+                person_name=db.get(AtelierPerson, handout.person_id).full_name,
+                bracelet_number=_bracelet_number(db, handout.person_id, handout.festival_id),
+                day=handout.day,
+                article_name=article_name,
+                size_name=size_name,
+                fit=fit,
+                status_name=return_status.name,
+                returned_at=line.returned_at,
+                returned_by_name=document.created_by_name if document else None,
+            )
+        )
+    return result
+
+
+@router.get("/desk/return-issues", response_model=list[ReturnIssueResponse])
+def list_return_issues(
+    festival_id: int | None = Query(default=None),
+    day: date | None = Query(default=None),
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_ISSUES_SCREEN, "view")),
+) -> list[ReturnIssueResponse]:
+    """Retourproblemen: the pieces that came back with a return status, newest
+    first, optionally per festival / day."""
+    return _return_issues(db, festival_id, day)
+
+
+@router.post("/desk/return-issues/export")
+def export_return_issues(
+    payload: DeskExportRequest,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(RETURN_ISSUES_SCREEN, "view")),
+) -> Response:
+    """Retourproblemen's Excel download: the pieces the screen shows."""
+    issues = _return_issues(db, payload.festival_id, payload.day)
+    return _xlsx(return_issues_xlsx(issues, set(payload.line_ids), payload.locale), "atelier-retourproblemen.xlsx")
 
 
 @router.get("/desk/stats", response_model=DeskStatsResponse)

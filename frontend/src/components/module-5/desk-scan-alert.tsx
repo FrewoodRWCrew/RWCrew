@@ -5,12 +5,16 @@
 // other Atelier screen too. It follows the scanner chosen in this browser on
 // the desk screen (the scans that would pop up there); in a browser without a
 // desk scanner it counts the waiting scans of every scanner. Polled every few
-// seconds, paused while the browser tab is hidden.
+// seconds, paused while the browser tab is hidden. Like the desk, it only
+// counts teams with a reservation in the season: the one in the URL, else the
+// header's choice, else the backend's default (the last open season).
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
 import { listAtelierWaitingScans } from "@/lib/api";
 import { useDeskScanner } from "@/components/module-5/desk-scanner";
+import { useSelectedSeason } from "@/components/shared/season-provider";
 
 // How often the count is refreshed, in milliseconds.
 const POLL_INTERVAL_MS = 5000;
@@ -18,6 +22,8 @@ const POLL_INTERVAL_MS = 5000;
 /** The number of waiting wristband scans (0 while unknown or not allowed). */
 function useWaitingScanCount(enabled: boolean): number {
   const scannerId = useDeskScanner();
+  const { selectedSeasonId } = useSelectedSeason();
+  const seasonId = Number(useSearchParams().get("season")) || selectedSeasonId;
   // The count with the scanner it belongs to, so a scanner change starts at 0.
   const [result, setResult] = useState<{ scannerId: string | null; count: number } | null>(null);
 
@@ -27,7 +33,7 @@ function useWaitingScanCount(enabled: boolean): number {
     const poll = () => {
       // No need to ask while nobody looks at this tab.
       if (document.visibilityState === "hidden") return;
-      listAtelierWaitingScans(scannerId)
+      listAtelierWaitingScans(scannerId, seasonId)
         .then((scans) => {
           if (!cancelled) setResult({ scannerId, count: scans.length });
         })
@@ -42,7 +48,7 @@ function useWaitingScanCount(enabled: boolean): number {
       window.clearInterval(timer);
       document.removeEventListener("visibilitychange", poll);
     };
-  }, [enabled, scannerId]);
+  }, [enabled, scannerId, seasonId]);
 
   return enabled && result?.scannerId === scannerId ? result.count : 0;
 }

@@ -46,6 +46,8 @@ services:
       JWT_SECRET: ${JWT_SECRET}
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       TAGSCAN_SOURCE_DIR: /app/TagScans
+      # Every wristband message as a .json file (see wristband_source_dir).
+      WRISTBAND_SOURCE_DIR: /app/WristbandScans
       # TagScan routing by the CSV's "Mode" column: this environment's own
       # name, and the OTHER environment's intake URL + a scanner key made
       # there (see backend/app/modules/module_1/intake_forward.py).
@@ -55,9 +57,6 @@ services:
       # Ops switch for TagScan's automatic background Scan (on/off and
       # interval themselves are set on TagScan's Settings screen).
       TAGSCAN_AUTO_SCAN_WORKER: ${TAGSCAN_AUTO_SCAN_WORKER:-true}
-      # Atelier wristband webhook: the "token" the wristband company sends in
-      # every scan message (backend/app/modules/module_5/scan_webhook_router.py).
-      ATELIER_WEBHOOK_TOKEN: ${ATELIER_WEBHOOK_TOKEN:-}
       # Optional read-only GitHub token for the changelog.json all environments
       # share (backend/app/landing/changelog.py); only lifts GitHub's rate limit.
       CHANGELOG_GITHUB_TOKEN: ${CHANGELOG_GITHUB_TOKEN:-}
@@ -77,6 +76,8 @@ services:
       # tagscan_source_dir) — kept outside the container so uploaded/scanned
       # files survive an image rebuild.
       - tagscan_data:/app/TagScans
+      # The wristband messages' .json files, for the same reason.
+      - wristband_data:/app/WristbandScans
     ports:
       - "127.0.0.1:${BACKEND_PORT}:8020"
 
@@ -111,3 +112,4 @@ services:
 volumes:
   db_data:
   tagscan_data:
+  wristband_data:

@@ -24,7 +24,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { AltsienSeasonSelect, useAltsienSeasonId } from "@/components/module-8/altsien-season-select";
@@ -66,23 +66,18 @@ export function RequestFollowUp({ seasons, statuses }: RequestFollowUpProps) {
         <div className="flex flex-wrap items-end gap-3">
           <div className="flex w-48 flex-col gap-2">
             <Label htmlFor="follow-up-status">{t("statusFilter")}</Label>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}>
-              <SelectTrigger id="follow-up-status">
-                <SelectValue>
-                  {(value: string | null) =>
-                    statuses.find((item) => String(item.id) === value)?.name ?? t("allStatuses")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_STATUSES}>{t("allStatuses")}</SelectItem>
-                {statuses.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}
+              id="follow-up-status"
+              renderValue={(value: string | null) =>
+                statuses.find((item) => String(item.id) === value)?.name ?? t("allStatuses")
+              }
+              options={[
+                { value: ALL_STATUSES, label: t("allStatuses") },
+                ...statuses.map((item) => ({ value: String(item.id), label: item.name })),
+              ]}
+            />
           </div>
           <AltsienSeasonSelect seasons={seasons} seasonId={seasonId} />
         </div>
@@ -206,20 +201,13 @@ function FollowUpDialog({ request, statuses, onSaved }: FollowUpDialogProps) {
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="follow-up-edit-status">{t("columnStatus")}</Label>
-            <Select value={statusId} onValueChange={(value) => value && setStatusId(value)}>
-              <SelectTrigger id="follow-up-edit-status">
-                <SelectValue>
-                  {(value: string | null) => statuses.find((item) => String(item.id) === value)?.name ?? ""}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((item) => (
-                  <SelectItem key={item.id} value={String(item.id)}>
-                    {item.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={statusId}
+              onValueChange={(value) => value && setStatusId(value)}
+              id="follow-up-edit-status"
+              renderValue={(value: string | null) => statuses.find((item) => String(item.id) === value)?.name ?? ""}
+              options={statuses.map((item) => ({ value: String(item.id), label: item.name }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="follow-up-edit-note">{t("columnNote")}</Label>

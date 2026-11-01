@@ -47,7 +47,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -377,49 +377,32 @@ function ProductFormDialog({
             <Label htmlFor="product-type">
               {t("typeLabel")} <span aria-hidden="true" className="text-destructive">*</span>
             </Label>
-            <Select
+            <SearchableSelect
               value={form.type_id ? String(form.type_id) : NO_SELECTION_VALUE}
               onValueChange={(value) => updateField("type_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-            >
-              <SelectTrigger id="product-type">
-                <SelectValue>
-                  {(value: string | null) =>
-                    productTypes.find((productType) => String(productType.id) === value)?.name ?? t("noSelection")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {productTypes.map((productType) => (
-                  <SelectItem key={productType.id} value={String(productType.id)}>
-                    {productType.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="product-type"
+              renderValue={(value: string | null) =>
+                productTypes.find((productType) => String(productType.id) === value)?.name ?? t("noSelection")
+              }
+              options={productTypes.map((productType) => ({
+                value: String(productType.id),
+                label: productType.name,
+              }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-warehouse">
               {t("warehouseLabel")} <span aria-hidden="true" className="text-destructive">*</span>
             </Label>
-            <Select
+            <SearchableSelect
               value={form.warehouse_id ? String(form.warehouse_id) : NO_SELECTION_VALUE}
               onValueChange={(value) => updateField("warehouse_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-            >
-              <SelectTrigger id="product-warehouse">
-                <SelectValue>
-                  {(value: string | null) =>
-                    warehouses.find((warehouse) => String(warehouse.id) === value)?.name ?? t("noSelection")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {warehouses.map((warehouse) => (
-                  <SelectItem key={warehouse.id} value={String(warehouse.id)}>
-                    {warehouse.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="product-warehouse"
+              renderValue={(value: string | null) =>
+                warehouses.find((warehouse) => String(warehouse.id) === value)?.name ?? t("noSelection")
+              }
+              options={warehouses.map((warehouse) => ({ value: String(warehouse.id), label: warehouse.name }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-warehouse-location">{t("warehouseLocationLabel")}</Label>
@@ -433,26 +416,19 @@ function ProductFormDialog({
             <Label htmlFor="product-category">
               {t("categoryLabel")} <span aria-hidden="true" className="text-destructive">*</span>
             </Label>
-            <Select
+            <SearchableSelect
               value={form.category_id ? String(form.category_id) : NO_SELECTION_VALUE}
               onValueChange={(value) => updateField("category_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-            >
-              <SelectTrigger id="product-category">
-                <SelectValue>
-                  {(value: string | null) =>
-                    productCategories.find((productCategory) => String(productCategory.id) === value)?.name ??
-                    t("noSelection")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {productCategories.map((productCategory) => (
-                  <SelectItem key={productCategory.id} value={String(productCategory.id)}>
-                    {productCategory.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="product-category"
+              renderValue={(value: string | null) =>
+                productCategories.find((productCategory) => String(productCategory.id) === value)?.name ??
+                t("noSelection")
+              }
+              options={productCategories.map((productCategory) => ({
+                value: String(productCategory.id),
+                label: productCategory.name,
+              }))}
+            />
           </div>
           {/* The product's limits, grouped in one framed box. */}
           <fieldset className="col-span-2 rounded-md border bg-muted/30 p-3">
@@ -462,25 +438,19 @@ function ProductFormDialog({
                 <Label htmlFor="product-limit">
                   {t("limitLabel")} <span aria-hidden="true" className="text-destructive">*</span>
                 </Label>
-                <Select
+                <SearchableSelect
                   value={form.limit_id ? String(form.limit_id) : NO_SELECTION_VALUE}
                   onValueChange={(value) => updateField("limit_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-                >
-                  <SelectTrigger id="product-limit" className="w-full">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        productLimits.find((productLimit) => String(productLimit.id) === value)?.name ?? t("noSelection")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {productLimits.map((productLimit) => (
-                      <SelectItem key={productLimit.id} value={String(productLimit.id)}>
-                        {productLimit.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  id="product-limit"
+                  className="w-full"
+                  renderValue={(value: string | null) =>
+                    productLimits.find((productLimit) => String(productLimit.id) === value)?.name ?? t("noSelection")
+                  }
+                  options={productLimits.map((productLimit) => ({
+                    value: String(productLimit.id),
+                    label: productLimit.name,
+                  }))}
+                />
               </div>
               <div className="flex flex-col gap-2">
                 {/* The value of the chosen Limiet: named after it, and only editable once one is chosen. */}
@@ -591,20 +561,17 @@ function ProductFormDialog({
             <Label htmlFor="product-stock-return">
               {t("stockReturnToLabel")} <span aria-hidden="true" className="text-destructive">*</span>
             </Label>
-            <Select
+            <SearchableSelect
               value={form.stock_return_to ?? "kar"}
               onValueChange={(value) => updateField("stock_return_to", value === "free" ? "free" : "kar")}
-            >
-              <SelectTrigger id="product-stock-return" className="w-full">
-                <SelectValue>
-                  {(value: string | null) => (value === "free" ? t("stockReturnFree") : t("stockReturnKar"))}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="kar">{t("stockReturnKar")}</SelectItem>
-                <SelectItem value="free">{t("stockReturnFree")}</SelectItem>
-              </SelectContent>
-            </Select>
+              id="product-stock-return"
+              className="w-full"
+              renderValue={(value: string | null) => (value === "free" ? t("stockReturnFree") : t("stockReturnKar"))}
+              options={[
+                { value: "kar", label: t("stockReturnKar") },
+                { value: "free", label: t("stockReturnFree") },
+              ]}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="product-min-stock">{t("minStockLabel")}</Label>

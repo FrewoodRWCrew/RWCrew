@@ -1,7 +1,9 @@
 "use client";
 
-// TagScan's "Dashboard" screen: an Explorer-style browser over the folder
-// where incoming CSV scan files currently land. Three panes:
+// The Scans module's "CSV Source Files" screen: an Explorer-style browser over
+// the folder where incoming CSV scan files currently land (the wristbands'
+// "JSON source files" screen passes its own api and texts — see
+// wristband-file-browser.tsx). Three panes:
 //   1. Folder tree (left) — the whole folder structure.
 //   2. File list (middle) — files directly inside whichever folder is
 //      selected in the tree.
@@ -37,6 +39,22 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
+/** Where the browser reads from; every folder works the same way. */
+export interface FileBrowserApi {
+  getTree: () => Promise<TagscanFolderNode>;
+  listFiles: (path: string) => Promise<TagscanFileEntry[]>;
+  getContent: (path: string) => Promise<TagscanFileContent>;
+  deleteFiles: (paths: string[]) => Promise<{ deleted: number }>;
+}
+
+// The CSV intake folder, unless the screen passes another one.
+const CSV_FILES_API: FileBrowserApi = {
+  getTree: getTagscanFolderTree,
+  listFiles: listTagscanFiles,
+  getContent: getTagscanFileContent,
+  deleteFiles: deleteTagscanFiles,
+};
+
 interface FileBrowserProps {
   initialTree: TagscanFolderNode;
   // The folder selected on open, whose files are initialFiles.
@@ -44,6 +62,9 @@ interface FileBrowserProps {
   initialFiles: TagscanFileEntry[];
   /** Whether the user has "delete" on this screen (shows the checkboxes + bin button). */
   canDelete: boolean;
+  api?: FileBrowserApi;
+  /** The translations of this screen's texts (same keys for every folder). */
+  messagesNamespace?: "tagscan.dashboard" | "wristband.files";
 }
 
 function formatSize(bytes: number): string {
@@ -52,8 +73,15 @@ function formatSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canDelete }: FileBrowserProps) {
-  const t = useTranslations("tagscan.dashboard");
+export function FileBrowser({
+  initialTree,
+  initialFolderPath,
+  initialFiles,
+  canDelete,
+  api = CSV_FILES_API,
+  messagesNamespace = "tagscan.dashboard",
+}: FileBrowserProps) {
+  const t = useTranslations(messagesNamespace);
 
   const [tree, setTree] = useState(initialTree);
   const [selectedFolderPath, setSelectedFolderPath] = useState<string>(initialFolderPath);
@@ -73,14 +101,14 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canD
       // A new listing starts with nothing checked.
       setCheckedPaths(new Set());
       try {
-        const entries = await listTagscanFiles(folderPath);
+        const entries = await api.listFiles(folderPath);
         setFiles(entries);
       } catch (error) {
         setFiles([]);
         setFilesError(error instanceof ApiError ? error.message : t("loadFilesFailed"));
       }
     },
-    [t],
+    [api, t],
   );
 
   async function handleSelectFolder(folderPath: string) {
@@ -96,7 +124,7 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canD
     setContentError(null);
     setIsLoadingContent(true);
     try {
-      const content = await getTagscanFileContent(filePath);
+      const content = await api.getContent(filePath);
       setFileContent(content);
     } catch (error) {
       setContentError(error instanceof ApiError ? error.message : t("loadContentFailed"));
@@ -133,7 +161,7 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canD
 
   async function handleRefresh() {
     try {
-      const freshTree = await getTagscanFolderTree();
+      const freshTree = await api.getTree();
       setTree(freshTree);
       await loadFiles(selectedFolderPath);
     } catch {
@@ -171,7 +199,7 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canD
             <span className="py-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
               {t("filesHeading")}
             </span>
-            {canDelete && <DeleteFilesAlertDialog paths={[...checkedPaths]} onDeleted={handleDeleted} />}
+            {canDelete && <DeleteFilesAlertDialog api={api} messagesNamespace={messagesNamespace} paths={[...checkedPaths]} onDeleted={handleDeleted} />}
           </div>
           <div className="flex-1 overflow-y-auto">
             {filesError && <p className="p-3 text-sm text-destructive">{filesError}</p>}
@@ -253,14 +281,16 @@ export function FileBrowser({ initialTree, initialFolderPath, initialFiles, canD
 }
 
 interface DeleteFilesAlertDialogProps {
+  api: FileBrowserApi;
+  messagesNamespace: NonNullable<FileBrowserProps["messagesNamespace"]>;
   paths: string[];
   onDeleted: (paths: string[]) => void | Promise<void>;
 }
 
 /** The Files pane's bin button: deletes every checked file from the server,
  * after a confirmation. Disabled while nothing is checked. */
-function DeleteFilesAlertDialog({ paths, onDeleted }: DeleteFilesAlertDialogProps) {
-  const t = useTranslations("tagscan.dashboard");
+function DeleteFilesAlertDialog({ api, messagesNamespace, paths, onDeleted }: DeleteFilesAlertDialogProps) {
+  const t = useTranslations(messagesNamespace);
   const tCommon = useTranslations("common");
   const [isOpen, setIsOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -268,7 +298,7 @@ function DeleteFilesAlertDialog({ paths, onDeleted }: DeleteFilesAlertDialogProp
   async function handleConfirmDelete() {
     setIsDeleting(true);
     try {
-      const { deleted } = await deleteTagscanFiles(paths);
+      const { deleted } = await api.deleteFiles(paths);
       toast.success(t("filesDeleted", { count: deleted }));
       setIsOpen(false);
       await onDeleted(paths);

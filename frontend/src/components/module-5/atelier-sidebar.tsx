@@ -51,6 +51,9 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
       ? [{ href: DESK, label: t("desk.title"), level: 1 as const, badge: <DeskScanAlert enabled /> }]
       : []),
     ...(can("open") ? [{ href: `${DESK}/open`, label: t("open.title"), level: 1 as const }] : []),
+    ...(can("returnissues")
+      ? [{ href: `${DESK}/return-issues`, label: t("returnIssues.title"), level: 1 as const }]
+      : []),
   ];
   const RESERVATIONS = `${BASE}/reservations`;
   const reservationLinks: MenuLink[] = [
@@ -81,6 +84,9 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
   const masterdataLinks: MenuLink[] = [
     ...(can("articles") ? [{ href: ARTICLES, label: t("articles.title"), level: 1 as const }] : []),
     ...(can("sizes") ? [{ href: `${ARTICLES}/sizes`, label: t("sizes.title"), level: 2 as const }] : []),
+    ...(can("returnstatuses")
+      ? [{ href: `${BASE}/masterdata/return-statuses`, label: t("returnStatuses.title"), level: 1 as const }]
+      : []),
     ...(can("dataupload")
       ? [{ href: `${BASE}/masterdata/data-upload-download`, label: t("dataUploadDownload.title"), level: 1 as const }]
       : []),

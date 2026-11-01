@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
 import { ArticleThumb } from "@/components/module-5/article-management";
 import { ATELIER_STOCK_CHANGED_EVENT, atelierStockErrorMessage } from "@/components/module-5/atelier-stock-common";
@@ -140,44 +140,41 @@ export function StockBookingScreen({ mode, initialStock, canBook }: StockBooking
         {mode === "writeoff" && (
           <div className="flex w-56 flex-col gap-2">
             <Label htmlFor="atelier-writeoff-source">{t("writeoff.sourceLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={source}
               onValueChange={(value) => {
                 if (!value) return;
                 setSource(value as Source);
                 setQuantities({});
               }}
-            >
-              <SelectTrigger id="atelier-writeoff-source">
-                <SelectValue>{(value: string | null) => (value ? t(`statuses.${value}`) : "")}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">{t("statuses.available")}</SelectItem>
-                <SelectItem value="to_wash">{t("statuses.to_wash")}</SelectItem>
-              </SelectContent>
-            </Select>
+              id="atelier-writeoff-source"
+              renderValue={(value: string | null) => (value ? t(`statuses.${value}`) : "")}
+              options={[
+                { value: "available", label: t("statuses.available") },
+                { value: "to_wash", label: t("statuses.to_wash") },
+              ]}
+            />
           </div>
         )}
         {/* Picking an article adds it with all its bookable sizes. */}
         <div className="flex w-80 flex-col gap-2">
           <Label>{t("addArticle")}</Label>
-          <Select
+          <SearchableSelect
             value=""
             onValueChange={(value) => value && setArticleIds((current) => [...current, Number(value)])}
             disabled={pickable.length === 0}
-          >
-            <SelectTrigger>
-              <Plus className="size-4" />
-              <SelectValue>{() => (pickable.length ? t("pickArticle") : t("nothingToPick"))}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {pickable.map((article) => (
-                <SelectItem key={article.article_id} value={String(article.article_id)}>
-                  {article.name} ({article.code})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            className="w-full"
+            renderValue={() => (
+              <>
+                <Plus className="size-4" />
+                {pickable.length ? t("pickArticle") : t("nothingToPick")}
+              </>
+            )}
+            options={pickable.map((article) => ({
+              value: String(article.article_id),
+              label: `${article.name} (${article.code})`,
+            }))}
+          />
         </div>
       </div>
 
@@ -245,18 +242,13 @@ export function StockBookingScreen({ mode, initialStock, canBook }: StockBooking
         {mode === "writeoff" && (
           <div className="flex flex-col gap-2">
             <Label htmlFor="atelier-writeoff-reason">{t("writeoff.reasonLabel")}</Label>
-            <Select value={reason} onValueChange={(value) => value && setReason(value as (typeof REASONS)[number])}>
-              <SelectTrigger id="atelier-writeoff-reason">
-                <SelectValue>{(value: string | null) => (value ? t(`reasons.${value}`) : "")}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {REASONS.map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {t(`reasons.${item}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={reason}
+              onValueChange={(value) => value && setReason(value as (typeof REASONS)[number])}
+              id="atelier-writeoff-reason"
+              renderValue={(value: string | null) => (value ? t(`reasons.${value}`) : "")}
+              options={REASONS.map((item) => ({ value: item, label: t(`reasons.${item}`) }))}
+            />
           </div>
         )}
         <div className="flex flex-col gap-2 sm:col-span-2">

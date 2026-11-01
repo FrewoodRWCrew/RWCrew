@@ -3,6 +3,80 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-01 — Wristband webhook token generated in the app, explanation for the company (PR_0033)
+**Request:** A way to generate the key for the wristband connection, plus a link with a short explanation of how it works and how to communicate it with the wristband company and the JSON sent after a scan.
+**Plan:**
+- One token per environment, generated on Scans > Instellingen, shown once, only a hash stored; the `.env` setting removed.
+- A link to a forwardable PDF, using the manual system.
+**Changes:** `wristband/webhook_token.py`, `Tagscan_settings.wristband_token_*` (migration `e5a1c7d3f486`), `POST`/`DELETE /api/modules/module-1/wristband/settings/token`, `process_message` takes `check_token`. `WRISTBAND_WEBHOOK_TOKEN` removed from config, compose and `.env*.example`. `wristband-settings-card.tsx`, `copy-to-clipboard.ts`. Manual chapter `wristband-integration` (nl + en) and a code block in the manual format (`help/content.py`, `help_pdf.py`).
+**Verification:** Full backend suite, migration up/down on local Postgres, typecheck and build; browser check per the session report.
+**Notes:** SHA-256 instead of `hash_password`, since this runs on every scan and the key is random. This replaces the "rename the token in .env" step from the entry below: generate a token on each environment instead.
+
+## 2026-11-01 — Scans module: wristbands shared with Walkies (PR_0033), team aliases (PR_0035)
+**Request:** Wristbands will also serve Walkies, so move them out of Atelier: TagScan becomes "Scans" with separate RFID and wristband parts, one set of access rights, wristband info in the settings, JSON messages as a table plus a copy of the CSV source-files screen, test scans still possible from Atelier, Walkies and Scans, and a scan only shown at a counter when the team has reservations there. PR_0035: an alias field on the team for names that differ in other applications.
+**Plan:**
+- Rename for display only (key, URLs, `tagscan.*` keys and `Tagscan_*` tables stay).
+- Shared package `app/modules/wristband/`; `Atelier_scan`/`Atelier_scanner` renamed to `Wristband_*`.
+- Each message is a real `.json` file per day and gets its row immediately.
+- Rule: a package at any festival of the season; an unmatched team stays on the desk with a warning; first counter to use a scan wins.
+- Aliases on the team fiche and in the XLSX, used by `match_team`.
+**Changes:** New `app/modules/wristband/` (scan_service, webhook_router, json_files, visibility, test_routes), `module_1/wristband_router.py`, `schemas/wristband.py`, `module_9/team_alias_service.py`, model `team_alias.py`. Migrations `c3e8f1a7d264` (rename, `used_by_module`, module name) and `d4f9a2b8e375` (`MasterData_team_alias`). Webhook moved to `POST /api/public/wristband-scan`; `ATELIER_WEBHOOK_TOKEN` → `WRISTBAND_WEBHOOK_TOKEN`; new `WRISTBAND_SOURCE_DIR` + volume `wristband_data`. `/desk/scans` takes `season_id`. Screens `tagscan.wristband-files|scans|scanners|test`, `walkies.scantest`; pages under `modules/module-1/wristbands/` and `modules/module-6/settings/scan-test`; shared `components/shared/wristband/`; Scans sidebar regrouped; Atelier Instellingen reduced to the switch; team fiche alias field. `TagScan` → `Scans` in translations, manuals and handbook sources; new help chapters (module_1, module_6, module_9). `tagscan` `me/permissions` also returns `editable_screen_keys`.
+**Verification:** Full backend suite and migrations up/down on local Postgres (21 scan rows kept; `alembic check` clean); frontend typecheck, lint and production build; see the session report for the browser check.
+**Notes:** Deviation: `unreadable`/`bad_token` messages get a row but no file, so the public address can't fill the disk. The desk card got a warning for an unmatched team (it had none). Module screenshots in the manuals were not regenerated and still show the old name. After deploy: rename the token in both `.env` files and tick the new screens on the roles. JSON files have no automatic clean-up; a retention period is still to be decided.
+
+## 2026-11-01 — Atelier: Excel download on Openstaand and Retourproblemen
+**Request:** download the data of Atelier's Openstaand and Retourproblemen screens as an Excel file.
+**Plan:**
+- Server-side with `build_xlsx`; the screen sends the ids of the pieces it shows, so the file follows every filter.
+- An "Excel" button on both screens; no email column; only "view" on that screen needed.
+**Changes:** new `module_5/desk_export.py`, `POST /desk/open/export` and `/desk/return-issues/export` in `desk_router.py`
+(list queries moved into helpers), `DeskExportRequest`, `saveExcel` in `desk-common.ts`, buttons in `open-handouts.tsx` and
+`return-issues.tsx`, api, nl/en translations, manual nl/en, `CLAUDE.md`.
+**Verification:** full `pytest` 945 passed (new test `test_excel_downloads`), `tsc --noEmit` and eslint clean. The buttons were not clicked in a browser and the files not opened in Excel itself.
+**Notes:** values starting with = + - @ get a leading apostrophe, because names can arrive through the public wristband webhook.
+
+## 2026-11-01 — Atelier: PR_0027 wristband camera, PR_0028 Inname from Openstaand, PR_0026 return status
+**Request:** three Atelier changes: read the wristband QR code with the PC camera when the scanners fail; book a return from
+the Openstaand screen; note per returned piece what is wrong with it (list kept in Masterdata), with an overview of those pieces.
+**Plan:**
+- Camera icon on Ophalen's wristband field, reusing `QrScanDialog`; the QR code's whole text is the number.
+- "Inname" button per person on Openstaand, opening the desk's return form in a dialog; the normal Inname mail is sent.
+- Optional return status per piece, only a remark (stock still goes to wash), new masterdata screen and read-only overview.
+**Changes:**
+- Frontend: `qr-scan-dialog.tsx` (optional texts), `desk-screen.tsx` (camera button), new `desk-return-form.tsx` (`ReturnForm`
+  moved out, `fixedPerson`, status dropdown), `open-handouts.tsx` + its page (Actions column, dialog), new
+  `return-status-management.tsx`, `return-issues.tsx` and their pages, sidebar, help routes, `FALLBACK_SCREENS`, api, types, nl/en.
+- Backend: `Atelier_return_status` + `Atelier_handout_line.return_status_id` (migration `e3a7c1f5b842`, seeds "Beschadigd" and
+  "Zeer vuil"), screens `atelier.returnissues|returnstatuses`, `/return-statuses` CRUD, `GET /desk/return-statuses`,
+  `GET /desk/return-issues`, `line_statuses` on the return requests, error `return_status_invalid`.
+- Manual module_5 nl/en: camera, return status, Inname, two new chapters. `CLAUDE.md` updated.
+**Verification:** full `pytest` 944 passed (new test `test_return_status_masterdata_and_issues`), `tsc --noEmit` and eslint clean
+on the touched code, `alembic upgrade head` on local Postgres, the two new read queries run there. The screens were not clicked
+through in a browser, and the camera was not tried with a real QR code.
+**Notes:** both new screens start unticked for every role. Manual screenshots `desk.png`/`open.png` not retaken. The real
+wristband's QR format is unknown until the company connects (May 2027).
+
+## 2026-11-01 — PR_0019: search in every dropdown
+**Request:** users asked for a search function in all dropdown lists (raised as PR_0018, but that number is the Kar Map icons, so
+the user assigned PR_0019). First an inventory of which dropdowns lack it; then all of them, desktop and phone.
+**Plan:**
+- One shared `SearchableSelect` on Base UI's Combobox, with an `options` prop.
+- Convert all 94 desktop `Select`s and 8 phone `PhoneSelect`s, then remove `ui/select.tsx` and `phone-select.tsx`.
+**Changes:**
+- New `components/ui/searchable-select.tsx` (accent-insensitive, starts-with matches first, `size="phone"`, keyboard support).
+- 60 files converted, in every module, the shared season selector and the changelog screen. Removed `ui/select.tsx` and
+  `phone/shared/phone-select.tsx`. New texts `common.dropdownSearch` and `common.dropdownNoResults` (nl + en). CLAUDE.md gotcha.
+  No migration, no new endpoints.
+**Verification:** eslint clean on the changed files; `npx tsc --noEmit` no errors in `src`; `npm run build` passes; no `<select>`,
+`PhoneSelect` or `ui/select` left. In headless Edge on localhost, 19 of 19 checks: public form (search in 325 teams, no-results
+row, "Andere"), table filter (keyboard pick, "all" entry, reopens with the full list), dialog (colour swatches, typing, Esc closes
+only the list), role dropdown in dark mode, phone width (height, popup fits, 16px search font, tap picks), no console errors.
+Nothing was saved during the checks; the temporary test user was removed.
+**Notes:** added an optional `renderValue` prop beyond the plan, to keep each screen's existing button text and fallbacks exactly.
+Most conversions were done by script and only a sample of screens was clicked through. Not tested on a real iPhone (on-screen
+keyboard). Phone dropdowns no longer open the system picker. The test-screen `datalist` in `scan-test.tsx` stays: it is a free-text
+field with suggestions.
+
 ## 2026-11-01 — PR_0018: Kar Map icons instead of colour dots
 **Request:** replace the colour dots on KarTracker's Kar Map with small icons, because some people cannot see the difference
 between the colours.

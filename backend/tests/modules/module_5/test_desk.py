@@ -6,9 +6,11 @@
 # open list, the persons-vs-reservation count, the KPI tiles and the rights.
 
 from datetime import date
+from io import BytesIO
 
 import pytest
 from fastapi.testclient import TestClient
+from openpyxl import load_workbook
 from sqlalchemy.orm import Session
 
 from app.db.models.festival import Festival
@@ -249,3 +251,88 @@ def test_context_shows_team_responsibles(as_atelier: TestClient, db_session: Ses
     assert context["team_responsibles"] == [
         {"name": "Piet", "email": "piet@example.com", "phone": "0470 11 22 33", "comments": "Ploegbaas"}
     ]
+
+
+def test_return_status_masterdata_and_issues(as_atelier: TestClient, world: dict, desk: dict) -> None:
+    # The list: a name exists once (ignoring case).
+    created = as_atelier.post(f"{BASE}/return-statuses", json={"name": " Beschadigd "})
+    assert created.status_code == 201 and created.json()["name"] == "Beschadigd"
+    status_id = created.json()["id"]
+    assert as_atelier.post(f"{BASE}/return-statuses", json={"name": "beschadigd"}).status_code == 409
+    other_id = as_atelier.post(f"{BASE}/return-statuses", json={"name": "Zeer vuil"}).json()["id"]
+
+    handout = _pick_up(as_atelier, world, desk, [("tshirt", "m"), ("apron", "apron_size")]).json()
+    tshirt_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "T-shirt")
+    apron_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "Schort")
+    return_url = f"{BASE}/desk/persons/{handout['person_id']}/return"
+    before = _stock(as_atelier, desk["m"])
+
+    # An inactive status isn't offered and is refused, without booking anything.
+    assert as_atelier.put(f"{BASE}/return-statuses/{other_id}", json={"name": "Zeer vuil", "active": False}).status_code == 200
+    assert [row["name"] for row in as_atelier.get(f"{BASE}/desk/return-statuses").json()] == ["Beschadigd"]
+    refused = as_atelier.post(return_url, json={"line_ids": [tshirt_line], "line_statuses": {str(tshirt_line): other_id}})
+    assert refused.json()["detail"] == "return_status_invalid"
+    # So is a status on a piece that isn't coming back.
+    refused = as_atelier.post(return_url, json={"line_ids": [tshirt_line], "line_statuses": {str(apron_line): status_id}})
+    assert refused.json()["detail"] == "return_status_invalid"
+    assert _stock(as_atelier, desk["m"]) == before
+
+    # The status is only a remark: the piece still goes to wash. A piece without one isn't listed.
+    returned = as_atelier.post(
+        return_url, json={"line_ids": [tshirt_line, apron_line], "line_statuses": {str(tshirt_line): status_id}}
+    )
+    assert returned.status_code == 200
+    assert _stock(as_atelier, desk["m"]) == (2, 1, 0)
+    issues = as_atelier.get(f"{BASE}/desk/return-issues", params={"festival_id": desk["festival"]}).json()
+    assert [(row["status_name"], row["article_name"], row["person_name"]) for row in issues] == [
+        ("Beschadigd", "T-shirt", "Jan Peeters")
+    ]
+    assert as_atelier.get(f"{BASE}/desk/return-issues", params={"day": "2026-07-04"}).json() == []
+
+    # A used status can't be deleted, an unused one can.
+    assert as_atelier.delete(f"{BASE}/return-statuses/{status_id}").status_code == 400
+    assert as_atelier.delete(f"{BASE}/return-statuses/{other_id}").status_code == 204
+
+
+def _sheet_rows(response) -> list[tuple]:
+    """The rows of a downloaded workbook."""
+    assert response.status_code == 200
+    return list(load_workbook(BytesIO(response.content)).active.iter_rows(values_only=True))
+
+
+def test_excel_downloads(client: TestClient, as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    handout = _pick_up(as_atelier, world, desk, [("tshirt", "m"), ("apron", "apron_size")], bracelet="B7").json()
+    tshirt_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "T-shirt")
+    apron_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "Schort")
+    body = {"festival_id": desk["festival"], "day": DAY}
+
+    # Openstaand: only the pieces the screen shows, in the user's language, no email.
+    rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/open/export", json={**body, "line_ids": [tshirt_line]}))
+    assert rows[0][:3] == ("Ploeg", "Persoon", "Polsband")
+    assert [row[4] for row in rows[1:]] == ["T-shirt"]
+    assert rows[1][1:4] == ("Jan Peeters", "B7", "03-07-2026")
+    assert not any("example.com" in str(cell).lower() for row in rows for cell in row)
+    rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/open/export", json={**body, "line_ids": [apron_line], "locale": "en"}))
+    assert rows[0][0] == "Team" and [row[4] for row in rows[1:]] == ["Schort"]
+
+    # Retourproblemen.
+    status_id = as_atelier.post(f"{BASE}/return-statuses", json={"name": "=Beschadigd"}).json()["id"]
+    as_atelier.post(
+        f"{BASE}/desk/persons/{handout['person_id']}/return",
+        json={"line_ids": [tshirt_line], "line_statuses": {str(tshirt_line): status_id}},
+    )
+    rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": [tshirt_line]}))
+    assert rows[0][0] == "Retourstatus"
+    # A value that looks like a formula stays text.
+    assert rows[1][:2] == ("'=Beschadigd", "T-shirt")
+    assert not any("example.com" in str(cell).lower() for row in rows[1:] for cell in row[:9])
+    assert len(_sheet_rows(as_atelier.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": []}))) == 1
+
+    # Each download needs view on its own screen.
+    as_atelier.post("/api/auth/logout")
+    role = _make_role(db_session, "Kijker", {"atelier.open": (True, False, False, False)})
+    _make_user(db_session, world, "kijker@example.com", role)
+    _login(client, "kijker@example.com")
+    assert client.post(f"{BASE}/desk/open/export", json={**body, "line_ids": []}).status_code == 200
+    assert client.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": []}).status_code == 403
+

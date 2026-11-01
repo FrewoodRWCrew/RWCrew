@@ -22,11 +22,10 @@ from app.db.models.atelier_reservation import AtelierReservation  # noqa: F401
 from app.db.models.atelier_reservation_line import AtelierReservationLine  # noqa: F401
 from app.db.models.atelier_role import AtelierRole  # noqa: F401
 from app.db.models.atelier_role_permission import AtelierRolePermission  # noqa: F401
-from app.db.models.atelier_scan import AtelierScan  # noqa: F401
-from app.db.models.atelier_scanner import AtelierScanner  # noqa: F401
 from app.db.models.atelier_screen import AtelierScreen  # noqa: F401
 from app.db.models.atelier_mail_template import AtelierMailTemplate  # noqa: F401
 from app.db.models.atelier_settings import AtelierSettings  # noqa: F401
+from app.db.models.atelier_return_status import AtelierReturnStatus  # noqa: F401
 from app.db.models.atelier_size import AtelierSize  # noqa: F401
 from app.db.models.atelier_stock_balance import AtelierStockBalance  # noqa: F401
 from app.db.models.atelier_stock_document import AtelierStockDocument  # noqa: F401
@@ -92,6 +91,7 @@ from app.db.models.tagscan_screen import TagscanScreen  # noqa: F401
 from app.db.models.tagscan_settings import TagscanSettings  # noqa: F401
 from app.db.models.tagscan_user_role import TagscanUserRole  # noqa: F401
 from app.db.models.team import Team  # noqa: F401
+from app.db.models.team_alias import TeamAlias  # noqa: F401
 from app.db.models.team_festival import TeamFestival  # noqa: F401
 from app.db.models.team_kernlid import TeamKernlid  # noqa: F401
 from app.db.models.team_location import TeamLocation  # noqa: F401
@@ -107,3 +107,5 @@ from app.db.models.walkies_role_permission import WalkiesRolePermission  # noqa:
 from app.db.models.walkies_screen import WalkiesScreen  # noqa: F401
 from app.db.models.walkies_user_role import WalkiesUserRole  # noqa: F401
 from app.db.models.warehouse import Warehouse  # noqa: F401
+from app.db.models.wristband_scan import WristbandScan  # noqa: F401
+from app.db.models.wristband_scanner import WristbandScanner  # noqa: F401

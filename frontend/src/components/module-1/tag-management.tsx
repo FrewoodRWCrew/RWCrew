@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -311,65 +311,56 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE ? t(`status.${value}`) : t("allStatuses")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allStatuses")}</SelectItem>
-                    {STATUS_VALUES.map((statusValue) => (
-                      <SelectItem key={statusValue} value={statusValue}>
-                        {t(`status.${statusValue}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterStatus")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE ? t(`status.${value}`) : t("allStatuses")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allStatuses") },
+                    ...STATUS_VALUES.map((statusValue) => ({
+                      value: statusValue,
+                      label: t(`status.${statusValue}`),
+                    })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={productFilter} onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterProduct")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE
-                          ? (products.find((product) => String(product.id) === value)?.name ?? t("allProducts"))
-                          : t("allProducts")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allProducts")}</SelectItem>
-                    {products.map((product) => (
-                      <SelectItem key={product.id} value={String(product.id)}>
-                        {product.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={productFilter}
+                  onValueChange={(value) => setProductFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterProduct")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE
+                      ? (products.find((product) => String(product.id) === value)?.name ?? t("allProducts"))
+                      : t("allProducts")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allProducts") },
+                    ...products.map((product) => ({ value: String(product.id), label: product.name })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={karFilter} onValueChange={(value) => setKarFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterKar")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE
-                          ? (kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("allKars"))
-                          : t("allKars")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allKars")}</SelectItem>
-                    {kars.map((kar) => (
-                      <SelectItem key={kar.id} value={String(kar.id)}>
-                        {kar.kar_nummer}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={karFilter}
+                  onValueChange={(value) => setKarFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterKar")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE
+                      ? (kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("allKars"))
+                      : t("allKars")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allKars") },
+                    ...kars.map((kar) => ({ value: String(kar.id), label: kar.kar_nummer })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -625,69 +616,52 @@ function TagFormDialog({ tag, defaultOpen, trigger, onSaved, products, kars }: T
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="tag-status">{t("statusLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.status ?? "active"}
               onValueChange={(value) => updateField("status", (value ?? "active") as RfidTagStatus)}
-            >
-              <SelectTrigger id="tag-status">
-                <SelectValue>{(value: string | null) => t(`status.${value ?? "active"}`)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_VALUES.map((statusValue) => (
-                  <SelectItem key={statusValue} value={statusValue}>
-                    {t(`status.${statusValue}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="tag-status"
+              renderValue={(value: string | null) => t(`status.${value ?? "active"}`)}
+              options={STATUS_VALUES.map((statusValue) => ({
+                value: statusValue,
+                label: t(`status.${statusValue}`),
+              }))}
+            />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="tag-assigned-product">{t("assignedProductLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.assigned_product_id ? String(form.assigned_product_id) : NO_SELECTION_VALUE}
               onValueChange={(value) =>
                 updateField("assigned_product_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="tag-assigned-product">
-                <SelectValue>
-                  {(value: string | null) => products.find((product) => String(product.id) === value)?.name ?? t("noSelection")}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={String(product.id)}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="tag-assigned-product"
+              renderValue={(value: string | null) =>
+                products.find((product) => String(product.id) === value)?.name ?? t("noSelection")
+              }
+              options={[
+                { value: NO_SELECTION_VALUE, label: t("noSelection") },
+                ...products.map((product) => ({ value: String(product.id), label: product.name })),
+              ]}
+            />
           </div>
 
           {/* The KarTracker kar this tag is mounted on — lets a later phase
               recognise a scanned RFID as a kar. */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="tag-kar">{t("karLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.kar_id ? String(form.kar_id) : NO_SELECTION_VALUE}
               onValueChange={(value) => updateField("kar_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-            >
-              <SelectTrigger id="tag-kar">
-                <SelectValue>
-                  {(value: string | null) => kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("noSelection")}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
-                {kars.map((kar) => (
-                  <SelectItem key={kar.id} value={String(kar.id)}>
-                    {kar.kar_nummer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="tag-kar"
+              renderValue={(value: string | null) =>
+                kars.find((kar) => String(kar.id) === value)?.kar_nummer ?? t("noSelection")
+              }
+              options={[
+                { value: NO_SELECTION_VALUE, label: t("noSelection") },
+                ...kars.map((kar) => ({ value: String(kar.id), label: kar.kar_nummer })),
+              ]}
+            />
           </div>
 
           <div className="flex flex-col gap-2">

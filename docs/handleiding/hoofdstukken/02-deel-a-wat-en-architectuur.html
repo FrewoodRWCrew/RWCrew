@@ -46,7 +46,7 @@ thema (standaard donker) en het gebruikersmenu (wachtwoord wijzigen, uitloggen).
 <table id="tab-modules">
   <caption>De modules van RWCrew</caption>
   <tr><th class="nowrap" style="width:15%">Sleutel</th><th style="width:20%">Naam</th><th>Waarvoor</th><th style="width:13%">Telefoon</th></tr>
-  <tr><td><code>module-1</code></td><td><strong>TagScan</strong></td><td>RFID-tags: CSV-bestanden van scanners inlezen, tag-gegevens bekijken, tags beheren, scanners en hun API-sleutels registreren.</td><td>Nee</td></tr>
+  <tr><td><code>module-1</code></td><td><strong>Scans</strong></td><td>RFID-tags: CSV-bestanden van scanners inlezen, tag-gegevens bekijken, tags beheren, scanners en hun API-sleutels registreren.</td><td>Nee</td></tr>
   <tr><td><code>module-2</code></td><td><strong>KarTracker</strong></td><td>Karren (rolcontainers): registratie, statussen, distributiepunten, zones, afleverlocaties, planning per festival, karbladen met QR-code, kaart, grondplan, manuele bewegingen (scannen), leveringsvolgorde, planningsanalyses (initiële levering, verplaatsingen tussen festivals, speciale levertoeren) en de karcode van het slot.</td><td>Ja: KarScan, Kar Planning, Kar Map, Karcode Simulator</td></tr>
   <tr><td><code>module-3</code></td><td><strong>Interventie Aanvragen</strong> <span class="klein">(Intervention Requests)</span></td><td>Aanvragen van ploegen tijdens het festival: registreren, opvolgen met statussen, toewijzen aan TeamKar, mail met PDF-leveringsbon naar een mailinglijst. Ook een publiek formulier via QR-code, zonder inloggen.</td><td>Ja: Akties (lijst, nieuw, wijzigen), KPI</td></tr>
   <tr><td><code>module-4</code></td><td><strong>StockMaster</strong></td><td>Magazijnvoorraad van de producten (de productstamgegevens worden sinds 24 oktober 2026 hier beheerd): vrije voorraad op de vaste plaats van een product en voorraad geladen in karren. Inboeken, uitboeken, karren laden en uitladen, kar vertrekt en kar terug, tellingen, benodigdheden per kar, "Te bestellen", PDF's.</td><td>Nee</td></tr>
@@ -65,7 +65,7 @@ thema (standaard donker) en het gebruikersmenu (wachtwoord wijzigen, uitloggen).
 
 <h2 id="s-modules-detail">De modules in meer detail</h2>
 
-<h3 id="s-mod-tagscan">TagScan (module 1)</h3>
+<h3 id="s-mod-tagscan">Scans (module 1)</h3>
 <p>Draagbare RFID-scanners schrijven hun scans weg als CSV-bestanden. Een <strong>Raspberry Pi</strong> bij de
 scanners stuurt elk afgewerkt bestand via HTTPS naar RWCrew (endpoint <code>POST /api/public/tagscan-intake</code>,
 beveiligd met een API-sleutel per scanner). De bestanden komen terecht in de map "Unreaded Tags" en worden
@@ -75,11 +75,11 @@ ingelezen wanneer een gebruiker op de knop <strong>Scan</strong> drukt. Daarna z
 registreer je scanners en maak je hun API-sleutels aan.</p>
 
 <p><strong>Automatisch scannen.</strong> De backend kan zelf op de achtergrond scannen: een taak die bij het opstarten
-begint, leest elke minuut (instelbaar op het scherm <em>Instellingen</em> van TagScan) de nieuwe bestanden in, net alsof iemand
+begint, leest elke minuut (instelbaar op het scherm <em>Instellingen</em> van Scans) de nieuwe bestanden in, net alsof iemand
 op <strong>Scan</strong> drukt. Een vergrendeling voorkomt dat de automatische en een manuele scan tegelijk lopen.</p>
 <p><strong>Acties verwerken.</strong> Elke ingelezen regel heeft naast zijn EPC-status ook een <strong>verwerkingsstatus</strong>:
 <em>nieuw</em> (oranje), <em>verwerkt</em> (groen) of <em>geannuleerd</em> (rood). Als de kolom <code>Action</code> van een regel
-een actie bevat die RWCrew kent, verschijnt boven elk TagScan-scherm een oranje balk "acties wachten op verwerking". Daarin
+een actie bevat die RWCrew kent, verschijnt boven elk Scans-scherm een oranje balk "acties wachten op verwerking". Daarin
 kies je per bestand wat er moet gebeuren en verwerk je alle regels in één keer, of annuleer je een regel met een reden.
 Vandaag kent RWCrew één actie, <code>assignment</code>: tags registreren en aan een <strong>product</strong> koppelen (het product kies je
 per bestand). Nieuwe acties worden toegevoegd in <code>module_1/line_processing.py</code>.</p>
@@ -89,12 +89,12 @@ per bestand). Nieuwe acties worden toegevoegd in <code>module_1/line_processing.
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-tagscan-linedata">
   <img src="afbeeldingen/06-tagscan-linedata.png" alt="">
-  <figcaption>TagScan · Tag Regelgegevens: één rij per gescande tag. De kleur van de eerste kolom toont de verwerkingsstatus (groen = verwerkt).</figcaption>
+  <figcaption>Scans · Tag Regelgegevens: één rij per gescande tag. De kleur van de eerste kolom toont de verwerkingsstatus (groen = verwerkt).</figcaption>
 </figure>
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-tagscan-instellingen">
   <img src="afbeeldingen/09-tagscan-instellingen.png" alt="">
-  <figcaption>TagScan · Instellingen: de ontvangstmap, het automatisch scannen met zijn interval en het adres waarop apparaten hun CSV-bestanden sturen.</figcaption>
+  <figcaption>Scans · Instellingen: de ontvangstmap, het automatisch scannen met zijn interval en het adres waarop apparaten hun CSV-bestanden sturen.</figcaption>
 </figure>
 
 <h3 id="s-mod-kartracker">KarTracker (module 2)</h3>
@@ -185,7 +185,7 @@ in voorraad is. De benodigdheden worden ook door de Altsien-kernleden ingevuld (
 Producten onder hun minimumvoorraad (verbruiksgoederen) geven een oranje waarschuwing bovenaan de module.</p>
 <p>Sinds 24 oktober 2026 beheert StockMaster ook de <strong>productstamgegevens</strong> (menu <em>Masterdata</em>: producten met
 type, magazijn, categorie en limiet, plus Excel-import en -export); de tabellen houden hun naam <code>MasterData_product…</code>.
-Verder: <em>Inboeken</em> kan een TagScan-scan met actie "Book In" overnemen (een melding bovenaan elk StockMaster-scherm),
+Verder: <em>Inboeken</em> kan een Scans-scan met actie "Book In" overnemen (een melding bovenaan elk StockMaster-scherm),
 <em>Kar laden</em> toont per product wat "op dit moment beschikbaar is voor levering" volgens het stroomdiagram van de organisatie
 (limieten, blokkering, logistieke producten), met naast de benodigdheden ook <em>manuele aanvragen</em>, en een kar die al vertrok
 kan een <em>nalevering</em> krijgen.
@@ -268,7 +268,7 @@ gebouwd:</p>
   familienaam; e-mail is optioneel en het polsbandnummer geldt per festival. "Openstaand" toont wat nog niet terug is.</td></tr>
   <tr><td>5 Polsbandscans</td><td>Het polsbandbedrijf stuurt elke scan aan onze balie als JSON naar een <strong>webhook</strong>; de balie toont de persoon
   binnen enkele seconden en vult de transactie in. Een testscherm speelt berichten na tot de echte koppeling (vanaf mei 2027).</td></tr>
-  <tr><td>6 RFID</td><td>Elk kledingstuk opvolgen via TagScan (nog niet gebouwd).</td></tr>
+  <tr><td>6 RFID</td><td>Elk kledingstuk opvolgen via Scans (nog niet gebouwd).</td></tr>
 </table>
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-atelier-balie">
@@ -355,7 +355,7 @@ IP-adres van de server, Nginx neemt het verzoek aan en stuurt het door naar de f
   <text x="67" y="239" text-anchor="middle" class="t-mini">QR-code op karblad</text>
   <rect class="box-oranje" x="8" y="300" width="118" height="60" rx="7"/>
   <text x="67" y="325" text-anchor="middle" class="t-titel">Raspberry Pi</text>
-  <text x="67" y="343" text-anchor="middle" class="t-mini">TagScan CSV's</text>
+  <text x="67" y="343" text-anchor="middle" class="t-mini">Scans CSV's</text>
   <!-- server -->
   <rect class="zone" x="160" y="18" width="380" height="400" rx="10"/>
   <text x="172" y="36" class="t-zone">HOSTINGER VPS (UBUNTU + DOCKER)</text>
@@ -375,7 +375,7 @@ IP-adres van de server, Nginx neemt het verzoek aan en stuurt het door naar de f
   <rect class="box-oranje" x="310" y="300" width="210" height="74" rx="7"/>
   <text x="415" y="324" text-anchor="middle" class="t-titel">Database · PostgreSQL 16</text>
   <text x="415" y="342" text-anchor="middle" class="t-mini">container, enkel intern bereikbaar</text>
-  <text x="415" y="358" text-anchor="middle" class="t-mini">+ volume met TagScan-bestanden</text>
+  <text x="415" y="358" text-anchor="middle" class="t-mini">+ volume met Scans-bestanden</text>
   <!-- extern -->
   <rect class="box-paars" x="560" y="58" width="92" height="60" rx="7"/>
   <text x="606" y="83" text-anchor="middle" class="t-titel">GitHub</text>
@@ -444,7 +444,7 @@ meteen welke tabellen bij elkaar horen, en kunnen twee modules nooit per ongeluk
   <caption>Voorvoegsels van de databasetabellen</caption>
   <tr><th style="width:30%">Voorvoegsel</th><th>Onderdeel</th><th style="width:40%">Voorbeelden</th></tr>
   <tr><td><code>Landing_</code></td><td>Startscherm, gebruikers, toegang</td><td><code>Landing_users</code>, <code>Landing_user_module_access</code>, <code>Landing_login_history</code></td></tr>
-  <tr><td><code>Tagscan_</code></td><td>TagScan (module 1)</td><td><code>Tagscan_roles</code>, tag-header- en -linedata</td></tr>
+  <tr><td><code>Tagscan_</code></td><td>Scans (module 1)</td><td><code>Tagscan_roles</code>, tag-header- en -linedata</td></tr>
   <tr><td><code>KarTracker_</code></td><td>KarTracker (module 2)</td><td><code>KarTracker_karren</code>, <code>KarTracker_kar_actions</code></td></tr>
   <tr><td><code>InterventionRequests_</code></td><td>Interventie Aanvragen (module 3)</td><td><code>InterventionRequests_request</code>, <code>InterventionRequests_status</code></td></tr>
   <tr><td><code>StockMaster_</code></td><td>StockMaster (module 4)</td><td><code>StockMaster_document</code>, <code>StockMaster_movement</code>, <code>StockMaster_balance</code></td></tr>
@@ -463,7 +463,7 @@ De volledige lijst van tabellen vind je in de map <code>backend/app/db/models/</
   <tr><td><strong>Cloudflare</strong></td><td>DNS van <code>rwcrew.eu</code>. Lokaal ook de "quick tunnel" om een telefoon via HTTPS met je pc te verbinden.</td><td>Cloudflare-account; <code>cloudflared</code> op de ontwikkel-pc</td></tr>
   <tr><td><strong>Let's Encrypt</strong></td><td>Gratis HTTPS-certificaten, vernieuwd door certbot op de server.</td><td>Op de server</td></tr>
   <tr><td><strong>Resend</strong></td><td>Verstuurt mails (nieuwe interventie-aanvraag) via een HTTP-API.</td><td><code>RESEND_API_KEY</code>, <code>MAIL_FROM</code> (domein geverifieerd via DNS)</td></tr>
-  <tr><td><strong>Raspberry Pi</strong></td><td>Staat bij de RFID-scanners en stuurt CSV-bestanden door naar TagScan.</td><td><code>scripts/pi-watcher/</code>, API-sleutel per scanner</td></tr>
+  <tr><td><strong>Raspberry Pi</strong></td><td>Staat bij de RFID-scanners en stuurt CSV-bestanden door naar Scans.</td><td><code>scripts/pi-watcher/</code>, API-sleutel per scanner</td></tr>
   <tr><td><strong>OpenStreetMap</strong></td><td>Kaartachtergrond voor de Kar Map (via de bibliotheek Leaflet).</td><td>Geen sleutel nodig</td></tr>
 </table>
 

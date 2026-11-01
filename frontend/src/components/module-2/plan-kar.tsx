@@ -23,7 +23,7 @@ import type {
   KarTrackerPlanKarRow,
 } from "@/lib/types";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AfleverlocatieMap, groupChosenAfleverlocaties } from "@/components/shared/afleverlocatie-map";
 import type { GroundplanOverlay } from "@/components/module-2/kar-map-leaflet";
@@ -246,30 +246,26 @@ export function PlanKar({ teamId, teams, afleverlocaties, groundplans }: PlanKar
                     <TableRow key={row.festival_id} className="group">
                       <TableCell className="font-medium">{row.festival_name}</TableCell>
                       <TableCell>
-                        <Select
+                        <SearchableSelect
                           value={selected !== null ? String(selected) : NO_LOCATION_VALUE}
                           onValueChange={(value) => updateSelection(row.festival_id, value)}
-                        >
-                          <SelectTrigger className="w-full max-w-xl" aria-label={t("columnAfleverlocatie")}>
-                            <SelectValue>
-                              {(value: string | null) => {
-                                const location =
-                                  value && value !== NO_LOCATION_VALUE
-                                    ? afleverlocaties.find((item) => String(item.id) === value)
-                                    : undefined;
-                                return location ? locationLabel(location) : t("noAfleverlocatie");
-                              }}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={NO_LOCATION_VALUE}>{t("noAfleverlocatie")}</SelectItem>
-                            {afleverlocaties.map((location) => (
-                              <SelectItem key={location.id} value={String(location.id)}>
-                                {locationLabel(location)}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                          className="w-full max-w-xl"
+                          aria-label={t("columnAfleverlocatie")}
+                          renderValue={(value: string | null) => {
+                            const location =
+                              value && value !== NO_LOCATION_VALUE
+                                ? afleverlocaties.find((item) => String(item.id) === value)
+                                : undefined;
+                            return location ? locationLabel(location) : t("noAfleverlocatie");
+                          }}
+                          options={[
+                            { value: NO_LOCATION_VALUE, label: t("noAfleverlocatie") },
+                            ...afleverlocaties.map((location) => ({
+                              value: String(location.id),
+                              label: locationLabel(location),
+                            })),
+                          ]}
+                        />
                       </TableCell>
                     </TableRow>
                   );

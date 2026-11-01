@@ -12,6 +12,7 @@ import { WalkiesDashboard } from "@/components/module-6/walkies-dashboard";
 const FALLBACK_SCREENS: [string, string][] = [
   ["walkies.roles", "/modules/module-6/access-rights/roles"],
   ["walkies.users", "/modules/module-6/access-rights/users"],
+  ["walkies.scantest", "/modules/module-6/settings/scan-test"],
 ];
 
 export default async function WalkiesLandingPage() {

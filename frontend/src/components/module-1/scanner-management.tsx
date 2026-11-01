@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -201,46 +201,43 @@ export function ScannerManagement({ initialScanners, productTypes }: ScannerMana
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={typeFilter} onValueChange={(value) => setTypeFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterType")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE
-                          ? (productTypes.find((productType) => String(productType.id) === value)?.name ??
-                            t("allTypes"))
-                          : t("allTypes")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allTypes")}</SelectItem>
-                    {productTypes.map((productType) => (
-                      <SelectItem key={productType.id} value={String(productType.id)}>
-                        {productType.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={typeFilter}
+                  onValueChange={(value) => setTypeFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterType")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE
+                      ? (productTypes.find((productType) => String(productType.id) === value)?.name ??
+                        t("allTypes"))
+                      : t("allTypes")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allTypes") },
+                    ...productTypes.map((productType) => ({
+                      value: String(productType.id),
+                      label: productType.name,
+                    })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select
+                <SearchableSelect
                   value={technologyFilter}
                   onValueChange={(value) => setTechnologyFilter(value ?? ALL_VALUE)}
-                >
-                  <SelectTrigger aria-label={t("filterTechnology")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) => (value && value !== ALL_VALUE ? value : t("allTechnologies"))}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allTechnologies")}</SelectItem>
-                    {TECHNOLOGY_VALUES.map((technologyValue) => (
-                      <SelectItem key={technologyValue} value={technologyValue}>
-                        {technologyValue}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  aria-label={t("filterTechnology")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    (value && value !== ALL_VALUE ? value : t("allTechnologies"))
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allTechnologies") },
+                    ...TECHNOLOGY_VALUES.map((technologyValue) => ({
+                      value: technologyValue,
+                      label: technologyValue,
+                    })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -405,42 +402,32 @@ function ScannerFormDialog({ scanner, trigger, onSaved, productTypes }: ScannerF
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="scanner-type">{t("typeLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.type_id !== null ? String(form.type_id) : ""}
               onValueChange={(value) => updateField("type_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="scanner-type">
-                <SelectValue>
-                  {(value: string | null) => productTypes.find((productType) => String(productType.id) === value)?.name ?? ""}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {productTypes.map((productType) => (
-                  <SelectItem key={productType.id} value={String(productType.id)}>
-                    {productType.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="scanner-type"
+              renderValue={(value: string | null) =>
+                productTypes.find((productType) => String(productType.id) === value)?.name ?? ""
+              }
+              options={productTypes.map((productType) => ({
+                value: String(productType.id),
+                label: productType.name,
+              }))}
+            />
           </div>
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="scanner-technology">{t("technologyLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.technology}
               onValueChange={(value) => updateField("technology", (value ?? "Other") as ScannerTechnology)}
-            >
-              <SelectTrigger id="scanner-technology">
-                <SelectValue>{(value: string | null) => value ?? ""}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {TECHNOLOGY_VALUES.map((technologyValue) => (
-                  <SelectItem key={technologyValue} value={technologyValue}>
-                    {technologyValue}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="scanner-technology"
+              renderValue={(value: string | null) => value ?? ""}
+              options={TECHNOLOGY_VALUES.map((technologyValue) => ({
+                value: technologyValue,
+                label: technologyValue,
+              }))}
+            />
           </div>
 
           <div className="col-span-2 flex flex-col gap-2">

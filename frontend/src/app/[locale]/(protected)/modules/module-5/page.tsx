@@ -12,6 +12,7 @@ import { AtelierDashboard } from "@/components/module-5/atelier-dashboard";
 const FALLBACK_SCREENS: [string, string][] = [
   ["atelier.desk", "/modules/module-5/desk"],
   ["atelier.open", "/modules/module-5/desk/open"],
+  ["atelier.returnissues", "/modules/module-5/desk/return-issues"],
   ["atelier.reservations", "/modules/module-5/reservations"],
   ["atelier.preparation", "/modules/module-5/reservations/preparation"],
   ["atelier.stock", "/modules/module-5/stock"],
@@ -23,6 +24,7 @@ const FALLBACK_SCREENS: [string, string][] = [
   ["atelier.orderneeds", "/modules/module-5/stock/order-needs"],
   ["atelier.articles", "/modules/module-5/masterdata/articles"],
   ["atelier.sizes", "/modules/module-5/masterdata/articles/sizes"],
+  ["atelier.returnstatuses", "/modules/module-5/masterdata/return-statuses"],
   ["atelier.dataupload", "/modules/module-5/masterdata/data-upload-download"],
   ["atelier.settings", "/modules/module-5/settings"],
   ["atelier.scantest", "/modules/module-5/settings/scan-test"],

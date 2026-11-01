@@ -37,7 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // The number of columns (checkbox included), so a header row can span all of them.
@@ -296,20 +296,20 @@ export function KarMovesScreen() {
     return (
       <div className="flex flex-col gap-1.5">
         <Label>{label}</Label>
-        <Select value={value === null ? null : String(value)} onValueChange={(next) => chooseFestival(side, next)}>
-          <SelectTrigger aria-label={label} className="w-56">
-            <SelectValue>
-              {(selected: string | null) => festivals.find((festival) => String(festival.id) === selected)?.name ?? ""}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {festivals.map((festival) => (
-              <SelectItem key={festival.id} value={String(festival.id)} disabled={festival.id === otherId}>
-                {festival.name} ({formatDateNl(festival.start_date)})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <SearchableSelect
+          value={value === null ? null : String(value)}
+          onValueChange={(next) => chooseFestival(side, next)}
+          aria-label={label}
+          className="w-56"
+          renderValue={(selected: string | null) =>
+            festivals.find((festival) => String(festival.id) === selected)?.name ?? ""
+          }
+          options={festivals.map((festival) => ({
+            value: String(festival.id),
+            label: `${festival.name} (${formatDateNl(festival.start_date)})`,
+            disabled: festival.id === otherId,
+          }))}
+        />
       </div>
     );
   }
@@ -417,21 +417,19 @@ export function KarMovesScreen() {
                         </TableHead>
                       ))}
                       <TableHead className="sticky top-10 z-20 bg-background">
-                        <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}>
-                          <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full min-w-36 font-normal">
-                            <SelectValue>
-                              {(value: string | null) => (value && value !== ALL_STATUSES ? value : t("allStatuses"))}
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={ALL_STATUSES}>{t("allStatuses")}</SelectItem>
-                            {statusOptions.map((status) => (
-                              <SelectItem key={status} value={status}>
-                                {status}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <SearchableSelect
+                          value={statusFilter}
+                          onValueChange={(value) => setStatusFilter(value ?? ALL_STATUSES)}
+                          aria-label={t("filterStatus")}
+                          className="h-8 w-full min-w-36 font-normal"
+                          renderValue={(value: string | null) =>
+                            (value && value !== ALL_STATUSES ? value : t("allStatuses"))
+                          }
+                          options={[
+                            { value: ALL_STATUSES, label: t("allStatuses") },
+                            ...statusOptions.map((status) => ({ value: status, label: status })),
+                          ]}
+                        />
                       </TableHead>
                       <TableHead className="sticky top-10 z-20 bg-background">
                         <Input

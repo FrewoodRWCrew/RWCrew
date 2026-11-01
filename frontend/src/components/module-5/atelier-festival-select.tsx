@@ -13,7 +13,7 @@ import { listAtelierFestivals } from "@/lib/api";
 import { formatDate, formatDateNl } from "@/lib/date-time";
 import type { AtelierFestival } from "@/lib/types";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 /** The season's festivals and the chosen one (null while loading or none). */
@@ -64,23 +64,18 @@ export function AtelierFestivalSelect({ festivals, festival }: AtelierFestivalSe
     // runs over the fields next to it. The trigger fills the column.
     <div className="flex max-w-full min-w-80 shrink-0 flex-col gap-2">
       <Label htmlFor="atelier-festival">{t("festivalLabel")}</Label>
-      <Select value={festival ? String(festival.id) : ""} onValueChange={handleChange}>
-        <SelectTrigger id="atelier-festival" className="w-full" title={festival ? festivalLabel(festival) : undefined}>
-          <SelectValue>
-            {(value: string | null) => {
-              const item = festivals.find((candidate) => String(candidate.id) === value);
-              return item ? festivalLabel(item) : t("noFestival");
-            }}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {festivals.map((item) => (
-            <SelectItem key={item.id} value={String(item.id)}>
-              {festivalLabel(item)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={festival ? String(festival.id) : ""}
+        onValueChange={handleChange}
+        id="atelier-festival"
+        className="w-full"
+        title={festival ? festivalLabel(festival) : undefined}
+        renderValue={(value: string | null) => {
+          const item = festivals.find((candidate) => String(candidate.id) === value);
+          return item ? festivalLabel(item) : t("noFestival");
+        }}
+        options={festivals.map((item) => ({ value: String(item.id), label: festivalLabel(item) }))}
+      />
     </div>
   );
 }

@@ -41,7 +41,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface KarManagementProps {
@@ -262,66 +262,42 @@ function KarFormDialog({ kar, defaultOpen, trigger, onSaved, karStatuses, produc
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="kar-status">{t("statusLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.status_id ? String(form.status_id) : ""}
               onValueChange={(value) => updateField("status_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="kar-status">
-                <SelectValue>
-                  {(value: string | null) => karStatuses.find((karStatus) => String(karStatus.id) === value)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {karStatuses.map((karStatus) => (
-                  <SelectItem key={karStatus.id} value={String(karStatus.id)}>
-                    {karStatus.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="kar-status"
+              renderValue={(value: string | null) =>
+                karStatuses.find((karStatus) => String(karStatus.id) === value)?.name
+              }
+              options={karStatuses.map((karStatus) => ({ value: String(karStatus.id), label: karStatus.name }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="kar-transport-type">{t("transportTypeLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.transport_type_id ? String(form.transport_type_id) : ""}
               onValueChange={(value) => updateField("transport_type_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="kar-transport-type">
-                <SelectValue>{(value: string | null) => products.find((product) => String(product.id) === value)?.name}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {products.map((product) => (
-                  <SelectItem key={product.id} value={String(product.id)}>
-                    {product.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="kar-transport-type"
+              renderValue={(value: string | null) => products.find((product) => String(product.id) === value)?.name}
+              options={products.map((product) => ({ value: String(product.id), label: product.name }))}
+            />
           </div>
           <div className="col-span-2 flex flex-col gap-2">
             <Label htmlFor="kar-team">{t("teamLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.team_id ? String(form.team_id) : NO_TEAM_VALUE}
               onValueChange={(value) =>
                 updateField("team_id", value && value !== NO_TEAM_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="kar-team">
-                <SelectValue>
-                  {(value: string | null) =>
-                    teams.find((team) => String(team.id) === value)?.name ?? t("noTeam")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_TEAM_VALUE}>{t("noTeam")}</SelectItem>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={String(team.id)}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="kar-team"
+              renderValue={(value: string | null) =>
+                teams.find((team) => String(team.id) === value)?.name ?? t("noTeam")
+              }
+              options={[
+                { value: NO_TEAM_VALUE, label: t("noTeam") },
+                ...teams.map((team) => ({ value: String(team.id), label: team.name })),
+              ]}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="kar-latitude">{t("latitudeLabel")}</Label>

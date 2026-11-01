@@ -211,6 +211,15 @@ class HelpPDF(FPDF):
             self.ln(0.8)
         self.ln(1.5)
 
+    def code_block(self, lines: Collection[str]) -> None:
+        """A block of code in a fixed-width font on a light background."""
+        self.set_font("Courier", "", 8.5)
+        self.set_text_color(*TEXT_DARK)
+        self.set_fill_color(242, 242, 242)
+        for line in lines:
+            self.multi_cell(self.usable_width, 4.2, f" {line}", fill=True, new_x="LMARGIN", new_y="NEXT")
+        self.ln(3)
+
     def tip(self, text: str) -> None:
         """A tinted box with an accent bar on its left and "Tip:" in bold."""
         padding = 3
@@ -272,6 +281,8 @@ class HelpPDF(FPDF):
                 self.numbered_steps(block.items)
             elif block.kind == "bullets":
                 self.bullets(block.items)
+            elif block.kind == "code":
+                self.code_block(block.items)
             elif block.kind == "tip":
                 self.tip(block.text)
             elif block.kind == "image":

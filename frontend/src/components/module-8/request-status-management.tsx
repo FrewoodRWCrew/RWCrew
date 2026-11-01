@@ -48,7 +48,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface RequestStatusManagementProps {
@@ -233,32 +233,31 @@ function StatusFormDialog({ item, trigger, onSaved }: StatusFormDialogProps) {
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="status-color">{t("colorLabel")}</Label>
-            <Select value={form.color} onValueChange={(value) => updateField("color", value ?? "gray")}>
-              <SelectTrigger id="status-color">
-                <SelectValue>
-                  {(value: string | null) =>
-                    value ? (
-                      <span className="flex items-center gap-2">
-                        <ColorSwatch color={value} />
-                        {isStatusColorKey(value) ? t(`colorNames.${value}`) : value}
-                      </span>
-                    ) : (
-                      ""
-                    )
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {STATUS_COLOR_KEYS.map((key: StatusColorKey) => (
-                  <SelectItem key={key} value={key}>
-                    <span className="flex items-center gap-2">
-                      <ColorSwatch color={key} />
-                      {t(`colorNames.${key}`)}
-                    </span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={form.color}
+              onValueChange={(value) => updateField("color", value ?? "gray")}
+              id="status-color"
+              renderValue={(value) =>
+                value ? (
+                  <span className="flex items-center gap-2">
+                    <ColorSwatch color={value} />
+                    {isStatusColorKey(value) ? t(`colorNames.${value}`) : value}
+                  </span>
+                ) : (
+                  ""
+                )
+              }
+              options={STATUS_COLOR_KEYS.map((key: StatusColorKey) => ({
+                value: key,
+                label: t(`colorNames.${key}`),
+                content: (
+                  <span className="flex items-center gap-2">
+                    <ColorSwatch color={key} />
+                    {t(`colorNames.${key}`)}
+                  </span>
+                ),
+              }))}
+            />
           </div>
         </div>
 

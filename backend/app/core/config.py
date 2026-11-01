@@ -83,11 +83,10 @@ class Settings(BaseSettings):
     # an emergency/ops switch to keep the job from starting in a process.
     tagscan_auto_scan_worker: bool = True
 
-    # Atelier (module-5): the shared secret the wristband company sends as
-    # "token" in every scan message posted to the public webhook
-    # (app/modules/module_5/scan_webhook_router.py). Empty = every webhook
-    # message is refused (and logged); the Test-scan screen works without it.
-    atelier_webhook_token: str = ""
+    # The folder where every wristband message is kept as a .json file, one
+    # subfolder per day (app/modules/wristband/json_files.py). Same default
+    # idea as tagscan_source_dir: next to it, at the repo root.
+    wristband_source_dir: str = str(Path(__file__).resolve().parents[3] / "WristbandScans")
 
     # Optional read-only GitHub token for reading the one changelog.json on the
     # "changelog" branch (see app/landing/changelog.py). The repository is

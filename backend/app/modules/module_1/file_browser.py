@@ -41,7 +41,13 @@ def resolve_safe_path(db: Session, relative_path: str) -> Path:
     vulnerability (e.g. "../../app/core/config.py") — every endpoint that
     accepts a path MUST go through this function first.
     """
-    root = get_source_root(db).resolve()
+    return resolve_path_under(get_source_root(db), relative_path)
+
+
+def resolve_path_under(root_folder: Path, relative_path: str) -> Path:
+    """The same check for any browsable root (also the wristbands' JSON folder,
+    see module_1/wristband_router.py)."""
+    root = root_folder.resolve()
     # An empty path means "the root folder itself".
     candidate = (root / relative_path).resolve() if relative_path else root
 
@@ -72,7 +78,12 @@ def list_files(db: Session, folder: Path) -> list[FileEntryResponse]:
     """List the files directly inside one folder (not its subfolders),
     for the file-list pane once a folder is selected.
     """
-    root = get_source_root(db).resolve()
+    return list_files_under(get_source_root(db), folder)
+
+
+def list_files_under(root_folder: Path, folder: Path) -> list[FileEntryResponse]:
+    """The same listing for any browsable root."""
+    root = root_folder.resolve()
     entries = sorted((entry for entry in folder.iterdir() if entry.is_file()), key=lambda entry: entry.name)
 
     files = []
@@ -108,9 +119,14 @@ def delete_files(db: Session, relative_paths: list[str]) -> int:
     folder, an existing file — never a folder), so one bad path deletes
     nothing at all. Logged Tag Headerdata/Linedata rows are left untouched.
     """
+    return delete_files_under(get_source_root(db), relative_paths)
+
+
+def delete_files_under(root_folder: Path, relative_paths: list[str]) -> int:
+    """The same delete for any browsable root."""
     files = []
     for relative_path in relative_paths:
-        file = resolve_safe_path(db, relative_path)
+        file = resolve_path_under(root_folder, relative_path)
         if not file.is_file():
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"File not found: {relative_path}")
         files.append(file)

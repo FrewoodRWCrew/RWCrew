@@ -13,13 +13,15 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { API_BASE_URL } from "@/lib/config";
 import { ApiError, updateTagscanAutoScan, updateTagscanSettings } from "@/lib/api";
-import type { TagscanSettings } from "@/lib/types";
+import type { TagscanSettings, WristbandSettings } from "@/lib/types";
 import { formatDateTime } from "@/lib/date-time";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { copyToClipboard } from "@/components/module-1/copy-to-clipboard";
+import { WristbandSettingsCard } from "@/components/module-1/wristband-settings-card";
 
 const INTAKE_UPLOAD_URL = `${API_BASE_URL}/api/public/tagscan-intake`;
 
@@ -29,18 +31,11 @@ const MAX_INTERVAL_SECONDS = 86400;
 
 interface TagscanSettingsProps {
   initialSettings: TagscanSettings;
+  wristband: WristbandSettings;
+  canEditWristband: boolean;
 }
 
-async function copyToClipboard(value: string, onSuccess: () => void, onError: () => void) {
-  try {
-    await navigator.clipboard.writeText(value);
-    onSuccess();
-  } catch {
-    onError();
-  }
-}
-
-export function TagscanSettingsForm({ initialSettings }: TagscanSettingsProps) {
+export function TagscanSettingsForm({ initialSettings, wristband, canEditWristband }: TagscanSettingsProps) {
   const t = useTranslations("tagscan.settings");
   const [settings, setSettings] = useState(initialSettings);
   const [path, setPath] = useState(initialSettings.receive_folder_path);
@@ -171,6 +166,8 @@ export function TagscanSettingsForm({ initialSettings }: TagscanSettingsProps) {
         </div>
         <p className="text-sm text-muted-foreground">{t("uploadUrlHint")}</p>
       </div>
+
+      <WristbandSettingsCard initialSettings={wristband} canEdit={canEditWristband} />
     </div>
   );
 }

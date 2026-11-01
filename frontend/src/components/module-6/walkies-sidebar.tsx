@@ -4,10 +4,11 @@
 // same visual pattern as Walkies's and StockMaster's sidebars
 // (see docs/module-custom-roles-pattern.md): a header bar in the module's
 // tile colour, the unconditional "KPI overview" landing link, then
-// "Access Rights" (Roles/Users) — each link gated by the user's Walkies
-// role. The phase-2 screens get their own group above Access Rights.
+// "Access Rights" (Roles/Users) and "Instellingen" (Test-scan) — each link
+// gated by the user's Walkies role. The phase-2 screens get their own group
+// above Access Rights.
 
-import { ShieldCheck } from "lucide-react";
+import { Settings, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -29,6 +30,7 @@ export function WalkiesSidebar({ viewableScreenKeys }: WalkiesSidebarProps) {
   const can = (screen: string) => viewableScreenKeys.includes(`walkies.${screen}`);
   const canViewRoles = can("roles");
   const canViewUsers = can("users");
+  const canViewScanTest = can("scantest");
 
   // A link counts as active on its own page and on its sub-pages.
   function linkClassName(href: string, level: 0 | 1 = 0) {
@@ -69,6 +71,18 @@ export function WalkiesSidebar({ viewableScreenKeys }: WalkiesSidebarProps) {
               {t("users.title")}
             </Link>
           )}
+        </>
+      )}
+
+      {canViewScanTest && (
+        <>
+          <div className={groupClassName}>
+            <Settings className="size-4" />
+            {t("settingsGroup")}
+          </div>
+          <Link href={`${BASE}/settings/scan-test`} className={linkClassName(`${BASE}/settings/scan-test`, 1)}>
+            {t("scanTest.title")}
+          </Link>
         </>
       )}
 

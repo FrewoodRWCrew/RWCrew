@@ -9,6 +9,7 @@
 # same table definitions work correctly on both databases.
 
 from collections.abc import Generator
+from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,9 +17,19 @@ from sqlalchemy import create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import StaticPool
 
+from app.core.config import settings
 from app.core.database import get_db
 from app.db.base import Base
 from app.main import app
+
+
+@pytest.fixture(autouse=True)
+def wristband_folder(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """Every test keeps its wristband .json files in its own temporary
+    folder, never in the real one."""
+    folder = tmp_path_factory.mktemp("wristband")
+    monkeypatch.setattr(settings, "wristband_source_dir", str(folder))
+    return folder
 
 
 @pytest.fixture()

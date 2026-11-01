@@ -2,7 +2,7 @@
 // "create" on atelier.scantest.
 
 import { getTranslations } from "next-intl/server";
-import { ScanTest } from "@/components/module-5/scan-test";
+import { ScanTest } from "@/components/shared/wristband/scan-test";
 import { atelierCan, loadAtelierPage } from "@/components/module-5/atelier-page-data";
 
 export default async function AtelierScanTestPage() {
@@ -12,5 +12,5 @@ export default async function AtelierScanTestPage() {
     return <p className="text-sm text-destructive">{tErrors("forbidden")}</p>;
   }
 
-  return <ScanTest canSend={atelierCan(data.permissions, "scantest", "create")} />;
+  return <ScanTest moduleKey="module-5" canSend={atelierCan(data.permissions, "scantest", "create")} />;
 }

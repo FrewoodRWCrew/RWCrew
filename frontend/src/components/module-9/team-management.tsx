@@ -7,7 +7,7 @@
 // "Levertoeren": the KarTracker "Speciale levertoeren" passing by the team.
 
 import { useState } from "react";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { useRouter } from "@/i18n/navigation";
@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -45,7 +46,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { TagMultiSelect } from "@/components/ui/tag-multi-select";
 import { Textarea } from "@/components/ui/textarea";
@@ -70,6 +71,7 @@ const EMPTY_FORM: TeamInput = {
   task_ids: [],
   kernlid_ids: [],
   special_tour_ids: [],
+  aliases: [],
   description: "",
   active: true,
 };
@@ -82,6 +84,7 @@ function toFormValues(team: Team): TeamInput {
     task_ids: team.task_ids,
     kernlid_ids: team.kernlid_ids,
     special_tour_ids: team.special_tour_ids,
+    aliases: team.aliases,
     description: team.description ?? "",
     active: team.active,
   };
@@ -213,6 +216,62 @@ interface TeamFormDialogProps {
   specialTours: SpecialTourOption[];
 }
 
+/** The team's aliases: free text, added one by one (Enter or the button) and
+ *  shown as removable chips. The backend trims them and refuses clashes. */
+function AliasField({ aliases, onChange }: { aliases: string[]; onChange: (aliases: string[]) => void }) {
+  const t = useTranslations("masterdata.teams");
+  const [text, setText] = useState("");
+
+  function add() {
+    const alias = text.trim();
+    if (alias && !aliases.some((item) => item.toLowerCase() === alias.toLowerCase())) {
+      onChange([...aliases, alias]);
+    }
+    setText("");
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <Input
+          id="team-aliases"
+          value={text}
+          placeholder={t("aliasesPlaceholder")}
+          maxLength={255}
+          onChange={(event) => setText(event.target.value)}
+          onKeyDown={(event) => {
+            // Enter adds the alias instead of submitting the team form.
+            if (event.key === "Enter") {
+              event.preventDefault();
+              add();
+            }
+          }}
+        />
+        <Button type="button" variant="outline" onClick={add} disabled={text.trim() === ""}>
+          {t("aliasesAdd")}
+        </Button>
+      </div>
+      {aliases.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {aliases.map((alias) => (
+            <Badge key={alias} variant="secondary" className="gap-1">
+              {alias}
+              <button
+                type="button"
+                aria-label={t("aliasesRemove", { alias })}
+                onClick={() => onChange(aliases.filter((item) => item !== alias))}
+              >
+                <X className="size-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground">{t("aliasesHint")}</p>
+    </div>
+  );
+}
+
 function TeamFormDialog({
   team,
   trigger,
@@ -280,51 +339,35 @@ function TeamFormDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="team-location">{t("locationLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.location_id ? String(form.location_id) : NO_SELECTION_VALUE}
               onValueChange={(value) => updateField("location_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)}
-            >
-              <SelectTrigger id="team-location">
-                <SelectValue>
-                  {(value: string | null) =>
-                    teamLocations.find((location) => String(location.id) === value)?.location ?? t("noSelection")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
-                {teamLocations.map((location) => (
-                  <SelectItem key={location.id} value={String(location.id)}>
-                    {location.location}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="team-location"
+              renderValue={(value: string | null) =>
+                teamLocations.find((location) => String(location.id) === value)?.location ?? t("noSelection")
+              }
+              options={[
+                { value: NO_SELECTION_VALUE, label: t("noSelection") },
+                ...teamLocations.map((location) => ({ value: String(location.id), label: location.location })),
+              ]}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="team-delivery-method">{t("deliveryMethodLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.delivery_method_id ? String(form.delivery_method_id) : NO_SELECTION_VALUE}
               onValueChange={(value) =>
                 updateField("delivery_method_id", value && value !== NO_SELECTION_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="team-delivery-method">
-                <SelectValue>
-                  {(value: string | null) =>
-                    deliveryMethods.find((method) => String(method.id) === value)?.delivery_method ?? t("noSelection")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_SELECTION_VALUE}>{t("noSelection")}</SelectItem>
-                {deliveryMethods.map((method) => (
-                  <SelectItem key={method.id} value={String(method.id)}>
-                    {method.delivery_method}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="team-delivery-method"
+              renderValue={(value: string | null) =>
+                deliveryMethods.find((method) => String(method.id) === value)?.delivery_method ?? t("noSelection")
+              }
+              options={[
+                { value: NO_SELECTION_VALUE, label: t("noSelection") },
+                ...deliveryMethods.map((method) => ({ value: String(method.id), label: method.delivery_method })),
+              ]}
+            />
           </div>
           <div className="col-span-2 flex flex-col gap-2">
             <Label htmlFor="team-tasks">{t("tasksLabel")}</Label>
@@ -345,6 +388,10 @@ function TeamFormDialog({
               onChange={(ids) => updateField("special_tour_ids", ids)}
               placeholder={t("specialToursPlaceholder")}
             />
+          </div>
+          <div className="col-span-2 flex flex-col gap-2">
+            <Label htmlFor="team-aliases">{t("aliasesLabel")}</Label>
+            <AliasField aliases={form.aliases ?? []} onChange={(aliases) => updateField("aliases", aliases)} />
           </div>
           <div className="col-span-2 flex flex-col gap-2">
             <Label htmlFor="team-members">{t("membersLabel")}</Label>

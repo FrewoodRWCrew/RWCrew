@@ -1,21 +1,25 @@
 "use client";
 
-// Tagscan's own left-hand menu, shown while inside the module — visually
-// and structurally the same pattern as the landing page's own
-// AdminSidebar (a plain "Dashboard" link, then a group heading with
-// nested sub-items). Which sub-items actually show depends on the
+// The Scans module's own left-hand menu (the module was called TagScan; the
+// code keeps that name), shown while inside the module — visually and
+// structurally the same pattern as the landing page's own AdminSidebar (a
+// plain "Dashboard" link, then a group heading with nested sub-items): the
+// RFID tags and the wristbands (QR) each have their own group, under the same
+// Access Rights and Settings. Which sub-items actually show depends on the
 // current user's Tagscan role: "Roles" and "Users" each only appear if
 // they can view that screen ("tagscan.roles" / "tagscan.users",
 // independently gated — passed in from the server, which already knows
 // how to resolve that — see app/modules/module_1/deps.py). At the bottom:
 // the "Handleiding (PDF)" link to the module's help manual.
 
-import { Database, Settings, ShieldCheck, Zap } from "lucide-react";
+import { Nfc, QrCode, Settings, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
 import { ModuleHelpMenuLink } from "@/components/shared/module-help";
+
+const WRISTBANDS = "/modules/module-1/wristbands";
 
 interface TagscanSidebarProps {
   viewableScreenKeys: string[];
@@ -35,6 +39,7 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const tUsers = useTranslations("tagscan.users");
   const tSettings = useTranslations("tagscan.settings");
   const tDataUploadDownload = useTranslations("tagscan.dataUploadDownload");
+  const tWristband = useTranslations("wristband");
   const pathname = usePathname();
   // Reuses the exact same colour as this module's tile on the landing
   // page (see module-theme.ts), so the two can never drift apart.
@@ -48,6 +53,12 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
   const canViewUsers = viewableScreenKeys.includes("tagscan.users");
   const canViewSettings = viewableScreenKeys.includes("tagscan.settings");
   const canViewDataUpload = viewableScreenKeys.includes("tagscan.dataupload");
+  const canViewWristbandFiles = viewableScreenKeys.includes("tagscan.wristband-files");
+  const canViewWristbandScans = viewableScreenKeys.includes("tagscan.wristband-scans");
+  const canViewWristbandScanners = viewableScreenKeys.includes("tagscan.wristband-scanners");
+  const canViewWristbandTest = viewableScreenKeys.includes("tagscan.wristband-test");
+  const canViewWristbands =
+    canViewWristbandFiles || canViewWristbandScans || canViewWristbandScanners || canViewWristbandTest;
 
   function subLinkClassName(href: string) {
     return cn(
@@ -77,8 +88,8 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
       </Link>
 
       <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
-        <Zap className="size-4" />
-        {t("actionsGroup")}
+        <Nfc className="size-4" />
+        {t("rfidGroup")}
       </div>
       <Link href="/modules/module-1/files" className={subLinkClassName("/modules/module-1/files")}>
         {tDashboard("title")}
@@ -94,31 +105,49 @@ export function TagscanSidebar({ viewableScreenKeys }: TagscanSidebarProps) {
         </Link>
       )}
 
-      {(canViewTagManagement || canViewScanners || canViewDataUpload) && (
+      {canViewTagManagement && (
+        <Link href="/modules/module-1/tag-management" className={subLinkClassName("/modules/module-1/tag-management")}>
+          {tTagManagement("title")}
+        </Link>
+      )}
+      {canViewScanners && (
+        <Link href="/modules/module-1/scanners" className={subLinkClassName("/modules/module-1/scanners")}>
+          {tScanners("title")}
+        </Link>
+      )}
+      {canViewDataUpload && (
+        <Link
+          href="/modules/module-1/data-upload-download"
+          className={subLinkClassName("/modules/module-1/data-upload-download")}
+        >
+          {tDataUploadDownload("title")}
+        </Link>
+      )}
+
+      {canViewWristbands && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
-            <Database className="size-4" />
-            {t("masterDataGroup")}
+            <QrCode className="size-4" />
+            {t("wristbandGroup")}
           </div>
-          {canViewTagManagement && (
-            <Link
-              href="/modules/module-1/tag-management"
-              className={subLinkClassName("/modules/module-1/tag-management")}
-            >
-              {tTagManagement("title")}
+          {canViewWristbandFiles && (
+            <Link href={`${WRISTBANDS}/files`} className={subLinkClassName(`${WRISTBANDS}/files`)}>
+              {tWristband("files.title")}
             </Link>
           )}
-          {canViewScanners && (
-            <Link href="/modules/module-1/scanners" className={subLinkClassName("/modules/module-1/scanners")}>
-              {tScanners("title")}
+          {canViewWristbandScans && (
+            <Link href={`${WRISTBANDS}/scans`} className={subLinkClassName(`${WRISTBANDS}/scans`)}>
+              {tWristband("scans.title")}
             </Link>
           )}
-          {canViewDataUpload && (
-            <Link
-              href="/modules/module-1/data-upload-download"
-              className={subLinkClassName("/modules/module-1/data-upload-download")}
-            >
-              {tDataUploadDownload("title")}
+          {canViewWristbandScanners && (
+            <Link href={`${WRISTBANDS}/scanners`} className={subLinkClassName(`${WRISTBANDS}/scanners`)}>
+              {tWristband("scanners.title")}
+            </Link>
+          )}
+          {canViewWristbandTest && (
+            <Link href={`${WRISTBANDS}/test`} className={subLinkClassName(`${WRISTBANDS}/test`)}>
+              {tWristband("test.title")}
             </Link>
           )}
         </>

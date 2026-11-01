@@ -3,7 +3,7 @@
 
 from datetime import date, datetime
 from decimal import Decimal
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
@@ -444,6 +444,8 @@ class TeamResponse(BaseModel):
     # KarTracker "Speciale levertoeren" passing by this team
     # (MasterData_team_speciale_levertoer).
     special_tour_ids: list[int]
+    # Other names of this team in outside applications (MasterData_team_alias).
+    aliases: list[str]
     description: str | None
     active: bool
 
@@ -463,6 +465,8 @@ class TeamCreateRequest(BaseModel):
     # Ids of KarTracker "Speciale levertoeren"; None (left out) keeps the
     # team's current links on an update, so older clients don't wipe them.
     special_tour_ids: list[int] | None = None
+    # Same idea: None (left out) keeps the team's current aliases.
+    aliases: list[Annotated[str, Field(max_length=255)]] | None = None
     description: str | None = None
     active: bool = True
 

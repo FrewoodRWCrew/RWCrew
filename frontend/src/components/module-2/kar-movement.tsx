@@ -33,7 +33,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
 import { QrScanDialog } from "@/components/module-2/qr-scan-dialog";
@@ -278,23 +278,17 @@ export function KarMovement({ lookups, initialActions, groundplans, canCreate, c
             <div className="flex flex-col gap-2">
               <Label htmlFor="kar-movement-kar">{t("karLabel")}</Label>
               <div className="flex gap-2">
-                <Select value={karId !== null ? String(karId) : ""} onValueChange={handleKarChange}>
-                  <SelectTrigger id="kar-movement-kar" className="min-w-0 flex-1">
-                    <SelectValue>
-                      {(value: string | null) => {
-                        const kar = value ? karren.find((candidate) => String(candidate.id) === value) : undefined;
-                        return kar ? karOptionLabel(kar, t("noTeam")) : t("karPlaceholder");
-                      }}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {karren.map((kar) => (
-                      <SelectItem key={kar.id} value={String(kar.id)}>
-                        {karOptionLabel(kar, t("noTeam"))}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={karId !== null ? String(karId) : ""}
+                  onValueChange={handleKarChange}
+                  id="kar-movement-kar"
+                  className="min-w-0 flex-1"
+                  renderValue={(value: string | null) => {
+                    const kar = value ? karren.find((candidate) => String(candidate.id) === value) : undefined;
+                    return kar ? karOptionLabel(kar, t("noTeam")) : t("karPlaceholder");
+                  }}
+                  options={karren.map((kar) => ({ value: String(kar.id), label: karOptionLabel(kar, t("noTeam")) }))}
+                />
                 {/* Pick the kar by scanning the QR code on its karblad. */}
                 <Button type="button" variant="outline" onClick={() => setIsScanOpen(true)}>
                   <QrCode className="size-4" />
@@ -314,27 +308,21 @@ export function KarMovement({ lookups, initialActions, groundplans, canCreate, c
             {/* The kar's status after the movement (from KarStatussen). */}
             <div className="flex flex-col gap-2">
               <Label htmlFor="kar-movement-status">{t("statusLabel")}</Label>
-              <Select
+              <SearchableSelect
                 value={statusId !== null ? String(statusId) : ""}
                 onValueChange={(value) => setStatusId(value ? Number(value) : null)}
-              >
-                <SelectTrigger id="kar-movement-status" className="w-full">
-                  <SelectValue>
-                    {(value: string | null) =>
-                      value
-                        ? lookups.statuses.find((karStatus) => String(karStatus.id) === value)?.name
-                        : t("statusPlaceholder")
-                    }
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {lookups.statuses.map((karStatus) => (
-                    <SelectItem key={karStatus.id} value={String(karStatus.id)}>
-                      {karStatus.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                id="kar-movement-status"
+                className="w-full"
+                renderValue={(value: string | null) =>
+                  value
+                    ? lookups.statuses.find((karStatus) => String(karStatus.id) === value)?.name
+                    : t("statusPlaceholder")
+                }
+                options={lookups.statuses.map((karStatus) => ({
+                  value: String(karStatus.id),
+                  label: karStatus.name,
+                }))}
+              />
             </div>
           </div>
 
@@ -413,30 +401,23 @@ export function KarMovement({ lookups, initialActions, groundplans, canCreate, c
           <h2 className="text-lg font-bold underline">{t("historyTitle")}</h2>
           <div className="flex w-full max-w-xs flex-col gap-2">
             <Label htmlFor="kar-movement-filter">{t("filterKarLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={filterKarId !== null ? String(filterKarId) : ALL_KARREN_VALUE}
               onValueChange={(value) =>
                 setFilterKarId(value && value !== ALL_KARREN_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="kar-movement-filter" className="w-full">
-                <SelectValue>
-                  {(value: string | null) =>
-                    value && value !== ALL_KARREN_VALUE
-                      ? karren.find((kar) => String(kar.id) === value)?.kar_nummer
-                      : t("filterAllKarren")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_KARREN_VALUE}>{t("filterAllKarren")}</SelectItem>
-                {karren.map((kar) => (
-                  <SelectItem key={kar.id} value={String(kar.id)}>
-                    {kar.kar_nummer}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="kar-movement-filter"
+              className="w-full"
+              renderValue={(value: string | null) =>
+                value && value !== ALL_KARREN_VALUE
+                  ? karren.find((kar) => String(kar.id) === value)?.kar_nummer
+                  : t("filterAllKarren")
+              }
+              options={[
+                { value: ALL_KARREN_VALUE, label: t("filterAllKarren") },
+                ...karren.map((kar) => ({ value: String(kar.id), label: kar.kar_nummer })),
+              ]}
+            />
           </div>
         </div>
 

@@ -43,7 +43,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { ArticleThumb } from "@/components/module-5/article-management";
@@ -533,23 +533,22 @@ function PackageDialog({ teamName, lines, articles, canEdit, onApply }: PackageD
 
           {canEdit && (
             // Picking an article adds it with 1 piece per person.
-            <Select
+            <SearchableSelect
               value=""
               onValueChange={(value) => value && setDraft([...draft, { article_id: Number(value), quantity_per_person: 1 }])}
               disabled={addable.length === 0}
-            >
-              <SelectTrigger className="w-full">
-                <Plus className="size-4" />
-                <SelectValue>{() => t("addArticle")}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {addable.map((article) => (
-                  <SelectItem key={article.id} value={String(article.id)}>
-                    {article.name} ({article.code})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              className="w-full"
+              renderValue={() => (
+                <>
+                  <Plus className="size-4" />
+                  {t("addArticle")}
+                </>
+              )}
+              options={addable.map((article) => ({
+                value: String(article.id),
+                label: `${article.name} (${article.code})`,
+              }))}
+            />
           )}
         </div>
 

@@ -10,7 +10,8 @@
 //     known worker is recognised and their email, bracelet number, team and
 //     pieces still out are filled in), email (optional, not unique; a filled-in
 //     one is only shown masked, "Wijzig" types a new one), the
-//     optional bracelet number (unique), team; then per package article a size
+//     optional bracelet number (unique; typed, or read from the wristband's QR
+//     code with the camera icon when the scanners fail), team; then per package article a size
 //     (1 piece each). Every article is optional: click the chosen size again to
 //     skip it; an article with only one size in stock is pre-selected. At
 //     least one article is needed. An article the person still has can't be
@@ -30,12 +31,11 @@
 //     yet can be cancelled ("edit" right).
 
 import { useEffect, useState } from "react";
-import { Contact, PackageMinus, PackagePlus, ScanLine, Search, TriangleAlert, X } from "lucide-react";
+import { Camera, Contact, PackageMinus, PackagePlus, ScanLine, TriangleAlert, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import {
   ApiError,
-  cancelAtelierHandout,
   dismissAtelierScan,
   getAtelierWristbandRequired,
   listAtelierDeskScanners,
@@ -44,10 +44,7 @@ import {
   createAtelierHandout,
   getAtelierDeskContext,
   listAtelierDeskTeams,
-  listAtelierPersonOpenHandouts,
   lookupAtelierDeskPerson,
-  returnAtelierPersonLines,
-  searchAtelierDeskPersons,
 } from "@/lib/api";
 import { formatDate, formatDateNl, formatDateTimeNl } from "@/lib/date-time";
 import { maskEmail } from "@/lib/mask-email";
@@ -57,19 +54,17 @@ import type {
   AtelierDeskTeam,
   AtelierDeskTeamResponsible,
   AtelierFestival,
-  AtelierHandout,
-  AtelierScan,
-  AtelierScanner,
+  WristbandScan,
+  WristbandScanner,
   Season,
 } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { ArticleThumb } from "@/components/module-5/article-management";
 import { AtelierFestivalSelect, useAtelierFestival } from "@/components/module-5/atelier-festival-select";
 import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/atelier-season-select";
@@ -77,17 +72,19 @@ import { ATELIER_STOCK_CHANGED_EVENT } from "@/components/module-5/atelier-stock
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 import { atelierDeskErrorMessage } from "@/components/module-5/desk-common";
 import { useDeskScanner, writeScanner } from "@/components/module-5/desk-scanner";
+import { ReturnForm } from "@/components/module-5/desk-return-form";
+import { QrScanDialog } from "@/components/module-2/qr-scan-dialog";
 
 type Mode = "pickup" | "return";
 
 /** "Balie 1 (SUN0410)", or the device name/id when it has no label. */
-function scannerName(scanner: AtelierScanner) {
+function scannerName(scanner: WristbandScanner) {
   const device = scanner.device_name ?? scanner.device_id;
   return scanner.label ? `${scanner.label} (${device})` : device;
 }
 
 /** "Anaïs Wydaeghe". */
-function scanPersonName(scan: AtelierScan) {
+function scanPersonName(scan: WristbandScan) {
   return [scan.first_name, scan.last_name].filter(Boolean).join(" ");
 }
 
@@ -107,18 +104,18 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
   // A scanned person not found for the return: the search starts with their name.
   const [returnQuery, setReturnQuery] = useState("");
   // The scan the current transaction came from (sent along, so it's marked used).
-  const [activeScan, setActiveScan] = useState<AtelierScan | null>(null);
+  const [activeScan, setActiveScan] = useState<WristbandScan | null>(null);
 
   // This desk's scanner and its waiting scans (polled every 2 seconds).
   const scannerId = useDeskScanner();
-  const scanners = useKeyedLoad<AtelierScanner[]>("desk-scanners", listAtelierDeskScanners);
+  const scanners = useKeyedLoad<WristbandScanner[]>("desk-scanners", listAtelierDeskScanners);
   const wristbandRequired = useKeyedLoad<boolean>("wristband-required", getAtelierWristbandRequired).data ?? false;
-  const [waiting, setWaiting] = useState<{ deviceId: string; scans: AtelierScan[] } | null>(null);
+  const [waiting, setWaiting] = useState<{ deviceId: string; scans: WristbandScan[] } | null>(null);
   useEffect(() => {
     if (!scannerId) return;
     let cancelled = false;
     function poll() {
-      listAtelierWaitingScans(scannerId!)
+      listAtelierWaitingScans(scannerId!, seasonId)
         .then((scans) => {
           if (!cancelled) setWaiting({ deviceId: scannerId!, scans });
         })
@@ -131,7 +128,7 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
       cancelled = true;
       window.clearInterval(timer);
     };
-  }, [scannerId]);
+  }, [scannerId, seasonId]);
   const waitingScans = (waiting?.deviceId === scannerId ? waiting.scans : []).filter((scan) => scan.id !== activeScan?.id);
   const newestScan = waitingScans[0] ?? null;
   // The chosen day, kept per festival; defaults to today when it's a festival day, else its first day.
@@ -190,7 +187,7 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
   });
 
   // "Negeren": the scan no longer waits at this desk.
-  async function dismiss(scan: AtelierScan) {
+  async function dismiss(scan: WristbandScan) {
     await dismissAtelierScan(scan.id).catch(() => undefined);
     setWaiting((current) => (current ? { ...current, scans: current.scans.filter((item) => item.id !== scan.id) } : current));
   }
@@ -209,43 +206,31 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
           {festival && day && (
             <div className="flex w-40 flex-col gap-2">
               <Label htmlFor="atelier-desk-day">{t("dayLabel")}</Label>
-              <Select
+              <SearchableSelect
                 value={day}
                 onValueChange={(value) => value && setDayChoice({ festivalId: festival.id, day: value })}
                 disabled={mode !== null}
-              >
-                <SelectTrigger id="atelier-desk-day">
-                  <SelectValue>{(value: string | null) => (value ? formatDateNl(value) : "")}</SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {festival.days.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {formatDateNl(item)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                id="atelier-desk-day"
+                renderValue={(value: string | null) => (value ? formatDateNl(value) : "")}
+                options={festival.days.map((item) => ({ value: item, label: formatDateNl(item) }))}
+              />
             </div>
           )}
           <div className="flex w-56 flex-col gap-2">
             <Label htmlFor="atelier-desk-scanner">{t("scannerLabel")}</Label>
-            <Select value={scannerId ?? ""} onValueChange={(value) => writeScanner(value || null)}>
-              <SelectTrigger id="atelier-desk-scanner">
-                <SelectValue>
-                  {(value: string | null) => {
-                    const scanner = scanners.data?.find((item) => item.device_id === value);
-                    return scanner ? scannerName(scanner) : t("noScanner");
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {(scanners.data ?? []).map((scanner) => (
-                  <SelectItem key={scanner.id} value={scanner.device_id}>
-                    {scannerName(scanner)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={scannerId ?? ""}
+              onValueChange={(value) => writeScanner(value || null)}
+              id="atelier-desk-scanner"
+              renderValue={(value: string | null) => {
+                const scanner = scanners.data?.find((item) => item.device_id === value);
+                return scanner ? scannerName(scanner) : t("noScanner");
+              }}
+              options={(scanners.data ?? []).map((scanner) => ({
+                value: scanner.device_id,
+                label: scannerName(scanner),
+              }))}
+            />
           </div>
           <AtelierSeasonSelect seasons={seasons} seasonId={seasonId} />
         </div>
@@ -278,6 +263,10 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
                       .filter(Boolean)
                       .join(" · ")}
                   </p>
+                  {/* The team name matched no team: the person picks it by hand on Ophalen. */}
+                  {newestScan.team_id === null && (
+                    <p className="text-sm text-orange-700 dark:text-orange-300">{t("scanTeamUnknown")}</p>
+                  )}
                   <p className="text-sm font-medium">{t("scanChoose")}</p>
                 </div>
               </div>
@@ -365,7 +354,7 @@ interface PickupFormProps {
   festival: AtelierFestival;
   day: string;
   /** The wristband scan this pick-up starts from (fills the form in). */
-  scan: AtelierScan | null;
+  scan: WristbandScan | null;
   /** The global switch: a wristband number is needed. */
   wristbandRequired: boolean;
   onDone: () => void;
@@ -387,6 +376,8 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
   const [prefilledEmail, setPrefilledEmail] = useState(scan?.email ?? "");
   const emailLocked = email !== "" && email === prefilledEmail;
   const [bracelet, setBracelet] = useState(scan?.wristband_number ?? "");
+  // The camera dialog reading the wristband's QR code (when the scanners fail).
+  const [isBraceletScanOpen, setIsBraceletScanOpen] = useState(false);
   const [teamChoice, setTeamId] = useState<number | null>(scan?.team_id ?? null);
   // The worker recognised by the typed first + family name (null = a new one).
   const [person, setPerson] = useState<AtelierDeskPerson | null>(null);
@@ -581,39 +572,50 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
             {t("braceletLabel")}
             {wristbandRequired && <span className="text-destructive"> *</span>}
           </Label>
-          <Input
-            id="atelier-desk-bracelet"
-            autoComplete="off"
-            value={bracelet}
-            onChange={(event) => setBracelet(event.target.value)}
+          <div className="flex items-center gap-2">
+            <Input
+              id="atelier-desk-bracelet"
+              autoComplete="off"
+              className="min-w-0 flex-1"
+              value={bracelet}
+              onChange={(event) => setBracelet(event.target.value)}
+            />
+            {/* Fallback when the wristband scanners fail: read the QR code with the PC's camera. */}
+            <Button
+              type="button"
+              variant="outline"
+              size="icon"
+              aria-label={t("scanBracelet")}
+              title={t("scanBracelet")}
+              onClick={() => setIsBraceletScanOpen(true)}
+            >
+              <Camera className="size-4" />
+            </Button>
+          </div>
+          <QrScanDialog
+            open={isBraceletScanOpen}
+            onOpenChange={setIsBraceletScanOpen}
+            onScanned={(text) => setBracelet(text.trim())}
+            title={t("scanBraceletTitle")}
+            description={t("scanBraceletDescription")}
           />
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="atelier-desk-team">
             {t("teamLabel")} <span className="text-destructive">*</span>
           </Label>
-          <Select
+          <SearchableSelect
             value={teamId !== null ? String(teamId) : ""}
             onValueChange={(value) => {
               setTeamId(value ? Number(value) : null);
               setChosen({});
             }}
-          >
-            <SelectTrigger id="atelier-desk-team">
-              <SelectValue>
-                {(value: string | null) =>
-                  teams.data?.find((team) => String(team.team_id) === value)?.team_name ?? t("pickTeam")
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(teams.data ?? []).map((team) => (
-                <SelectItem key={team.team_id} value={String(team.team_id)}>
-                  {team.team_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            id="atelier-desk-team"
+            renderValue={(value: string | null) =>
+              teams.data?.find((team) => String(team.team_id) === value)?.team_name ?? t("pickTeam")
+            }
+            options={(teams.data ?? []).map((team) => ({ value: String(team.team_id), label: team.team_name }))}
+          />
         </div>
       </div>
 
@@ -765,189 +767,5 @@ function TeamResponsiblesButton({ teamName, responsibles }: TeamResponsiblesButt
         </ul>
       </DialogContent>
     </Dialog>
-  );
-}
-
-interface ReturnFormProps {
-  canCancel: boolean;
-  /** Opens with this person chosen (from Ophalen's "Eerst terugbrengen" or a scan). */
-  initialPerson: AtelierDeskPerson | null;
-  /** A scanned person not found: the search starts with this text. */
-  initialQuery: string;
-  /** The wristband scan this return starts from (marked used by the first booking). */
-  scan: AtelierScan | null;
-  onDone: () => void;
-}
-
-/** Terugbrengen: find the person, tick what came back. */
-function ReturnForm({ canCancel, initialPerson, initialQuery, scan, onDone }: ReturnFormProps) {
-  const t = useTranslations("atelier.desk");
-  const tStock = useTranslations("atelier.stock");
-  const tFit = useTranslations("atelier.fits");
-  const [query, setQuery] = useState(initialQuery);
-  const [results, setResults] = useState<AtelierDeskPerson[]>([]);
-  const [person, setPerson] = useState<AtelierDeskPerson | null>(initialPerson);
-  // The chosen person's open pick-ups.
-  const openHandouts = useKeyedLoad<AtelierHandout[]>(person ? String(person.id) : null, () =>
-    listAtelierPersonOpenHandouts(person!.id),
-  );
-  const handouts = openHandouts.data ?? [];
-  // Every piece starts ticked; this keeps the ones the desk unticked.
-  const [unticked, setUnticked] = useState<number[]>([]);
-  const openLines = handouts.flatMap((handout) => handout.lines.filter((line) => !line.returned_at));
-  const ticked = openLines.filter((line) => !unticked.includes(line.id)).map((line) => line.id);
-  const [isBusy, setIsBusy] = useState(false);
-
-  // Search shortly after typing stops (at least 2 characters); only people with pieces out.
-  useEffect(() => {
-    const value = query.trim();
-    if (value.length < 2) return;
-    const timer = window.setTimeout(() => {
-      searchAtelierDeskPersons(value)
-        .then((found) => setResults(found.filter((item) => item.open_lines.length > 0)))
-        .catch(() => setResults([]));
-    }, 300);
-    return () => window.clearTimeout(timer);
-  }, [query]);
-
-  function choose(item: AtelierDeskPerson) {
-    setPerson(item);
-    setUnticked([]);
-  }
-
-  async function handleReturn() {
-    // Pieces left unticked stay with the person: confirm that first.
-    const staying = openLines.filter((line) => unticked.includes(line.id));
-    if (
-      staying.length > 0 &&
-      !window.confirm(
-        t("stayingConfirm", { pieces: staying.map((line) => `${line.article_name} ${line.size_name}`).join(", ") }),
-      )
-    ) {
-      return;
-    }
-    setIsBusy(true);
-    try {
-      // Every ticked piece in one call (whatever pick-up it came from), so the
-      // person gets one "Inname" mail; the scan (if any) is marked used.
-      if (person && ticked.length > 0) {
-        await returnAtelierPersonLines(person.id, ticked, scan?.id ?? null);
-      }
-      toast.success(t("returned", { name: person?.name ?? "", count: ticked.length }));
-      onDone();
-    } catch (error) {
-      toast.error(atelierDeskErrorMessage(t, tStock, error));
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  async function handleCancel(handout: AtelierHandout) {
-    if (!window.confirm(t("cancelConfirm"))) return;
-    setIsBusy(true);
-    try {
-      await cancelAtelierHandout(handout.id);
-      toast.success(t("cancelled"));
-      onDone();
-    } catch (error) {
-      toast.error(atelierDeskErrorMessage(t, tStock, error));
-    } finally {
-      setIsBusy(false);
-    }
-  }
-
-  if (person === null) {
-    return (
-      <div className="flex max-w-2xl flex-col gap-3">
-        <Label htmlFor="atelier-desk-search">{t("searchLabel")}</Label>
-        <div className="relative">
-          <Search className="absolute top-2.5 left-3 size-4 text-muted-foreground" />
-          <Input
-            id="atelier-desk-search"
-            autoFocus
-            autoComplete="off"
-            className="pl-9"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-        </div>
-        {query.trim().length >= 2 && results.length === 0 && (
-          <p className="text-sm text-muted-foreground">{t("noOpenPerson")}</p>
-        )}
-        {results.map((item) => (
-          <button
-            key={item.id}
-            type="button"
-            onClick={() => choose(item)}
-            className="flex items-center justify-between rounded-md border px-4 py-3 text-left hover:bg-muted"
-          >
-            <span>
-              <span className="font-medium">{item.name}</span>
-              <span className="text-sm text-muted-foreground">
-                {item.email && ` · ${maskEmail(item.email)}`}
-                {item.bracelet_number && ` · ${t("braceletShort", { number: item.bracelet_number })}`}
-              </span>
-            </span>
-            <span className="text-sm text-muted-foreground">{t("piecesOut", { count: item.open_lines.length })}</span>
-          </button>
-        ))}
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col gap-4">
-      <p>
-        <span className="text-lg font-semibold">{person.name}</span>
-        {person.email && <span className="text-muted-foreground"> · {maskEmail(person.email)}</span>}
-        {person.bracelet_number && (
-          <span className="text-muted-foreground"> · {t("braceletShort", { number: person.bracelet_number })}</span>
-        )}
-      </p>
-      {openHandouts.isLoading && <p className="text-sm text-muted-foreground">{t("loading")}</p>}
-      {!openHandouts.isLoading && handouts.length === 0 && <p className="text-sm text-muted-foreground">{t("nothingOut")}</p>}
-      {handouts.map((handout) => {
-        const nothingReturned = handout.lines.every((line) => !line.returned_at);
-        return (
-          <Card key={handout.id}>
-            <CardContent className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center justify-between gap-2 text-sm text-muted-foreground">
-                <span>
-                  {handout.team_name} · {handout.festival_name} · {formatDateNl(handout.day)} ·{" "}
-                  {t("handedOutAt", { moment: formatDateTimeNl(handout.created_at) })}
-                </span>
-                {canCancel && nothingReturned && (
-                  <Button variant="ghost" size="sm" className="text-destructive" disabled={isBusy} onClick={() => void handleCancel(handout)}>
-                    {t("cancelHandout")}
-                  </Button>
-                )}
-              </div>
-              {handout.lines
-                .filter((line) => !line.returned_at)
-                .map((line) => (
-                  <label key={line.id} className="flex items-center gap-3 text-base">
-                    <Checkbox
-                      checked={ticked.includes(line.id)}
-                      onCheckedChange={(checked) =>
-                        setUnticked((current) => (checked === true ? current.filter((id) => id !== line.id) : [...current, line.id]))
-                      }
-                    />
-                    {line.article_name} · {line.size_name} · {tFit(line.fit)}
-                  </label>
-                ))}
-            </CardContent>
-          </Card>
-        );
-      })}
-      <div className="flex gap-3">
-        <Button size="lg" className="bg-sky-600 text-lg hover:bg-sky-700" disabled={ticked.length === 0 || isBusy} onClick={() => void handleReturn()}>
-          <PackageMinus className="size-5" />
-          {t("takeBack", { count: ticked.length })}
-        </Button>
-        <Button variant="outline" size="lg" onClick={() => setPerson(null)}>
-          {t("otherPerson")}
-        </Button>
-      </div>
-    </div>
   );
 }

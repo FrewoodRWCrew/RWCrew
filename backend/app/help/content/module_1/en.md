@@ -1,33 +1,33 @@
-# TagScan
+# Scans
 
-TagScan processes the CSV files of the RFID scanners. Every file arrives in the **Unreaded Tags** folder, is scanned and logged, and every tag read (EPC) is linked to the register in **TagManagement**. Actions in the file, such as **Assignment**, then create tags for a product.
+The Scans module has two parts, with the same roles and users: the **RFID tags** and the **wristbands (QR)**. The RFID part processes the CSV files of the RFID scanners. Every file arrives in the **Unreaded Tags** folder, is scanned and logged, and every tag read (EPC) is linked to the register in **TagManagement**. Actions in the file, such as **Assignment**, then create tags for a product.
 
-## [start] How TagScan works
+## [start] How Scans works
 A scanned file always follows the same path:
 
-1. A scanner (e.g. a Raspberry Pi) sends its CSV file over HTTPS to TagScan. It lands in the **Unreaded Tags** folder.
+1. A scanner (e.g. a Raspberry Pi) sends its CSV file over HTTPS to Scans. It lands in the **Unreaded Tags** folder.
 2. **Scan** logs the file in **Tag Headerdata**, reads every line into **Tag Linedata** and moves the file to the **Read Tags** folder. This also happens automatically in the background (see Settings).
 3. Every line is linked to the tag with the same EPC in **TagManagement** and to the scanner from the **Scanners** register.
-4. Lines with an action TagScan knows (today **Assignment**) wait to be processed. You process them through the blue bar at the top.
+4. Lines with an action Scans knows (today **Assignment**) wait to be processed. You process them through the blue bar at the top.
 
 ### Two kinds of status
 - **Match status** (on a line): was the EPC found in TagManagement? Converted, No match or Cancelled.
 - **Processing** (on a line and a file): was the action carried out? **New** (orange), **Loaded** (green) or **Cancelled** (red). The table rows get that colour.
 
 ### The blue "waiting to be processed" bar
-When scanned lines with an action are waiting, a **blue bar** with their number shows at the top of every TagScan screen. Click **Review** to process them (see "Processing waiting actions").
+When scanned lines with an action are waiting, a **blue bar** with their number shows at the top of every Scans screen. Click **Review** to process them (see "Processing waiting actions").
 
 > On every screen, **Help for this screen** at the top right opens the part of this guide about that screen. The full guide is at the bottom of the menu on the left.
 
-## [overview] TagScan Overview
-TagScan's start screen: the tags at a glance.
+## [overview] Scans Overview
+Scans's start screen: the tags at a glance.
 
 - **Tiles** at the top: total tags, unread CSVs (still in Unreaded Tags), assigned and unassigned tags, lost or damaged tags and the number of tags registered this month.
 - **Tags per status**: how all tags are spread.
 - **Registrations over time**: new tags per week, the last 12 weeks.
 - **Top products**: the 5 products with the most tags.
 
-![The TagScan overview](overview.png)
+![The Scans overview](overview.png)
 
 > Many **unread CSVs** means nothing was scanned yet. Check under Settings whether the automatic scan is on, or click **Scan** in Tag Headerdata.
 
@@ -81,7 +81,7 @@ Every scanned CSV line, completed with the tag from TagManagement: EPC, RSSI, an
 > **No match** means the EPC isn't (yet) in TagManagement. Add the tag in TagManagement or through an Assignment, then click **Synchro**.
 
 ## [tag-management | tagscan.tag-management] TagManagement
-The register of all RFID tags: EPC / UID, status, assigned product and serial number, kar number (the KarTracker kar the tag is mounted on), dates, last read and location, manufacturer, batch number, five note fields and **CSV Comment**: the latest Comment from a scanned CSV with this EPC. TagScan fills it in itself; it can't be changed.
+The register of all RFID tags: EPC / UID, status, assigned product and serial number, kar number (the KarTracker kar the tag is mounted on), dates, last read and location, manufacturer, batch number, five note fields and **CSV Comment**: the latest Comment from a scanned CSV with this EPC. Scans fills it in itself; it can't be changed.
 
 1. Click **New tag** to register a tag. Fill in at least the **EPC / UID**.
 2. Click **Change** on a tag to change e.g. the product, the serial number, the kar number or the **status** (Active, Inactive, Lost, Damaged, Retired).
@@ -115,8 +115,35 @@ Import and export tags and scanners in bulk with Excel, one tile per table.
 
 > An existing EPC / UID or scanner name is **updated**, not created twice. Columns left out of your file stay unchanged (so an old template without e.g. kar_nummer doesn't wipe anything). The export's **csv_comment** column is for information only and is ignored on upload. A scanner's API key is kept. Uploading needs the **Create** right on this screen.
 
+## [wristband-files | tagscan.wristband-files] JSON Source Files
+The same screen as CSV Source Files, for the wristbands. Every message from the wristband company is kept as a .json file, in one folder per day. File names start with the time; test messages end in **_test**.
+
+- Pick a day on the left and a file in the middle: its content shows on the right.
+- With the "delete" right you tick files and delete them from the server. The scan stays in the Scans table.
+
+> Files contain names and sometimes email addresses. They are not cleaned up automatically: delete them yourself when they are no longer needed.
+
+## [wristband-scans | tagscan.wristband-scans] Scans
+Every wristband message received, as a row in a table, also refused messages and messages not meant for the counter. Filter on day, status, scanner or team. The eye icon shows the message as received.
+
+- **no team with this name**: the team name doesn't match a MasterData team. The scan still appears at the counter, and the counter picks the team.
+- **at no counter**: the team has no reservation. A counter only shows scans of teams with a reservation at a festival of the season (Atelier now, Walkies later).
+
+If a team exceptionally has reservations at two counters, the scan shows at both; whoever uses it first processes it.
+
+## [wristband-scanners | tagscan.wristband-scanners] Scanners (wristbands)
+Every scanner of the wristband company appears automatically with its first message. Give it a name (e.g. "Counter 1"): it is saved when you leave the field. At the counter you pick which scanner stands there.
+
+## [wristband-test | tagscan.wristband-test] Test scan
+To test everything before the real connection with the wristband company (from May 2027). The message goes through **the same processing** as the webhook, without token, and is marked **Test**. This screen is also in Atelier and Walkies, each with its own right.
+
+- **Form**: pick an existing scanner or type a new device id and fill in the person and the team. On the right you see the message that is sent.
+- **JSON file**: drop a .json file in the box, choose a file or paste the message. It is sent as is.
+
+Click **Send**: under the button you see what happened to the message and whether a counter shows it.
+
 ## [roles | tagscan.roles] Roles
-A role decides what someone may do in TagScan, per screen: **View**, **Create**, **Edit** and **Delete**.
+A role decides what someone may do in Scans, per screen: **View**, **Create**, **Edit** and **Delete**.
 
 1. Click **New role** and give it a name (e.g. "Scanner operator", "Administrator").
 2. Click **Permissions** on the role and tick per screen what the role may do.
@@ -132,22 +159,72 @@ What the rights mean:
 ![Roles](roles.png)
 
 ## [users | tagscan.users] Users
-Everyone with access to TagScan and their current role.
+Everyone with access to Scans and their current role.
 
 1. Choose a user's **role** in the dropdown. The change is saved immediately.
 2. Click **New user** to give someone access. If the e-mail address doesn't exist yet, an account is created with the name and temporary password you enter.
 
 ![Users](users.png)
 
-> Without a role someone only sees the TagScan Overview, even with access to the module.
+> Without a role someone only sees the Scans Overview, even with access to the module.
 
 ## [settings | tagscan.settings] Settings
-How TagScan receives and scans the devices' CSV files.
+How Scans receives and scans the devices' CSV files.
 
 - **Receive folder**: the folder on the server where files arrive, in the "Unreaded Tags" subfolder. Keep the default, unless the server's administrator asks otherwise.
 - **Device upload URL**: the address a scanner sends its files to, together with its own API key (see Scanners). Click **Copy** and paste it into the device's configuration.
 - **Automatic scan**: scans Unreaded Tags in the background, just like the Scan button. Switch it on and choose the **interval** in seconds (60 by default). You also see when the last automatic scan ran and what it found.
+- **Webhook for the wristband company**: the address the wristband company sends its scans to and the folder with the JSON files. **Generate token** creates this environment's token; it is shown only once, so copy it right away. **Replace token** and **Revoke** make the old token invalid immediately. Without a token every message is refused (Test scan still works). The link **Explanation of the wristband connection** opens a PDF you can forward to the company.
 
 ![Settings](settings.png)
 
 > A change applies right away, without restarting the server.
+
+## [wristband-integration | tagscan.settings] Connection with the wristband company
+This explanation can be forwarded to the wristband company as it is. It contains no token or server address: we provide those separately.
+
+### How it works
+After each scan at one of our counters, the wristband company immediately sends one JSON message over HTTPS to our webhook. We keep the message as a file, put it in our scans table and show the person at the right counter within seconds.
+
+### What the wristband company gets from us
+- The **webhook address** and the **token**, separately per environment: test and production each have their own address and token.
+- The address is in Scans > Settings. The token is generated there and shown only once.
+- Send the token **separately and securely** (e.g. through a password vault or a one-time link), never in the same email as the address and never in a document.
+
+### What is sent with each scan
+A **POST** with a JSON message in this form:
+
+```
+{
+  "event": "crew_participation",
+  "token": "<the token you received from us>",
+  "data": {
+    "id": "557087",
+    "device": { "id": 14734, "name": "SUN0410" },
+    "person": {
+      "first_name": "First name",
+      "last_name": "Family name",
+      "email": "optional",
+      "size": "optional, e.g. M"
+    },
+    "attending_group": { "name": "Name of the team" },
+    "profile": { "name": "optional" }
+  }
+}
+```
+
+- **Required**: event, token, data.device.id, data.person.first_name and data.person.last_name.
+- **data.id** is the wristband number of this festival.
+- **data.device.id** identifies the scanner: each scanner at a counter must keep its own fixed id.
+- **data.attending_group.name** is the team. We also recognise a name listed with us as an alias of a team.
+- Events other than crew_participation are logged but not shown at a counter.
+
+### Our answers
+- **200**: accepted (or logged, for another event).
+- **400**: not readable JSON, or a required field is missing.
+- **401**: wrong or missing token.
+
+Only send a message again when no answer came or on a 5xx error. A message that arrives twice counts as two scans.
+
+### Replacing a token
+A new token makes the old one invalid immediately. So agree on a moment with the wristband company first, outside the festival days.

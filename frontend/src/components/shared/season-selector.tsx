@@ -8,7 +8,7 @@
 // list for them instead of erroring).
 
 import { useTranslations } from "next-intl";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 
 export function SeasonSelector() {
@@ -20,22 +20,16 @@ export function SeasonSelector() {
   }
 
   return (
-    <Select
+    <SearchableSelect
       value={selectedSeasonId !== null ? String(selectedSeasonId) : ""}
       onValueChange={(value) => setSelectedSeasonId(value ? Number(value) : null)}
-    >
-      <SelectTrigger size="sm" aria-label={t("label")} title={t("label")}>
-        <SelectValue>
-          {(value: string | null) => (value ? seasons.find((season) => String(season.id) === value)?.name : t("placeholder"))}
-        </SelectValue>
-      </SelectTrigger>
-      <SelectContent>
-        {seasons.map((season) => (
-          <SelectItem key={season.id} value={String(season.id)}>
-            {season.name}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+      size="sm"
+      aria-label={t("label")}
+      title={t("label")}
+      renderValue={(value: string | null) =>
+        (value ? seasons.find((season) => String(season.id) === value)?.name : t("placeholder"))
+      }
+      options={seasons.map((season) => ({ value: String(season.id), label: season.name }))}
+    />
   );
 }

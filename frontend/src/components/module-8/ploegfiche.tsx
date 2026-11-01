@@ -23,7 +23,7 @@ import type {
 import { buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AltsienSeasonSelect, useAltsienSeasonId } from "@/components/module-8/altsien-season-select";
 import { RequestStatusBadge } from "@/components/module-8/request-status-badge";
@@ -76,22 +76,15 @@ export function Ploegfiche({ seasons, canOpenWizard }: PloegficheProps) {
       <div className="flex flex-wrap items-end gap-3">
         <div className="flex w-full max-w-sm flex-col gap-2">
           <Label htmlFor="ploegfiche-team">{t("teamLabel")}</Label>
-          <Select value={teamId !== null ? String(teamId) : ""} onValueChange={selectTeam}>
-            <SelectTrigger id="ploegfiche-team">
-              <SelectValue>
-                {(value: string | null) =>
-                  teams.data?.find((team) => String(team.team_id) === value)?.team_name ?? t("teamPlaceholder")
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {(teams.data ?? []).map((team) => (
-                <SelectItem key={team.team_id} value={String(team.team_id)}>
-                  {team.team_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={teamId !== null ? String(teamId) : ""}
+            onValueChange={selectTeam}
+            id="ploegfiche-team"
+            renderValue={(value: string | null) =>
+              teams.data?.find((team) => String(team.team_id) === value)?.team_name ?? t("teamPlaceholder")
+            }
+            options={(teams.data ?? []).map((team) => ({ value: String(team.team_id), label: team.team_name }))}
+          />
         </div>
 
         {fiche.data && seasonId !== null && teamId !== null && (

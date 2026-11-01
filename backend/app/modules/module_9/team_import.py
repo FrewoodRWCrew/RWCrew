@@ -3,7 +3,8 @@
 # Location and delivery method are given by name, resolved ignoring case.
 #
 # Scope note: this tile only covers Team's own fields (name, location,
-# delivery method, description, active). Its links have tiles of their own:
+# delivery method, description, active) and its aliases ("aliases" column,
+# separated by ";"). Its links have tiles of their own:
 # tasks per team (team_team_task_import.py), Kernleden per team
 # (team_kernlid_import.py), festivals per team (team_festival_import.py) and
 # Ploegverantwoordelijken (team_responsible_import.py).
@@ -19,6 +20,13 @@ from sqlalchemy.orm import Session
 from app.db.models.delivery_method import DeliveryMethod
 from app.db.models.team import Team
 from app.db.models.team_location import TeamLocation
+from app.modules.module_9.team_alias_service import (
+    XLSX_SEPARATOR,
+    aliases_of,
+    check_aliases,
+    clean_aliases,
+    replace_aliases,
+)
 from app.modules.module_9.xlsx_common import (
     ID_COLUMN,
     ImportOutcome,
@@ -33,7 +41,7 @@ from app.modules.module_9.xlsx_common import (
 )
 from app.schemas.masterdata import TeamImportRowResult
 
-TEMPLATE_COLUMNS = [ID_COLUMN, "name", "location_name", "delivery_method_name", "description", "active"]
+TEMPLATE_COLUMNS = [ID_COLUMN, "name", "location_name", "delivery_method_name", "description", "active", "aliases"]
 SHEET_TITLE = "Teams"
 
 
@@ -92,12 +100,25 @@ def import_teams_from_xlsx(db: Session, file_bytes: bytes) -> list[TeamImportRow
             }
             fields = {field: parse(row.value(column)) for column, (field, parse) in parsers.items() if row.has(column)}
 
+            # Checked before anything changes, so a clash leaves no half-made team.
+            aliases = None
+            if row.has("aliases"):
+                typed = (cell_text(row.value("aliases")) or "").split(XLSX_SEPARATOR)
+                aliases = clean_aliases(typed, name or (team.name if team else None))
+                check_aliases(db, aliases, team.id if team else None)
+
             if team is None:
-                db.add(Team(**fields))
-                return name, "created"
-            for field, value in fields.items():
-                setattr(team, field, value)
-            return name or team.name, "updated"
+                team = Team(**fields)
+                db.add(team)
+                outcome: ImportOutcome = "created"
+            else:
+                for field, value in fields.items():
+                    setattr(team, field, value)
+                outcome = "updated"
+            if aliases is not None:
+                db.flush()
+                replace_aliases(db, team.id, aliases)
+            return name or team.name, outcome
         except ValueError as error:
             raise RowError(str(error), name) from None
 
@@ -129,6 +150,7 @@ def export_teams_to_xlsx(db: Session) -> bytes:
                 delivery_methods.get(team.delivery_method_id, "") if team.delivery_method_id is not None else "",
                 team.description,
                 "yes" if team.active else "no",
+                f"{XLSX_SEPARATOR} ".join(aliases_of(db, team.id)),
             ]
             for team in teams
         ],

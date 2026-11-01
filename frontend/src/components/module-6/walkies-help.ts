@@ -11,4 +11,5 @@ export const WALKIES_HELP_ROUTES: HelpTopicRoute[] = [
   { path: BASE, topic: "overview", exact: true },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },
+  { path: `${BASE}/settings/scan-test`, topic: "scantest" },
 ];

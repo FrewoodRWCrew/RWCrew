@@ -165,6 +165,8 @@ export interface Team {
   kernlid_ids: number[];
   /** KarTracker "Speciale levertoeren" passing by this team. */
   special_tour_ids: number[];
+  /** Other names of this team in outside applications (e.g. the wristband company). */
+  aliases: string[];
   description: string | null;
   active: boolean;
 }
@@ -177,6 +179,7 @@ export interface TeamInput {
   task_ids?: number[];
   kernlid_ids?: number[];
   special_tour_ids?: number[];
+  aliases?: string[];
   description?: string | null;
   active?: boolean;
 }
@@ -304,6 +307,7 @@ export interface TagscanUserSummary {
 export interface TagscanMyPermissions {
   viewable_screen_keys: string[];
   creatable_screen_keys: string[];
+  editable_screen_keys: string[];
   deletable_screen_keys: string[];
 }
 
@@ -1689,6 +1693,30 @@ export interface AtelierSize {
 
 export type AtelierSizeInput = Omit<AtelierSize, "id">;
 
+/** What can be wrong with a returned Atelier piece (Masterdata > Retourstatussen). */
+export interface AtelierReturnStatus {
+  id: number;
+  name: string;
+  active: boolean;
+}
+
+export type AtelierReturnStatusInput = Omit<AtelierReturnStatus, "id">;
+
+/** One returned piece with a return status (Balie > Retourproblemen). */
+export interface AtelierReturnIssue {
+  line_id: number;
+  team_name: string;
+  person_name: string;
+  bracelet_number: string | null;
+  day: string;
+  article_name: string;
+  size_name: string;
+  fit: AtelierFit;
+  status_name: string;
+  returned_at: string;
+  returned_by_name: string | null;
+}
+
 /** One size an Atelier article comes in. */
 export interface AtelierArticleSize {
   id: number;
@@ -2029,7 +2057,7 @@ export interface AtelierMailTemplates {
 }
 
 /** One received wristband-scan message (desk card and settings log). */
-export interface AtelierScan {
+export interface WristbandScan {
   id: number;
   received_at: string;
   source: "webhook" | "test";
@@ -2047,12 +2075,34 @@ export interface AtelierScan {
   email: string | null;
   size: string | null;
   person_id: number | null;
-  /** Only in the settings log: the message as received. */
+  /** Only in the logs: the message as received. */
   raw?: string | null;
+  /** Only in the logs: the counters where it waits. */
+  visible_at?: string[];
+}
+
+/** The filters of the Scans module's wristband table ("" = no filter). */
+export interface WristbandScanFilters {
+  day: string;
+  status: string;
+  deviceId: string;
+  team: string;
+}
+
+/** The modules with a Test-scan screen. */
+export type WristbandTestModule = "module-1" | "module-5" | "module-6";
+
+/** The Scans module's Settings screen: the webhook details. */
+export interface WristbandSettings {
+  webhook_path: string;
+  webhook_token_configured: boolean;
+  webhook_token_generated_at: string | null;
+  webhook_token_last_used_at: string | null;
+  source_folder: string;
 }
 
 /** A scanner of the wristband company (registered by its first message). */
-export interface AtelierScanner {
+export interface WristbandScanner {
   id: number;
   device_id: string;
   device_name: string | null;
@@ -2063,15 +2113,15 @@ export interface AtelierScanner {
 /** Atelier's settings. */
 export interface AtelierSettings {
   wristband_required: boolean;
-  webhook_path: string;
-  webhook_token_configured: boolean;
 }
 
 /** What the processing did with a test scan. */
-export interface AtelierTestScanResult {
-  scan: AtelierScan;
+export interface WristbandTestScanResult {
+  scan: WristbandScan;
   http_status: number;
   team_name_matched: string | null;
+  /** The counters where it now waits. */
+  visible_at: string[];
 }
 
 /** The KPI page's desk tiles. */

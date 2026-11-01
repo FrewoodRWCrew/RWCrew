@@ -46,6 +46,8 @@ De verenigingen die met een kar werken: naam, locatie, leverwijze, beschrijving 
 
 > Enkel gebruikers die als Altsien Kernlid aangeduid zijn, verschijnen in de lijst Kernleden.
 
+- **Aliassen**: andere namen van deze ploeg in andere applicaties, bv. een iets andere schrijfwijze bij het polsbandbedrijf. Een polsbandscan met zo'n naam wordt aan deze ploeg gekoppeld. Typ een naam, druk op Enter of **Toevoegen**, en sla de ploeg op. Een alias mag niet de naam of alias van een andere ploeg zijn.
+
 ## [team-responsibles | masterdata.team-responsibles] Ploegverantwoordelijken
 De verantwoordelijken per ploeg en per jaartal, met hun e-mail, telefoonnummer en opmerkingen. Zij hoeven geen RWCrew-gebruiker te zijn.
 

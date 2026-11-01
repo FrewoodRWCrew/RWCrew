@@ -1,9 +1,10 @@
-# This file defines the "Atelier_scan" table: every wristband-scan message
-# that reached Atelier — from the wristband company's webhook, or from the
-# Test-scan screen — including refused and ignored ones, so it's always
-# visible what was sent. A "new" scan shows up live on the desk screen of its
-# scanner; once a transaction used it, it becomes "used". Written only by
-# module_5/scan_service.py.
+# This file defines the "Wristband_scan" table: every wristband-scan message
+# that reached us — from the wristband company's webhook, or from a Test-scan
+# screen (Scans, Atelier, Walkies) — including refused and ignored ones, so
+# it's always visible what was sent. The Scans module shows them all; a "new"
+# scan shows up live on the counter of a module where the team has
+# reservations; once a transaction used it, it becomes "used". Written only
+# by modules/wristband/scan_service.py.
 
 from datetime import datetime
 
@@ -13,10 +14,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
-class AtelierScan(Base):
+class WristbandScan(Base):
     """One received scan message."""
 
-    __tablename__ = "Atelier_scan"
+    __tablename__ = "Wristband_scan"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     received_at: Mapped[datetime] = mapped_column(
@@ -51,8 +52,9 @@ class AtelierScan(Base):
     # The message exactly as received (text, since it may not even be JSON).
     raw: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # When a desk transaction used it, and for whom.
+    # When a desk transaction used it, which module's counter that was, and for whom.
     used_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    used_by_module: Mapped[str | None] = mapped_column(String(20), nullable=True)
     person_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Atelier_person.id", ondelete="SET NULL"), nullable=True
     )

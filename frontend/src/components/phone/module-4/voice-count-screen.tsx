@@ -30,13 +30,13 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { QrScanner } from "@/components/module-2/qr-scanner";
 import { stockErrorMessage } from "@/components/module-4/stockmaster-common";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 import { matchProduct, parsePhrase, type MatchConfidence } from "@/components/phone/module-4/voice-count-parser";
 import { isIos, useSpeechRecognition, type SpeechFailure } from "@/components/phone/module-4/use-speech-recognition";
 import { PhoneNotice } from "@/components/phone/shared/phone-notice";
-import { PhoneSelect } from "@/components/phone/shared/phone-select";
 
 // How long to wait after an unknown kar code before scanning again.
 const RESCAN_DELAY_MS = 1500;
@@ -100,6 +100,15 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   const productNames = useMemo(
     () => new Map(lookups.products.map((product) => [product.id, product.name])),
     [lookups.products],
+  );
+
+  // The choices of both product dropdowns.
+  const productOptions = useMemo(
+    () => [
+      { value: NO_PRODUCT_VALUE, label: t("chooseProduct") },
+      ...lookups.products.map((product) => ({ value: String(product.id), label: product.name })),
+    ],
+    [lookups.products, t],
   );
 
   /** Add lines; a sure line of a product already on the list adds to it. */
@@ -357,22 +366,18 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
               >
                 {needsCheck ? (
                   <div className="flex items-center gap-2">
-                    <PhoneSelect
+                    <SearchableSelect
                       aria-label={t("product")}
-                      value={line.productId ?? NO_PRODUCT_VALUE}
-                      onChange={(event) =>
+                      size="phone"
+                      className="min-w-0 flex-1"
+                      value={line.productId === null ? NO_PRODUCT_VALUE : String(line.productId)}
+                      onValueChange={(value) =>
                         updateLine(line.key, {
-                          productId: event.target.value === NO_PRODUCT_VALUE ? null : Number(event.target.value),
+                          productId: !value || value === NO_PRODUCT_VALUE ? null : Number(value),
                         })
                       }
-                    >
-                      <option value={NO_PRODUCT_VALUE}>{t("chooseProduct")}</option>
-                      {lookups.products.map((product) => (
-                        <option key={product.id} value={product.id}>
-                          {product.name}
-                        </option>
-                      ))}
-                    </PhoneSelect>
+                      options={productOptions}
+                    />
                     <Button
                       type="button"
                       size="icon"
@@ -442,18 +447,13 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
       {/* Add a line by hand. */}
       <div className="flex flex-col gap-2 rounded-xl border border-dashed p-3">
         <Label htmlFor="voice-count-manual-product">{t("addByHand")}</Label>
-        <PhoneSelect
+        <SearchableSelect
           id="voice-count-manual-product"
+          size="phone"
           value={manualProductId}
-          onChange={(event) => setManualProductId(event.target.value)}
-        >
-          <option value={NO_PRODUCT_VALUE}>{t("chooseProduct")}</option>
-          {lookups.products.map((product) => (
-            <option key={product.id} value={product.id}>
-              {product.name}
-            </option>
-          ))}
-        </PhoneSelect>
+          onValueChange={(value) => setManualProductId(value ?? NO_PRODUCT_VALUE)}
+          options={productOptions}
+        />
         <div className="flex gap-2">
           <Input
             type="number"

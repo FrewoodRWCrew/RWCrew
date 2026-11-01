@@ -1,32 +1,32 @@
 "use client";
 
-// Atelier's "Instellingen > Test-scan" screen (block 5). The wristband
-// company can only be connected from May 2027; until then (and to replay a
-// real message later) this screen sends a scan message through exactly the
-// same processing as the company's webhook — without its token — marked as a
-// test. Two ways:
+// The Test-scan screen of the Scans module, Atelier and Walkies: each passes
+// its module key, so the module's own rights apply. The wristband company can
+// only be connected from May 2027; until then (and to replay a real message
+// later) this screen sends a scan message through exactly the same processing
+// as the company's webhook — without its token — marked as a test. Two ways:
 //   - "Formulier": fill in scanner, person, wristband number, team, ... and
 //     the company's JSON is built (shown live);
 //   - "JSON": paste a message or drop a .json file, sent as is.
-// The result (status, matched team) shows under the button, the message
-// appears in the log below, and a "new" scan pops up live on the desk screen
-// of that scanner.
+// The result (status, matched team, whether a counter shows it) appears under
+// the button, the message in the log below, and a "new" scan pops up live on
+// the desk screen of that scanner when the team has reservations there.
 
 import { useState } from "react";
 import { FileJson, Send } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { ApiError, listAtelierScanLog, listAtelierScanners, listAtelierTestTeams, sendAtelierTestScan } from "@/lib/api";
-import type { AtelierScan, AtelierScanner, AtelierTestScanResult } from "@/lib/types";
+import { ApiError, wristbandTestApi } from "@/lib/api";
+import type { WristbandScan, WristbandScanner, WristbandTestModule, WristbandTestScanResult } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Textarea } from "@/components/ui/textarea";
-import { SCAN_STATUS_VARIANT, ScanLogTable } from "@/components/module-5/atelier-settings";
+import { SCAN_STATUS_VARIANT, ScanLogTable } from "@/components/shared/wristband/scan-log-table";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 type Tab = "form" | "json";
@@ -78,19 +78,27 @@ function buildMessage(values: FormValues) {
   };
 }
 
-export function ScanTest({ canSend }: { canSend: boolean }) {
-  const t = useTranslations("atelier.scanTest");
-  const tSettings = useTranslations("atelier.settings");
+interface ScanTestProps {
+  moduleKey: WristbandTestModule;
+  canSend: boolean;
+  /** An extra line under the description (e.g. a module without a counter yet). */
+  note?: string;
+}
+
+export function ScanTest({ moduleKey, canSend, note }: ScanTestProps) {
+  const t = useTranslations("wristband.test");
+  const tLog = useTranslations("wristband.log");
+  const api = wristbandTestApi(moduleKey);
   const [tab, setTab] = useState<Tab>("form");
   const [values, setValues] = useState<FormValues>(EMPTY);
   const [json, setJson] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSending, setIsSending] = useState(false);
-  const [result, setResult] = useState<AtelierTestScanResult | null>(null);
+  const [result, setResult] = useState<WristbandTestScanResult | null>(null);
 
-  const scanners = useKeyedLoad<AtelierScanner[]>("test-scanners", listAtelierScanners);
-  const teams = useKeyedLoad<{ id: number; name: string; active: boolean }[]>("test-teams", listAtelierTestTeams);
-  const log = useKeyedLoad<AtelierScan[]>("test-scan-log", listAtelierScanLog);
+  const scanners = useKeyedLoad<WristbandScanner[]>("test-scanners", api.listScanners);
+  const teams = useKeyedLoad<{ id: number; name: string; active: boolean }[]>("test-teams", api.listTeams);
+  const log = useKeyedLoad<WristbandScan[]>("test-scan-log", api.listLog);
 
   const preview = JSON.stringify(buildMessage(values), null, 2);
 
@@ -109,7 +117,7 @@ export function ScanTest({ canSend }: { canSend: boolean }) {
     const raw = tab === "form" ? preview : json;
     setIsSending(true);
     try {
-      const sent = await sendAtelierTestScan(raw);
+      const sent = await api.send(raw);
       setResult(sent);
       toast.success(t("sent"));
       log.reload();
@@ -128,6 +136,7 @@ export function ScanTest({ canSend }: { canSend: boolean }) {
       <div>
         <h1 className="text-2xl font-bold tracking-tight underline">{t("title")}</h1>
         <p className="text-muted-foreground">{t("description")}</p>
+        {note && <p className="mt-1 text-sm text-orange-700 dark:text-orange-300">{note}</p>}
       </div>
 
       <div className="flex gap-2">
@@ -147,25 +156,19 @@ export function ScanTest({ canSend }: { canSend: boolean }) {
               {/* An existing scanner fills in its id and name; a new id registers a new scanner. */}
               <div className="col-span-2 flex flex-col gap-2">
                 <Label>{t("existingScanner")}</Label>
-                <Select
+                <SearchableSelect
                   value=""
                   onValueChange={(value) => {
                     const scanner = scanners.data?.find((item) => item.device_id === value);
                     if (scanner) setValues((current) => ({ ...current, deviceId: scanner.device_id, deviceName: scanner.device_name ?? "" }));
                   }}
                   disabled={(scanners.data ?? []).length === 0}
-                >
-                  <SelectTrigger>
-                    <SelectValue>{() => t("pickScanner")}</SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {(scanners.data ?? []).map((scanner) => (
-                      <SelectItem key={scanner.id} value={scanner.device_id}>
-                        {scanner.label ? `${scanner.label} (${scanner.device_name ?? scanner.device_id})` : (scanner.device_name ?? scanner.device_id)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  renderValue={() => t("pickScanner")}
+                  options={(scanners.data ?? []).map((scanner) => ({
+                    value: scanner.device_id,
+                    label: scanner.label ? `${scanner.label} (${scanner.device_name ?? scanner.device_id})` : (scanner.device_name ?? scanner.device_id),
+                  }))}
+                />
               </div>
               <Field id="test-device-id" label={t("deviceId")} value={values.deviceId} onChange={(value) => update("deviceId", value)} required />
               <Field id="test-device-name" label={t("deviceName")} value={values.deviceName} onChange={(value) => update("deviceName", value)} />
@@ -221,20 +224,25 @@ export function ScanTest({ canSend }: { canSend: boolean }) {
           </Button>
           {result && (
             <span className="flex flex-wrap items-center gap-2 text-sm">
-              <Badge variant={SCAN_STATUS_VARIANT[result.scan.status]}>{tSettings(`statuses.${result.scan.status}`)}</Badge>
-              {result.scan.status_detail && <span>{tSettings(`details.${result.scan.status_detail}`)}</span>}
+              <Badge variant={SCAN_STATUS_VARIANT[result.scan.status]}>{tLog(`statuses.${result.scan.status}`)}</Badge>
+              {result.scan.status_detail && <span>{tLog(`details.${result.scan.status_detail}`)}</span>}
               {result.scan.status === "new" &&
                 (result.team_name_matched
                   ? t("teamMatched", { team: result.team_name_matched })
                   : t("teamNotMatched"))}
-              {result.scan.status === "new" && <span className="text-muted-foreground">{t("onDesk", { device: result.scan.device_id ?? "" })}</span>}
+              {result.scan.status === "new" &&
+                (result.visible_at.length > 0 ? (
+                  <span className="text-muted-foreground">{t("onDesk", { device: result.scan.device_id ?? "" })}</span>
+                ) : (
+                  <span className="text-orange-700 dark:text-orange-300">{t("notAtCounter")}</span>
+                ))}
             </span>
           )}
         </div>
       )}
 
       <section className="flex flex-col gap-2">
-        <h2 className="text-lg font-semibold">{tSettings("logTitle")}</h2>
+        <h2 className="text-lg font-semibold">{tLog("logTitle")}</h2>
         <ScanLogTable scans={log.data ?? []} isLoading={log.isLoading} />
       </section>
     </div>

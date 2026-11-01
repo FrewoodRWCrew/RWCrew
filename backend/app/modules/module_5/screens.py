@@ -28,24 +28,28 @@ class ScreenDefinition:
 
 # Every screen Atelier currently has. Each is gated independently:
 # - kpi: the module's main page;
-# - desk / open: the "Balie" group (Ophalen / Terugbrengen — "edit" also
-#   allows "Uitgifte annuleren" — and the pieces not returned yet);
+# - desk / open / returnissues: the "Balie" group (Ophalen / Terugbrengen —
+#   "edit" also allows "Uitgifte annuleren" — the pieces not returned yet,
+#   and the pieces that came back with a return status);
 # - reservations / preparation: the "Reservaties" group (persons per team per
 #   festival, and what to prepare each day + the picklist);
 # - stock / receipt / wash / writeoff / count / bookings / orderneeds: the
 #   "Stock" group (overview, the bookings that change stock, their history
 #   with undo — "edit" on bookings — and the Te bestellen list);
-# - articles / sizes / dataupload: the "Masterdata" group (the clothing
-#   catalogue, its sizes, and the bulk XLSX import/export); what each team
-#   gets is part of its reservation (the old "teampackages" screen is gone);
+# - articles / sizes / dataupload / returnstatuses: the "Masterdata" group
+#   (the clothing catalogue, its sizes, the bulk XLSX import/export, and the
+#   list of return statuses); what each team gets is part of its reservation
+#   (the old "teampackages" screen is gone);
 # - settings / scantest / mailtemplates: the "Instellingen" group (the
-#   wristband switch, scanners, webhook log; sending a test wristband scan;
+#   wristband switch; sending a test wristband scan — the scans themselves
+#   are in the Scans module;
 #   the texts of the mails sent after Ophalen / Terugbrengen);
 # - roles / users: the access-rights screens.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.kpi", label="KPI", sort_order=1),
-    ScreenDefinition(key="atelier.desk", label="Uitgifte & inname", sort_order=3),
-    ScreenDefinition(key="atelier.open", label="Openstaand", sort_order=4),
+    ScreenDefinition(key="atelier.desk", label="Uitgifte & inname", sort_order=2),
+    ScreenDefinition(key="atelier.open", label="Openstaand", sort_order=3),
+    ScreenDefinition(key="atelier.returnissues", label="Retourproblemen", sort_order=4),
     ScreenDefinition(key="atelier.reservations", label="Reservaties", sort_order=5),
     ScreenDefinition(key="atelier.preparation", label="Voorbereiden", sort_order=6),
     ScreenDefinition(key="atelier.stock", label="Stock", sort_order=7),
@@ -58,6 +62,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.articles", label="Artikelen", sort_order=20),
     ScreenDefinition(key="atelier.sizes", label="Maten", sort_order=21),
     ScreenDefinition(key="atelier.dataupload", label="Data Upload/Download", sort_order=22),
+    ScreenDefinition(key="atelier.returnstatuses", label="Retourstatussen", sort_order=23),
     ScreenDefinition(key="atelier.settings", label="Instellingen", sort_order=30),
     ScreenDefinition(key="atelier.scantest", label="Test-scan", sort_order=31),
     ScreenDefinition(key="atelier.mailtemplates", label="E-mails", sort_order=32),

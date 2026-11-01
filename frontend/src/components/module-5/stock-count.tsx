@@ -15,7 +15,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ATELIER_STOCK_CHANGED_EVENT, atelierStockErrorMessage } from "@/components/module-5/atelier-stock-common";
@@ -87,23 +87,22 @@ export function StockCount({ initialStock, canBook }: StockCountProps) {
 
       <div className="flex w-80 flex-col gap-2">
         <Label>{t("addArticle")}</Label>
-        <Select
+        <SearchableSelect
           value=""
           onValueChange={(value) => value && setArticleIds((current) => [...current, Number(value)])}
           disabled={pickable.length === 0}
-        >
-          <SelectTrigger>
-            <Plus className="size-4" />
-            <SelectValue>{() => (pickable.length ? t("pickArticle") : t("nothingToPick"))}</SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {pickable.map((article) => (
-              <SelectItem key={article.article_id} value={String(article.article_id)}>
-                {article.name} ({article.code})
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          className="w-full"
+          renderValue={() => (
+            <>
+              <Plus className="size-4" />
+              {pickable.length ? t("pickArticle") : t("nothingToPick")}
+            </>
+          )}
+          options={pickable.map((article) => ({
+            value: String(article.article_id),
+            label: `${article.name} (${article.code})`,
+          }))}
+        />
       </div>
 
       {chosen.length === 0 ? (

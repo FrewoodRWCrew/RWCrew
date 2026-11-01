@@ -31,6 +31,7 @@ from app.modules.module_6.deps import (
     require_screen_permission,
     screen_keys_allowed,
 )
+from app.modules.wristband.test_routes import register_scan_test_routes
 from app.schemas.walkies import (
     CreateOrGrantUserRequest,
     MyPermissionsResponse,
@@ -52,6 +53,14 @@ register_help_route(
     module_key=MODULE_KEY,
     require_access=require_module_access,
     viewable_screen_keys=lambda db, user: screen_keys_allowed(db, user, "view"),
+)
+
+
+# /wristband-test/...: sending a test wristband scan (shared with Scans and Atelier).
+register_scan_test_routes(
+    router,
+    require_view=require_screen_permission("walkies.scantest", "view"),
+    require_send=require_screen_permission("walkies.scantest", "create"),
 )
 
 

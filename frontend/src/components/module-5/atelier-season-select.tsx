@@ -11,7 +11,7 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import type { Season } from "@/lib/types";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 /** The season Atelier's screens should use: the one in the URL, else the
  *  header's choice, else the last open season, else the last one. */
@@ -60,23 +60,16 @@ export function AtelierSeasonSelect({ seasons, seasonId }: AtelierSeasonSelectPr
   return (
     <div className="flex w-44 flex-col gap-2">
       <Label htmlFor="atelier-season">{t("seasonLabel")}</Label>
-      <Select value={seasonId !== null ? String(seasonId) : ""} onValueChange={handleChange}>
-        <SelectTrigger id="atelier-season">
-          <SelectValue>
-            {(value: string | null) => {
-              const season = seasons.find((item) => String(item.id) === value);
-              return season ? seasonLabel(season) : t("noSeason");
-            }}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {seasons.map((season) => (
-            <SelectItem key={season.id} value={String(season.id)}>
-              {seasonLabel(season)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={seasonId !== null ? String(seasonId) : ""}
+        onValueChange={handleChange}
+        id="atelier-season"
+        renderValue={(value: string | null) => {
+          const season = seasons.find((item) => String(item.id) === value);
+          return season ? seasonLabel(season) : t("noSeason");
+        }}
+        options={seasons.map((season) => ({ value: String(season.id), label: seasonLabel(season) }))}
+      />
     </div>
   );
 }

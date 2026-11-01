@@ -2,7 +2,7 @@
 
 In Atelier the atelier team keeps track of work clothing during the festival days. Team members who work at a place with its own clothing (VIP, RW terrace, ...) get that clothing (T-shirts, hoodies, ...) at the start of their shift and hand it back after the shift. Atelier records what was handed out and returned, so everything stays traceable.
 
-> This module is built in blocks. Ready now: the master data (articles and sizes), the reservations (persons and package per team per festival), the stock (receipt, washing, write-off, count, to order), the counter (pick up and return) and the wristband scans (webhook, settings and Test scan). Next comes following every piece of clothing by RFID (TagScan).
+> This module is built in blocks. Ready now: the master data (articles and sizes), the reservations (persons and package per team per festival), the stock (receipt, washing, write-off, count, to order), the counter (pick up and return) and the wristband scans (at the counter and through Test scan; the scans themselves are in the Scans module). Next comes following every piece of clothing by RFID (Scans).
 
 ## [overview | atelier.kpi] KPI overview
 Atelier's start page. The **Counter** block shows how many pieces were handed out today, how many pieces aren't back yet and how many persons still have clothing. The **Master data** block shows how many active articles and sizes there are and how many article sizes can be handed out. The **Reservations** block shows, per festival of the chosen **season**, the persons and pieces per day, the number of teams with a reservation and how many of those have no package yet. The **Forgotten?** column counts the teams that have a reservation at another festival of this season but nothing here yet (no persons, no note). Click the number for their names and a link to that festival's reservations. If a team really isn't coming, enter 0 persons with a note (e.g. "not coming"). The **Stock** block shows the pieces that are available, to be washed and handed out, and how many sizes are below their minimum stock. The **Washed** block shows for the same season how many pieces were washed: the total, and per festival per day. A wash counts for the festival running that day; what was washed in the days after a festival is listed under **No festival** of that season. Undone washes don't count.
@@ -16,7 +16,7 @@ The counter. Pick the **festival**, the **day** (today by default) and **this co
 
 **Pick up**
 1. Enter the **first name** and **family name**: together they decide who the person is. When the person is known, email, wristband number and team are filled in and you see what they still hold.
-2. Optionally enter the **email address** (several people may share one) and the **wristband number** (the number on this festival's wristband; unique within the festival — every festival has new wristbands). The wristband number is required when that is switched on in **Settings**. A filled-in email address (known person or scan) is only partly shown for privacy (GDPR), e.g. fr***@gm***.com; **Change** empties the box so you can type a new address. On Return the email address is masked the same way. Once a team is chosen, a **contact icon** appears on the right (level with "Known: …"): click it for the team's **team leads** in this season (name, phone, email, comments), as set in MasterData > Teams > Team leads.
+2. Optionally enter the **email address** (several people may share one) and the **wristband number** (the number on this festival's wristband; unique within the festival — every festival has new wristbands). The wristband number is required when that is switched on in **Settings**. A filled-in email address (known person or scan) is only partly shown for privacy (GDPR), e.g. fr***@gm***.com; **Change** empties the box so you can type a new address. On Return the email address is masked the same way. Once a team is chosen, a **contact icon** appears on the right (level with "Known: …"): click it for the team's **team leads** in this season (name, phone, email, comments), as set in MasterData > Teams > Team leads. Scanners not working? Click the **camera icon** next to the wristband number and hold the wristband's QR code in front of the PC's camera: the number is filled in.
 3. Pick the **team** (only teams with a package at this festival).
 4. For each package article pick the **size** (1 piece per article); the number in brackets is how many are available. Every article is **optional**: click the chosen size again to skip the article. An article with only one size in stock (e.g. OneSize) is pre-selected. At least one article is needed; next to the button it says what's still missing.
 
@@ -28,7 +28,8 @@ When the team already has as many or more people served today than reserved, the
 **Return**
 1. Search the person by name, email address or wristband number (only people holding clothing).
 2. Every piece is ticked; untick what didn't come back (that stays outstanding). When something is unticked, the counter first asks for confirmation with the list of what stays with the person.
-3. Click **Take back**: the pieces go to **To wash**.
+3. If a piece has a problem (damaged, very dirty, ...), pick a **return status** per piece in the dropdown. It's only a remark: the piece still goes to **To wash**, and it shows up on **Return issues**.
+4. Click **Take back**: the pieces go to **To wash**.
 
 **Email**: when the person has an email address, they get a **Hand-out** mail after every pick-up and one **Return** mail after every return (also when the pieces come from several hand-outs). The texts are set on **Settings > Emails**.
 
@@ -39,7 +40,14 @@ With the Edit right you can **cancel** a hand-out of which nothing came back yet
 ## [open | atelier.open] Outstanding
 All clothing that was picked up but hasn't come back, **grouped per team and then per person** (with wristband number; the email address isn't shown, for privacy (GDPR)), with every piece below it: day, article, size and when it was picked up. Pick the festival and optionally the day at the top. Every column has a **filter field** above it: type part of a name, team, article, … to narrow the list; the totals follow the filter. If something never comes back, write it off via **Stock > Write-off** (reason "Not returned").
 
+With the counter's rights, every person has a **Return** button: it opens the same screen as Return at the counter, for this person, with everything they still hold (also outside the chosen day). The person gets the normal Return mail.
+
+The **Excel** button downloads what's on screen, including the filters you use (without email addresses).
+
 ![Outstanding](open.png)
+
+## [returnissues | atelier.returnissues] Return issues
+All clothing that came back with a **return status**, newest first: status, article, size, team, person, wristband, day, when it was returned and who booked it. Pick the festival and optionally the day at the top; every column has a text filter. This screen is read-only: a piece that can't be used any more is booked out via **Write-off**. The **Excel** button downloads what's on screen, including the filters you use.
 
 ## [reservations | atelier.reservations] Reservations
 Everything per festival on one page: per team **how many people** need clothing and **what each person gets** (the package, e.g. 2 T-shirts and 1 hoodie). A team works **every festival day** with that number of people and returns the clothing **every evening**, so every day needs *persons × package* again. The size isn't part of the package: it is picked at the counter.
@@ -130,6 +138,12 @@ A size used by an article can't be deleted: set it to not active instead.
 ![Sizes](sizes.png)
 
 
+## [returnstatuses | atelier.returnstatuses] Return statuses
+The list of what can be wrong with a returned piece, such as "Damaged" or "Very dirty". The counter picks this per piece on **Return**.
+
+1. Click **New return status** and enter the name.
+2. A status already used can't be deleted: set it to not active instead. It then leaves the dropdown, but stays visible on the pieces that have it.
+
 ## [dataupload | atelier.dataupload] Data Upload/Download
 One tile per table to download a **template**, **upload** a filled-in file and **export** the current data.
 
@@ -143,17 +157,14 @@ After uploading you see per row whether it was created, updated, unchanged or an
 
 ## [settings | atelier.settings] Settings
 - **Wristband required to pick up**: when on, nothing can be picked up at the counter without a wristband number (scanned or typed). Every festival has new wristbands: a number is unique within one festival.
-- **Webhook**: the address the wristband company sends its scans to, and whether the token is set on this server. Without a token every message is refused (Test scan still works).
-- **Scanners**: every scanner of the wristband company appears automatically with its first message. Give it a name (e.g. "Counter 1"); at the counter you pick which scanner stands there.
-- **Received messages**: every message that came in — also refused ones (wrong token, unreadable JSON) and messages not meant for the counter — with status, scanner, person, wristband and team. The eye icon shows the message as received. "no team with this name" means the team name doesn't match a MasterData team; the counter then picks the team.
 
-![Settings](settings.png)
+The wristband scans themselves (the webhook, the scanners with their names and every received message) are in the **Scans** module. A scan only appears at the counter if the team has a reservation with a package at a festival of the season, or if the team name wasn't recognised: the counter then picks the team.
 
 ## [scantest | atelier.scantest] Test scan
 To test everything before the real connection with the wristband company (from May 2027). The message goes through **the same processing** as the webhook, without token, and is marked **Test**.
 - **Form**: pick an existing scanner or type a new device id, fill in first name, family name, wristband number, team (pick or type a name to test a team that doesn't exist), profile and optionally email and size. On the right you see the message that is sent.
 - **JSON file**: drop a .json file in the box, choose a file or paste the message — it is sent as is (handy to replay a real example from the company).
-Click **Send**: under the button you see what happened to the message, and a valid scan appears right away at the counter that picked that scanner.
+Click **Send**: under the button you see what happened to the message, and a valid scan appears right away at the counter that picked that scanner, if the team has a reservation.
 
 ![Test scan](scan-test.png)
 

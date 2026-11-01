@@ -44,7 +44,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -313,41 +313,28 @@ function AfleverlocatieFormDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="afleverlocatie-zone">{t("zoneLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.zone_id ? String(form.zone_id) : ""}
               onValueChange={(value) => updateField("zone_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="afleverlocatie-zone">
-                <SelectValue>{(value: string | null) => zones.find((zone) => String(zone.id) === value)?.name}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {zones.map((zone) => (
-                  <SelectItem key={zone.id} value={String(zone.id)}>
-                    {zone.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="afleverlocatie-zone"
+              renderValue={(value: string | null) => zones.find((zone) => String(zone.id) === value)?.name}
+              options={zones.map((zone) => ({ value: String(zone.id), label: zone.name }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="afleverlocatie-distributiepunt">{t("distributiepuntLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.distributiepunt_id ? String(form.distributiepunt_id) : ""}
               onValueChange={(value) => updateField("distributiepunt_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="afleverlocatie-distributiepunt">
-                <SelectValue>
-                  {(value: string | null) => distributiepunten.find((item) => String(item.id) === value)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {distributiepunten.map((distributiepunt) => (
-                  <SelectItem key={distributiepunt.id} value={String(distributiepunt.id)}>
-                    {distributiepunt.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="afleverlocatie-distributiepunt"
+              renderValue={(value: string | null) =>
+                distributiepunten.find((item) => String(item.id) === value)?.name
+              }
+              options={distributiepunten.map((distributiepunt) => ({
+                value: String(distributiepunt.id),
+                label: distributiepunt.name,
+              }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="afleverlocatie-latitude">{t("latitudeLabel")}</Label>
@@ -385,29 +372,21 @@ function AfleverlocatieFormDialog({
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="afleverlocatie-altsien-kernlid">{t("altsienKernlidLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.altsien_kernlid_id ? String(form.altsien_kernlid_id) : NO_KERNLID_VALUE}
               onValueChange={(value) =>
                 updateField("altsien_kernlid_id", value && value !== NO_KERNLID_VALUE ? Number(value) : null)
               }
-            >
-              <SelectTrigger id="afleverlocatie-altsien-kernlid">
-                <SelectValue>
-                  {(value: string | null) => {
-                    const kernlid = altsienKernleden.find((item) => String(item.id) === value);
-                    return kernlid ? kernlidLabel(kernlid) : t("noKernlid");
-                  }}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_KERNLID_VALUE}>{t("noKernlid")}</SelectItem>
-                {altsienKernleden.map((kernlid) => (
-                  <SelectItem key={kernlid.id} value={String(kernlid.id)}>
-                    {kernlidLabel(kernlid)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="afleverlocatie-altsien-kernlid"
+              renderValue={(value: string | null) => {
+                const kernlid = altsienKernleden.find((item) => String(item.id) === value);
+                return kernlid ? kernlidLabel(kernlid) : t("noKernlid");
+              }}
+              options={[
+                { value: NO_KERNLID_VALUE, label: t("noKernlid") },
+                ...altsienKernleden.map((kernlid) => ({ value: String(kernlid.id), label: kernlidLabel(kernlid) })),
+              ]}
+            />
           </div>
           {/* Inactive locations are hidden from the "Plan a kar" dropdowns. */}
           <div className="col-span-2 flex items-center gap-2">

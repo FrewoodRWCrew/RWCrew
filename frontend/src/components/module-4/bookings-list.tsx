@@ -31,7 +31,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { NamedSelect } from "@/components/module-4/booking-panel";
 import { ACTION_ORDER, STOCKMASTER_BASE } from "@/components/module-4/stockmaster-common";
@@ -114,19 +114,19 @@ export function BookingsList({ seasons }: BookingsListProps) {
         </div>
         <div className="flex w-44 flex-col gap-2">
           <Label htmlFor="bookings-type">{tList("action")}</Label>
-          <Select value={docType} onValueChange={(value) => filtered(setDocType)(value ?? ALL)}>
-            <SelectTrigger id="bookings-type" className="w-full">
-              <SelectValue>{(value: string | null) => (!value || value === ALL ? t("common.all") : t(`docTypes.${value}`))}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("common.all")}</SelectItem>
-              {[...ACTION_ORDER, "reversal"].map((type) => (
-                <SelectItem key={type} value={type}>
-                  {t(`docTypes.${type}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={docType}
+            onValueChange={(value) => filtered(setDocType)(value ?? ALL)}
+            id="bookings-type"
+            className="w-full"
+            renderValue={(value: string | null) =>
+              (!value || value === ALL ? t("common.all") : t(`docTypes.${value}`))
+            }
+            options={[
+              { value: ALL, label: t("common.all") },
+              ...[...ACTION_ORDER, "reversal"].map((type) => ({ value: type, label: t(`docTypes.${type}`) })),
+            ]}
+          />
         </div>
         <div className="w-56">
           <NamedSelect

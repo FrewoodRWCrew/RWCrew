@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { KarStatusBadge } from "@/components/module-4/stock-pickers";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import { STOCKMASTER_BASE, readRemembered, remember } from "@/components/module-4/stockmaster-common";
@@ -92,25 +92,20 @@ export function KarOverview({ seasons }: KarOverviewProps) {
         </div>
         <div className="flex w-56 flex-col gap-2">
           <Label htmlFor="kars-team">{t("common.team")}</Label>
-          <Select
+          <SearchableSelect
             value={teamName}
             onValueChange={(value) => {
               setTeamName(value ?? "all");
               remember("karTeam", value ?? "all");
             }}
-          >
-            <SelectTrigger id="kars-team" className="w-full">
-              <SelectValue>{(value: string | null) => (value === "all" || !value ? t("common.all") : value)}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">{t("common.all")}</SelectItem>
-              {teams.map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            id="kars-team"
+            className="w-full"
+            renderValue={(value: string | null) => (value === "all" || !value ? t("common.all") : value)}
+            options={[
+              { value: "all", label: t("common.all") },
+              ...teams.map((name) => ({ value: name, label: name })),
+            ]}
+          />
         </div>
         <div className="flex gap-1">
           {(["all", "in", "out"] as Place[]).map((option) => (

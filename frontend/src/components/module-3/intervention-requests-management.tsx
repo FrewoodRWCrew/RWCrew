@@ -61,7 +61,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { TeamCombobox } from "./team-combobox";
@@ -237,7 +237,7 @@ export function InterventionRequestsManagement({
   const [groupByDelivery, setGroupByDelivery] = useState(true);
 
   // One filter per column, mirroring tag-linedata.tsx's per-column filter
-  // row — status uses a <Select> (small, fixed-ish list) like that
+  // row — status uses a dropdown (small, fixed-ish list) like that
   // screen's own "status" filter; every other column is free-text,
   // matched against the column's *displayed* value (see textMatches below).
   const [requestNumberFilter, setRequestNumberFilter] = useState("");
@@ -692,25 +692,21 @@ export function InterventionRequestsManagement({
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE
-                          ? (statuses.find((status) => String(status.id) === value)?.name ?? "")
-                          : t("allStatuses")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allStatuses")}</SelectItem>
-                    {statuses.map((status) => (
-                      <SelectItem key={status.id} value={String(status.id)}>
-                        {status.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterStatus")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE
+                      ? (statuses.find((status) => String(status.id) === value)?.name ?? "")
+                      : t("allStatuses")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allStatuses") },
+                    ...statuses.map((status) => ({ value: String(status.id), label: status.name })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -912,23 +908,15 @@ function RequestFormDialog({ request, trigger, onSaved, statuses, teams, teamKar
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="request-status">{t("statusLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.status_id ? String(form.status_id) : ""}
               onValueChange={(value) => updateField("status_id", Number(value))}
-            >
-              <SelectTrigger id="request-status">
-                <SelectValue>
-                  {(value: string | null) => statuses.find((status) => String(status.id) === value)?.name ?? ""}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {statuses.map((status) => (
-                  <SelectItem key={status.id} value={String(status.id)}>
-                    {status.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="request-status"
+              renderValue={(value: string | null) =>
+                statuses.find((status) => String(status.id) === value)?.name ?? ""
+              }
+              options={statuses.map((status) => ({ value: String(status.id), label: status.name }))}
+            />
           </div>
 
           <div className="col-span-2 flex flex-col gap-2">
@@ -995,28 +983,20 @@ function RequestFormDialog({ request, trigger, onSaved, statuses, teams, teamKar
 
           <div className="flex flex-col gap-2">
             <Label htmlFor="request-team-cart">{t("teamCartLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.team_cart_user_id ? String(form.team_cart_user_id) : "__none__"}
               onValueChange={(value) => updateField("team_cart_user_id", value === "__none__" ? null : Number(value))}
-            >
-              <SelectTrigger id="request-team-cart">
-                <SelectValue>
-                  {(value: string | null) =>
-                    value && value !== "__none__"
-                      ? (teamKarMembers.find((member) => String(member.id) === value)?.display_name ?? "")
-                      : t("noneOption")
-                  }
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="__none__">{t("noneOption")}</SelectItem>
-                {teamKarMembers.map((member) => (
-                  <SelectItem key={member.id} value={String(member.id)}>
-                    {member.display_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="request-team-cart"
+              renderValue={(value: string | null) =>
+                value && value !== "__none__"
+                  ? (teamKarMembers.find((member) => String(member.id) === value)?.display_name ?? "")
+                  : t("noneOption")
+              }
+              options={[
+                { value: "__none__", label: t("noneOption") },
+                ...teamKarMembers.map((member) => ({ value: String(member.id), label: member.display_name })),
+              ]}
+            />
           </div>
         </div>
 

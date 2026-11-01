@@ -22,7 +22,7 @@ Bovenaan de meeste schermen kies je het **seizoen**. Benodigdheden, Te bestellen
 Verbruiksgoederen met een minimum stock die eronder zakken, geven een **oranje balk** bovenaan elk StockMaster scherm. Klik op **Bekijken** om enkel die producten te zien.
 
 ### Masterdata
-De producten en hun kleine lijsten (Type, Magazijnen, Categorieën, Limieten) beheer je hier, onder **Masterdata** in het menu. De andere modules (TagScan, KarTracker, Altsien Select) lezen ze van hier.
+De producten en hun kleine lijsten (Type, Magazijnen, Categorieën, Limieten) beheer je hier, onder **Masterdata** in het menu. De andere modules (Scans, KarTracker, Altsien Select) lezen ze van hier.
 
 > Op elk scherm opent de knop **Help bij dit scherm** rechtsboven het stuk van deze handleiding dat over dat scherm gaat. De volledige handleiding vind je onderaan het menu links.
 
@@ -84,7 +84,7 @@ Goederen komen binnen (levering, aankoop) en gaan naar de **vrije voorraad** op 
 
 > Geblokkeerde producten kunnen niet ingeboekt worden. Komt een volledige bestelling binnen, start dan vanuit **Te bestellen**: de aantallen staan dan al klaar.
 
-**Vanuit een scan.** TagScan-lijnen met de actie **Book In** verschijnen in een groenblauwe balk bovenaan elk StockMaster-scherm (en op de startpagina). Klik op **Bekijken** (of op **Laden uit scan** bij Inboeken): per gescand bestand zie je de producten en aantallen — elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. **Laden in Inboeken** zet ze in de boekingslijst; controleer en bevestig zoals gewoonlijk. Pas dan worden de gescande lijnen als verwerkt gemarkeerd. Lijnen met een onbekende tag of een tag zonder product blijven wachten: koppel de tag in TagManagement en laad opnieuw, of annuleer de lijn met een reden.
+**Vanuit een scan.** Scans-lijnen met de actie **Book In** verschijnen in een groenblauwe balk bovenaan elk StockMaster-scherm (en op de startpagina). Klik op **Bekijken** (of op **Laden uit scan** bij Inboeken): per gescand bestand zie je de producten en aantallen — elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. **Laden in Inboeken** zet ze in de boekingslijst; controleer en bevestig zoals gewoonlijk. Pas dan worden de gescande lijnen als verwerkt gemarkeerd. Lijnen met een onbekende tag of een tag zonder product blijven wachten: koppel de tag in TagManagement en laad opnieuw, of annuleer de lijn met een reden.
 
 ## [kar-load | stockmaster.kars] 2. Kar laden
 Vul een kar vanuit de vrije voorraad (of vanuit een andere kar).
@@ -231,7 +231,7 @@ Alle producten met hun foto, type, magazijn, categorie en eigenschappen.
    - **Consumeerbaar**: een verbruiksgoed. Enkel daarvoor telt de **minimum voorraad** (oranje balk in StockMaster).
    - **Blokkeer**: kan niet meer ingeboekt of geleverd worden.
    - **Is logistiek product**: krijgt bij Kar laden altijd wat gevraagd is.
-   - **Tag Managed (RFID)**: het product draagt een RFID-tag (TagScan).
+   - **Tag Managed (RFID)**: het product draagt een RFID-tag (Scans).
    - **StockMaster: na 'Kar terug'**: komt het terug in de kar of naar de vrije voorraad?
 4. Kies de **Limiet** (Ongelimiteerd, Automatisch, Percentage, Toegewezen aantal) en, bij Percentage, de **Limietwaarde**. Met **Maximum initiële stock** begrens je wat een kar krijgt zolang ze in KarTracker niet geleverd is. Samen bepalen ze wat StockMaster bij Kar laden mag leveren.
 5. **Kostprijs (€)** is optioneel.

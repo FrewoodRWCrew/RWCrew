@@ -13,7 +13,7 @@
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import type { InterventionRequestsTeam } from "@/lib/types";
 
 const OTHER_VALUE = "__other__";
@@ -61,25 +61,15 @@ export function TeamCombobox({
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Select value={selectValue} onValueChange={handleSelect}>
-        <SelectTrigger id={id}>
-          <SelectValue>
-            {(value: string | null) =>
-              value === OTHER_VALUE
-                ? otherOptionLabel
-                : (teams.find((team) => String(team.id) === value)?.name ?? "")
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {teams.map((team) => (
-            <SelectItem key={team.id} value={String(team.id)}>
-              {team.name}
-            </SelectItem>
-          ))}
-          <SelectItem value={OTHER_VALUE}>{otherOptionLabel}</SelectItem>
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        id={id}
+        value={selectValue}
+        onValueChange={handleSelect}
+        options={[
+          ...teams.map((team) => ({ value: String(team.id), label: team.name })),
+          { value: OTHER_VALUE, label: otherOptionLabel },
+        ]}
+      />
       {isOther && (
         <Input
           id={`${id}-name`}

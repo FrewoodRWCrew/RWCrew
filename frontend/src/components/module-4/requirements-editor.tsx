@@ -28,7 +28,7 @@ import {
 import type { Season, StockMasterKarSummary, StockMasterMyPermissions } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { KarRequirementsList, type KarRequirementsApi } from "@/components/module-4/kar-requirements-list";
 import { StockMasterSeasonSelect, useStockMasterSeasonId } from "@/components/module-4/stockmaster-season-select";
 import { hasRight } from "@/components/module-4/stockmaster-common";
@@ -119,7 +119,7 @@ export function RequirementsEditor({ seasons, permissions }: RequirementsEditorP
       <div className="flex flex-wrap items-end gap-4">
         <div className="flex w-64 flex-col gap-2">
           <Label htmlFor="req-team">{t("common.team")}</Label>
-          <Select
+          <SearchableSelect
             value={teamName ?? ""}
             onValueChange={(value) => {
               setTeamName(value || null);
@@ -127,20 +127,13 @@ export function RequirementsEditor({ seasons, permissions }: RequirementsEditorP
               const karsOfTeam = kars.filter((kar) => (kar.team_name ?? NO_TEAM) === value);
               setKarId(karsOfTeam.length === 1 ? karsOfTeam[0].kar_id : null);
             }}
-          >
-            <SelectTrigger id="req-team" className="w-full">
-              <SelectValue>
-                {(value: string | null) => (!value ? tReq("chooseTeam") : value === NO_TEAM ? t("common.noTeam") : value)}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              {teams.map((name) => (
-                <SelectItem key={name} value={name}>
-                  {name === NO_TEAM ? t("common.noTeam") : name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            id="req-team"
+            className="w-full"
+            renderValue={(value: string | null) =>
+              (!value ? tReq("chooseTeam") : value === NO_TEAM ? t("common.noTeam") : value)
+            }
+            options={teams.map((name) => ({ value: name, label: name === NO_TEAM ? t("common.noTeam") : name }))}
+          />
         </div>
         {teamName !== null && (
           <div className="flex flex-col gap-2">

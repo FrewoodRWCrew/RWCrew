@@ -1,8 +1,9 @@
-# This file defines the "Atelier_scanner" table: the wristband company's
-# scanners that sent scans to Atelier. A scanner is registered automatically
-# by its first message (data.device.id); the atelier can give it a label such
+# This file defines the "Wristband_scanner" table: the wristband company's
+# scanners that sent us scans. A scanner is registered automatically by its
+# first message (data.device.id); the Scans module can give it a label such
 # as "Balie 1", and every desk screen picks the scanner standing at its
-# counter. Written only by module_5/scan_service.py and the settings screen.
+# counter. Written only by modules/wristband/scan_service.py and the Scans
+# module's Scanners screen.
 
 from datetime import datetime
 
@@ -12,10 +13,10 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.core.database import Base
 
 
-class AtelierScanner(Base):
+class WristbandScanner(Base):
     """One scanner (device) of the wristband company."""
 
-    __tablename__ = "Atelier_scanner"
+    __tablename__ = "Wristband_scanner"
 
     id: Mapped[int] = mapped_column(primary_key=True)
 

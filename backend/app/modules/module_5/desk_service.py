@@ -29,15 +29,17 @@ from app.db.models.atelier_handout import AtelierHandout
 from app.db.models.atelier_handout_line import AtelierHandoutLine
 from app.db.models.atelier_person import AtelierPerson
 from app.db.models.atelier_person_bracelet import AtelierPersonBracelet
-from app.db.models.atelier_scan import AtelierScan
+from app.db.models.atelier_return_status import AtelierReturnStatus
 from app.db.models.atelier_settings import AtelierSettings
 from app.db.models.atelier_size import FITS, AtelierSize
 from app.db.models.atelier_stock_document import AtelierStockDocument
 from app.db.models.festival import Festival
 from app.db.models.team import Team
 from app.db.models.user import User
+from app.db.models.wristband_scan import WristbandScan
 from app.modules.module_5.reservation_service import festival_days, lines_by_reservation, reservations_by_team
-from app.modules.module_5.scan_service import NEW, mark_used
+from app.modules.module_5.deps import MODULE_KEY
+from app.modules.wristband.scan_service import NEW, mark_used
 from app.modules.module_5.stock_service import (
     AVAILABLE,
     StockError,
@@ -105,11 +107,11 @@ def _set_bracelet(db: Session, person: AtelierPerson, festival_id: int, number: 
     db.flush()
 
 
-def _waiting_scan(db: Session, scan_id: int | None) -> AtelierScan | None:
+def _waiting_scan(db: Session, scan_id: int | None) -> WristbandScan | None:
     """The scan a transaction came from (must still be waiting)."""
     if scan_id is None:
         return None
-    scan = db.get(AtelierScan, scan_id)
+    scan = db.get(WristbandScan, scan_id)
     if scan is None or scan.status != NEW:
         raise StockError("scan_not_waiting")
     return scan
@@ -283,7 +285,7 @@ def create_handout(
     for article_id, article_size_id in lines:
         db.add(AtelierHandoutLine(handout_id=handout.id, article_id=article_id, article_size_id=article_size_id))
     if scan is not None:
-        mark_used(db, scan, person.id)
+        mark_used(db, scan, person.id, MODULE_KEY)
     db.flush()
     return handout
 
@@ -303,12 +305,30 @@ def _lines_of(db: Session, handout_id: int) -> list[AtelierHandoutLine]:
     )
 
 
+def _check_return_statuses(db: Session, line_ids: list[int], line_statuses: dict[int, int]) -> None:
+    """A status only goes on a piece that is coming back, and must be active."""
+    if not set(line_statuses) <= set(line_ids):
+        raise StockError("return_status_invalid")
+    for status_id in set(line_statuses.values()):
+        return_status = db.get(AtelierReturnStatus, status_id)
+        if return_status is None or not return_status.active:
+            raise StockError("return_status_invalid")
+
+
 def return_lines(
-    db: Session, user: User, handout_id: int, line_ids: list[int], scan_id: int | None = None
+    db: Session,
+    user: User,
+    handout_id: int,
+    line_ids: list[int],
+    scan_id: int | None = None,
+    line_statuses: dict[int, int] | None = None,
 ) -> AtelierHandout:
     """Terugbrengen: the ticked pieces come back (handed out → to wash). The
     pick-up is "returned" once every piece is back. A scan the return came
-    from is marked used."""
+    from is marked used. `line_statuses` notes what was wrong with a piece
+    (only a remark: the stock booking stays the same)."""
+    statuses = line_statuses or {}
+    _check_return_statuses(db, line_ids, statuses)
     handout = _get_handout(db, handout_id)
     scan = _waiting_scan(db, scan_id)
     if handout.status != OPEN:
@@ -329,16 +349,22 @@ def return_lines(
     for line in chosen:
         line.returned_at = now
         line.return_document_id = document.id
+        line.return_status_id = statuses.get(line.id)
     if all(line.returned_at is not None for line in lines.values()):
         handout.status = RETURNED
     if scan is not None:
-        mark_used(db, scan, person.id)
+        mark_used(db, scan, person.id, MODULE_KEY)
     db.flush()
     return handout
 
 
 def return_person_lines(
-    db: Session, user: User, person_id: int, line_ids: list[int], scan_id: int | None = None
+    db: Session,
+    user: User,
+    person_id: int,
+    line_ids: list[int],
+    scan_id: int | None = None,
+    line_statuses: dict[int, int] | None = None,
 ) -> tuple[list[AtelierHandout], list[AtelierHandoutLine]]:
     """Terugbrengen of one person in one go: the ticked pieces may belong to
     several of their open pick-ups (one return booking per pick-up, as with
@@ -349,6 +375,8 @@ def return_person_lines(
     wanted = set(line_ids)
     if not wanted:
         raise StockError("line_not_found", status_code=404)
+    statuses = line_statuses or {}
+    _check_return_statuses(db, line_ids, statuses)
     # The ticked pieces, grouped per pick-up; each must be the person's.
     lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.id.in_(wanted))).all()
     if len(lines) != len(wanted):
@@ -362,7 +390,9 @@ def return_person_lines(
 
     # The scan (if any) goes with the first booking only: it can be used once.
     for index, handout in enumerate(handouts):
-        return_lines(db, user, handout.id, per_handout[handout.id], scan_id if index == 0 else None)
+        handout_lines = per_handout[handout.id]
+        handout_statuses = {line_id: statuses[line_id] for line_id in handout_lines if line_id in statuses}
+        return_lines(db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses)
     return handouts, sorted(lines, key=lambda line: line.id)
 
 

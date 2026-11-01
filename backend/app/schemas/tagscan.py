@@ -115,6 +115,7 @@ class MyPermissionsResponse(BaseModel):
 
     viewable_screen_keys: list[str]
     creatable_screen_keys: list[str]
+    editable_screen_keys: list[str]
     deletable_screen_keys: list[str]
 
 

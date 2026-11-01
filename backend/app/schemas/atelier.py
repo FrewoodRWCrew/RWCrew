@@ -51,6 +51,23 @@ class SizeRequest(BaseModel):
     active: bool = True
 
 
+class ReturnStatusResponse(BaseModel):
+    """One return status, as shown on the Retourstatussen screen and at the desk."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+    active: bool
+
+
+class ReturnStatusRequest(BaseModel):
+    """What's sent to create or change a return status."""
+
+    name: str = Field(min_length=1, max_length=100)
+    active: bool = True
+
+
 class ArticleSizeResponse(BaseModel):
     """One size an article comes in."""
 
@@ -585,6 +602,34 @@ class ReturnRequest(BaseModel):
     line_ids: list[int] = Field(min_length=1)
     # The wristband scan this return came from (marked used).
     scan_id: int | None = None
+    # What was wrong with a piece: hand-out line id → return status id.
+    line_statuses: dict[int, int] = Field(default_factory=dict)
+
+
+class DeskExportRequest(BaseModel):
+    """An Excel download of a Balie list: the screen's festival + day and the
+    pieces it shows (its column filters only exist in the browser)."""
+
+    festival_id: int
+    day: date | None = None
+    line_ids: list[int]
+    locale: str = "nl"
+
+
+class ReturnIssueResponse(BaseModel):
+    """One returned piece with a return status (Retourproblemen)."""
+
+    line_id: int
+    team_name: str
+    person_name: str
+    bracelet_number: str | None
+    day: date
+    article_name: str
+    size_name: str
+    fit: Fit
+    status_name: str
+    returned_at: datetime
+    returned_by_name: str | None
 
 
 class HandoutLineResponse(BaseModel):
@@ -630,70 +675,10 @@ class DeskStatsResponse(BaseModel):
 # --- Wristband scans (block 5) ----------------------------------------------------
 
 
-class ScanResponse(BaseModel):
-    """One received scan message (the desk card and the settings log)."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    received_at: datetime
-    source: Literal["webhook", "test"]
-    status: Literal["new", "used", "dismissed", "ignored", "refused"]
-    status_detail: str | None
-    event: str | None
-    device_id: str | None
-    device_name: str | None
-    wristband_number: str | None
-    first_name: str | None
-    last_name: str | None
-    team_name: str | None
-    team_id: int | None
-    profile_name: str | None
-    email: str | None
-    size: str | None
-    person_id: int | None
-
-
-class ScanLogEntry(ScanResponse):
-    """A scan in the settings log, with the message as received."""
-
-    raw: str | None
-
-
-class TeamSummaryResponse(BaseModel):
-    """A MasterData team (the Test-scan form's team dropdown)."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    name: str
-    active: bool
-
-
-class ScannerResponse(BaseModel):
-    """A scanner of the wristband company (auto-registered by its first scan)."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: int
-    device_id: str
-    device_name: str | None
-    label: str | None
-    last_seen_at: datetime | None
-
-
-class ScannerLabelRequest(BaseModel):
-    """Our own name for a scanner, e.g. "Balie 1" (empty = none)."""
-
-    label: str | None = Field(default=None, max_length=255)
-
-
 class AtelierSettingsResponse(BaseModel):
-    """Atelier's settings, plus the webhook address and whether a token is configured."""
+    """Atelier's settings (the webhook itself is on the Scans module)."""
 
     wristband_required: bool
-    webhook_path: str
-    webhook_token_configured: bool
 
 
 class AtelierSettingsRequest(BaseModel):
@@ -745,15 +730,3 @@ class MailTestResponse(BaseModel):
     sent_to: str
 
 
-class TestScanRequest(BaseModel):
-    """The Test-scan screen: a message exactly as the wristband company would send it."""
-
-    raw: str = Field(min_length=1, max_length=100_000)
-
-
-class TestScanResponse(BaseModel):
-    """What the processing did with a test message."""
-
-    scan: ScanResponse
-    http_status: int
-    team_name_matched: str | None

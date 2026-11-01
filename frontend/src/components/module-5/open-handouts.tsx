@@ -5,19 +5,29 @@
 // bracelet number; no email column, for privacy — GDPR), then one line per piece with
 // its festival day and since when. Filters: festival + day at the top (they
 // decide what's loaded) and a text filter above every column (client-side).
+// The Excel button downloads the pieces shown, without email addresses.
+// With the desk's rights, a person's "Inname" button opens the desk's return
+// form in a dialog, so the list can be worked through without leaving it.
 // Writing off what never comes back stays manual (Stock > Afboeken).
 
 import { Fragment, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
-import { listAtelierOpenHandouts } from "@/lib/api";
+import { Download, PackageMinus } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { exportAtelierOpenHandouts, listAtelierOpenHandouts } from "@/lib/api";
 import { formatDateNl, formatDateTimeNl } from "@/lib/date-time";
 import type { AtelierHandout, Season } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { AtelierFestivalSelect, useAtelierFestival } from "@/components/module-5/atelier-festival-select";
 import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/atelier-season-select";
+import { ATELIER_STOCK_CHANGED_EVENT } from "@/components/module-5/atelier-stock-common";
 import { FilterHeadCell, useColumnFilters } from "@/components/module-5/column-filters";
+import { saveExcel } from "@/components/module-5/desk-common";
+import { ReturnForm } from "@/components/module-5/desk-return-form";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 // The day filter's "every day" choice (Base UI's Select needs a non-empty value).
@@ -30,6 +40,7 @@ type Column = (typeof COLUMNS)[number];
 // One open piece, with the texts its columns show (and filter on).
 interface PieceRow {
   key: string;
+  lineId: number;
   teamName: string;
   personId: number;
   personName: string;
@@ -55,15 +66,25 @@ interface TeamGroup {
 
 interface OpenHandoutsProps {
   seasons: Season[];
+  /** May book a return (shows the Actions column with "Inname"). */
+  canBook: boolean;
+  /** May cancel a pick-up in the Inname dialog. */
+  canCancel: boolean;
 }
 
-export function OpenHandouts({ seasons }: OpenHandoutsProps) {
+export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps) {
   const t = useTranslations("atelier.open");
   const tFit = useTranslations("atelier.fits");
+  const locale = useLocale();
   const seasonId = useAtelierSeasonId(seasons);
   const { festivals, festival } = useAtelierFestival(seasonId);
   const [day, setDay] = useState<string>(ALL);
   const { filters, setFilter, matches, active } = useColumnFilters<Column>();
+  const [isDownloading, setIsDownloading] = useState(false);
+  // The person whose Inname dialog is open.
+  const [returnPerson, setReturnPerson] = useState<PersonGroup | null>(null);
+  // The table's width in columns, with the Actions column when it's shown.
+  const columnCount = COLUMNS.length + (canBook ? 1 : 0);
 
   const key = festival ? `${festival.id}-${day}` : null;
   const rows = useKeyedLoad<AtelierHandout[]>(key, () =>
@@ -77,6 +98,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
         .filter((line) => line.returned_at === null)
         .map((line) => ({
           key: `${handout.id}-${line.id}`,
+          lineId: line.id,
           teamName: handout.team_name,
           personId: handout.person_id,
           personName: handout.person_name,
@@ -127,6 +149,32 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
   }
   const personCount = new Set(shown.map((piece) => piece.personId)).size;
 
+  // The Excel file of the pieces shown (column filters included).
+  async function handleDownload() {
+    if (!festival) return;
+    setIsDownloading(true);
+    try {
+      const blob = await exportAtelierOpenHandouts({
+        festivalId: festival.id,
+        day: day === ALL ? null : day,
+        lineIds: shown.map((piece) => piece.lineId),
+        locale,
+      });
+      saveExcel(blob, "atelier-openstaand", festival.name);
+    } catch {
+      toast.error(t("downloadFailed"));
+    } finally {
+      setIsDownloading(false);
+    }
+  }
+
+  // After a return (or cancelled pick-up): close, show what's left, re-count stock.
+  function finishReturn() {
+    setReturnPerson(null);
+    rows.reload();
+    window.dispatchEvent(new Event(ATELIER_STOCK_CHANGED_EVENT));
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -138,21 +186,23 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
           <AtelierFestivalSelect festivals={festivals} festival={festival} />
           <div className="flex w-40 flex-col gap-2">
             <Label htmlFor="atelier-open-day">{t("dayLabel")}</Label>
-            <Select value={day} onValueChange={(value) => setDay(value ?? ALL)}>
-              <SelectTrigger id="atelier-open-day" className="w-full">
-                <SelectValue>{(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL}>{t("allDays")}</SelectItem>
-                {(festival?.days ?? []).map((item) => (
-                  <SelectItem key={item} value={item}>
-                    {formatDateNl(item)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={day}
+              onValueChange={(value) => setDay(value ?? ALL)}
+              id="atelier-open-day"
+              className="w-full"
+              renderValue={(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}
+              options={[
+                { value: ALL, label: t("allDays") },
+                ...(festival?.days ?? []).map((item) => ({ value: item, label: formatDateNl(item) })),
+              ]}
+            />
           </div>
           <AtelierSeasonSelect seasons={seasons} seasonId={seasonId} />
+          <Button variant="outline" disabled={shown.length === 0 || isDownloading} onClick={() => void handleDownload()}>
+            <Download className="size-4" />
+            {t("download")}
+          </Button>
         </div>
       </div>
 
@@ -165,6 +215,11 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                   {t(column)}
                 </TableHead>
               ))}
+              {canBook && (
+                <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
+                  {t("actions")}
+                </TableHead>
+              )}
             </TableRow>
             {/* One text filter above every column. */}
             <TableRow>
@@ -176,12 +231,13 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                   onChange={(value) => setFilter(column, value)}
                 />
               ))}
+              {canBook && <TableHead className="sticky top-10 right-0 z-30 bg-background" />}
             </TableRow>
           </TableHeader>
           <TableBody>
             {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={COLUMNS.length} className="text-center text-muted-foreground">
+                <TableCell colSpan={columnCount} className="text-center text-muted-foreground">
                   {rows.isLoading ? t("loading") : pieces.length > 0 ? t("noMatch") : t("empty")}
                 </TableCell>
               </TableRow>
@@ -190,7 +246,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
               <Fragment key={team.teamName}>
                 {/* Team row: name + how many persons and pieces are still out. */}
                 <TableRow className="bg-muted/60 hover:bg-muted/60">
-                  <TableCell colSpan={COLUMNS.length} className="font-bold">
+                  <TableCell colSpan={columnCount} className="font-bold">
                     {team.teamName}
                     <span className="ml-3 text-sm font-normal text-muted-foreground">
                       {t("totals", { persons: team.persons.length, pieces: team.pieces })}
@@ -200,22 +256,31 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
                 {team.persons.map((person) => (
                   <Fragment key={person.personId}>
                     {/* Person row: who, with their bracelet number. */}
-                    <TableRow className="bg-muted/20">
+                    <TableRow className="group bg-muted/20">
                       <TableCell />
                       <TableCell className="font-medium">{person.personName}</TableCell>
                       <TableCell className="font-mono text-xs">{person.bracelet}</TableCell>
                       <TableCell colSpan={4} className="text-sm text-muted-foreground">
                         {t("piecesCount", { pieces: person.pieces.length })}
                       </TableCell>
+                      {canBook && (
+                        <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
+                          <Button variant="outline" size="sm" onClick={() => setReturnPerson(person)}>
+                            <PackageMinus className="size-4" />
+                            {t("returnButton")}
+                          </Button>
+                        </TableCell>
+                      )}
                     </TableRow>
                     {/* One line per piece the person still has. */}
                     {person.pieces.map((piece) => (
-                      <TableRow key={piece.key}>
+                      <TableRow key={piece.key} className="group">
                         <TableCell colSpan={3} />
                         <TableCell>{formatDateNl(piece.day)}</TableCell>
                         <TableCell>{piece.article}</TableCell>
                         <TableCell>{piece.size}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDateTimeNl(piece.since)}</TableCell>
+                        {canBook && <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50" />}
                       </TableRow>
                     ))}
                   </Fragment>
@@ -226,7 +291,7 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
           {shown.length > 0 && (
             <TableFooter>
               <TableRow>
-                <TableCell colSpan={COLUMNS.length} className="font-bold">
+                <TableCell colSpan={columnCount} className="font-bold">
                   {t("totals", { persons: personCount, pieces: shown.length })}
                   {active && (
                     <span className="ml-3 font-normal text-muted-foreground">
@@ -239,6 +304,30 @@ export function OpenHandouts({ seasons }: OpenHandoutsProps) {
           )}
         </Table>
       </div>
+
+      {/* The desk's return form, for this one person. */}
+      {returnPerson && (
+        <Dialog open onOpenChange={(open) => !open && setReturnPerson(null)}>
+          <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-3xl">
+            <DialogHeader>
+              <DialogTitle>{t("returnTitle")}</DialogTitle>
+            </DialogHeader>
+            <ReturnForm
+              canCancel={canCancel}
+              initialPerson={{
+                id: returnPerson.personId,
+                name: returnPerson.personName,
+                email: null,
+                bracelet_number: returnPerson.bracelet,
+              }}
+              fixedPerson
+              initialQuery=""
+              scan={null}
+              onDone={finishReturn}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

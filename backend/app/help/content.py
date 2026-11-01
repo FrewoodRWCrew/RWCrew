@@ -13,6 +13,9 @@
 #   - A bullet
 #   > A tip, shown in a coloured box
 #   ![Caption](book-in.png)                    <- screenshot from images/
+#   ```                                        <- a block of code, between two
+#   { "shown": "as typed" }                       lines of three backticks
+#   ```
 #
 # The topic is the chapter's stable id: the per-screen (?) button asks for
 # it. The screen key decides who sees the chapter (the "view" right on that
@@ -35,7 +38,7 @@ _IMAGE_RE = re.compile(r"^!\[(.*?)\]\((.+?)\)$")
 @dataclass(frozen=True)
 class Block:
     """One piece of a chapter: kind is heading / paragraph / steps /
-    bullets / tip / image. `text` holds the text (or the image caption),
+    bullets / tip / image / code. `text` holds the text (or the image caption),
     `items` the lines of a list, `image` the picture's file name.
     """
 
@@ -106,8 +109,24 @@ def parse_manual(text: str, images_dir: Path) -> Manual:
             pending_kind = kind
         pending.append(line)
 
+    # The lines of an open code block, None outside one.
+    code_lines: list[str] | None = None
+
     for raw_line in text.splitlines():
         line = raw_line.strip()
+
+        # A code block keeps its lines exactly, blank ones and indentation too.
+        if line == "```":
+            flush()
+            if code_lines is None:
+                code_lines = []
+            else:
+                target().append(Block("code", items=tuple(code_lines)))
+                code_lines = None
+            continue
+        if code_lines is not None:
+            code_lines.append(raw_line.rstrip())
+            continue
 
         # A blank line ends whatever was being collected.
         if not line:

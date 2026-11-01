@@ -28,7 +28,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ACTION_ORDER, hasRight, stockErrorMessage } from "@/components/module-4/stockmaster-common";
 
@@ -197,26 +197,21 @@ function ReasonDialog({ reason, onSaved }: ReasonDialogProps) {
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="reason-type">{tReasons("appliesTo")}</Label>
-            <Select
+            <SearchableSelect
               value={form.applies_to ?? ALL_TYPES}
               onValueChange={(value) =>
                 setForm({ ...form, applies_to: !value || value === ALL_TYPES ? null : (value as StockMasterReasonInput["applies_to"]) })
               }
-            >
-              <SelectTrigger id="reason-type" className="w-full">
-                <SelectValue>
-                  {(value: string | null) => (!value || value === ALL_TYPES ? tReasons("allTypes") : t(`docTypes.${value}`))}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={ALL_TYPES}>{tReasons("allTypes")}</SelectItem>
-                {ACTION_ORDER.map((action) => (
-                  <SelectItem key={action} value={action}>
-                    {t(`docTypes.${action}`)}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="reason-type"
+              className="w-full"
+              renderValue={(value: string | null) =>
+                (!value || value === ALL_TYPES ? tReasons("allTypes") : t(`docTypes.${value}`))
+              }
+              options={[
+                { value: ALL_TYPES, label: tReasons("allTypes") },
+                ...ACTION_ORDER.map((action) => ({ value: action, label: t(`docTypes.${action}`) })),
+              ]}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="reason-order">{tReasons("order")}</Label>

@@ -19,3 +19,6 @@ Everyone with access to Walkies and their current role.
 
 1. Pick a user's **role** in the drop-down. The change is saved right away.
 2. Click **New user** to give someone access. If the email address doesn't exist yet, an account is created with the name and temporary password you enter.
+
+## [scantest | walkies.scantest] Test scan
+Send a wristband scan as if the wristband company sent it. The message goes through the same processing as the webhook, without token, and is marked **Test**. Walkies has no counter yet: you see the result under the button and in the list below it, and the message is also in the **Scans** module.

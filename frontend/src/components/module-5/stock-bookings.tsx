@@ -33,7 +33,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { ATELIER_STOCK_CHANGED_EVENT, atelierStockErrorMessage } from "@/components/module-5/atelier-stock-common";
@@ -65,19 +65,18 @@ export function StockBookings({ canUndo }: StockBookingsProps) {
         </div>
         <div className="flex w-56 flex-col gap-2">
           <Label htmlFor="atelier-bookings-type">{t("bookings.typeFilter")}</Label>
-          <Select value={docType} onValueChange={(value) => setDocType(value ?? ALL)}>
-            <SelectTrigger id="atelier-bookings-type">
-              <SelectValue>{(value: string | null) => (value && value !== ALL ? t(`docTypes.${value}`) : t("bookings.allTypes"))}</SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL}>{t("bookings.allTypes")}</SelectItem>
-              {DOC_TYPES.map((type) => (
-                <SelectItem key={type} value={type}>
-                  {t(`docTypes.${type}`)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={docType}
+            onValueChange={(value) => setDocType(value ?? ALL)}
+            id="atelier-bookings-type"
+            renderValue={(value: string | null) =>
+              (value && value !== ALL ? t(`docTypes.${value}`) : t("bookings.allTypes"))
+            }
+            options={[
+              { value: ALL, label: t("bookings.allTypes") },
+              ...DOC_TYPES.map((type) => ({ value: type, label: t(`docTypes.${type}`) })),
+            ]}
+          />
         </div>
       </div>
 

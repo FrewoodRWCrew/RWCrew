@@ -46,6 +46,8 @@ The associations that work with a cart: name, location, delivery method, descrip
 
 > Only users marked as Altsien core member appear in the Core members list.
 
+- **Aliases**: other names of this team in other applications, e.g. a slightly different spelling at the wristband company. A wristband scan with such a name is linked to this team. Type a name, press Enter or **Add**, and save the team. An alias may not be the name or alias of another team.
+
 ## [team-responsibles | masterdata.team-responsibles] Team leads
 The responsible people per team and per year, with their email, phone number and comments. They don't have to be RWCrew users.
 

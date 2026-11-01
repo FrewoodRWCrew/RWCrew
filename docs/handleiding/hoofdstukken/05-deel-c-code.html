@@ -29,7 +29,7 @@ module</strong> georganiseerd: wie aan module 3 werkt, vindt alles in mappen met
 │   └── scripts/              <span class="c">deploy.sh, create-readonly-db-user.sh</span>
 ├── .github/workflows/        <span class="c">deploy-test.yml, deploy-production.yml</span>
 ├── docs/                     <span class="c">documentatie (PDF's, rollenpatroon, deze handleiding)</span>
-├── scripts/pi-watcher/       <span class="c">script voor de Raspberry Pi (TagScan)</span>
+├── scripts/pi-watcher/       <span class="c">script voor de Raspberry Pi (Scans)</span>
 ├── docker-compose.yml        <span class="c">lokaal: alleen PostgreSQL (poort 5433)</span>
 ├── docker-compose.prod.yml   <span class="c">server: db + backend + frontend (test én productie)</span>
 ├── .env.test.example         <span class="c">voorbeeld-instellingen voor test</span>
@@ -134,7 +134,7 @@ die op een tijdelijke SQLite-database draaien.
   publieke routers van module 1 en 3).</li>
   <li>In de <code>lifespan</code>-functie, die één keer bij het opstarten loopt, synchroniseert het de
   <strong>schermregisters</strong> van modules 1, 2, 3, 4, 8 en 9 met de code (zie <a class="ref" href="#s-be-rechten"></a>), en start het
-  <strong>automatisch scannen</strong> van TagScan als achtergrondtaak (<code>module_1/auto_scan.py</code>). Dat rekent op precies één
+  <strong>automatisch scannen</strong> van Scans als achtergrondtaak (<code>module_1/auto_scan.py</code>). Dat rekent op precies één
   backendproces per omgeving; komen er ooit meerdere workers, verhuis die taak dan naar één worker of een cron-job.</li>
 </ol>
 
@@ -202,7 +202,7 @@ create-schema, zodat een client ze nooit kan meesturen.</p>
   <tr><td><code>*_import.py</code></td><td>Excel-sjablonen, import en export (openpyxl).</td></tr>
   <tr><td><code>*_dashboard.py</code>, <code>dashboard.py</code></td><td>Berekeningen voor KPI- en dashboardschermen.</td></tr>
   <tr><td><code>*_router.py</code></td><td>Een grote module verdeelt haar endpoints over meerdere routers op hetzelfde voorvoegsel, elk opgenomen in <code>main.py</code> (bv. <code>module_4/product_masterdata_router.py</code>, <code>module_2/karcode_router.py</code>, <code>module_5/desk_router.py</code>).</td></tr>
-  <tr><td><code>public_router.py</code>, <code>device_router.py</code>, <code>scan_webhook_router.py</code></td><td>Endpoints zonder login (module 3: publiek formulier; module 1: Raspberry Pi; module 5: polsbandscans).</td></tr>
+  <tr><td><code>public_router.py</code>, <code>device_router.py</code>, <code>wristband/webhook_router.py</code></td><td>Endpoints zonder login (module 3: publiek formulier; module 1: Raspberry Pi; module 5: polsbandscans).</td></tr>
   <tr><td><code>notifications.py</code></td><td>Mails (module 3).</td></tr>
   <tr><td><code>steps.py</code>, <code>previous_season.py</code></td><td>Wizardstappen en "kopiëren van vorig seizoen" (module 8).</td></tr>
 </table>
@@ -284,14 +284,14 @@ volledige rechtensysteem.</p>
   <tr><td><code>module_9/team_responsible_service.py</code> (ploegverantwoordelijken)</td><td>MasterData "Ploegverantwoordelijken" én Altsien Select stap 3</td></tr>
   <tr><td><code>module_2/kar_action_service.py</code> (karbewegingen)</td><td>KarTracker-scherm én KarScan op de telefoon</td></tr>
   <tr><td><code>module_3/service.py</code> (aanvraagnummer, standaardstatus, ploegen)</td><td>Ingelogde router én publieke router van module 3</td></tr>
-  <tr><td><code>module_4/stock_service.py</code> (de <em>enige</em> code die voorraad wijzigt)</td><td>Alle boekingsschermen van StockMaster; later ook automatische boekingen vanuit TagScan</td></tr>
+  <tr><td><code>module_4/stock_service.py</code> (de <em>enige</em> code die voorraad wijzigt)</td><td>Alle boekingsschermen van StockMaster; later ook automatische boekingen vanuit Scans</td></tr>
   <tr><td><code>module_4/requirement_service.py</code> (benodigdheden per kar)</td><td>StockMaster "Benodigdheden" én Altsien Select stap 4 (Producten)</td></tr>
   <tr><td><code>module_4/delivery_entitlement.py</code> (wat "nu beschikbaar is voor levering")</td><td>Kar laden; het stroomdiagram van de organisatie staat enkel hier</td></tr>
-  <tr><td><code>module_4/tagscan_book_in.py</code> (TagScan-regels "Book In")</td><td>StockMaster Inboeken; zet de TagScan-regels in dezelfde transactie op <em>loaded</em></td></tr>
+  <tr><td><code>module_4/tagscan_book_in.py</code> (Scans-regels "Book In")</td><td>StockMaster Inboeken; zet de Scans-regels in dezelfde transactie op <em>loaded</em></td></tr>
   <tr><td><code>module_2/delivery_order_service.py</code> (levertoer)</td><td>Leveringsvolgorde; de planningsanalyses lezen <code>terrein_positie</code></td></tr>
   <tr><td><code>module_2/karcode_formula.py</code> (karcodeformule, via <code>ast</code> en een witte lijst, nooit <code>eval</code>)</td><td>Karcode Simulator (web en telefoon) en Instellingen</td></tr>
   <tr><td><code>module_5/stock_service.py</code>, <code>desk_service.py</code>, <code>scan_service.py</code></td><td>Atelier: de enige code die respectievelijk de stock, de personen/uitgiftes en de polsbandscans schrijft (zie <a class="ref" href="#s-be-atelier"></a>)</td></tr>
-  <tr><td><code>module_1/line_processing.py</code> (acties van TagScan-regels)</td><td>Het verwerkingsvenster van TagScan; nieuwe acties komen hier als functie bij</td></tr>
+  <tr><td><code>module_1/line_processing.py</code> (acties van Scans-regels)</td><td>Het verwerkingsvenster van Scans; nieuwe acties komen hier als functie bij</td></tr>
 </table>
 
 <h2 id="s-be-stockmaster">StockMaster: grootboek en saldo</h2>
@@ -302,7 +302,7 @@ nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_
 <ul>
   <li><strong>Alleen <code>stock_service.py</code> wijzigt voorraad.</strong> Het vergrendelt de saldorijen (<code>SELECT … FOR UPDATE</code>),
   schrijft document, bewegingen en saldo in dezelfde transactie en weigert alles wat negatief zou worden.</li>
-  <li><strong>De service doet zelf geen commit</strong>; de router (of later een automatische TagScan-verwerking) doet dat. Zo kan een
+  <li><strong>De service doet zelf geen commit</strong>; de router (of later een automatische Scans-verwerking) doet dat. Zo kan een
   aanroeper meerdere stappen samen laten slagen of mislukken.</li>
   <li><strong>Foutmeldingen zijn codes.</strong> Een <code>StockError("code", *parameters)</code> wordt HTTP-detail <code>"code|param|…"</code>; de
   frontend vertaalt die onder <code>stockMaster.errors.&lt;code&gt;</code>. Een nieuwe foutcode heeft dus een vertaling in beide taalbestanden nodig.</li>
@@ -325,8 +325,8 @@ nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_
   <code>Atelier_person_bracelet</code> (polsbandnummer per festival), <code>Atelier_handout</code> en <code>Atelier_handout_line</code> schrijft. Ophalen
   boekt <em>beschikbaar → uitgegeven</em>, terugbrengen <em>uitgegeven → te wassen</em>.</li>
   <li><strong>Polsbandscans</strong>: <code>scan_service.process_message</code> verwerkt elk bericht, van de webhook én van het testscherm
-  (dat de tokencontrole overslaat en het bericht als <code>test</code> markeert). Het logt alles in <code>Atelier_scan</code>, registreert de
-  scanner (<code>Atelier_scanner</code>, op <code>data.device.id</code>) en zoekt de ploeg op naam. De balie vraagt elke 2 seconden de wachtende
+  (dat de tokencontrole overslaat en het bericht als <code>test</code> markeert). Het logt alles in <code>Wristband_scan</code>, registreert de
+  scanner (<code>Wristband_scanner</code>, op <code>data.device.id</code>) en zoekt de ploeg op naam. De balie vraagt elke 2 seconden de wachtende
   scans van haar scanner op (<code>GET /desk/scans?device_id=</code>); een transactie die een scan gebruikt, stuurt <code>scan_id</code> mee.</li>
   <li><strong>Instelling</strong>: <code>Atelier_settings</code> (één rij) met <code>wristband_required</code>, de schakelaar "Polsband verplicht bij Ophalen".</li>
 </ul>

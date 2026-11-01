@@ -33,7 +33,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatDateTime } from "@/lib/date-time";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -793,26 +793,22 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
             {/* The filter row: each control sits directly under the column it filters. */}
             <TableRow>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select
+                <SearchableSelect
                   value={processStatusFilter}
                   onValueChange={(value) => setProcessStatusFilter(value ?? ALL_VALUE)}
-                >
-                  <SelectTrigger aria-label={t("filterProcessStatus")} className="h-8 w-full min-w-28 font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE ? tProcess(value) : t("allProcessStatuses")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allProcessStatuses")}</SelectItem>
-                    {PROCESS_STATUS_VALUES.map((statusValue) => (
-                      <SelectItem key={statusValue} value={statusValue}>
-                        {tProcess(statusValue)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  aria-label={t("filterProcessStatus")}
+                  className="h-8 w-full min-w-28 font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE ? tProcess(value) : t("allProcessStatuses")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allProcessStatuses") },
+                    ...PROCESS_STATUS_VALUES.map((statusValue) => ({
+                      value: statusValue,
+                      label: tProcess(statusValue),
+                    })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input
@@ -878,23 +874,22 @@ export function TagLineData({ initialEntries }: TagLineDataProps) {
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
-                <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}>
-                  <SelectTrigger aria-label={t("filterStatus")} className="h-8 w-full font-normal">
-                    <SelectValue>
-                      {(value: string | null) =>
-                        value && value !== ALL_VALUE ? t(`status.${value}`) : t("allStatuses")
-                      }
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value={ALL_VALUE}>{t("allStatuses")}</SelectItem>
-                    {STATUS_VALUES.map((statusValue) => (
-                      <SelectItem key={statusValue} value={statusValue}>
-                        {t(`status.${statusValue}`)}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableSelect
+                  value={statusFilter}
+                  onValueChange={(value) => setStatusFilter(value ?? ALL_VALUE)}
+                  aria-label={t("filterStatus")}
+                  className="h-8 w-full font-normal"
+                  renderValue={(value: string | null) =>
+                    value && value !== ALL_VALUE ? t(`status.${value}`) : t("allStatuses")
+                  }
+                  options={[
+                    { value: ALL_VALUE, label: t("allStatuses") },
+                    ...STATUS_VALUES.map((statusValue) => ({
+                      value: statusValue,
+                      label: t(`status.${statusValue}`),
+                    })),
+                  ]}
+                />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
                 <Input

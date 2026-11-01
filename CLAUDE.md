@@ -22,10 +22,11 @@ backend/
   app/db/models/ SQLAlchemy models (one file per table): landing ones (User, Module, UserModuleAccess,
                  ModuleRole, RefreshToken, LoginHistory) plus every module's own tables
   app/landing/   Auth endpoints (/api/auth/*) + super-admin endpoints (/api/admin/*)
-  app/modules/   One package per module (module_1 .. module_10). Modules 1, 2, 3, 4, 5, 6, 8 and 9 have
+  app/modules/   One package per module (module_1 .. module_10; module_1 = "Scans", formerly TagScan). Modules 1, 2, 3, 4, 5, 6, 8 and 9 have
                  their own routers with the custom-roles-with-per-screen-permissions system (see
                  docs/module-custom-roles-pattern.md); module 7 (placeholder) and 10 (phone-app
                  install page) use the shared app/modules/common.py factory
+  app/modules/wristband/  Wristband scans, shared by Scans (module-1) and the modules with a counter
   app/shared/    Small cross-module helpers (accessible module keys, device type from a User-Agent)
   app/cli/seed.py   Seeds the modules + the first super-admin user
   migrations/    Alembic
@@ -41,8 +42,8 @@ frontend/
     admin/master-data/           Redirects to its first sub-item (season/)
     admin/master-data/season/    "Season" master data (id, unique name) — sidebar groups
                                   future master-data entities as siblings here
-    modules/module-1/             TagScan: CSV-intake module with its own custom-roles system
-                                  (Roles + Users under "Access Rights") — see
+    modules/module-1/             Scans (formerly TagScan): RFID CSV intake + wristbands (QR), with its own
+                                  custom-roles system (Roles + Users under "Access Rights") — see
                                   docs/module-custom-roles-pattern.md
     modules/module-8/             Altsien Select: KPI, "Ploeg Wizard" (per team + season a
                                   Kernlid walks through steps), "Ploegfiche" (all choices on
@@ -324,7 +325,7 @@ only that shell.
   **Wash statistics** on the KPI page (`module_5/wash_stats.py`, `GET /stock/wash-stats?season_id=`, KPI right,
   `wash-stats-section.tsx`): posted `washed` documents per Belgian day, nothing stored; a day belongs to the season of the
   latest festival started on/before it and to the festival running that day, else the season's "no festival" group.
-- **Atelier counter desk** (sidebar group "Balie", `/modules/module-5/desk[/open]`, screens `atelier.desk|open`,
+- **Atelier counter desk** (sidebar group "Balie", `/modules/module-5/desk[/open]`, screens `atelier.desk|open|returnissues`,
   endpoints in `module_5/desk_router.py`, rules in `module_5/desk_service.py` — the only writer of `Atelier_person`
   (**first name + family name** = the person's key, `name_key` "first|last" lowercase unique; email **optional**, not
   unique; the wristband number is **per festival** in `Atelier_person_bracelet`, unique within the festival), `Atelier_handout` (person, festival, team, day, status
@@ -336,8 +337,15 @@ only that shell.
   wash). `stock_service.hand_out` / `return_pieces`; those documents can't be undone on Boekingen (`use_desk`) — only
   "Uitgifte annuleren" (`edit` on the desk, while nothing was returned). **Package quantity is always 1**
   (`reservation_service.PACKAGE_QUANTITY`, forced on save/copy/XLSX; migration `f9b3d6e1a475` set existing lines to 1;
-  the field stays visible, read-only). "Openstaand" = open pieces grouped per team → person → piece (client-side);
-  write-offs stay manual. Openstaand and Reservaties have a text filter above every column
+  the field stays visible, read-only). "Openstaand" = open pieces grouped per team → person → piece (client-side), with an "Inname" button per person (only
+  with desk view + create) opening the desk's `components/module-5/desk-return-form.tsx` in a dialog;
+  write-offs stay manual. The bracelet field has a camera button (`QrScanDialog`; the QR code's whole text is the number).
+  **Return status** per piece (optional, only a remark, not in the mail; stock still goes to wash):
+  `Atelier_return_status` (screen `atelier.returnstatuses`, `/masterdata/return-statuses`, used = deactivate only),
+  `Atelier_handout_line.return_status_id`, set through `line_statuses` on the return; overview "Retourproblemen"
+  (`atelier.returnissues`, `/desk/return-issues`, read-only). Openstaand and Retourproblemen have an **Excel** button: the screen POSTs its shown
+  `line_ids` (the column filters are client-side) to `/desk/open/export` / `/desk/return-issues/export` (`module_5/desk_export.py`,
+  no email column, values that look like a formula stay text). Openstaand and Reservaties have a text filter above every column
   (`components/module-5/column-filters.tsx`).
   **Emails are shown masked** on the desk, Openstaand has no email column at all (`lib/mask-email.ts`, `fr***@gm***.com`, GDPR); the database,
   API and mails keep the full address. Ophalen shows a filled-in address read-only with "Wijzig" (empties the box).
@@ -352,23 +360,14 @@ only that shell.
   `module_5/mail_template_router.py`, test mail to yourself). Placeholders = `notifications.PLACEHOLDERS`
   ({voornaam} {familienaam} {ploeg} {festival} {dag} {polsband} {stuks} {openstaand}); an unknown one is refused
   (`unknown_placeholder|name`). A new placeholder needs a value in `desk_values`, `EXAMPLE_VALUES` and a translation.
-- **Atelier wristband scans** (block 5): the wristband company scans at our counter and posts one JSON message per
-  scan to the **public webhook** `POST /api/public/atelier/wristband-scan` (`module_5/scan_webhook_router.py`, body read
-  raw). Its `token` must equal **`ATELIER_WEBHOOK_TOKEN`** (config `atelier_webhook_token`; also in
-  `docker-compose.prod.yml` and `.env.*.example`; empty = everything refused). `module_5/scan_service.process_message` —
-  the only writer of `Atelier_scan` / `Atelier_scanner` — logs **every** message (status new/used/dismissed/ignored/
-  refused + detail + raw), maps `data.device.id` → scanner (auto-registered, labelled on Instellingen),
-  `data.id` → wristband number, `data.person.first_name/last_name`, `data.attending_group.name` → team (matched by
-  name, ignoring case), optional email/size; only `event = crew_participation` becomes `new`. The desk screen picks its
-  scanner (localStorage via `useSyncExternalStore`) and polls `GET /desk/scans?device_id=` every 2 s; a waiting scan
-  shows as a card on the Ophalen/Terugbrengen choice and pre-fills the transaction, which sends `scan_id` (marked
-  used). The browser's desk scanner lives in `components/module-5/desk-scanner.ts`; the sidebar shows a pulsing red
-  count next to "Uitgifte & inname" (`desk-scan-alert.tsx`, polls `GET /desk/scans` every 5 s for that scanner, or
-  without `device_id` = every scanner when the browser has none). Global switch `Atelier_settings.wristband_required` (`bracelet_required`). Screens `atelier.settings`
-  (switch, scanners, message log) and **`atelier.scantest`** (form → company JSON, or drop/paste a .json; same
-  processing without token, `source = "test"`) — the real company connects from May 2027. Endpoints in
-  `module_5/scan_router.py`.
-- **Walkies**: management of the festival's walkie-talkies. Content follows in phase 2.
+- **Atelier wristband scans** (block 5): the scans are shared, see "Scans (module-1)". Atelier's side: the desk screen picks
+  its scanner (localStorage via `useSyncExternalStore`, `components/module-5/desk-scanner.ts`) and polls `GET /desk/scans?device_id=&season_id=`
+  every 2 s; a waiting scan shows as a card on the Ophalen/Terugbrengen choice and pre-fills the transaction, which sends `scan_id`
+  (marked used, `used_by_module`). The sidebar shows a pulsing red count next to "Uitgifte & inname" (`desk-scan-alert.tsx`, polls every
+  5 s for that scanner, or every scanner when the browser has none). Global switch `Atelier_settings.wristband_required` (`bracelet_required`)
+  on `atelier.settings`; test scans on **`atelier.scantest`**.
+- **Walkies**: management of the festival's walkie-talkies. Content follows in phase 2; for now also Instellingen > Test-scan
+  (`walkies.scantest`). Its counter must add its rule to `wristband/visibility.py` `counter_rules` and call `waiting_scans` with its teams.
 - A new screen = a `ScreenDefinition`, a sidebar link (`components/module-5|6/*-sidebar.tsx`), a line in the
   `*-help.ts` routes + a manual chapter, and an entry in the landing page's `FALLBACK_SCREENS`.
 
@@ -413,6 +412,41 @@ tables, `backend/app/modules/module_8/screens.py`).
   Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both
   write through `module_9/team_responsible_service.py`. No module-8 copy of the data.
 
+## Scans (module-1): wristbands
+
+TagScan was renamed **Scans** (2026-11-01, display name only: the key `module-1`, URLs, `tagscan.*` screen keys, `Tagscan_*` tables and
+`Tagscan*` code names stay). It has two parts under one set of Roles/Users: **RFID tags** (below) and **Wristbands (QR)**, screens
+`tagscan.wristband-files|scans|scanners|test`, routes `/modules/module-1/wristbands/...`. Wristband scans are shared by every module with a
+counter, so their code is in **`app/modules/wristband/`**, not in a module:
+
+- `POST /api/public/wristband-scan` (`webhook_router.py`, body read raw): the wristband company posts one JSON message per scan. Its `token` must be
+  this environment's token, generated on the module's Settings screen (`webhook_token.py`, `POST`/`DELETE /wristband/settings/token`, edit on
+  `tagscan.settings`, `wristband-settings-card.tsx`): `wristband_<random>`, shown once, only its SHA-256 stored in `Tagscan_settings` (fast, this runs on
+  every scan; fine for a random key). No token = everything refused. The company connects from May 2027. The explanation for them is the manual
+  chapter `wristband-integration`, opened as a PDF from that card: never put a token or server address in it. Manual Markdown has ``` code blocks.
+- `scan_service.process_message` is the only writer of `Wristband_scan` / `Wristband_scanner`: it logs **every** message (status new/used/
+  dismissed/ignored/refused + detail + raw), maps `data.device.id` → scanner (auto-registered), `data.id` → wristband number,
+  `data.person.first_name/last_name`, `data.attending_group.name` → team (`match_team`: name, then **team alias**, ignoring case), optional
+  email/size; only `event = crew_participation` becomes `new`.
+- **The row is made immediately** (a counter polls every 2 s, it can't wait for a file scan like the CSVs), and the message is also written as
+  a `.json` file by `json_files.py`: `<wristband_source_dir>/YYYY-MM-DD/<HHMMSS>_<scan id>[_test].json` (Belgian day; Docker volume
+  `wristband_data`, `WRISTBAND_SOURCE_DIR`). A failed write is logged and never loses the scan; `unreadable`/`bad_token` messages get no file, so
+  the public address can't fill the disk. Deleting a file keeps its row, as with the CSVs. Files aren't cleaned up automatically.
+- **Which counter shows a scan** (`visibility.py`): a team normally has Atelier *or* Walkies products, so a counter only shows teams with a
+  reservation with a package at **any festival of the season** (`?season_id=`, default the last open one), plus scans with no matched team (they
+  mustn't get stuck; the desk card warns and the person picks the team). Others stay `new`, only visible in Scans with "at no counter". One status
+  per scan: the first counter to use it wins.
+- **Test scans** from Scans, Atelier and Walkies: `register_scan_test_routes` (`test_routes.py`, same idea as `register_help_route`) adds
+  `/wristband-test/{scanners,teams,log,send}` to each router with that module's own right; UI `components/shared/wristband/scan-test.tsx`
+  (`moduleKey` prop, `wristbandTestApi` in `api.ts`). Same processing without token, `source = "test"`; `visible_at` says which counter shows it.
+- `module_1/wristband_router.py` (`/api/modules/module-1/wristband/...`): JSON file browser (`file_browser.py`'s `*_under` helpers on another
+  root, same traversal check; UI = `file-browser.tsx` with `api` + `messagesNamespace` props), scans table with filters, scanner labels, and
+  `/settings` (webhook address + token state, shown on the module's Settings screen). Translations under `wristband.*`.
+
+**Team aliases** (MasterData): `MasterData_team_alias`, written only by `module_9/team_alias_service.py`. Other names of a team in outside
+applications, on the team fiche and in the Teams XLSX (`aliases` column, `;`-separated, missing column = unchanged); `aliases` left out of
+`PUT /teams` keeps them. An alias may not be another team's alias or name (400).
+
 ## TagScan action processing (module-1)
 
 Every scanned CSV line (`Tagscan_line_data`) and file (`Tagscan_header_data`) has a `process_status`
@@ -451,7 +485,7 @@ Lines start `new` at scan time; the file's status is derived from its lines
 ## Module help manuals (PDF)
 
 Each module can have a user manual, generated as PDF by the backend (`backend/app/help/`, fpdf2, module's own
-accent colour). Every module with its own screens has one: TagScan (module-1), KarTracker (module-2), Interventies
+accent colour). Every module with its own screens has one: Scans (module-1), KarTracker (module-2), Interventies
 (module-3), StockMaster (module-4), Atelier (module-5), Walkies (module-6), Altsien Select (module-8) and MasterData (module-9).
 
 - **Text** lives in `backend/app/help/content/<module_N>/{nl,en}.md` (small Markdown subset, see `content.py`):
@@ -500,7 +534,7 @@ until October 2026 and was removed entirely; only old login-history rows still m
 - **Organised per module, like the web app**: routes in `frontend/src/app/[locale]/m/` (`login/` outside,
   everything else under `(signed-in)/`, whose layout does the login check), one folder per module
   (`(signed-in)/module-2/`, `(signed-in)/module-3/`); screens in `src/components/phone/module-N/`; cross-module
-  pieces (header, body, tiles, menu row, bottom tabs, native select, notices) in `src/components/phone/shared/`.
+  pieces (header, body, tiles, menu row, bottom tabs, notices) in `src/components/phone/shared/`.
   Pages stay thin (server-fetch data + rights, render one component).
 - **Same API and rights as the web**: the phone uses the normal `/api/modules/...` endpoints with the cookie
   login. Each module has a `*-phone-rights.ts` (reads `me/permissions`, `null` = no module access → the module
@@ -663,6 +697,11 @@ tests for core logic only).
   correctly through the ORM without extra configuration. New models should follow the same
   `Landing_<name>` convention if they belong to the landing/access-rights part of the app (as
   opposed to one specific module).
+- **Rule: every dropdown must have a search function, always, from the start.** This covers every new or changed
+  dropdown, on desktop and phone (`size="phone"`), also short fixed lists — no exceptions, and never a plain `<select>`
+  or a re-added `ui/select.tsx`/`PhoneSelect` (removed in PR_0019). A single choice uses `components/ui/searchable-select.tsx`
+  (Base UI Combobox with a search box): `options=[{ value, label, disabled?, content? }]` (`label` is what's searched), optional
+  `renderValue` when the button text differs from the label. Several values = `TagMultiSelect`; search-and-add-a-line = `Typeahead`.
 - **shadcn here is Base UI, not Radix** — `npx shadcn add` on this project generates components
   around `@base-ui/react`. Two consequences that read like Radix but aren't:
   - Composing a custom trigger uses `render={<Button .../>}` on the primitive

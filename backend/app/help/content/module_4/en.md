@@ -22,7 +22,7 @@ At the top of most screens you choose the **season**. Cart needs, To order, the 
 Consumables with a minimum stock that drop below it show an **orange bar** at the top of every StockMaster screen. Click **View** to see only those products.
 
 ### Masterdata
-The products and their small lists (Type, Warehouses, Categories, Limits) are managed here, under **Masterdata** in the menu. The other modules (TagScan, KarTracker, Altsien Select) read them from here.
+The products and their small lists (Type, Warehouses, Categories, Limits) are managed here, under **Masterdata** in the menu. The other modules (Scans, KarTracker, Altsien Select) read them from here.
 
 > On every screen, the **Help for this screen** button at the top right opens the part of this guide about that screen. The full guide is at the bottom of the menu on the left.
 
@@ -84,7 +84,7 @@ Goods arrive (delivery, purchase) and go to the **free stock** on their fixed lo
 
 > Blocked products can't be booked in. When a whole order arrives, start from **To order**: the quantities are then already filled in.
 
-**From a scan.** TagScan lines with the action **Book In** show up in a teal bar at the top of every StockMaster screen (and on the start page). Click **Review** (or **Load from scan** on Book in): per scanned file you see the products and quantities — every tag counts as one piece of the product it is linked to in TagManagement. **Load into Inboeken** puts them in the booking list; check them and confirm as usual. Only then are the scanned lines marked as processed. Lines with an unknown tag or a tag without product stay waiting: link the tag in TagManagement and load again, or cancel the line with a reason.
+**From a scan.** Scans lines with the action **Book In** show up in a teal bar at the top of every StockMaster screen (and on the start page). Click **Review** (or **Load from scan** on Book in): per scanned file you see the products and quantities — every tag counts as one piece of the product it is linked to in TagManagement. **Load into Inboeken** puts them in the booking list; check them and confirm as usual. Only then are the scanned lines marked as processed. Lines with an unknown tag or a tag without product stay waiting: link the tag in TagManagement and load again, or cancel the line with a reason.
 
 ## [kar-load | stockmaster.kars] 2. Load cart
 Fill a cart from the free stock (or from another cart).
@@ -231,7 +231,7 @@ All products with their picture, type, warehouse, category and properties.
    - **Consumable**: used up. Only for these the **minimum stock** counts (orange banner in StockMaster).
    - **Blocked**: can no longer be booked in or delivered.
    - **Is logistics product**: always gets what's asked in Load cart.
-   - **Tag Managed (RFID)**: the product carries an RFID tag (TagScan).
+   - **Tag Managed (RFID)**: the product carries an RFID tag (Scans).
    - **StockMaster: after 'Cart returns'**: does it go back into the cart or to the free stock?
 4. Choose the **Limit** (Ongelimiteerd, Automatisch, Percentage, Toegewezen aantal) and, for Percentage, the **Limit value**. **Maximum initial stock** caps what a cart gets as long as it isn't delivered in KarTracker. Together they decide what StockMaster may deliver in Load cart.
 5. **Cost (€)** is optional.

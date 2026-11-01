@@ -2,8 +2,9 @@
 
 // A camera dialog that reads one QR code and hands its text back. Used by
 // the desktop "Manuele kar beweging" screen to pick a kar by scanning the
-// QR code on its karblad. The camera itself lives in qr-scanner.tsx, which
-// the phone's full-screen KarScan reuses.
+// QR code on its karblad, and by Atelier's desk to read a wristband (with its
+// own texts). The camera itself lives in qr-scanner.tsx, which the phone's
+// full-screen KarScan reuses.
 
 import { useTranslations } from "next-intl";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,9 +15,12 @@ interface QrScanDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Called once with the QR code's text; the dialog closes itself right after. */
   onScanned: (text: string) => void;
+  /** Texts for what is being scanned; without them, the kar's texts. */
+  title?: string;
+  description?: string;
 }
 
-export function QrScanDialog({ open, onOpenChange, onScanned }: QrScanDialogProps) {
+export function QrScanDialog({ open, onOpenChange, onScanned, title, description }: QrScanDialogProps) {
   const t = useTranslations("karTracker.actions");
 
   // Report the scanned text, then close (which also stops the camera).
@@ -29,8 +33,8 @@ export function QrScanDialog({ open, onOpenChange, onScanned }: QrScanDialogProp
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{t("scanTitle")}</DialogTitle>
-          <DialogDescription>{t("scanDescription")}</DialogDescription>
+          <DialogTitle>{title ?? t("scanTitle")}</DialogTitle>
+          <DialogDescription>{description ?? t("scanDescription")}</DialogDescription>
         </DialogHeader>
         <QrScanner active={open} onScanned={handleScanned} className="aspect-square w-full rounded-md" />
       </DialogContent>

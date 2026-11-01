@@ -30,8 +30,6 @@ import type {
   AtelierImportResponse,
   AtelierPreparation,
   AtelierReservationRow,
-  AtelierScan,
-  AtelierScanner,
   AtelierSettings,
   AtelierMasterdataStats,
   AtelierMinStockLine,
@@ -39,6 +37,9 @@ import type {
   AtelierPackageLine,
   AtelierPreviousReservations,
   AtelierRole,
+  AtelierReturnIssue,
+  AtelierReturnStatus,
+  AtelierReturnStatusInput,
   AtelierSize,
   AtelierSizeInput,
   AtelierStockArticle,
@@ -46,7 +47,12 @@ import type {
   AtelierStockLineInput,
   AtelierStockTotals,
   AtelierWashStats,
-  AtelierTestScanResult,
+  WristbandScan,
+  WristbandScanFilters,
+  WristbandScanner,
+  WristbandSettings,
+  WristbandTestModule,
+  WristbandTestScanResult,
   AtelierUserSummary,
   WalkiesRole,
   WalkiesUserSummary,
@@ -2652,6 +2658,21 @@ export function deleteAtelierSize(sizeId: number): Promise<void> {
   return apiFetch<void>(`${ATELIER_BASE}/sizes/${sizeId}`, { method: "DELETE" });
 }
 
+export function createAtelierReturnStatus(payload: AtelierReturnStatusInput): Promise<AtelierReturnStatus> {
+  return apiFetch<AtelierReturnStatus>(`${ATELIER_BASE}/return-statuses`, { method: "POST", body: JSON.stringify(payload) });
+}
+
+export function updateAtelierReturnStatus(statusId: number, payload: AtelierReturnStatusInput): Promise<AtelierReturnStatus> {
+  return apiFetch<AtelierReturnStatus>(`${ATELIER_BASE}/return-statuses/${statusId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function deleteAtelierReturnStatus(statusId: number): Promise<void> {
+  return apiFetch<void>(`${ATELIER_BASE}/return-statuses/${statusId}`, { method: "DELETE" });
+}
+
 export function createAtelierArticle(payload: AtelierArticleInput): Promise<AtelierArticle> {
   return apiFetch<AtelierArticle>(`${ATELIER_BASE}/articles`, { method: "POST", body: JSON.stringify(payload) });
 }
@@ -2867,11 +2888,61 @@ export function listAtelierPersonOpenHandouts(personId: number): Promise<Atelier
 
 /** Terugbrengen: the ticked pieces of one person come back (from any of
  *  their open pick-ups) in one go; the person gets one "Inname" mail. */
-export function returnAtelierPersonLines(personId: number, lineIds: number[], scanId: number | null = null): Promise<AtelierHandout[]> {
+export function returnAtelierPersonLines(
+  personId: number,
+  lineIds: number[],
+  scanId: number | null = null,
+  lineStatuses: Record<number, number> = {},
+): Promise<AtelierHandout[]> {
   return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/return`, {
     method: "POST",
-    body: JSON.stringify({ line_ids: lineIds, scan_id: scanId }),
+    body: JSON.stringify({ line_ids: lineIds, scan_id: scanId, line_statuses: lineStatuses }),
   });
+}
+
+/** One Balie list's Excel download (`path` = "open" or "return-issues"), of the pieces the screen shows. */
+async function exportAtelierDeskList(
+  path: "open" | "return-issues",
+  filters: { festivalId: number; day: string | null; lineIds: number[]; locale: string },
+): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${ATELIER_BASE}/desk/${path}/export`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      festival_id: filters.festivalId,
+      day: filters.day,
+      line_ids: filters.lineIds,
+      locale: filters.locale,
+    }),
+  });
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+
+  return response.blob();
+}
+
+export function exportAtelierOpenHandouts(filters: Parameters<typeof exportAtelierDeskList>[1]): Promise<Blob> {
+  return exportAtelierDeskList("open", filters);
+}
+
+export function exportAtelierReturnIssues(filters: Parameters<typeof exportAtelierDeskList>[1]): Promise<Blob> {
+  return exportAtelierDeskList("return-issues", filters);
+}
+
+/** The active return statuses, for Terugbrengen's dropdown. */
+export function listAtelierDeskReturnStatuses(): Promise<AtelierReturnStatus[]> {
+  return apiFetch<AtelierReturnStatus[]>(`${ATELIER_BASE}/desk/return-statuses`);
+}
+
+export function listAtelierReturnIssues(filters: { festivalId: number; day: string | null }): Promise<AtelierReturnIssue[]> {
+  const params = new URLSearchParams({ festival_id: String(filters.festivalId) });
+  if (filters.day) params.set("day", filters.day);
+  return apiFetch<AtelierReturnIssue[]>(`${ATELIER_BASE}/desk/return-issues?${params.toString()}`);
 }
 
 // --- Atelier (module-5): the desk's mail texts (Instellingen > E-mails) ---
@@ -2913,15 +2984,18 @@ export function getAtelierWristbandRequired(): Promise<boolean> {
   return apiFetch<boolean>(`${ATELIER_BASE}/desk/wristband-required`);
 }
 
-export function listAtelierDeskScanners(): Promise<AtelierScanner[]> {
-  return apiFetch<AtelierScanner[]>(`${ATELIER_BASE}/desk/scanners`);
+export function listAtelierDeskScanners(): Promise<WristbandScanner[]> {
+  return apiFetch<WristbandScanner[]>(`${ATELIER_BASE}/desk/scanners`);
 }
 
 /** The scans waiting at this scanner, or at every scanner with null (polled
- *  by the desk screen and the sidebar's alert). */
-export function listAtelierWaitingScans(deviceId: string | null): Promise<AtelierScan[]> {
-  const query = deviceId ? `?device_id=${encodeURIComponent(deviceId)}` : "";
-  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/desk/scans${query}`);
+ *  by the desk screen and the sidebar's alert), of teams with a reservation in
+ *  the season (null = the last open one) or without a matched team. */
+export function listAtelierWaitingScans(deviceId: string | null, seasonId: number | null): Promise<WristbandScan[]> {
+  const params = new URLSearchParams();
+  if (deviceId) params.set("device_id", deviceId);
+  if (seasonId !== null) params.set("season_id", String(seasonId));
+  return apiFetch<WristbandScan[]>(`${ATELIER_BASE}/desk/scans?${params.toString()}`);
 }
 
 export function dismissAtelierScan(scanId: number): Promise<void> {
@@ -2939,29 +3013,84 @@ export function saveAtelierSettings(wristbandRequired: boolean): Promise<Atelier
   });
 }
 
-export function listAtelierScanners(): Promise<AtelierScanner[]> {
-  return apiFetch<AtelierScanner[]>(`${ATELIER_BASE}/scanners`);
+// --- Wristband scans, in the Scans module (module-1) ---
+
+const WRISTBAND_BASE = "/api/modules/module-1/wristband";
+
+export function getWristbandFolderTree(): Promise<TagscanFolderNode> {
+  return apiFetch<TagscanFolderNode>(`${WRISTBAND_BASE}/files/tree`);
 }
 
-export function saveAtelierScannerLabel(scannerId: number, label: string | null): Promise<AtelierScanner> {
-  return apiFetch<AtelierScanner>(`${ATELIER_BASE}/scanners/${scannerId}`, {
+export function listWristbandFiles(path: string): Promise<TagscanFileEntry[]> {
+  return apiFetch<TagscanFileEntry[]>(`${WRISTBAND_BASE}/files?path=${encodeURIComponent(path)}`);
+}
+
+export function getWristbandFileContent(path: string): Promise<TagscanFileContent> {
+  return apiFetch<TagscanFileContent>(`${WRISTBAND_BASE}/files/content?path=${encodeURIComponent(path)}`);
+}
+
+/** Permanently deletes .json files; their rows in the scans table stay. */
+export function deleteWristbandFiles(paths: string[]): Promise<{ deleted: number }> {
+  return apiFetch<{ deleted: number }>(`${WRISTBAND_BASE}/files/delete`, {
+    method: "POST",
+    body: JSON.stringify({ paths }),
+  });
+}
+
+/** The received messages, newest first (empty filters are left out). */
+export function listWristbandScans(filters: WristbandScanFilters): Promise<WristbandScan[]> {
+  const params = new URLSearchParams();
+  if (filters.day) params.set("day", filters.day);
+  if (filters.status) params.set("status", filters.status);
+  if (filters.deviceId) params.set("device_id", filters.deviceId);
+  if (filters.team.trim()) params.set("team", filters.team.trim());
+  return apiFetch<WristbandScan[]>(`${WRISTBAND_BASE}/scans?${params.toString()}`);
+}
+
+export function getWristbandSettings(): Promise<WristbandSettings> {
+  return apiFetch<WristbandSettings>(`${WRISTBAND_BASE}/settings`);
+}
+
+/** Generates this environment's webhook token, replacing the old one; the key is only sent here. */
+export function generateWristbandToken(): Promise<{ token: string }> {
+  return apiFetch<{ token: string }>(`${WRISTBAND_BASE}/settings/token`, { method: "POST" });
+}
+
+export function revokeWristbandToken(): Promise<void> {
+  return apiFetch<void>(`${WRISTBAND_BASE}/settings/token`, { method: "DELETE" });
+}
+
+export function listWristbandScanners(): Promise<WristbandScanner[]> {
+  return apiFetch<WristbandScanner[]>(`${WRISTBAND_BASE}/scanners`);
+}
+
+export function saveWristbandScannerLabel(scannerId: number, label: string | null): Promise<WristbandScanner> {
+  return apiFetch<WristbandScanner>(`${WRISTBAND_BASE}/scanners/${scannerId}`, {
     method: "PUT",
     body: JSON.stringify({ label }),
   });
 }
 
-/** The latest received scan messages (all statuses), newest first. */
-export function listAtelierScanLog(): Promise<AtelierScan[]> {
-  return apiFetch<AtelierScan[]>(`${ATELIER_BASE}/scans`);
-}
+// Each module offers the Test-scan screen under its own address, so that
+// module's rights apply.
+const WRISTBAND_TEST_BASE: Record<WristbandTestModule, string> = {
+  "module-1": `${WRISTBAND_BASE}/wristband-test`,
+  "module-5": `${ATELIER_BASE}/wristband-test`,
+  "module-6": "/api/modules/module-6/wristband-test",
+};
 
-export function listAtelierTestTeams(): Promise<{ id: number; name: string; active: boolean }[]> {
-  return apiFetch(`${ATELIER_BASE}/scan-test/teams`);
-}
-
-/** Sends a message through the webhook's processing (no token), marked as a test. */
-export function sendAtelierTestScan(raw: string): Promise<AtelierTestScanResult> {
-  return apiFetch<AtelierTestScanResult>(`${ATELIER_BASE}/scans/test`, { method: "POST", body: JSON.stringify({ raw }) });
+/** The Test-scan screen's calls for one module. */
+export function wristbandTestApi(moduleKey: WristbandTestModule) {
+  const base = WRISTBAND_TEST_BASE[moduleKey];
+  return {
+    listScanners: () => apiFetch<WristbandScanner[]>(`${base}/scanners`),
+    listTeams: () => apiFetch<{ id: number; name: string; active: boolean }[]>(`${base}/teams`),
+    /** The latest received scan messages (all statuses), newest first. */
+    listLog: () => apiFetch<WristbandScan[]>(`${base}/log`),
+    /** Sends a message through the webhook's processing (no token), marked as a test. */
+    send: (raw: string) =>
+      apiFetch<WristbandTestScanResult>(`${base}/send`, { method: "POST", body: JSON.stringify({ raw }) }),
+  };
 }
 
 /** Uitgifte annuleren (only while nothing was returned). */

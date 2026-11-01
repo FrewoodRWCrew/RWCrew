@@ -23,6 +23,7 @@ from app.modules.module_1.device_router import router as module_1_device_router
 from app.modules.module_1.router import router as module_1_router
 from app.modules.module_10.router import router as module_10_router
 from app.modules.module_1.screens import sync_screens as sync_tagscan_screens
+from app.modules.module_1.wristband_router import router as module_1_wristband_router
 from app.modules.module_2.karcode_router import router as module_2_karcode_router
 from app.modules.module_2.router import router as module_2_router
 from app.modules.module_2.screens import sync_screens as sync_kartracker_screens
@@ -39,7 +40,7 @@ from app.modules.module_5.reservation_router import router as module_5_reservati
 from app.modules.module_5.router import router as module_5_router
 from app.modules.module_5.mail_template_router import router as module_5_mail_template_router
 from app.modules.module_5.scan_router import router as module_5_scan_router
-from app.modules.module_5.scan_webhook_router import router as module_5_scan_webhook_router
+from app.modules.wristband.webhook_router import router as wristband_webhook_router
 from app.modules.module_5.screens import sync_screens as sync_atelier_screens
 from app.modules.module_5.stock_router import router as module_5_stock_router
 from app.modules.module_6.router import router as module_6_router
@@ -115,8 +116,9 @@ app.include_router(module_5_reservation_router)
 app.include_router(module_5_stock_router)
 app.include_router(module_5_desk_router)
 app.include_router(module_5_scan_router)
+app.include_router(module_1_wristband_router)
 app.include_router(module_5_mail_template_router)
-app.include_router(module_5_scan_webhook_router)
+app.include_router(wristband_webhook_router)
 app.include_router(module_6_router)
 app.include_router(module_7_router)
 app.include_router(module_8_router)

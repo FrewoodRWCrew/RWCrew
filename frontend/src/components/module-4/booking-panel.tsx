@@ -70,7 +70,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { KarLoadHeader } from "@/components/module-4/kar-load-sections";
@@ -1250,28 +1250,20 @@ function SourceSelect({ id, label, value, kars, onChange, inline = false }: Sour
   return (
     <div className={cn("flex max-w-sm gap-2", inline ? "items-center" : "flex-col")}>
       <Label htmlFor={id}>{label}</Label>
-      <Select
+      <SearchableSelect
         value={value === null ? FREE_SOURCE : String(value)}
         onValueChange={(next) => onChange(next && next !== FREE_SOURCE ? Number(next) : null)}
-      >
-        <SelectTrigger id={id}>
-          <SelectValue>
-            {(current: string | null) =>
-              current === FREE_SOURCE || !current
-                ? t("common.freeStock")
-                : t("booking.fromKar", { kar: kars.find((kar) => String(kar.kar_id) === current)?.kar_nummer ?? "" })
-            }
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={FREE_SOURCE}>{t("common.freeStock")}</SelectItem>
-          {kars.map((kar) => (
-            <SelectItem key={kar.kar_id} value={String(kar.kar_id)}>
-              {t("booking.fromKar", { kar: kar.kar_nummer })}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        id={id}
+        renderValue={(current: string | null) =>
+          current === FREE_SOURCE || !current
+            ? t("common.freeStock")
+            : t("booking.fromKar", { kar: kars.find((kar) => String(kar.kar_id) === current)?.kar_nummer ?? "" })
+        }
+        options={[
+          { value: FREE_SOURCE, label: t("common.freeStock") },
+          ...kars.map((kar) => ({ value: String(kar.kar_id), label: t("booking.fromKar", { kar: kar.kar_nummer }) })),
+        ]}
+      />
     </div>
   );
 }
@@ -1290,24 +1282,19 @@ export function NamedSelect({ id, label, value, items, emptyLabel, onChange }: N
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Select
+      <SearchableSelect
         value={value === null ? NO_SELECTION : String(value)}
         onValueChange={(next) => onChange(next && next !== NO_SELECTION ? Number(next) : null)}
-      >
-        <SelectTrigger id={id} className="w-full">
-          <SelectValue>
-            {(current: string | null) => items.find((item) => String(item.id) === current)?.name ?? emptyLabel}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={NO_SELECTION}>{emptyLabel}</SelectItem>
-          {items.map((item) => (
-            <SelectItem key={item.id} value={String(item.id)}>
-              {item.name}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        id={id}
+        className="w-full"
+        renderValue={(current: string | null) =>
+          items.find((item) => String(item.id) === current)?.name ?? emptyLabel
+        }
+        options={[
+          { value: NO_SELECTION, label: emptyLabel },
+          ...items.map((item) => ({ value: String(item.id), label: item.name })),
+        ]}
+      />
     </div>
   );
 }
@@ -1396,20 +1383,19 @@ function BasketTable({ action, lines, productsById, placeChanges, lineProblem, o
                 </TableCell>
                 {isReturn && (
                   <TableCell>
-                    <Select
+                    <SearchableSelect
                       value={line.destination ?? "kar"}
                       onValueChange={(value) => onChange(line.productId, { destination: value === "free" ? "free" : "kar" })}
-                    >
-                      <SelectTrigger className="w-40" aria-label={t("booking.destination")}>
-                        <SelectValue>
-                          {(value: string | null) => (value === "free" ? t("common.freeStock") : t("booking.backInKar"))}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="kar">{t("booking.backInKar")}</SelectItem>
-                        <SelectItem value="free">{t("common.freeStock")}</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      className="w-40"
+                      aria-label={t("booking.destination")}
+                      renderValue={(value: string | null) =>
+                        (value === "free" ? t("common.freeStock") : t("booking.backInKar"))
+                      }
+                      options={[
+                        { value: "kar", label: t("booking.backInKar") },
+                        { value: "free", label: t("common.freeStock") },
+                      ]}
+                    />
                   </TableCell>
                 )}
                 <TableCell className="text-sm tabular-nums">

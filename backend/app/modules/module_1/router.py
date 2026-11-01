@@ -1186,5 +1186,6 @@ def get_my_permissions(
     return MyPermissionsResponse(
         viewable_screen_keys=screen_keys_allowed(db, current_user, "view"),
         creatable_screen_keys=screen_keys_allowed(db, current_user, "create"),
+        editable_screen_keys=screen_keys_allowed(db, current_user, "edit"),
         deletable_screen_keys=screen_keys_allowed(db, current_user, "delete"),
     )

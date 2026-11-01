@@ -46,7 +46,7 @@ class ModuleDefinition:
 # module-10 ("Mobile App") is the install page for the phone app (the PWA
 # under /m): its address and a QR code; it contains no phone screens itself.
 _MODULE_NAMES = {
-    "module-1": "TagScan",
+    "module-1": "Scans",
     "module-2": "KarTracker",
     "module-3": "Interventions",
     "module-4": "StockMaster",

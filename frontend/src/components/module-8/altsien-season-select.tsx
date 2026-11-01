@@ -14,7 +14,7 @@ import { useSearchParams } from "next/navigation";
 import type { Season } from "@/lib/types";
 import { useSelectedSeason } from "@/components/shared/season-provider";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 
 /** The season Altsien Select's screens should show: the one in the URL,
  *  else the header's choice, else the first open season, else the first. */
@@ -58,24 +58,20 @@ export function AltsienSeasonSelect({ seasons, seasonId }: AltsienSeasonSelectPr
   return (
     <div className="flex max-w-xs flex-col gap-2">
       <Label htmlFor="altsien-season">{t("seasonLabel")}</Label>
-      <Select value={seasonId !== null ? String(seasonId) : ""} onValueChange={handleChange}>
-        <SelectTrigger id="altsien-season">
-          <SelectValue>
-            {(value: string | null) => {
-              const season = seasons.find((item) => String(item.id) === value);
-              if (!season) return t("noSeason");
-              return season.periode_open ? season.name : `${season.name} (${t("seasonClosed")})`;
-            }}
-          </SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          {seasons.map((season) => (
-            <SelectItem key={season.id} value={String(season.id)}>
-              {season.periode_open ? season.name : `${season.name} (${t("seasonClosed")})`}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={seasonId !== null ? String(seasonId) : ""}
+        onValueChange={handleChange}
+        id="altsien-season"
+        renderValue={(value: string | null) => {
+          const season = seasons.find((item) => String(item.id) === value);
+          if (!season) return t("noSeason");
+          return season.periode_open ? season.name : `${season.name} (${t("seasonClosed")})`;
+        }}
+        options={seasons.map((season) => ({
+          value: String(season.id),
+          label: season.periode_open ? season.name : `${season.name} (${t("seasonClosed")})`,
+        }))}
+      />
     </div>
   );
 }

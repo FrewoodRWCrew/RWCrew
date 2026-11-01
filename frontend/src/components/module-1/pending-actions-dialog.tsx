@@ -39,7 +39,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 
@@ -322,7 +322,7 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                               ) : (
                                 <div className="ml-auto flex items-center gap-2">
                                   <span className="text-sm font-medium">{t("columnProduct")} *</span>
-                                  <Select
+                                  <SearchableSelect
                                     value={chosenProductId != null ? String(chosenProductId) : null}
                                     onValueChange={(value) =>
                                       setProductByHeader((current) => ({
@@ -330,26 +330,17 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                                         [group.headerId]: Number(value),
                                       }))
                                     }
-                                  >
-                                    <SelectTrigger
-                                      aria-label={t("chooseProduct")}
-                                      className={cn("h-8 w-56", chosenProductId == null && "border-orange-500")}
-                                    >
-                                      <SelectValue>
-                                        {(value: string | null) =>
-                                          products.find((product) => String(product.id) === value)?.name ??
-                                          t("chooseProduct")
-                                        }
-                                      </SelectValue>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                      {products.map((product) => (
-                                        <SelectItem key={product.id} value={String(product.id)}>
-                                          {product.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                    aria-label={t("chooseProduct")}
+                                    className={cn("h-8 w-56", chosenProductId == null && "border-orange-500")}
+                                    renderValue={(value: string | null) =>
+                                      products.find((product) => String(product.id) === value)?.name ??
+                                      t("chooseProduct")
+                                    }
+                                    options={products.map((product) => ({
+                                      value: String(product.id),
+                                      label: product.name,
+                                    }))}
+                                  />
                                   <Button
                                     size="sm"
                                     disabled={isProcessing || chosenProductId == null}

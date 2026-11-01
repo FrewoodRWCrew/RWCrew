@@ -175,7 +175,7 @@ en 443). De configuratie staat in <code>deploy/nginx/rwcrew.conf</code>:</p>
 het Nginx-bestand op de server en voegt aparte blokken voor poort 443 toe.</p>
 <div class="kader letop"><span class="kader-titel"></span>
 Nginx weigert standaard verzoeken groter dan 1 MB. Daarom zet de configuratie <code>client_max_body_size 25m</code>
-op het TagScan-adres. Na een certbot-wijziging moeten die regel en de snelheidslimiet (<code>limit_req</code>) ook in
+op het Scans-adres. Na een certbot-wijziging moeten die regel en de snelheidslimiet (<code>limit_req</code>) ook in
 de 443-blokken staan, anders worden grote CSV-bestanden van de Raspberry Pi geweigerd voordat de backend ze ziet.
 </div>
 <p>De volledige installatie van de server (gebruikers, firewall, Docker, Nginx, certbot, GitHub-sleutels) staat
@@ -196,10 +196,9 @@ staat in Git.</p>
   <tr><td><code>RESEND_API_KEY</code>, <code>MAIL_FROM</code></td><td>backend</td><td>Uitgaande mail. Leeg = mails worden overgeslagen (alleen een logregel).</td></tr>
   <tr><td><code>MAIL_SUBJECT_PREFIX</code></td><td>backend</td><td>Voor elk mailonderwerp, bv. <code>[TEST] </code> op test</td></tr>
   <tr><td><code>APP_PUBLIC_URL</code></td><td>backend</td><td>Publiek adres van de app, voor links in mails en de QR-code van module 10</td></tr>
-  <tr><td><code>TAGSCAN_SOURCE_DIR</code></td><td>backend</td><td>Map voor de TagScan-bestanden (op de server een Docker-volume)</td></tr>
-  <tr><td><code>TAGSCAN_ENVIRONMENT</code></td><td>backend</td><td>Naam van deze omgeving voor de kolom <code>Mode</code> van TagScan-CSV's (<code>test</code> of <code>production</code>); leeg = nooit doorsturen</td></tr>
+  <tr><td><code>TAGSCAN_SOURCE_DIR</code></td><td>backend</td><td>Map voor de Scans-bestanden (op de server een Docker-volume)</td></tr>
+  <tr><td><code>TAGSCAN_ENVIRONMENT</code></td><td>backend</td><td>Naam van deze omgeving voor de kolom <code>Mode</code> van Scans-CSV's (<code>test</code> of <code>production</code>); leeg = nooit doorsturen</td></tr>
   <tr><td><code>TAGSCAN_FORWARD_URL</code>, <code>TAGSCAN_FORWARD_API_KEY</code></td><td>backend</td><td>Ontvangstadres van de <em>andere</em> omgeving en een scannersleutel die op die andere omgeving is aangemaakt</td></tr>
-  <tr><td><code>ATELIER_WEBHOOK_TOKEN</code></td><td>backend</td><td>Gedeeld geheim van het polsbandbedrijf: elk bericht op de Atelier-webhook moet deze waarde in zijn veld <code>token</code> hebben. Leeg = elk webhookbericht wordt geweigerd (het testscherm werkt wel). Per omgeving verschillend.</td></tr>
   <tr><td><code>TAGSCAN_AUTO_SCAN_WORKER</code></td><td>backend</td><td>Noodschakelaar: <code>false</code> start het automatisch scannen niet (standaard <code>true</code>)</td></tr>
   <tr><td><code>APP_COMMIT</code>, <code>APP_COMMIT_DATE</code></td><td>beide</td><td>Versielabel; wordt door <code>deploy.sh</code> zelf uit Git gezet, niet in <code>.env</code> (zie <a class="ref" href="#s-versielabel"></a>)</td></tr>
   <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>frontend</td><td>Adres van de backend zoals de browser het aanroept. Wordt bij het <em>bouwen</em> ingebakken.</td></tr>
@@ -244,7 +243,7 @@ bijvoorbeeld:</p>
   <li>een dagelijkse <code>pg_dump</code> van de productiedatabase (via cron) naar een opslag buiten de server;</li>
   <li>minstens één keer per seizoen een terugzetting proberen op test, zodat je weet dat de back-up werkt.</li>
 </ul>
-<p>Hetzelfde geldt voor het volume met TagScan-bestanden (<code>tagscan_data</code>).</p>
+<p>Hetzelfde geldt voor het volume met Scans-bestanden (<code>tagscan_data</code>).</p>
 
 <!-- ============================================================ -->
 
@@ -612,7 +611,7 @@ module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per sch
   <tr><th style="width:34%">Endpoint</th><th>Waarvoor</th><th style="width:34%">Beveiliging</th></tr>
   <tr><td><code>/api/public/intervention-requests</code></td><td>Het publieke interventieformulier (QR-code op het karblad)</td><td>Snelheidslimiet: max. 10 aanvragen per minuut per IP-adres; alle invoer wordt gecontroleerd en in mails ge-escaped</td></tr>
   <tr><td><code>/api/public/tagscan-intake</code></td><td>CSV-bestanden van de Raspberry Pi</td><td>API-sleutel per scanner (header <code>X-API-Key</code>, gehasht bewaard), max. 20 MB per bestand, Nginx-snelheidslimiet (30 per minuut)</td></tr>
-  <tr><td><code>/api/public/atelier/wristband-scan</code></td><td>De polsbandscans van het polsbandbedrijf aan de Atelier-balie (JSON per scan)</td><td>Gedeelde token in het bericht, vergeleken in constante tijd met <code>ATELIER_WEBHOOK_TOKEN</code> (geen token ingesteld = alles geweigerd, 401). Elk bericht, ook een geweigerd, wordt gelogd en is te zien op Atelier &gt; Instellingen. Een bericht maakt zelf nooit een persoon aan.</td></tr>
+  <tr><td><code>/api/public/wristband-scan</code></td><td>De polsbandscans van het polsbandbedrijf aan de Atelier-balie (JSON per scan)</td><td>Gedeelde token in het bericht, vergeleken in constante tijd met <code>WRISTBAND_WEBHOOK_TOKEN</code> (geen token ingesteld = alles geweigerd, 401). Elk bericht, ook een geweigerd, wordt gelogd en is te zien op Atelier &gt; Instellingen. Een bericht maakt zelf nooit een persoon aan.</td></tr>
 </table>
 <p>Een API-sleutel van een scanner werkt alleen op de omgeving waar ze aangemaakt is (test of productie).</p>
 

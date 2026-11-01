@@ -75,6 +75,7 @@ from app.modules.module_9.team_responsible_import import (
     export_team_responsibles_to_xlsx,
     import_team_responsibles_from_xlsx,
 )
+from app.modules.module_9.team_alias_service import aliases_of, check_aliases, clean_aliases, replace_aliases
 from app.modules.module_9.team_responsible_service import (
     apply_team_responsible_fields,
     reopen_step_if_no_responsibles,
@@ -978,6 +979,19 @@ def _replace_team_special_tour_links(db: Session, team_id: int, tour_ids: list[i
         db.add(TeamSpecialeLevertoer(team_id=team_id, levertoer_id=tour_id))
 
 
+def _checked_aliases(db: Session, aliases: list[str] | None, name: str, team_id: int | None) -> list[str] | None:
+    """The request's aliases cleaned up and checked (400 when one clashes with
+    another team). None = the request left the field out: keep the current ones."""
+    if aliases is None:
+        return None
+    cleaned = clean_aliases(aliases, name)
+    try:
+        check_aliases(db, cleaned, team_id)
+    except ValueError as error:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    return cleaned
+
+
 def _team_to_response(db: Session, team: Team) -> TeamResponse:
     """Build a TeamResponse for one team by pulling its current task_ids/
     kernlid_ids from the two join tables — these aren't columns on Team
@@ -1000,6 +1014,7 @@ def _team_to_response(db: Session, team: Team) -> TeamResponse:
         task_ids=sorted(task_ids),
         kernlid_ids=sorted(kernlid_ids),
         special_tour_ids=sorted(special_tour_ids),
+        aliases=aliases_of(db, team.id),
         description=team.description,
         active=team.active,
     )
@@ -1036,6 +1051,7 @@ def create_team(
 ) -> TeamResponse:
     """Create a brand-new team."""
     _validate_team_lookup_ids(db, payload)
+    aliases = _checked_aliases(db, payload.aliases, payload.name, None)
 
     new_team = Team(
         name=payload.name,
@@ -1057,6 +1073,8 @@ def create_team(
     _replace_team_task_links(db, new_team.id, payload.task_ids)
     _replace_team_kernlid_links(db, new_team.id, payload.kernlid_ids)
     _replace_team_special_tour_links(db, new_team.id, payload.special_tour_ids)
+    if aliases is not None:
+        replace_aliases(db, new_team.id, aliases)
 
     db.commit()
     db.refresh(new_team)
@@ -1076,6 +1094,7 @@ def update_team(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
     _validate_team_lookup_ids(db, payload)
+    aliases = _checked_aliases(db, payload.aliases, payload.name, team.id)
 
     team.name = payload.name
     team.location_id = payload.location_id
@@ -1092,6 +1111,8 @@ def update_team(
     _replace_team_task_links(db, team.id, payload.task_ids)
     _replace_team_kernlid_links(db, team.id, payload.kernlid_ids)
     _replace_team_special_tour_links(db, team.id, payload.special_tour_ids)
+    if aliases is not None:
+        replace_aliases(db, team.id, aliases)
 
     db.commit()
     db.refresh(team)

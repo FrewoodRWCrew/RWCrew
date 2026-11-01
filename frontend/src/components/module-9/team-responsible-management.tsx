@@ -36,7 +36,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -158,44 +158,33 @@ export function TeamResponsibleManagement({ initialTeamResponsibles, teams, seas
       <div className="flex flex-wrap gap-4">
         <div className="flex w-48 flex-col gap-2">
           <Label htmlFor="team-responsible-season-filter">{t("filterSeason")}</Label>
-          <Select
+          <SearchableSelect
             value={seasonFilter}
             onValueChange={(value) => setSeasonOverride({ value: value ?? ALL_VALUE, headerSeasonId })}
-          >
-            <SelectTrigger id="team-responsible-season-filter">
-              <SelectValue>
-                {(value: string | null) =>
-                  seasons.find((season) => String(season.id) === value)?.name ?? t("allSeasons")
-                }
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_VALUE}>{t("allSeasons")}</SelectItem>
-              {seasons.map((season) => (
-                <SelectItem key={season.id} value={String(season.id)}>
-                  {season.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            id="team-responsible-season-filter"
+            renderValue={(value: string | null) =>
+              seasons.find((season) => String(season.id) === value)?.name ?? t("allSeasons")
+            }
+            options={[
+              { value: ALL_VALUE, label: t("allSeasons") },
+              ...seasons.map((season) => ({ value: String(season.id), label: season.name })),
+            ]}
+          />
         </div>
         <div className="flex w-64 flex-col gap-2">
           <Label htmlFor="team-responsible-team-filter">{t("filterTeam")}</Label>
-          <Select value={teamFilter} onValueChange={(value) => setTeamFilter(value ?? ALL_VALUE)}>
-            <SelectTrigger id="team-responsible-team-filter">
-              <SelectValue>
-                {(value: string | null) => teams.find((team) => String(team.id) === value)?.name ?? t("allTeams")}
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value={ALL_VALUE}>{t("allTeams")}</SelectItem>
-              {teams.map((team) => (
-                <SelectItem key={team.id} value={String(team.id)}>
-                  {team.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <SearchableSelect
+            value={teamFilter}
+            onValueChange={(value) => setTeamFilter(value ?? ALL_VALUE)}
+            id="team-responsible-team-filter"
+            renderValue={(value: string | null) =>
+              teams.find((team) => String(team.id) === value)?.name ?? t("allTeams")
+            }
+            options={[
+              { value: ALL_VALUE, label: t("allTeams") },
+              ...teams.map((team) => ({ value: String(team.id), label: team.name })),
+            ]}
+          />
         </div>
       </div>
 
@@ -364,43 +353,25 @@ function TeamResponsibleFormDialog({
         <div className="grid grid-cols-2 gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="team-responsible-team">{t("teamLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.team_id ? String(form.team_id) : ""}
               onValueChange={(value) => updateField("team_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="team-responsible-team">
-                <SelectValue placeholder={t("selectPlaceholder")}>
-                  {(value: string | null) => teams.find((team) => String(team.id) === value)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {teams.map((team) => (
-                  <SelectItem key={team.id} value={String(team.id)}>
-                    {team.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="team-responsible-team"
+              placeholder={t("selectPlaceholder")}
+              renderValue={(value: string | null) => teams.find((team) => String(team.id) === value)?.name}
+              options={teams.map((team) => ({ value: String(team.id), label: team.name }))}
+            />
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="team-responsible-season">{t("seasonLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.season_id ? String(form.season_id) : ""}
               onValueChange={(value) => updateField("season_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="team-responsible-season">
-                <SelectValue placeholder={t("selectPlaceholder")}>
-                  {(value: string | null) => seasons.find((season) => String(season.id) === value)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {seasons.map((season) => (
-                  <SelectItem key={season.id} value={String(season.id)}>
-                    {season.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="team-responsible-season"
+              placeholder={t("selectPlaceholder")}
+              renderValue={(value: string | null) => seasons.find((season) => String(season.id) === value)?.name}
+              options={seasons.map((season) => ({ value: String(season.id), label: season.name }))}
+            />
           </div>
           <div className="col-span-2 flex flex-col gap-2">
             <Label htmlFor="team-responsible-name">{t("nameLabel")}</Label>

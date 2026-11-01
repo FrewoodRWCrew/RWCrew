@@ -37,7 +37,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface FestivalManagementProps {
@@ -241,23 +241,13 @@ function FestivalFormDialog({ festival, trigger, onSaved, seasons }: FestivalFor
           </div>
           <div className="col-span-2 flex flex-col gap-2">
             <Label htmlFor="festival-season">{t("seasonLabel")}</Label>
-            <Select
+            <SearchableSelect
               value={form.season_id ? String(form.season_id) : ""}
               onValueChange={(value) => updateField("season_id", value ? Number(value) : null)}
-            >
-              <SelectTrigger id="festival-season">
-                <SelectValue>
-                  {(value: string | null) => seasons.find((season) => String(season.id) === value)?.name}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {seasons.map((season) => (
-                  <SelectItem key={season.id} value={String(season.id)}>
-                    {season.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              id="festival-season"
+              renderValue={(value: string | null) => seasons.find((season) => String(season.id) === value)?.name}
+              options={seasons.map((season) => ({ value: String(season.id), label: season.name }))}
+            />
           </div>
           <div className="col-span-2 flex items-center gap-2">
             <Checkbox

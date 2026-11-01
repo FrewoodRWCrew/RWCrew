@@ -14,8 +14,8 @@ import { ApiError, createKarAction } from "@/lib/api";
 import type { KarTrackerKarActionKarOption, KarTrackerPlanKarOption } from "@/lib/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { karTrackerPhoneRoutes } from "@/components/phone/module-2/kartracker-phone-routes";
-import { PhoneSelect } from "@/components/phone/shared/phone-select";
 
 // Same GPS settings as the old phone app: most precise fix, 15 s at most,
 // never a cached position.
@@ -116,13 +116,13 @@ export function KarMovementForm({ kar, statuses }: KarMovementFormProps) {
       {/* The kar's status after the movement. */}
       <div className="flex flex-col gap-2">
         <Label htmlFor="phone-kar-status">{t("statusLabel")}</Label>
-        <PhoneSelect id="phone-kar-status" value={statusId} onChange={(event) => setStatusId(Number(event.target.value))}>
-          {statuses.map((karStatus) => (
-            <option key={karStatus.id} value={karStatus.id}>
-              {karStatus.name}
-            </option>
-          ))}
-        </PhoneSelect>
+        <SearchableSelect
+          id="phone-kar-status"
+          size="phone"
+          value={String(statusId)}
+          onValueChange={(value) => setStatusId(Number(value))}
+          options={statuses.map((karStatus) => ({ value: String(karStatus.id), label: karStatus.name }))}
+        />
       </div>
 
       {/* The GPS position, taken automatically; can be asked again. */}

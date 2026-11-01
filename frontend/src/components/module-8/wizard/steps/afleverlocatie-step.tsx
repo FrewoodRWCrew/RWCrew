@@ -18,7 +18,7 @@ import {
   saveAltsienSelectAfleverlocaties,
 } from "@/lib/api";
 import type { KarTrackerGroundplan } from "@/lib/types";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatFestivalPeriod, locationLabel } from "@/components/module-8/wizard/format";
 import type { WizardStepProps } from "@/components/module-8/wizard/step-types";
@@ -130,7 +130,7 @@ export function AfleverlocatieStep({ state, teamId, seasonId, readOnly, onStateC
                     {formatFestivalPeriod(festival.start_date, festival.end_date)}
                   </TableCell>
                   <TableCell>
-                    <Select
+                    <SearchableSelect
                       value={selected !== null ? String(selected) : NO_LOCATION_VALUE}
                       disabled={readOnly}
                       onValueChange={(value) =>
@@ -139,31 +139,27 @@ export function AfleverlocatieStep({ state, teamId, seasonId, readOnly, onStateC
                           [festival.festival_id]: value && value !== NO_LOCATION_VALUE ? Number(value) : null,
                         }))
                       }
-                    >
-                      <SelectTrigger className="w-full max-w-xl" aria-label={t("columnAfleverlocatie")}>
-                        <SelectValue>
-                          {(value: string | null) => {
-                            const location =
-                              value && value !== NO_LOCATION_VALUE
-                                ? state.afleverlocaties.find((item) => String(item.id) === value)
-                                : undefined;
-                            // A location that was deactivated since is still shown by name.
-                            if (!location && value && value !== NO_LOCATION_VALUE && festival.afleverlocatie_name) {
-                              return festival.afleverlocatie_name;
-                            }
-                            return location ? locationLabel(location) : t("noAfleverlocatie");
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value={NO_LOCATION_VALUE}>{t("noAfleverlocatie")}</SelectItem>
-                        {state.afleverlocaties.map((location) => (
-                          <SelectItem key={location.id} value={String(location.id)}>
-                            {locationLabel(location)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      className="w-full max-w-xl"
+                      aria-label={t("columnAfleverlocatie")}
+                      renderValue={(value: string | null) => {
+                        const location =
+                          value && value !== NO_LOCATION_VALUE
+                            ? state.afleverlocaties.find((item) => String(item.id) === value)
+                            : undefined;
+                        // A location that was deactivated since is still shown by name.
+                        if (!location && value && value !== NO_LOCATION_VALUE && festival.afleverlocatie_name) {
+                          return festival.afleverlocatie_name;
+                        }
+                        return location ? locationLabel(location) : t("noAfleverlocatie");
+                      }}
+                      options={[
+                        { value: NO_LOCATION_VALUE, label: t("noAfleverlocatie") },
+                        ...state.afleverlocaties.map((location) => ({
+                          value: String(location.id),
+                          label: locationLabel(location),
+                        })),
+                      ]}
+                    />
                   </TableCell>
                 </TableRow>
               );

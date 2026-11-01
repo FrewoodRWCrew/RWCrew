@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 interface UsersManagementProps {
@@ -93,22 +93,16 @@ export function UsersManagement({ roles, initialUsers }: UsersManagementProps) {
                 <TableCell className="font-medium">{user.display_name}</TableCell>
                 <TableCell className="text-muted-foreground">{user.email}</TableCell>
                 <TableCell>
-                  <Select
+                  <SearchableSelect
                     value={user.role_id ? String(user.role_id) : NO_ROLE_VALUE}
                     onValueChange={(value) => handleChangeUserRole(user, value ?? NO_ROLE_VALUE)}
-                  >
-                    <SelectTrigger className="w-48">
-                      <SelectValue>{(value: string | null) => roleLabelFor(value)}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={NO_ROLE_VALUE}>{t("noRole")}</SelectItem>
-                      {roles.map((role) => (
-                        <SelectItem key={role.id} value={String(role.id)}>
-                          {role.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    className="w-48"
+                    renderValue={(value: string | null) => roleLabelFor(value)}
+                    options={[
+                      { value: NO_ROLE_VALUE, label: t("noRole") },
+                      ...roles.map((role) => ({ value: String(role.id), label: role.name })),
+                    ]}
+                  />
                 </TableCell>
               </TableRow>
             ))}
@@ -206,19 +200,15 @@ function CreateOrGrantUserDialog({ roles, onSaved }: CreateOrGrantUserDialogProp
           </div>
           <div className="flex flex-col gap-2">
             <Label>{t("userTableRole")}</Label>
-            <Select value={roleId} onValueChange={(value) => setRoleId(value ?? NO_ROLE_VALUE)}>
-              <SelectTrigger>
-                <SelectValue>{(value: string | null) => roleLabelFor(value)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={NO_ROLE_VALUE}>{t("noRole")}</SelectItem>
-                {roles.map((role) => (
-                  <SelectItem key={role.id} value={String(role.id)}>
-                    {role.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <SearchableSelect
+              value={roleId}
+              onValueChange={(value) => setRoleId(value ?? NO_ROLE_VALUE)}
+              renderValue={(value: string | null) => roleLabelFor(value)}
+              options={[
+                { value: NO_ROLE_VALUE, label: t("noRole") },
+                ...roles.map((role) => ({ value: String(role.id), label: role.name })),
+              ]}
+            />
           </div>
         </div>
 

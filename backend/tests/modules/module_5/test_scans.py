@@ -1,8 +1,9 @@
-# Atelier's wristband scans (block 5): the public webhook (token, logging of
+# Atelier's side of the wristband scans: the public webhook (token, logging of
 # every message, other events, unreadable bodies), the auto-registered
 # scanners, team matching, the desk's polling per scanner, using a scan for a
 # pick-up / return, the wristband number per festival, the "wristband
-# required" switch, the Test-scan endpoint and the rights.
+# required" switch, the Test-scan endpoint and the rights. What's shared with
+# the Scans module and Walkies is in tests/modules/wristband.
 
 import json
 from datetime import date
@@ -11,8 +12,9 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.core.config import settings
 from app.db.models.festival import Festival
+from app.db.models.tagscan_settings import TagscanSettings
+from app.modules.wristband.webhook_token import hash_token
 
 # The block-1 fixtures and helpers, and the desk fixture of block 4.
 from tests.modules.module_5.test_desk import DAY, desk  # noqa: F401  (fixtures)
@@ -25,7 +27,7 @@ from tests.modules.module_5.test_masterdata import (  # noqa: F401  (fixtures)
     world,
 )
 
-WEBHOOK = "/api/public/atelier/wristband-scan"
+WEBHOOK = "/api/public/wristband-scan"
 TOKEN = "U7WbDSnefnR4OiE55WbHYzNMA9EOV6"
 
 
@@ -47,13 +49,14 @@ def _message(first: str = "Anaïs", last: str = "Wydaeghe", number: str = "55708
 
 
 @pytest.fixture()
-def token(monkeypatch: pytest.MonkeyPatch) -> str:
-    """The webhook token configured for the test."""
-    monkeypatch.setattr(settings, "atelier_webhook_token", TOKEN)
+def token(db_session: Session) -> str:
+    """The webhook token set for the test."""
+    db_session.add(TagscanSettings(id=1, wristband_token_hash=hash_token(TOKEN)))
+    db_session.commit()
     return TOKEN
 
 
-def test_webhook_accepts_logs_and_registers(client: TestClient, as_atelier: TestClient, world: dict, token: str) -> None:
+def test_webhook_accepts_logs_and_registers(client: TestClient, as_atelier: TestClient, world: dict, desk: dict, token: str) -> None:
     response = client.post(WEBHOOK, content=json.dumps(_message(size="M")))
     assert response.status_code == 200 and response.json()["status"] == "new"
 
@@ -77,7 +80,7 @@ def test_webhook_refuses_and_ignores_but_logs(client: TestClient, as_atelier: Te
     assert client.post(WEBHOOK, content="not json").status_code == 400
     assert client.post(WEBHOOK, content=json.dumps(_message(event="other_event"))).status_code == 200
 
-    log = as_atelier.get(f"{BASE}/scans").json()
+    log = as_atelier.get(f"{BASE}/wristband-test/log").json()
     assert [(entry["status"], entry["status_detail"]) for entry in log] == [
         ("ignored", "other_event"), ("refused", "unreadable"), ("refused", "bad_token"),
     ]
@@ -86,8 +89,7 @@ def test_webhook_refuses_and_ignores_but_logs(client: TestClient, as_atelier: Te
     assert as_atelier.get(f"{BASE}/desk/scans", params={"device_id": "14734"}).json() == []
 
 
-def test_no_token_configured_refuses_everything(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(settings, "atelier_webhook_token", "")
+def test_no_token_configured_refuses_everything(client: TestClient) -> None:
     assert client.post(WEBHOOK, content=json.dumps(_message(token=""))).status_code == 401
 
 
@@ -116,8 +118,9 @@ def test_scan_used_for_pick_up_and_return(client: TestClient, as_atelier: TestCl
         f"{BASE}/desk/handouts/{handout.json()['id']}/return", json={"line_ids": [line_id], "scan_id": second["id"]}
     )
     assert returned.json()["status"] == "returned"
-    log = {entry["id"]: entry for entry in as_atelier.get(f"{BASE}/scans").json()}
+    log = {entry["id"]: entry for entry in as_atelier.get(f"{BASE}/wristband-test/log").json()}
     assert log[scan["id"]]["status"] == "used" and log[second["id"]]["status"] == "used"
+    assert log[scan["id"]]["used_by_module"] == "module-5"
 
     # Dismiss ("Negeren").
     client.post(WEBHOOK, content=json.dumps(_message()))
@@ -160,23 +163,20 @@ def test_wristband_per_festival_and_required_switch(
 
 def test_test_scan_endpoint_and_rights(client: TestClient, as_atelier: TestClient, db_session: Session, world: dict) -> None:
     # No token needed; same processing; marked as a test.
-    result = as_atelier.post(f"{BASE}/scans/test", json={"raw": json.dumps(_message(token="whatever", team="Onbekende ploeg"))}).json()
+    result = as_atelier.post(f"{BASE}/wristband-test/send", json={"raw": json.dumps(_message(token="whatever", team="Onbekende ploeg"))}).json()
     assert (result["http_status"], result["scan"]["status"], result["scan"]["source"], result["team_name_matched"]) == (
         200, "new", "test", None
     )
-    matched = as_atelier.post(f"{BASE}/scans/test", json={"raw": json.dumps(_message())}).json()
+    matched = as_atelier.post(f"{BASE}/wristband-test/send", json={"raw": json.dumps(_message())}).json()
     assert matched["team_name_matched"] == "RW terras"
     # A file that isn't a crew scan is logged as such.
-    assert as_atelier.post(f"{BASE}/scans/test", json={"raw": "{}"}).json()["scan"]["status"] == "ignored"
-    # Scanner labels on the settings screen.
-    scanner = as_atelier.get(f"{BASE}/scanners").json()[0]
-    assert as_atelier.put(f"{BASE}/scanners/{scanner['id']}", json={"label": "Balie 1"}).json()["label"] == "Balie 1"
+    assert as_atelier.post(f"{BASE}/wristband-test/send", json={"raw": "{}"}).json()["scan"]["status"] == "ignored"
 
     # Someone who may only use the desk can't send test scans or change settings.
     as_atelier.post("/api/auth/logout")
     role = _make_role(db_session, "Balie", {"atelier.desk": (True, True, False, False)})
     _make_user(db_session, world, "balie@example.com", role)
     _login(client, "balie@example.com")
-    assert client.post(f"{BASE}/scans/test", json={"raw": "{}"}).status_code == 403
+    assert client.post(f"{BASE}/wristband-test/send", json={"raw": "{}"}).status_code == 403
     assert client.put(f"{BASE}/settings", json={"wristband_required": False}).status_code == 403
     assert client.get(f"{BASE}/desk/scanners").status_code == 200

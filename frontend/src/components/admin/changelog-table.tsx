@@ -12,7 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // The dropdowns' "no filter" value.
@@ -52,19 +52,17 @@ function FilterSelect({ id, label, value, allLabel, options, onChange }: FilterS
   return (
     <div className="flex flex-col gap-2">
       <Label htmlFor={id}>{label}</Label>
-      <Select value={value} onValueChange={(next) => onChange(next ?? ALL)}>
-        <SelectTrigger id={id} className="min-w-44">
-          <SelectValue>{(current: string | null) => optionLabels.get(current ?? ALL) ?? allLabel}</SelectValue>
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value={ALL}>{allLabel}</SelectItem>
-          {options.map(([optionValue, optionLabel]) => (
-            <SelectItem key={optionValue} value={optionValue}>
-              {optionLabel}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <SearchableSelect
+        value={value}
+        onValueChange={(next) => onChange(next ?? ALL)}
+        id={id}
+        className="min-w-44"
+        renderValue={(current: string | null) => optionLabels.get(current ?? ALL) ?? allLabel}
+        options={[
+          { value: ALL, label: allLabel },
+          ...options.map(([optionValue, optionLabel]) => ({ value: optionValue, label: optionLabel })),
+        ]}
+      />
     </div>
   );
 }
