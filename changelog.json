@@ -533,7 +533,7 @@
     "issues": [],
     "date": "2026-11-01",
     "type": "update",
-    "status": "in_progress",
+    "status": "done",
     "module": "Atelier",
     "title": "Excel download on Openstaand and Retourproblemen",
     "description": "Both screens can download what they show as an Excel file, without email addresses.",
