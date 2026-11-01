@@ -527,5 +527,16 @@
     "title": "Inname from the Openstaand screen",
     "description": "A return can be booked per person directly from the Openstaand list.",
     "commits": []
+  },
+  {
+    "id": 42,
+    "issues": [],
+    "date": "2026-11-01",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Excel download on Openstaand and Retourproblemen",
+    "description": "Both screens can download what they show as an Excel file, without email addresses.",
+    "commits": []
   }
 ]
