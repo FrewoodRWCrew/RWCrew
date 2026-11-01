@@ -457,7 +457,7 @@
     "issues": [],
     "date": "2026-11-01",
     "type": "feature",
-    "status": "in_progress",
+    "status": "done",
     "module": "General",
     "title": "Wijzigingen screen for the super admin",
     "description": "Read-only list of all updates, corrections and new functionalities, the same on localhost, test and production.",
