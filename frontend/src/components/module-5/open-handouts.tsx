@@ -8,10 +8,11 @@
 // The Excel button downloads the pieces shown, without email addresses.
 // With the desk's rights, a person's "Inname" button opens the desk's return
 // form in a dialog, so the list can be worked through without leaving it.
-// Writing off what never comes back stays manual (Stock > Afboeken).
+// With the write-off right, a person's "Afboeken" button closes the pieces that
+// never come back (desk-write-off-dialog.tsx).
 
 import { Fragment, useMemo, useState } from "react";
-import { Download, PackageMinus } from "lucide-react";
+import { Download, PackageMinus, PackageX } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { exportAtelierOpenHandouts, listAtelierOpenHandouts } from "@/lib/api";
@@ -28,6 +29,7 @@ import { ATELIER_STOCK_CHANGED_EVENT } from "@/components/module-5/atelier-stock
 import { FilterHeadCell, useColumnFilters } from "@/components/module-5/column-filters";
 import { saveExcel } from "@/components/module-5/desk-common";
 import { ReturnForm } from "@/components/module-5/desk-return-form";
+import { WriteOffDialog } from "@/components/module-5/desk-write-off-dialog";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 // The day filter's "every day" choice (Base UI's Select needs a non-empty value).
@@ -70,9 +72,11 @@ interface OpenHandoutsProps {
   canBook: boolean;
   /** May cancel a pick-up in the Inname dialog. */
   canCancel: boolean;
+  /** May write off pieces that never come back (shows "Afboeken"). */
+  canWriteOff: boolean;
 }
 
-export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps) {
+export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenHandoutsProps) {
   const t = useTranslations("atelier.open");
   const tFit = useTranslations("atelier.fits");
   const locale = useLocale();
@@ -83,8 +87,11 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
   const [isDownloading, setIsDownloading] = useState(false);
   // The person whose Inname dialog is open.
   const [returnPerson, setReturnPerson] = useState<PersonGroup | null>(null);
+  // The person whose Afboeken dialog is open.
+  const [writeOffPerson, setWriteOffPerson] = useState<PersonGroup | null>(null);
   // The table's width in columns, with the Actions column when it's shown.
-  const columnCount = COLUMNS.length + (canBook ? 1 : 0);
+  const hasActions = canBook || canWriteOff;
+  const columnCount = COLUMNS.length + (hasActions ? 1 : 0);
 
   const key = festival ? `${festival.id}-${day}` : null;
   const rows = useKeyedLoad<AtelierHandout[]>(key, () =>
@@ -171,6 +178,7 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
   // After a return (or cancelled pick-up): close, show what's left, re-count stock.
   function finishReturn() {
     setReturnPerson(null);
+    setWriteOffPerson(null);
     rows.reload();
     window.dispatchEvent(new Event(ATELIER_STOCK_CHANGED_EVENT));
   }
@@ -215,7 +223,7 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
                   {t(column)}
                 </TableHead>
               ))}
-              {canBook && (
+              {hasActions && (
                 <TableHead className="sticky top-0 right-0 z-30 bg-background text-right font-bold underline">
                   {t("actions")}
                 </TableHead>
@@ -231,7 +239,7 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
                   onChange={(value) => setFilter(column, value)}
                 />
               ))}
-              {canBook && <TableHead className="sticky top-10 right-0 z-30 bg-background" />}
+              {hasActions && <TableHead className="sticky top-10 right-0 z-30 bg-background" />}
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -263,12 +271,22 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
                       <TableCell colSpan={4} className="text-sm text-muted-foreground">
                         {t("piecesCount", { pieces: person.pieces.length })}
                       </TableCell>
-                      {canBook && (
+                      {hasActions && (
                         <TableCell className="sticky right-0 z-10 bg-background text-right group-hover:bg-muted/50">
-                          <Button variant="outline" size="sm" onClick={() => setReturnPerson(person)}>
-                            <PackageMinus className="size-4" />
-                            {t("returnButton")}
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {canBook && (
+                              <Button variant="outline" size="sm" onClick={() => setReturnPerson(person)}>
+                                <PackageMinus className="size-4" />
+                                {t("returnButton")}
+                              </Button>
+                            )}
+                            {canWriteOff && (
+                              <Button variant="outline" size="sm" onClick={() => setWriteOffPerson(person)}>
+                                <PackageX className="size-4" />
+                                {t("writeOffButton")}
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       )}
                     </TableRow>
@@ -280,7 +298,7 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
                         <TableCell>{piece.article}</TableCell>
                         <TableCell>{piece.size}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDateTimeNl(piece.since)}</TableCell>
-                        {canBook && <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50" />}
+                        {hasActions && <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50" />}
                       </TableRow>
                     ))}
                   </Fragment>
@@ -304,6 +322,16 @@ export function OpenHandouts({ seasons, canBook, canCancel }: OpenHandoutsProps)
           )}
         </Table>
       </div>
+
+      {writeOffPerson && (
+        <WriteOffDialog
+          personId={writeOffPerson.personId}
+          personName={writeOffPerson.personName}
+          pieces={writeOffPerson.pieces}
+          onClose={() => setWriteOffPerson(null)}
+          onDone={finishReturn}
+        />
+      )}
 
       {/* The desk's return form, for this one person. */}
       {returnPerson && (

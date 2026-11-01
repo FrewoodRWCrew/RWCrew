@@ -11,10 +11,14 @@ from io import BytesIO
 import pytest
 from fastapi.testclient import TestClient
 from openpyxl import load_workbook
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db.models.festival import Festival
+from app.db.models.module import Module
 from app.db.models.team_responsible import TeamResponsible
+from app.db.models.user import User
+from app.db.models.user_module_access import UserModuleAccess
 
 # The block-1 fixtures and helpers (module, seasons, teams, sizes, a user with every right).
 from tests.modules.module_5.test_masterdata import (  # noqa: F401  (fixtures)
@@ -336,3 +340,126 @@ def test_excel_downloads(client: TestClient, as_atelier: TestClient, db_session:
     assert client.post(f"{BASE}/desk/open/export", json={**body, "line_ids": []}).status_code == 200
     assert client.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": []}).status_code == 403
 
+
+# --- The desk-only role, Afboeken on Openstaand, the wristband warning ----------
+
+
+@pytest.mark.parametrize("screen", ["atelier.desk", "atelier.open", "atelier.returnissues"])
+def test_a_role_with_one_balie_screen_can_load_the_festivals(
+    client: TestClient, db_session: Session, world: dict, screen: str
+) -> None:
+    role = _make_role(db_session, "Balie", {screen: (True, False, False, False)})
+    _make_user(db_session, world, "balie@example.com", role)
+    _login(client, "balie@example.com")
+    assert client.get(f"{BASE}/festivals", params={"season_id": world["season"].id}).status_code == 200
+
+
+def _open_line_ids(client: TestClient, desk: dict) -> list[int]:
+    handouts = client.get(f"{BASE}/desk/open", params={"festival_id": desk["festival"]}).json()
+    return [line["id"] for handout in handouts for line in handout["lines"]]
+
+
+def test_write_off_from_openstaand(as_atelier: TestClient, world: dict, desk: dict) -> None:
+    handout = _pick_up(as_atelier, world, desk, [("tshirt", "m"), ("apron", "apron_size")]).json()
+    person = handout["person_id"]
+    tshirt_line, apron_line = [line["id"] for line in handout["lines"]]
+
+    # One piece: it leaves the stock, its line closes, the pick-up stays open.
+    response = as_atelier.post(f"{BASE}/desk/persons/{person}/write-off", json={"line_ids": [tshirt_line], "note": "kwijt"})
+    assert response.status_code == 200, response.text
+    assert response.json()[0]["status"] == "open"
+    assert _stock(as_atelier, desk["m"]) == (2, 0, 0)
+    assert _open_line_ids(as_atelier, desk) == [apron_line]
+
+    # The second time it's refused, and the person can pick the article up again.
+    again = as_atelier.post(f"{BASE}/desk/persons/{person}/write-off", json={"line_ids": [tshirt_line]})
+    assert again.status_code == 400
+    assert again.json()["detail"] == "already_returned"
+    assert _pick_up(as_atelier, world, desk, [("tshirt", "m")]).status_code == 201
+
+    # Booked as a write-off with its reason, and it can't be undone on Boekingen.
+    bookings = as_atelier.get(f"{BASE}/stock/documents").json()
+    document = next(item for item in bookings if item["doc_type"] == "write_off")
+    assert (document["reason"], document["note"]) == ("not_returned", "Jan Peeters — kwijt")
+    undo = as_atelier.post(f"{BASE}/stock/documents/{document['id']}/reverse", json={})
+    assert undo.status_code == 400
+    assert undo.json()["detail"] == "desk_write_off"
+
+    # The last piece of the pick-up closes it; nothing shows as a Retourprobleem.
+    closed = as_atelier.post(f"{BASE}/desk/persons/{person}/write-off", json={"line_ids": [apron_line]})
+    assert closed.json()[0]["status"] == "returned"
+    assert as_atelier.get(f"{BASE}/desk/return-issues").json() == []
+
+
+def test_write_off_only_own_pieces_and_with_the_right(
+    client: TestClient, as_atelier: TestClient, db_session: Session, world: dict, desk: dict
+) -> None:
+    jan = _pick_up(as_atelier, world, desk, [("tshirt", "m")]).json()
+    an = _pick_up(as_atelier, world, desk, [("apron", "apron_size")], first="An").json()
+    wrong = as_atelier.post(f"{BASE}/desk/persons/{an['person_id']}/write-off", json={"line_ids": [jan["lines"][0]["id"]]})
+    assert wrong.status_code == 404
+
+    as_atelier.post("/api/auth/logout")
+    role = _make_role(db_session, "Kijker", {"atelier.open": (True, False, False, False)})
+    _make_user(db_session, world, "kijker@example.com", role)
+    _login(client, "kijker@example.com")
+    refused = client.post(f"{BASE}/desk/persons/{jan['person_id']}/write-off", json={"line_ids": [jan["lines"][0]["id"]]})
+    assert refused.status_code == 403
+
+
+def test_other_wristband_at_the_festival_needs_a_confirmation(as_atelier: TestClient, world: dict, desk: dict) -> None:
+    assert _pick_up(as_atelier, world, desk, [("apron", "apron_size")], bracelet="111").status_code == 201
+
+    # Same name, other wristband: maybe someone else, so nothing is booked.
+    payload = {
+        "first_name": "Jan", "last_name": "Peeters", "bracelet_number": "222", "festival_id": desk["festival"],
+        "team_id": world["terras"].id, "day": DAY, "lines": [{"article_id": desk["tshirt"], "article_size_id": desk["m"]}],
+    }
+    refused = as_atelier.post(f"{BASE}/desk/handouts", json=payload)
+    assert refused.status_code == 400
+    assert refused.json()["detail"] == "bracelet_differs|111|Jan Peeters"
+    assert _stock(as_atelier, desk["m"])[2] == 0
+
+    # Confirmed by the desk: the same person, with the new number.
+    confirmed = as_atelier.post(f"{BASE}/desk/handouts", json={**payload, "confirm_new_bracelet": True})
+    assert confirmed.status_code == 201
+    assert confirmed.json()["bracelet_number"] == "222"
+
+
+def test_return_search_finds_people_with_pieces_behind_a_common_name(as_atelier: TestClient, world: dict, desk: dict) -> None:
+    # Twelve people called Jan, of whom only the last has a piece out.
+    as_atelier.post(f"{BASE}/stock/receipt", json={"lines": [{"article_size_id": desk["apron_size"], "quantity": 10}]})
+    for letter in "ABCDEFGHIJKL":
+        response = _pick_up(as_atelier, world, desk, [("apron", "apron_size")], last=f"{letter}eeters")
+        assert response.status_code == 201
+        if letter != "L":
+            handout = response.json()
+            as_atelier.post(
+                f"{BASE}/desk/persons/{handout['person_id']}/return", json={"line_ids": [handout["lines"][0]["id"]]}
+            )
+    found = as_atelier.get(f"{BASE}/desk/persons", params={"q": "jan", "open_only": True}).json()
+    assert [person["name"] for person in found] == ["Jan Leeters"]
+
+
+def test_deleting_masterdata_with_hand_outs_is_refused_clearly(
+    as_atelier: TestClient, db_session: Session, world: dict, desk: dict
+) -> None:
+    _pick_up(as_atelier, world, desk, [("apron", "apron_size")])
+    # A super admin with MasterData access.
+    user = db_session.scalar(select(User).where(User.email == "atelier@example.com"))
+    user.is_super_admin = True
+    module = Module(key="module-9", name="MasterData", sort_order=9)
+    db_session.add(module)
+    db_session.flush()
+    db_session.add(UserModuleAccess(user_id=user.id, module_id=module.id))
+    db_session.commit()
+
+    masterdata = "/api/modules/module-9"
+    for path, word in (
+        (f"teams/{world['terras'].id}", "team"),
+        (f"festivals/{desk['festival']}", "festival"),
+        (f"seasons/{world['season'].id}", "season"),
+    ):
+        response = as_atelier.delete(f"{masterdata}/{path}")
+        assert response.status_code == 400, path
+        assert f"This {word} still has history" in response.json()["detail"]

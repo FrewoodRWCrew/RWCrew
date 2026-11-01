@@ -290,7 +290,7 @@ volledige rechtensysteem.</p>
   <tr><td><code>module_4/tagscan_book_in.py</code> (Scans-regels "Book In")</td><td>StockMaster Inboeken; zet de Scans-regels in dezelfde transactie op <em>loaded</em></td></tr>
   <tr><td><code>module_2/delivery_order_service.py</code> (levertoer)</td><td>Leveringsvolgorde; de planningsanalyses lezen <code>terrein_positie</code></td></tr>
   <tr><td><code>module_2/karcode_formula.py</code> (karcodeformule, via <code>ast</code> en een witte lijst, nooit <code>eval</code>)</td><td>Karcode Simulator (web en telefoon) en Instellingen</td></tr>
-  <tr><td><code>module_5/stock_service.py</code>, <code>desk_service.py</code>, <code>scan_service.py</code></td><td>Atelier: de enige code die respectievelijk de stock, de personen/uitgiftes en de polsbandscans schrijft (zie <a class="ref" href="#s-be-atelier"></a>)</td></tr>
+  <tr><td><code>module_5/stock_service.py</code>, <code>desk_service.py</code>, <code>wristband/scan_service.py</code></td><td>Atelier (polsbandscans: gedeeld, <code>app/modules/wristband/</code>): de enige code die respectievelijk de stock, de personen/uitgiftes en de polsbandscans schrijft (zie <a class="ref" href="#s-be-atelier"></a>)</td></tr>
   <tr><td><code>module_1/line_processing.py</code> (acties van Scans-regels)</td><td>Het verwerkingsvenster van Scans; nieuwe acties komen hier als functie bij</td></tr>
 </table>
 
@@ -323,7 +323,8 @@ nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_
   de dagelijkse behoefte zonder iets op te slaan.</li>
   <li><strong>Balie</strong>: <code>desk_service.py</code> is de enige die <code>Atelier_person</code> (sleutel <code>name_key</code> = voornaam|familienaam),
   <code>Atelier_person_bracelet</code> (polsbandnummer per festival), <code>Atelier_handout</code> en <code>Atelier_handout_line</code> schrijft. Ophalen
-  boekt <em>beschikbaar → uitgegeven</em>, terugbrengen <em>uitgegeven → te wassen</em>.</li>
+  boekt <em>beschikbaar → uitgegeven</em>, terugbrengen <em>uitgegeven → te wassen</em>. Wat nooit terugkomt, wordt op Openstaand afgeboekt
+  (<code>write_off_person_lines</code>: <em>uitgegeven → buiten de stock</em>; dat sluit de lijn via <code>returned_at</code> en is niet ongedaan te maken).</li>
   <li><strong>Polsbandscans</strong>: <code>scan_service.process_message</code> verwerkt elk bericht, van de webhook én van het testscherm
   (dat de tokencontrole overslaat en het bericht als <code>test</code> markeert). Het logt alles in <code>Wristband_scan</code>, registreert de
   scanner (<code>Wristband_scanner</code>, op <code>data.device.id</code>) en zoekt de ploeg op naam. De balie vraagt elke 2 seconden de wachtende

@@ -20,6 +20,8 @@ De balie. Kies bovenaan het **festival**, de **dag** (standaard vandaag) en de *
 3. Kies de **ploeg** (enkel ploegen met een pakket op dit festival).
 4. Per artikel van het pakket kies je de **maat** (1 stuk per artikel); tussen haakjes staat hoeveel er beschikbaar zijn. Elk artikel is **optioneel**: klik de gekozen maat nog eens om het artikel over te slaan. Heeft een artikel maar één maat in stock (bv. OneSize), dan staat die al aangeduid. Minstens één artikel is nodig; naast de knop staat wat nog ontbreekt.
 
+Heeft een gekende persoon op dit festival al een **ander polsbandnummer**, dan vraagt de balie of het dezelfde persoon is met een nieuwe polsband. Is het iemand anders met dezelfde naam, kies dan Annuleren en vul de naam aan (bv. met een tweede voornaam): twee mensen met exact dezelfde naam zijn voor de balie één persoon.
+
 Een artikel dat de persoon nog niet teruggebracht heeft, kan niet opnieuw meegegeven worden. Een oranje kader toont wat de persoon nog heeft, met de knop **Eerst terugbrengen** die meteen het terugbrengen voor die persoon opent. Alle andere artikels kan de persoon wel ophalen — ook meerdere keren per dag.
 5. Klik op **Uitgeven** (of Enter).
 
@@ -38,7 +40,7 @@ Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annulere
 ![De balie: Ophalen of Terugbrengen](desk.png)
 
 ## [open | atelier.open] Openstaand
-Alle kledij die opgehaald werd maar nog niet terug is, **gegroepeerd per ploeg en dan per persoon** (met polsbandnummer; het e-mailadres staat er om privacyredenen (GDPR) niet bij), met daaronder elk stuk: dag, artikel, maat en wanneer het opgehaald werd. Kies bovenaan het festival en eventueel de dag. Boven elke kolom staat een **filterveld**: typ er een deel van een naam, ploeg, artikel, … in om de lijst te verkleinen; de totalen volgen de filter. Komt iets nooit terug, boek het dan af via **Stock > Afboeken** (reden "Niet teruggebracht").
+Alle kledij die opgehaald werd maar nog niet terug is, **gegroepeerd per ploeg en dan per persoon** (met polsbandnummer; het e-mailadres staat er om privacyredenen (GDPR) niet bij), met daaronder elk stuk: dag, artikel, maat en wanneer het opgehaald werd. Kies bovenaan het festival en eventueel de dag. Boven elke kolom staat een **filterveld**: typ er een deel van een naam, ploeg, artikel, … in om de lijst te verkleinen; de totalen volgen de filter. Komt iets nooit terug, klik dan bij de persoon op **Afboeken** (met het recht Aanmaken op het scherm Afboeken), vink de stuks aan en bevestig: ze verlaten de stock definitief met de reden "Niet teruggebracht", staan niet meer open en de persoon kan dat artikel opnieuw ophalen. De persoon krijgt hiervan geen mail, en deze afboeking kan niet ongedaan gemaakt worden. **Stock > Afboeken** is er enkel voor stuks die in de winkel liggen (beschikbaar of te wassen).
 
 Heb je de rechten van de balie, dan staat bij elke persoon de knop **Inname**: die opent hetzelfde scherm als Terugbrengen aan de balie, voor deze persoon, met alles wat die nog in bezit heeft (ook buiten de gekozen dag). De persoon krijgt de gewone Inname-mail.
 
@@ -47,6 +49,8 @@ Met de knop **Excel** download je wat op het scherm staat, ook met de filters di
 ![Openstaand](open.png)
 
 ## [returnissues | atelier.returnissues] Retourproblemen
+![Retourproblemen](return-issues.png)
+
 Alle kledij die teruggebracht werd met een **retourstatus**, de nieuwste bovenaan: status, artikel, maat, ploeg, persoon, polsband, dag, wanneer teruggebracht en door wie geboekt. Kies bovenaan het festival en eventueel de dag; boven elke kolom staat een tekstfilter. Dit scherm is enkel om te bekijken: een stuk dat niet meer bruikbaar is, boek je af via **Afboeken**. Met de knop **Excel** download je wat op het scherm staat, ook met de filters die je gebruikt.
 
 ## [reservations | atelier.reservations] Reservaties
@@ -144,9 +148,14 @@ De lijst met wat er mis kan zijn met een teruggebracht stuk, zoals "Beschadigd" 
 1. Klik op **Nieuwe retourstatus** en vul de naam in.
 2. Een status die al gebruikt werd, kan niet verwijderd worden: zet ze dan op niet actief. Ze staat dan niet meer in de keuzelijst, maar blijft zichtbaar bij de stuks die ze al hebben.
 
+In bulk kan dit via **Data Upload/Download**.
+
+![Retourstatussen](return-statuses.png)
+
 ## [dataupload | atelier.dataupload] Data Upload/Download
 Per tabel een tegel om een **sjabloon** te downloaden, een ingevuld bestand te **uploaden** en de huidige gegevens te **exporteren**.
 
+- **Retourstatussen**: een rij wordt gezocht op **id** en anders op naam; een gevonden status wordt gewijzigd, anders komt er een nieuwe bij. Er wordt nooit iets verwijderd.
 - **Maten** en **Artikelen**: een rij wordt gezocht op **id** (de eerste kolom van de export) en anders op naam + pasvorm (maten) of code (artikelen); een gevonden record wordt gewijzigd, anders komt er een nieuw bij. Zo kan je ook een export van een andere omgeving (bv. localhost naar test) opladen.
 - **Artikelmaten** (artikelcode + maat + pasvorm), **Reservaties** (seizoen + festival + ploeg) en **Pakketlijnen** (seizoen + festival + ploeg + artikelcode): een bestaande combinatie wordt bijgewerkt, een nieuwe toegevoegd.
 - Pasvorm mag als women/men/unisex of Dames/Heren/Unisex.
@@ -185,6 +194,8 @@ Een rol bepaalt wat iemand in Atelier mag doen, per scherm: **Bekijken**, **Aanm
 1. Klik op **Nieuwe rol** en geef een naam (bv. "Atelierverantwoordelijke", "Medewerker").
 2. Klik bij de rol op **Rechten** en vink per scherm aan wat de rol mag.
 3. Sla de rechten op.
+
+De knop **Afboeken** op Openstaand volgt het recht Aanmaken op het scherm **Afboeken**. Wie enkel de balie doet, heeft genoeg aan de balieschermen: de festivals worden dan mee geladen.
 
 ![Rollen](roles.png)
 

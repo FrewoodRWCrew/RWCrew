@@ -1799,7 +1799,7 @@
     },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
-      "description": "Import and export the sizes, articles, article sizes, reservations and package lines in bulk, one tile per table.",
+      "description": "Import and export the sizes, articles, article sizes, return statuses, reservations and package lines in bulk, one tile per table.",
       "uploadNotAllowed": "You don't have permission to upload here — ask an Atelier admin to grant it.",
       "downloadTemplateLabel": "Template",
       "downloadTemplateButton": "Download template",
@@ -1844,6 +1844,13 @@
         "hint": "A known combination (season + festival + team) is updated, a new one added. The package is in the Package lines tile.",
         "importColumnKey": "Reservation",
         "exportButton": "Download reservations"
+      },
+      "returnStatuses": {
+        "tileTitle": "Return statuses",
+        "dialogDescription": "The return statuses the desk can pick per piece. Columns: id, name, active.",
+        "hint": "A row is looked up by id, then by name; a status found is changed, otherwise a new one is added. Nothing is ever removed.",
+        "importColumnKey": "Return status",
+        "exportButton": "Download return statuses"
       },
       "packageLines": {
         "tileTitle": "Package lines",
@@ -2065,6 +2072,7 @@
         "no_differences": "There are no differences with the booked stock.",
         "cannot_reverse_reversal": "A counter-booking can't be undone itself.",
         "already_reversed": "This booking was already undone.",
+        "desk_write_off": "This write-off comes from Outstanding and cannot be undone.",
         "use_desk": "A counter booking can only be cancelled at the counter."
       }
     },
@@ -2120,7 +2128,9 @@
         "already_returned": "This piece was already returned.",
         "cannot_cancel": "Something was already returned: this hand-out can't be cancelled any more.",
         "bracelet_in_use": "Wristband number {p1} already belongs to {p2}.",
-        "bracelet_required": "A wristband number is required to pick up.",
+        "bracelet_differs": "{p2} already has wristband {p1} at this festival.",
+        "concurrent_change": "Another desk booked the same person or wristband at the same moment. Try again.",
+        "bracelet_required":"A wristband number is required to pick up.",
         "scan_not_waiting": "This scan was already used or ignored.",
         "person_not_found": "This person doesn't exist (any more).",
         "return_status_invalid": "This return status can't be chosen (any more)."
@@ -2150,6 +2160,7 @@
       "scanWaiting": "New scan waiting: {name} (after this transaction)",
       "missingBracelet": "Enter the wristband number (required).",
       "scanAlert": "{count, plural, one {# wristband scan is} other {# wristband scans are}} waiting at the counter",
+      "braceletDiffersConfirm": "{name} already has wristband {known} at this festival. Is this the same person with a new wristband ({number})?\n\nOK = same person, new wristband.\nCancel = nothing is booked; if it is someone else with the same name, extend the name (e.g. with a second first name).",
       "scanBracelet": "Scan wristband with the camera",
       "scanBraceletTitle": "Scan the QR code on the wristband",
       "scanBraceletDescription": "Hold the wristband in front of the camera.",
@@ -2177,6 +2188,13 @@
       "piecesCount": "{pieces, plural, one {# piece} other {# pieces}} still held",
       "filteredOf": "({shown} of {total} pieces shown)",
       "actions": "Actions",
+      "writeOffButton": "Write off",
+      "writeOffTitle": "Write off: {name}",
+      "writeOffDescription": "Tick what will never come back. Those pieces leave the stock for good (reason: not returned), are no longer outstanding, and the person gets no mail.",
+      "writeOffNote": "Note (optional)",
+      "writeOffCancel": "Close",
+      "writeOffConfirm": "{pieces, plural, =0 {Write off} one {Write off # piece} other {Write off # pieces}}",
+      "writeOffDone": "{pieces, plural, one {# piece} other {# pieces}} of {name} written off.",
       "returnButton": "Return",
       "returnTitle": "Return",
       "download": "Excel",

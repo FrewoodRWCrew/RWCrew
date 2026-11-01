@@ -73,8 +73,8 @@ export function ReturnForm({ canCancel, initialPerson, fixedPerson = false, init
     const value = query.trim();
     if (value.length < 2) return;
     const timer = window.setTimeout(() => {
-      searchAtelierDeskPersons(value)
-        .then((found) => setResults(found.filter((item) => item.open_lines.length > 0)))
+      searchAtelierDeskPersons(value, true)
+        .then(setResults)
         .catch(() => setResults([]));
     }, 300);
     return () => window.clearTimeout(timer);

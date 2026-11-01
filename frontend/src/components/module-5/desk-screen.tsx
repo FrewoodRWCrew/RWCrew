@@ -447,7 +447,7 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
       ? t("missingName")
       : email.trim() !== "" && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())
         ? t("missingEmail")
-        : wristbandRequired && bracelet.trim() === "" && !person
+        : wristbandRequired && bracelet.trim() === "" && !person?.bracelet_number
           ? t("missingBracelet")
           : teamId === null
           ? t("missingTeam")
@@ -459,7 +459,7 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
   const served = context.data?.served_today ?? 0;
   const reserved = context.data?.persons_reserved ?? 0;
 
-  async function handleSubmit() {
+  async function handleSubmit(confirmNewBracelet = false) {
     if (!ready || teamId === null) return;
     setIsBooking(true);
     try {
@@ -473,6 +473,7 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         team_id: teamId,
         day,
         lines,
+        confirm_new_bracelet: confirmNewBracelet,
       });
       toast.success(
         t("handedOut", {
@@ -482,6 +483,15 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
       );
       onDone();
     } catch (error) {
+      // Same name, other wristband: maybe two people. Only the desk can tell;
+      // when it's someone else, nothing is booked and the name can be adjusted.
+      if (error instanceof ApiError && error.message.startsWith("bracelet_differs|")) {
+        const [, known, name] = error.message.split("|");
+        if (window.confirm(t("braceletDiffersConfirm", { name, known, number: bracelet.trim() }))) {
+          await handleSubmit(true);
+        }
+        return;
+      }
       toast.error(atelierDeskErrorMessage(t, tStock, error));
       // "Not returned yet": look the person up again so the box and the
       // greyed article show what is still out.

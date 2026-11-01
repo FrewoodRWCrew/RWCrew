@@ -237,7 +237,8 @@ Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en we
   (met de kolom <em>Vergeten?</em>) en de stock.</td></tr>
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Balie</td></tr>
   <tr><td>Uitgifte &amp; inname</td><td>De balie: kledij meegeven en terugnemen (zie <a class="ref" href="#s-at-balie"></a>).</td></tr>
-  <tr><td>Openstaand</td><td>Alle kledij die opgehaald werd maar nog niet terug is, per persoon, met filters op festival, dag en ploeg.</td></tr>
+  <tr><td>Openstaand</td><td>Alle kledij die opgehaald werd maar nog niet terug is, per ploeg en per persoon, met filters op festival, dag en elke kolom, en een Excel-download. Per persoon <em>Inname</em> en <em>Afboeken</em>.</td></tr>
+  <tr><td>Retourproblemen</td><td>Wat teruggebracht werd met een retourstatus (bijvoorbeeld beschadigd), met filters en een Excel-download.</td></tr>
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Reservaties</td></tr>
   <tr><td>Reservaties</td><td>Per festival en per ploeg het aantal personen, een opmerking en het pakket.</td></tr>
   <tr><td>Voorbereiden</td><td>Wat de winkel elke festivaldag klaarlegt: totalen per artikel met geschatte maten, en een bundel per ploeg. Picklijst als PDF.</td></tr>
@@ -250,9 +251,10 @@ Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en we
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Masterdata</td></tr>
   <tr><td>Artikelen</td><td>De kledingstukken (code, naam, foto, minimumstock) en per artikel de maten waarin het bestaat, met een maatverdeling in %.</td></tr>
   <tr><td>Maten</td><td>De maten met hun pasvorm (dames, heren, unisex), bijvoorbeeld S · Unisex of OneSize.</td></tr>
-  <tr><td>Data Upload/Download</td><td>Excel voor maten, artikelen, artikelmaten, reservaties en pakketlijnen.</td></tr>
+  <tr><td>Retourstatussen</td><td>De lijst van wat er mis kan zijn met een teruggebracht stuk, zoals "Beschadigd". De balie kiest die per stuk bij Terugbrengen.</td></tr>
+  <tr><td>Data Upload/Download</td><td>Excel voor maten, artikelen, artikelmaten, retourstatussen, reservaties en pakketlijnen.</td></tr>
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Instellingen</td></tr>
-  <tr><td>Instellingen</td><td>Of een polsbandnummer verplicht is bij Ophalen, de scanners van het polsbandbedrijf en de ontvangen berichten.</td></tr>
+  <tr><td>Instellingen</td><td>Of een polsbandnummer verplicht is bij Ophalen. De scanners en ontvangen berichten staan in de module Scans.</td></tr>
   <tr><td>Test-scan</td><td>Een polsbandscan naspelen zonder het polsbandbedrijf (zie <a class="ref" href="#s-at-polsband"></a>).</td></tr>
 </table>
 
@@ -300,7 +302,7 @@ een ploeg dan gereserveerd, dan kleurt de teller oranje, maar uitgeven blijft mo
   <li>Alle stuks staan aangevinkt; vink af wat niet terug is. Dat blijft openstaan, en de balie vraagt eerst bevestiging.</li>
   <li>Klik op <span class="knop">Terugnemen</span>: de stuks gaan naar <em>Te wassen</em>.</li>
 </ol>
-<p>Komt iets nooit terug, boek het dan af via <span class="menu">Stock<span class="sep">›</span>Afboeken</span> met de reden "Niet teruggebracht".
+<p>Komt iets nooit terug, klik dan op <span class="menu">Openstaand</span> bij de persoon op <span class="knop">Afboeken</span> en vink de stuks aan: ze verlaten de stock definitief met de reden "Niet teruggebracht" en de persoon kan dat artikel opnieuw ophalen. Dat kan niet ongedaan gemaakt worden.
 Een uitgifte waarvan nog niets terug is, kan met het recht <em>Wijzigen</em> geannuleerd worden.</p>
 
 <h2 id="s-at-stock">De stock: ontvangen, wassen, tellen</h2>
@@ -311,7 +313,7 @@ Zoals in StockMaster is elke wijziging een boeking op jouw naam die nooit gewist
   <tr><th style="width:22%">Scherm</th><th>Wat er gebeurt</th></tr>
   <tr><td>Ontvangst</td><td>Nieuwe stuks komen binnen en worden <em>beschikbaar</em>.</td></tr>
   <tr><td>Wassen</td><td>Gewassen stuks gaan van <em>te wassen</em> naar <em>beschikbaar</em>.</td></tr>
-  <tr><td>Afboeken</td><td>Stuks verdwijnen uit de stock, met een reden: kapot, verloren, niet teruggebracht of andere (met verplichte opmerking).</td></tr>
+  <tr><td>Afboeken</td><td>Stuks in de winkel (beschikbaar of te wassen) verdwijnen uit de stock, met een reden: kapot, verloren, niet teruggebracht of andere (met verplichte opmerking). Wat bij een persoon blijft, boek je af op Openstaand.</td></tr>
   <tr><td>Telling</td><td>Je telt per artikel en maat; het verschil wordt geboekt.</td></tr>
 </table>
 <p>Zakt een maat onder haar minimumstock, dan verschijnt bovenaan elk Atelier-scherm een oranje melding. <em>Te bestellen</em> toont per maat wat er
@@ -323,8 +325,8 @@ bedrijf dat bericht naar RWCrew. Binnen enkele seconden verschijnt aan de balie 
 Kies dan <span class="knop">Ophalen</span> (naam, polsbandnummer, ploeg en maat staan al ingevuld) of <span class="knop">Terugbrengen</span> (de stuks van de
 persoon staan meteen klaar). Met <span class="knop">Negeren</span> verdwijnt de scan. Komt er een scan binnen tijdens een transactie, dan wacht hij tot je klaar bent.</p>
 <div class="kader beheer"><span class="kader-titel"></span>
-Op <span class="menu">Instellingen<span class="sep">›</span>Instellingen</span> zet je <em>Polsband verplicht bij Ophalen</em> aan of uit, geef je elke scanner
-een naam (bijvoorbeeld "Balie 1") en zie je alle <em>Ontvangen berichten</em>, ook de geweigerde. "geen ploeg met deze naam" betekent dat de ploegnaam van het
+Op <span class="menu">Instellingen<span class="sep">›</span>Instellingen</span> zet je <em>Polsband verplicht bij Ophalen</em> aan of uit. In de module Scans, onder Polsbanden, geef je elke scanner
+een naam (bijvoorbeeld "Balie 1") en zie je alle ontvangen berichten, ook de geweigerde. "geen ploeg met deze naam" betekent dat de ploegnaam van het
 bedrijf niet overeenkomt met een ploeg in MasterData: de balie kiest de ploeg dan zelf. De echte koppeling met het bedrijf volgt vanaf mei 2027; tot dan speel je
 berichten na met <span class="menu">Instellingen<span class="sep">›</span>Test-scan</span>, via een formulier of een JSON-bestand.
 </div>

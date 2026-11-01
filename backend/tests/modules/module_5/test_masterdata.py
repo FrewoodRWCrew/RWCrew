@@ -271,3 +271,24 @@ def test_xlsx_import_of_another_environments_export(as_atelier: TestClient, worl
     # An id that isn't a number is still a row error.
     results = _upload(as_atelier, "articles", _xlsx(["id", "code", "name"], [["abc", "CAP", "Pet"]]))
     assert results[0]["outcome"] == "error"
+
+
+def test_return_statuses_in_data_upload(as_atelier: TestClient, world: dict) -> None:
+    header = ["id", "name", "active"]
+    results = _upload(as_atelier, "return-statuses", _xlsx(header, [[None, "Gescheurd", "ja"], [None, "Beschadigd", "nee"]]))
+    assert [row["outcome"] for row in results] == ["created", "created"]
+    statuses = {item["name"]: item for item in as_atelier.get(f"{BASE}/return-statuses").json()}
+    assert statuses["Beschadigd"]["active"] is False
+
+    # By id; an unknown id (another environment's export) falls back to the name.
+    torn = statuses["Gescheurd"]["id"]
+    assert _upload(as_atelier, "return-statuses", _xlsx(header, [[torn, "Gescheurd kraag", "ja"]]))[0]["outcome"] == "updated"
+    assert _upload(as_atelier, "return-statuses", _xlsx(header, [[9001, "beschadigd", "ja"]]))[0]["outcome"] == "updated"
+    # Renaming onto another status is a row error; leaving out "active" works.
+    assert _upload(as_atelier, "return-statuses", _xlsx(header, [[torn, "Beschadigd", "ja"]]))[0]["outcome"] == "error"
+    assert _upload(as_atelier, "return-statuses", _xlsx(["id", "name"], [[None, "Vuil"]]))[0]["outcome"] == "created"
+
+    exported = load_workbook(io.BytesIO(as_atelier.get(f"{BASE}/return-statuses/export").content)).active
+    assert [cell.value for cell in exported[1]] == header
+    assert sorted(row[1] for row in exported.iter_rows(min_row=2, values_only=True)) == ["Gescheurd kraag", "Vuil", "beschadigd"]
+    assert as_atelier.get(f"{BASE}/return-statuses-import/template").status_code == 200

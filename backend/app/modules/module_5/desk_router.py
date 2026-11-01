@@ -1,6 +1,6 @@
 # Atelier's (module-5) counter desk — block 4, the sidebar's "Balie" group:
 # "Uitgifte & inname" (every transaction starts with the choice Ophalen /
-# Terugbrengen), "Openstaand" (pieces not returned yet) and "Retourproblemen"
+# Terugbrengen), "Openstaand" (pieces not returned yet, written off there when they never come back) and "Retourproblemen"
 # (pieces that came back with a return status). Its own APIRouter
 # on the module's /api/modules/module-5 prefix (included in app/main.py).
 #
@@ -19,6 +19,7 @@ from datetime import date
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, Response, status
 from sqlalchemy import func, or_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -54,6 +55,7 @@ from app.modules.module_5.desk_service import (
     return_person_lines,
     served_today,
     wristband_required,
+    write_off_person_lines,
 )
 from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
@@ -78,6 +80,7 @@ from app.schemas.atelier import (
     ReturnIssueResponse,
     ReturnRequest,
     ReturnStatusResponse,
+    WriteOffLinesRequest,
 )
 
 router = APIRouter(prefix="/api/modules/module-5", tags=["Atelier"])
@@ -86,6 +89,7 @@ DESK_SCREEN = "atelier.desk"
 OPEN_SCREEN = "atelier.open"
 RETURN_ISSUES_SCREEN = "atelier.returnissues"
 KPI_SCREEN = "atelier.kpi"
+WRITE_OFF_SCREEN = "atelier.writeoff"
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -213,26 +217,32 @@ def list_desk_teams(
 def search_persons(
     q: str = Query(min_length=2, max_length=100),
     festival_id: int | None = Query(default=None),
+    open_only: bool = Query(default=False),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(DESK_SCREEN, "view")),
 ) -> list[DeskPersonResponse]:
     """Workers whose name ("first last"), email or wristband number (any
-    festival) contains the text (max 10), with their open pieces."""
+    festival) contains the text (max 10), with their open pieces. `open_only`
+    (Terugbrengen) keeps only those with pieces out, before the limit, so a
+    common name can't push them off the list."""
     needle = f"%{' '.join(q.lower().split())}%"
     full_name = func.lower(AtelierPerson.first_name + " " + AtelierPerson.last_name)
     with_bracelet = select(AtelierPersonBracelet.person_id).where(func.lower(AtelierPersonBracelet.number).like(needle))
-    persons = db.scalars(
-        select(AtelierPerson)
-        .where(
-            or_(
-                full_name.like(needle),
-                func.lower(AtelierPerson.email).like(needle),
-                AtelierPerson.id.in_(with_bracelet),
-            )
+    query = select(AtelierPerson).where(
+        or_(
+            full_name.like(needle),
+            func.lower(AtelierPerson.email).like(needle),
+            AtelierPerson.id.in_(with_bracelet),
         )
-        .order_by(AtelierPerson.first_name, AtelierPerson.last_name)
-        .limit(10)
-    ).all()
+    )
+    if open_only:
+        with_open_pieces = (
+            select(AtelierHandout.person_id)
+            .join(AtelierHandoutLine, AtelierHandoutLine.handout_id == AtelierHandout.id)
+            .where(AtelierHandout.status == OPEN, AtelierHandoutLine.returned_at.is_(None))
+        )
+        query = query.where(AtelierPerson.id.in_(with_open_pieces))
+    persons = db.scalars(query.order_by(AtelierPerson.first_name, AtelierPerson.last_name).limit(10)).all()
     return [_person_response(db, person, festival_id) for person in persons]
 
 
@@ -385,11 +395,16 @@ def post_handout(
             day=payload.day,
             lines=[(line.article_id, line.article_size_id) for line in payload.lines],
             scan_id=payload.scan_id,
+            confirm_new_bracelet=payload.confirm_new_bracelet,
         )
+        db.commit()
     except StockError as error:
         db.rollback()
         raise _error(error) from error
-    db.commit()
+    except IntegrityError as error:
+        # Another desk created the same person or wristband at this very moment.
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="concurrent_change") from error
     person = db.get(AtelierPerson, handout.person_id)
     lines = db.scalars(
         select(AtelierHandoutLine).where(AtelierHandoutLine.handout_id == handout.id).order_by(AtelierHandoutLine.id)
@@ -460,6 +475,24 @@ def post_person_return(
         _bracelet_number(db, person_id, latest.festival_id),
         background_tasks,
     )
+    return [_handout_response(db, handout) for handout in handouts]
+
+
+@router.post("/desk/persons/{person_id}/write-off", response_model=list[HandoutResponse])
+def post_person_write_off(
+    person_id: int,
+    payload: WriteOffLinesRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(WRITE_OFF_SCREEN, "create")),
+) -> list[HandoutResponse]:
+    """Openstaand's Afboeken: these pieces of one person never came back.
+    The same right as Stock > Afboeken; no mail goes out."""
+    try:
+        handouts = write_off_person_lines(db, current_user, person_id, payload.line_ids, payload.note)
+    except StockError as error:
+        db.rollback()
+        raise _error(error) from error
+    db.commit()
     return [_handout_response(db, handout) for handout in handouts]
 
 

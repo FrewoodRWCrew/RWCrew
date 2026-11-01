@@ -286,7 +286,7 @@ only that shell.
   picture like products, `is_tag_managed` for block 6); `Atelier_article_size` = the stock-keeping unit of the later
   blocks (managed from the article form's size checklist, with `size_share_pct`; unticking deletes it — refuse once
   stock exists). Used things are deactivated, not deleted (400). XLSX per table in `module_5/xlsx_imports.py`
-  (sizes/articles by `id`, falling back to name+fit / code when the id is blank or unknown here — so an export from another environment imports cleanly; the rest by natural key; columns left out stay unchanged). The module has its own season
+  (sizes/articles/return statuses by `id`, falling back to name+fit / code / name when the id is blank or unknown here — so an export from another environment imports cleanly; the rest by natural key; columns left out stay unchanged). The module has its own season
   dropdown (`atelier-season-select.tsx`, `?season=`) and `GET /seasons`; `/articles` is readable with the
   Reservaties screen too.
 - **Atelier reservations** (sidebar group "Reservaties", `/modules/module-5/reservations[/preparation]`, screens
@@ -339,7 +339,10 @@ only that shell.
   (`reservation_service.PACKAGE_QUANTITY`, forced on save/copy/XLSX; migration `f9b3d6e1a475` set existing lines to 1;
   the field stays visible, read-only). "Openstaand" = open pieces grouped per team → person → piece (client-side), with an "Inname" button per person (only
   with desk view + create) opening the desk's `components/module-5/desk-return-form.tsx` in a dialog;
-  write-offs stay manual. The bracelet field has a camera button (`QrScanDialog`; the QR code's whole text is the number).
+  a piece that never comes back is written off there ("Afboeken", `POST /desk/persons/{id}/write-off`, `create` on `atelier.writeoff`,
+  `desk_service.write_off_person_lines`, `components/module-5/desk-write-off-dialog.tsx`): handed out → outside, reason `not_returned`, no mail; it closes the
+  line through `returned_at` + `return_document_id` (the write-off document), and `reverse_document` refuses it (`desk_write_off`).
+  A known person with another wristband at this festival: `bracelet_differs|number|name` unless `confirm_new_bracelet` is sent (the desk asks; same name = one person). The bracelet field has a camera button (`QrScanDialog`; the QR code's whole text is the number).
   **Return status** per piece (optional, only a remark, not in the mail; stock still goes to wash):
   `Atelier_return_status` (screen `atelier.returnstatuses`, `/masterdata/return-statuses`, used = deactivate only),
   `Atelier_handout_line.return_status_id`, set through `line_statuses` on the return; overview "Retourproblemen"

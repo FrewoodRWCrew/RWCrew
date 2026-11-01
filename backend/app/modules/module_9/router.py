@@ -202,6 +202,16 @@ def list_roles(
     return [_build_role_response(db, role) for role in roles]
 
 
+def _commit_delete(db: Session, refused_message: str) -> None:
+    """Commit a delete; records elsewhere that must keep pointing at the row
+    (a foreign key without cascade) refuse it with this message."""
+    try:
+        db.commit()
+    except IntegrityError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=refused_message) from error
+
+
 @router.post("/roles", response_model=RoleResponse, status_code=status.HTTP_201_CREATED)
 def create_role(
     payload: RoleCreateRequest,
@@ -527,7 +537,7 @@ def delete_season(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
 
     db.delete(season)
-    db.commit()
+    _commit_delete(db, "This season still has history (e.g. clothing handed out at the Atelier desk) and can't be deleted")
 
 
 def _validate_festival_lookup_ids(db: Session, payload: FestivalCreateRequest | FestivalUpdateRequest) -> None:
@@ -595,7 +605,7 @@ def delete_festival(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Festival not found")
 
     db.delete(festival)
-    db.commit()
+    _commit_delete(db, "This festival still has history (e.g. clothing handed out at the Atelier desk); deactivate it instead")
 
 
 @router.get("/team-locations", response_model=list[TeamLocationResponse])
@@ -1131,7 +1141,7 @@ def delete_team(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Team not found")
 
     db.delete(team)
-    db.commit()
+    _commit_delete(db, "This team still has history (e.g. clothing handed out at the Atelier desk); deactivate it instead")
 
 
 # --- Data Upload/Download: bulk XLSX import/export, one tile per table on

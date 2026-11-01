@@ -594,6 +594,15 @@ class HandoutRequest(BaseModel):
     team_id: int
     day: date
     lines: list[HandoutLineInput] = Field(min_length=1)
+    # The desk confirmed: same person, another wristband than the known one here.
+    confirm_new_bracelet: bool = False
+
+
+class WriteOffLinesRequest(BaseModel):
+    """Openstaand's Afboeken: the pieces (hand-out lines) that never came back."""
+
+    line_ids: list[int] = Field(min_length=1)
+    note: str | None = Field(default=None, max_length=500)
 
 
 class ReturnRequest(BaseModel):

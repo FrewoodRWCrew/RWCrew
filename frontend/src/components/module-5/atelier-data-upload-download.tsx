@@ -2,12 +2,12 @@
 
 // Atelier's "Masterdata > Data Upload/Download" screen: one shared
 // DataTopicTile (components/shared/data-topic-tile.tsx) per table — Maten,
-// Artikelen, Artikelmaten, Reservaties and Pakketlijnen — each with template download,
-// bulk upload and export. Maten/Artikelen use the "id" column (existing id =
+// Artikelen, Artikelmaten, Retourstatussen, Reservaties and Pakketlijnen — each with template download,
+// bulk upload and export. Maten/Artikelen/Retourstatussen use the "id" column (existing id =
 // update, empty = new); Artikelmaten, Reservaties and Pakketlijnen are matched on their
 // natural key (see backend/app/modules/module_5/xlsx_imports.py).
 
-import { CalendarCheck, Package, Ruler, Shirt, Tags, type LucideIcon } from "lucide-react";
+import { CalendarCheck, Package, PackageX, Ruler, Shirt, Tags, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { API_BASE_URL } from "@/lib/config";
 import { importAtelierXlsx } from "@/lib/api";
@@ -17,7 +17,7 @@ const BASE = `${API_BASE_URL}/api/modules/module-5`;
 
 /** One tile: its translation group, icon and the backend's URL part. */
 interface AtelierTable {
-  table: "sizes" | "articles" | "articleSizes" | "reservations" | "packageLines";
+  table: "sizes" | "articles" | "articleSizes" | "returnStatuses" | "reservations" | "packageLines";
   icon: LucideIcon;
   /** "/<path>-import", "/<path>-import/template" and "/<path>/export". */
   path: string;
@@ -27,6 +27,7 @@ const TABLES: AtelierTable[] = [
   { table: "sizes", icon: Ruler, path: "sizes" },
   { table: "articles", icon: Shirt, path: "articles" },
   { table: "articleSizes", icon: Tags, path: "article-sizes" },
+  { table: "returnStatuses", icon: PackageX, path: "return-statuses" },
   { table: "reservations", icon: CalendarCheck, path: "reservations" },
   { table: "packageLines", icon: Package, path: "package-lines" },
 ];

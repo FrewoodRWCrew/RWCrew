@@ -2857,8 +2857,10 @@ export function lookupAtelierDeskPerson(
 }
 
 /** Workers whose name, email or bracelet number contains the text (at least 2 characters). */
-export function searchAtelierDeskPersons(query: string): Promise<AtelierDeskPerson[]> {
-  return apiFetch<AtelierDeskPerson[]>(`${ATELIER_BASE}/desk/persons?q=${encodeURIComponent(query)}`);
+export function searchAtelierDeskPersons(query: string, openOnly = false): Promise<AtelierDeskPerson[]> {
+  return apiFetch<AtelierDeskPerson[]>(
+    `${ATELIER_BASE}/desk/persons?q=${encodeURIComponent(query)}&open_only=${openOnly}`,
+  );
 }
 
 export function getAtelierDeskContext(festivalId: number, teamId: number, day: string): Promise<AtelierDeskContext> {
@@ -2878,6 +2880,7 @@ export function createAtelierHandout(payload: {
   team_id: number;
   day: string;
   lines: { article_id: number; article_size_id: number }[];
+  confirm_new_bracelet: boolean;
 }): Promise<AtelierHandout> {
   return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts`, { method: "POST", body: JSON.stringify(payload) });
 }
@@ -2897,6 +2900,18 @@ export function returnAtelierPersonLines(
   return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/return`, {
     method: "POST",
     body: JSON.stringify({ line_ids: lineIds, scan_id: scanId, line_statuses: lineStatuses }),
+  });
+}
+
+/** Openstaand's Afboeken: these pieces of one person never came back. */
+export function writeOffAtelierPersonLines(
+  personId: number,
+  lineIds: number[],
+  note: string | null,
+): Promise<AtelierHandout[]> {
+  return apiFetch<AtelierHandout[]>(`${ATELIER_BASE}/desk/persons/${personId}/write-off`, {
+    method: "POST",
+    body: JSON.stringify({ line_ids: lineIds, note }),
   });
 }
 

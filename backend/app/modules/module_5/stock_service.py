@@ -51,7 +51,8 @@ DOC_TYPES = (RECEIPT, WASHED, WRITE_OFF, COUNT, REVERSAL, HAND_OUT, RETURN)
 DESK_TYPES = (HAND_OUT, RETURN)
 
 # Why pieces are written off; "other" needs a note.
-WRITE_OFF_REASONS = ("damaged", "lost", "not_returned", "other")
+NOT_RETURNED = "not_returned"
+WRITE_OFF_REASONS = ("damaged", "lost", NOT_RETURNED, "other")
 
 POSTED = "posted"
 REVERSED = "reversed"
@@ -319,6 +320,17 @@ def return_pieces(db: Session, user: User, article_size_ids: list[int], *, note:
     return document
 
 
+def write_off_handed_out(
+    db: Session, user: User, article_size_ids: list[int], *, note: str | None = None
+) -> AtelierStockDocument:
+    """Openstaand's Afboeken: pieces that never came back leave the store for
+    good, handed out → outside, reason "not_returned"."""
+    merged = _merge(StockLine(article_size_id, 1) for article_size_id in article_size_ids)
+    document = _new_document(db, user, WRITE_OFF, reason=NOT_RETURNED, note=_clean(note))
+    _post_moves(db, document, [_Move(line.article_size_id, line.quantity, HANDED_OUT, None) for line in merged])
+    return document
+
+
 def reverse_document(
     db: Session,
     user: User,
@@ -338,6 +350,10 @@ def reverse_document(
     if document.status == REVERSED:
         raise StockError("already_reversed")
     original = db.scalars(select(AtelierStockMovement).where(AtelierStockMovement.document_id == document.id)).all()
+    # A write-off from Openstaand closed hand-out lines, which a reversal
+    # wouldn't reopen.
+    if not from_desk and any(move.from_status == HANDED_OUT for move in original):
+        raise StockError("desk_write_off")
     reversal = _new_document(db, user, REVERSAL, reversal_of_id=document.id, note=_clean(note))
     _post_moves(
         db,

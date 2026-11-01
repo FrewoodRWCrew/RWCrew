@@ -15,7 +15,11 @@
 #   - only the articles of the team's package for that festival, 1 piece each;
 #   - a person can't get an article again while the previous one is out;
 #   - more people than reserved is only a warning (the screen shows it);
-#   - "Uitgifte annuleren" only while nothing of the pick-up was returned.
+#   - "Uitgifte annuleren" only while nothing of the pick-up was returned;
+#   - a known person with another wristband at this festival needs a
+#     confirmation (two people can share a name);
+#   - a piece that never comes back is written off from Openstaand, which
+#     closes its line like a return (its return document is the write-off).
 
 import re
 from datetime import date, datetime, timezone
@@ -47,6 +51,7 @@ from app.modules.module_5.stock_service import (
     hand_out,
     return_pieces,
     reverse_document,
+    write_off_handed_out,
 )
 
 OPEN = "open"
@@ -206,9 +211,12 @@ def create_handout(
     day: date,
     lines: list[tuple[int, int]],
     scan_id: int | None = None,
+    confirm_new_bracelet: bool = False,
 ) -> AtelierHandout:
     """Ophalen: hand out one piece of each chosen (article, article size) to
-    a person, after checking the rules above; books available → handed out."""
+    a person, after checking the rules above; books available → handed out.
+    `confirm_new_bracelet`: the desk confirmed this is the same person, with
+    another wristband than the one known at this festival."""
     first_name = " ".join(first_name.split())
     last_name = " ".join(last_name.split())
     if not first_name or not last_name:
@@ -265,6 +273,9 @@ def create_handout(
     # The wristband number at this festival: a typed/scanned one is stored
     # (an empty field keeps the one already known); required when switched on.
     if bracelet_number is not None:
+        known = bracelet_of(db, person.id, festival_id)
+        if known is not None and known.number != bracelet_number and not confirm_new_bracelet:
+            raise StockError("bracelet_differs", known.number, person.full_name)
         _set_bracelet(db, person, festival_id, bracelet_number)
     elif wristband_required(db) and bracelet_of(db, person.id, festival_id) is None:
         raise StockError("bracelet_required")
@@ -358,6 +369,25 @@ def return_lines(
     return handout
 
 
+def _person_lines(
+    db: Session, person_id: int, line_ids: list[int]
+) -> tuple[list[AtelierHandout], list[AtelierHandoutLine]]:
+    """The ticked pieces of one person (by id) and their pick-ups (oldest
+    first); refused when a piece isn't theirs."""
+    if db.get(AtelierPerson, person_id) is None:
+        raise StockError("person_not_found", status_code=404)
+    wanted = set(line_ids)
+    if not wanted:
+        raise StockError("line_not_found", status_code=404)
+    lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.id.in_(wanted))).all()
+    if len(lines) != len(wanted):
+        raise StockError("line_not_found", status_code=404)
+    handouts = [_get_handout(db, handout_id) for handout_id in sorted({line.handout_id for line in lines})]
+    if any(handout.person_id != person_id for handout in handouts):
+        raise StockError("line_not_found", status_code=404)
+    return handouts, sorted(lines, key=lambda line: line.id)
+
+
 def return_person_lines(
     db: Session,
     user: User,
@@ -370,30 +400,44 @@ def return_person_lines(
     several of their open pick-ups (one return booking per pick-up, as with
     return_lines). Gives the pick-ups touched (oldest first) and the pieces
     returned, so the desk can send one mail for the whole transaction."""
-    if db.get(AtelierPerson, person_id) is None:
-        raise StockError("person_not_found", status_code=404)
-    wanted = set(line_ids)
-    if not wanted:
-        raise StockError("line_not_found", status_code=404)
     statuses = line_statuses or {}
     _check_return_statuses(db, line_ids, statuses)
-    # The ticked pieces, grouped per pick-up; each must be the person's.
-    lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.id.in_(wanted))).all()
-    if len(lines) != len(wanted):
-        raise StockError("line_not_found", status_code=404)
-    per_handout: dict[int, list[int]] = {}
-    for line in lines:
-        per_handout.setdefault(line.handout_id, []).append(line.id)
-    handouts = [_get_handout(db, handout_id) for handout_id in sorted(per_handout)]
-    if any(handout.person_id != person_id for handout in handouts):
-        raise StockError("line_not_found", status_code=404)
+    handouts, lines = _person_lines(db, person_id, line_ids)
 
     # The scan (if any) goes with the first booking only: it can be used once.
     for index, handout in enumerate(handouts):
-        handout_lines = per_handout[handout.id]
+        handout_lines = [line.id for line in lines if line.handout_id == handout.id]
         handout_statuses = {line_id: statuses[line_id] for line_id in handout_lines if line_id in statuses}
         return_lines(db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses)
-    return handouts, sorted(lines, key=lambda line: line.id)
+    return handouts, lines
+
+
+def write_off_person_lines(
+    db: Session, user: User, person_id: int, line_ids: list[int], note: str | None = None
+) -> list[AtelierHandout]:
+    """Openstaand's Afboeken: the ticked pieces of one person never came back.
+    One write-off booking; each piece's line is closed (so the person can get
+    that article again) and a pick-up with every piece closed is "returned".
+    No mail, and no return status: the piece isn't a Retourprobleem."""
+    handouts, lines = _person_lines(db, person_id, line_ids)
+    if any(handout.status != OPEN for handout in handouts):
+        raise StockError("handout_closed")
+    if any(line.returned_at is not None for line in lines):
+        raise StockError("already_returned")
+
+    person = db.get(AtelierPerson, person_id)
+    text = " — ".join(part for part in (person.full_name, (note or "").strip()) if part)
+    document = write_off_handed_out(db, user, [line.article_size_id for line in lines], note=text)
+    now = datetime.now(timezone.utc)
+    for line in lines:
+        line.returned_at = now
+        line.return_document_id = document.id
+    db.flush()
+    for handout in handouts:
+        if all(line.returned_at is not None for line in _lines_of(db, handout.id)):
+            handout.status = RETURNED
+    db.flush()
+    return handouts
 
 
 def cancel_handout(db: Session, user: User, handout_id: int) -> AtelierHandout:

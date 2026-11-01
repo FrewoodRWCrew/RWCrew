@@ -56,6 +56,8 @@ router = APIRouter(prefix="/api/modules/module-5", tags=["Atelier"])
 KPI_SCREEN = "atelier.kpi"
 RESERVATIONS_SCREEN = "atelier.reservations"
 PREPARATION_SCREEN = "atelier.preparation"
+# The Balie screens have a festival dropdown too.
+DESK_SCREENS = ("atelier.desk", "atelier.open", "atelier.returnissues")
 
 Locale = Literal["nl", "en"]
 
@@ -72,7 +74,7 @@ def _get_festival_or_404(db: Session, festival_id: int) -> Festival:
 def list_festivals(
     season_id: int = Query(...),
     db: Session = Depends(get_db),
-    _user: User = Depends(require_view_on_any(RESERVATIONS_SCREEN, PREPARATION_SCREEN, KPI_SCREEN)),
+    _user: User = Depends(require_view_on_any(RESERVATIONS_SCREEN, PREPARATION_SCREEN, KPI_SCREEN, *DESK_SCREENS)),
 ) -> list[FestivalSummaryResponse]:
     """The season's active festivals in calendar order, each with its days."""
     if db.get(Season, season_id) is None:

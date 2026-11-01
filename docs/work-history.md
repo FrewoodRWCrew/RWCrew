@@ -3,6 +3,23 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-01 — Atelier: review and fixes before user acceptance tests
+**Request:** Review that Atelier is logical and its documentation up to date before delivering it for UAT, list the issues and questions. The user added: Retourstatussen are missing from Data Upload/Download.
+**Plan:**
+- Commit all pending work first; fix the blockers: desk-only roles, pieces that never come back.
+- Afboeken on Openstaand; confirmation for another wristband at the festival; clear refusal when deleting masterdata with hand-outs; small desk fixes; Retourstatussen in Data Upload/Download.
+- Bring the manual, handbooks, screenshots and `CLAUDE.md` up to date.
+**Changes:**
+- `/festivals` is also readable with the Balie screens (a desk-only role got "no festival").
+- Afboeken on Openstaand: `POST /desk/persons/{id}/write-off` (`create` on `atelier.writeoff`), `desk_service.write_off_person_lines`, `stock_service.write_off_handed_out`, `desk-write-off-dialog.tsx`. Closes the line through `returned_at` + `return_document_id`, no migration; `reverse_document` refuses it (`desk_write_off`).
+- `bracelet_differs` + `confirm_new_bracelet` on Ophalen, confirmation on the desk.
+- `_commit_delete` in `module_9/router.py`: 400 with a clear message for a team, festival or season with hand-outs.
+- `open_only` on `GET /desk/persons` (filter before the limit), wristband check on the desk uses the number known at this festival, `concurrent_change` (409) when two desks book the same new person or wristband.
+- Retourstatussen tile in Data Upload/Download (`xlsx_imports.py`).
+- Module manual nl/en (new screenshots, also for Retourproblemen and Retourstatussen), user and developer handbooks (v2.2) + PDFs, `CLAUDE.md`.
+**Verification:** Full backend suite, `tsc`, eslint on module-5, nl/en key and error-code check. On a scratch copy of the local database (dropped afterwards, local data untouched): migrations down and up on Postgres, and a browser walkthrough as a desk-only role: pick-up, Afboeken, other-wristband confirmation, Terugbrengen via search. Deleting masterdata with hand-outs is covered by a test only, not clicked through.
+**Notes:** Open points, not done: webhook token still in `Wristband_scan.raw`, the .json files and the Test-scan log; no rate limit on the public webhook (before May 2027); Openstaand's speed at festival volume; double scans and scans disappearing after 15 minutes; no mail when a pick-up is cancelled; retention of personal data (UAT runs on real people, decide before go-live); no lock on reservations in a closed season; two people with exactly the same name and no wristband known are still one person.
+
 ## 2026-11-01 — Wristband webhook token generated in the app, explanation for the company (PR_0033)
 **Request:** A way to generate the key for the wristband connection, plus a link with a short explanation of how it works and how to communicate it with the wristband company and the JSON sent after a scan.
 **Plan:**

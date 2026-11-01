@@ -20,6 +20,8 @@ The counter. Pick the **festival**, the **day** (today by default) and **this co
 3. Pick the **team** (only teams with a package at this festival).
 4. For each package article pick the **size** (1 piece per article); the number in brackets is how many are available. Every article is **optional**: click the chosen size again to skip the article. An article with only one size in stock (e.g. OneSize) is pre-selected. At least one article is needed; next to the button it says what's still missing.
 
+If a known person already has a **different wristband number** at this festival, the desk asks whether this is the same person with a new wristband. If it's someone else with the same name, choose Cancel and extend the name (e.g. with a second first name): two people with exactly the same name are one person to the desk.
+
 An article the person hasn't returned yet can't be handed out again. An orange box shows what the person still holds, with the button **Return first** that opens the return for that person right away. All other articles can be picked up — several times a day too.
 5. Click **Hand out** (or Enter).
 
@@ -38,7 +40,7 @@ With the Edit right you can **cancel** a hand-out of which nothing came back yet
 ![The counter: Pick up or Return](desk.png)
 
 ## [open | atelier.open] Outstanding
-All clothing that was picked up but hasn't come back, **grouped per team and then per person** (with wristband number; the email address isn't shown, for privacy (GDPR)), with every piece below it: day, article, size and when it was picked up. Pick the festival and optionally the day at the top. Every column has a **filter field** above it: type part of a name, team, article, … to narrow the list; the totals follow the filter. If something never comes back, write it off via **Stock > Write-off** (reason "Not returned").
+All clothing that was picked up but hasn't come back, **grouped per team and then per person** (with wristband number; the email address isn't shown, for privacy (GDPR)), with every piece below it: day, article, size and when it was picked up. Pick the festival and optionally the day at the top. Every column has a **filter field** above it: type part of a name, team, article, … to narrow the list; the totals follow the filter. If something never comes back, click **Write off** next to the person (with the Create right on the Write-off screen), tick the pieces and confirm: they leave the stock for good with the reason "Not returned", are no longer outstanding, and the person can pick that article up again. The person gets no mail about this, and this write-off can't be undone. **Stock > Write-off** is only for pieces in the store (available or to wash).
 
 With the counter's rights, every person has a **Return** button: it opens the same screen as Return at the counter, for this person, with everything they still hold (also outside the chosen day). The person gets the normal Return mail.
 
@@ -47,6 +49,8 @@ The **Excel** button downloads what's on screen, including the filters you use (
 ![Outstanding](open.png)
 
 ## [returnissues | atelier.returnissues] Return issues
+![Return issues](return-issues.png)
+
 All clothing that came back with a **return status**, newest first: status, article, size, team, person, wristband, day, when it was returned and who booked it. Pick the festival and optionally the day at the top; every column has a text filter. This screen is read-only: a piece that can't be used any more is booked out via **Write-off**. The **Excel** button downloads what's on screen, including the filters you use.
 
 ## [reservations | atelier.reservations] Reservations
@@ -144,9 +148,14 @@ The list of what can be wrong with a returned piece, such as "Damaged" or "Very 
 1. Click **New return status** and enter the name.
 2. A status already used can't be deleted: set it to not active instead. It then leaves the dropdown, but stays visible on the pieces that have it.
 
+In bulk this works through **Data Upload/Download**.
+
+![Return statuses](return-statuses.png)
+
 ## [dataupload | atelier.dataupload] Data Upload/Download
 One tile per table to download a **template**, **upload** a filled-in file and **export** the current data.
 
+- **Return statuses**: a row is looked up by **id**, otherwise by name; a status found is changed, otherwise a new one is added. Nothing is ever removed.
 - **Sizes** and **Articles**: a row is looked up by **id** (the export's first column), otherwise by name + fit (sizes) or code (articles); a record that is found is changed, otherwise a new one is added. So an export from another environment (e.g. localhost to test) can be uploaded too.
 - **Article sizes** (article code + size + fit), **Reservations** (season + festival + team) and **Package lines** (season + festival + team + article code): a known combination is updated, a new one added.
 - The fit may be written as women/men/unisex or Dames/Heren/Unisex.
@@ -185,6 +194,8 @@ A role decides what someone may do in Atelier, per screen: **View**, **Create**,
 1. Click **New role** and enter a name (e.g. "Atelier lead", "Staff").
 2. Click **Permissions** on the role and tick per screen what the role may do.
 3. Save the permissions.
+
+The **Write off** button on Outstanding follows the Create right on the **Write-off** screen. Someone who only works the desk has enough with the desk screens: the festivals are loaded along with them.
 
 ![Roles](roles.png)
 

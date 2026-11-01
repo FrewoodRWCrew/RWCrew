@@ -611,7 +611,7 @@ module echte inhoud krijgt, krijgt ze normaal ook het systeem met rollen per sch
   <tr><th style="width:34%">Endpoint</th><th>Waarvoor</th><th style="width:34%">Beveiliging</th></tr>
   <tr><td><code>/api/public/intervention-requests</code></td><td>Het publieke interventieformulier (QR-code op het karblad)</td><td>Snelheidslimiet: max. 10 aanvragen per minuut per IP-adres; alle invoer wordt gecontroleerd en in mails ge-escaped</td></tr>
   <tr><td><code>/api/public/tagscan-intake</code></td><td>CSV-bestanden van de Raspberry Pi</td><td>API-sleutel per scanner (header <code>X-API-Key</code>, gehasht bewaard), max. 20 MB per bestand, Nginx-snelheidslimiet (30 per minuut)</td></tr>
-  <tr><td><code>/api/public/wristband-scan</code></td><td>De polsbandscans van het polsbandbedrijf aan de Atelier-balie (JSON per scan)</td><td>Gedeelde token in het bericht, vergeleken in constante tijd met <code>WRISTBAND_WEBHOOK_TOKEN</code> (geen token ingesteld = alles geweigerd, 401). Elk bericht, ook een geweigerd, wordt gelogd en is te zien op Atelier &gt; Instellingen. Een bericht maakt zelf nooit een persoon aan.</td></tr>
+  <tr><td><code>/api/public/wristband-scan</code></td><td>De polsbandscans van het polsbandbedrijf aan de balies (JSON per scan)</td><td>Gedeelde token in het bericht, gegenereerd op Scans &gt; Instellingen; bewaard wordt enkel een SHA-256 in <code>Tagscan_settings</code> (geen token gegenereerd = alles geweigerd, 401). Elk bericht, ook een geweigerd, wordt gelogd en is te zien in de module Scans. Een bericht maakt zelf nooit een persoon aan.</td></tr>
 </table>
 <p>Een API-sleutel van een scanner werkt alleen op de omgeving waar ze aangemaakt is (test of productie).</p>
 

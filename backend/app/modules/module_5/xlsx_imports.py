@@ -1,11 +1,11 @@
 # Atelier's bulk XLSX import/export ("Masterdata > Data Upload/Download"):
-# one table per tile — Maten, Artikelen, Artikelmaten, Reservaties and
-# Pakketlijnen — each with a template, an upload and an export in the same
-# columns, so an export can be edited and uploaded again. Built on
+# one table per tile — Maten, Artikelen, Artikelmaten, Retourstatussen,
+# Reservaties and Pakketlijnen — each with a template, an upload and an export
+# in the same columns, so an export can be edited and uploaded again. Built on
 # MasterData's shared helpers (module_9/xlsx_common.py): every row in its
 # own SAVEPOINT, one result per row.
 #
-# Maten and Artikelen follow the usual "id" rule: a row with an existing id
+# Maten, Artikelen and Retourstatussen follow the usual "id" rule: a row with an existing id
 # updates it, an empty id creates a new record. The others are links and are
 # matched on their natural key instead (article code + size + fit; season +
 # festival + team; + article code for a package line): a known combination
@@ -23,6 +23,7 @@ from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_article_size import AtelierArticleSize
 from app.db.models.atelier_reservation import AtelierReservation
 from app.db.models.atelier_reservation_line import AtelierReservationLine
+from app.db.models.atelier_return_status import AtelierReturnStatus
 from app.db.models.atelier_size import FITS, AtelierSize
 from app.db.models.festival import Festival
 from app.db.models.season import Season
@@ -162,6 +163,46 @@ def _export_sizes(db: Session) -> bytes:
     sizes = sorted(db.scalars(select(AtelierSize)).all(), key=lambda size: (FITS.index(size.fit), size.sort_order))
     rows = [[size.id, size.name, size.fit, size.sort_order, "yes" if size.active else "no"] for size in sizes]
     return build_xlsx("Maten", SIZE_COLUMNS, rows)
+
+
+# --- Retourstatussen ---------------------------------------------------------------
+
+RETURN_STATUS_COLUMNS = [ID_COLUMN, "name", "active"]
+# The status's name column in the database.
+RETURN_STATUS_NAME_LENGTH = 100
+
+
+def _import_return_statuses(db: Session, file_bytes: bytes, _user: User) -> list[AtelierImportRowResult]:
+    def apply_row(row: UploadedRow):
+        name = row.text("name")
+        try:
+            name = _required(row, "name")
+            if len(name) > RETURN_STATUS_NAME_LENGTH:
+                raise ValueError(f"name is longer than {RETURN_STATUS_NAME_LENGTH} characters")
+            clash = db.scalar(select(AtelierReturnStatus).where(func.lower(AtelierReturnStatus.name) == name.lower()))
+            return_status = _find_by_id_or_key(db, AtelierReturnStatus, row, lambda: clash)
+            if clash is not None and clash is not return_status:
+                raise ValueError("This return status already exists")
+            # The optional column left out of the file keeps its current value.
+            values = {"name": name}
+            if row.has("active"):
+                values["active"] = parse_yes_no("active", row.value("active"), default=True)
+            if return_status is None:
+                db.add(AtelierReturnStatus(**values))
+                return name, "created"
+            for field, value in values.items():
+                setattr(return_status, field, value)
+            return name, "updated"
+        except ValueError as error:
+            raise RowError(str(error), name) from None
+
+    return run_import(read_rows(file_bytes), db, apply_row, _result)
+
+
+def _export_return_statuses(db: Session) -> bytes:
+    statuses = db.scalars(select(AtelierReturnStatus).order_by(func.lower(AtelierReturnStatus.name))).all()
+    rows = [[item.id, item.name, "yes" if item.active else "no"] for item in statuses]
+    return build_xlsx("Retourstatussen", RETURN_STATUS_COLUMNS, rows)
 
 
 # --- Artikelen -------------------------------------------------------------------
@@ -404,6 +445,7 @@ TABLES: list[XlsxTable] = [
     XlsxTable("sizes", SIZE_COLUMNS, _import_sizes, _export_sizes, "Maten"),
     XlsxTable("articles", ARTICLE_COLUMNS, _import_articles, _export_articles, "Artikelen"),
     XlsxTable("article-sizes", ARTICLE_SIZE_COLUMNS, _import_article_sizes, _export_article_sizes, "Artikelmaten"),
+    XlsxTable("return-statuses", RETURN_STATUS_COLUMNS, _import_return_statuses, _export_return_statuses, "Retourstatussen"),
     XlsxTable("reservations", RESERVATION_COLUMNS, _import_reservations, _export_reservations, "Reservaties"),
     XlsxTable("package-lines", PACKAGE_LINE_COLUMNS, _import_package_lines, _export_package_lines, "Pakketlijnen"),
 ]
