@@ -538,5 +538,31 @@
     "title": "Excel download on Openstaand and Retourproblemen",
     "description": "Both screens can download what they show as an Excel file, without email addresses.",
     "commits": []
+  },
+  {
+    "id": 43,
+    "issues": [
+      "PR_0033"
+    ],
+    "date": "2026-11-01",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "Scans",
+    "title": "TagScan becomes Scans, with wristbands as a shared part",
+    "description": "TagScan is renamed to Scans with separate RFID and wristband parts, wristband messages are kept as JSON files and a table, and scans only show at a counter when the team has reservations.",
+    "commits": []
+  },
+  {
+    "id": 44,
+    "issues": [
+      "PR_0035"
+    ],
+    "date": "2026-11-01",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "MasterData",
+    "title": "Team aliases",
+    "description": "A team can have alternative names so wristband scans with a slightly different team name still match it.",
+    "commits": []
   }
 ]
