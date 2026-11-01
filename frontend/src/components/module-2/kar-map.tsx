@@ -21,7 +21,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/components/module-2/kar-map-leaflet";
-import { LAYER_COLORS, textMatches, useKarMapRows, type LayerKey, type MapRow } from "@/components/module-2/kar-map-rows";
+import {
+  LAYER_COLORS,
+  LAYER_ICONS,
+  LayerIcon,
+  textMatches,
+  useKarMapRows,
+  type LayerKey,
+  type MapRow,
+} from "@/components/module-2/kar-map-rows";
 
 // Leaflet touches `window` at import time, so the actual map component can
 // only ever run on the client — loaded with ssr:false to keep it out of
@@ -98,6 +106,7 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
         latitude: row.latitude as number,
         longitude: row.longitude as number,
         color: LAYER_COLORS[row.layer],
+        icon: LAYER_ICONS[row.layer],
         popup: row.popup,
       })),
     [locatedRows],
@@ -136,7 +145,7 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
         <div className="flex flex-wrap items-center gap-4">
           <div className="flex items-center gap-2">
             <Checkbox id="karmap-layer-karren" checked={showKarren} onCheckedChange={(checked) => setShowKarren(checked === true)} />
-            <span className="size-2.5 rounded-full" style={{ backgroundColor: LAYER_COLORS.kar }} />
+            <LayerIcon layer="kar" />
             <Label htmlFor="karmap-layer-karren">{t("layerKarren")}</Label>
           </div>
           <div className="flex items-center gap-2">
@@ -145,7 +154,7 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
               checked={showAfleverlocaties}
               onCheckedChange={(checked) => setShowAfleverlocaties(checked === true)}
             />
-            <span className="size-2.5 rounded-full" style={{ backgroundColor: LAYER_COLORS.afleverlocatie }} />
+            <LayerIcon layer="afleverlocatie" />
             <Label htmlFor="karmap-layer-afleverlocaties">{t("layerAfleverlocaties")}</Label>
           </div>
           <div className="flex items-center gap-2">
@@ -154,7 +163,7 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
               checked={showDistributiepunten}
               onCheckedChange={(checked) => setShowDistributiepunten(checked === true)}
             />
-            <span className="size-2.5 rounded-full" style={{ backgroundColor: LAYER_COLORS.distributiepunt }} />
+            <LayerIcon layer="distributiepunt" />
             <Label htmlFor="karmap-layer-distributiepunten">{t("layerDistributiepunten")}</Label>
           </div>
           <div className="flex items-center gap-2">
@@ -221,7 +230,7 @@ export function KarMap({ initialData, groundplans }: KarMapProps) {
                 <TableRow key={row.key} className="group">
                   <TableCell>
                     <span className="inline-flex items-center gap-2">
-                      <span className="size-2.5 rounded-full" style={{ backgroundColor: LAYER_COLORS[row.layer] }} />
+                      <LayerIcon layer={row.layer} />
                       {t(row.layer === "kar" ? "layerKarren" : row.layer === "afleverlocatie" ? "layerAfleverlocaties" : "layerDistributiepunten")}
                     </span>
                   </TableCell>

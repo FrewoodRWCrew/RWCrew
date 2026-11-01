@@ -5,9 +5,11 @@
 // kar-map-phone.tsx), so both show exactly the same pins, colours and
 // popups: one MapRow per Kar, Afleverlocatie and Distributiepunt.
 
+import { MapPin, ShoppingCart, Warehouse, type LucideIcon } from "lucide-react";
 import { useMemo, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type { KarTrackerKarMapResponse } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export type LayerKey = "kar" | "afleverlocatie" | "distributiepunt";
 
@@ -32,6 +34,20 @@ export const LAYER_COLORS: Record<LayerKey, string> = {
   afleverlocatie: "var(--color-emerald-600)",
   distributiepunt: "var(--color-amber-600)",
 };
+
+// Each layer also has its own shape, so colleagues who can't tell the colours
+// apart can still read the map (PR_0018).
+export const LAYER_ICONS: Record<LayerKey, LucideIcon> = {
+  kar: ShoppingCart,
+  afleverlocatie: MapPin,
+  distributiepunt: Warehouse,
+};
+
+/** A layer's icon in its colour; decorative, its name always stands beside it. */
+export function LayerIcon({ layer, className }: { layer: LayerKey; className?: string }) {
+  const Icon = LAYER_ICONS[layer];
+  return <Icon aria-hidden className={cn("size-4 shrink-0", className)} style={{ color: LAYER_COLORS[layer] }} />;
+}
 
 /** Case-insensitive "contains"; an empty filter matches everything. */
 export function textMatches(fieldValue: string, filterValue: string): boolean {

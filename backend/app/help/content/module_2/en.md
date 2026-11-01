@@ -74,7 +74,7 @@ The kar sheet shows the kar number, the team and per festival where and when the
 ## [kar-map | kartracker.karmap] Kar Map
 A map with the **karren**, **delivery locations** and **distribution points** that have a known location.
 
-1. Switch the layers **Karren**, **Delivery locations** and **Distribution points** on or off.
+1. Switch the layers **Karren**, **Delivery locations** and **Distribution points** on or off. Each layer has its own icon, on the map and in the list: a shopping cart for karren, a location pin for delivery locations and a warehouse for distribution points.
 2. Switch on the **Ground plan** layer to lay the site plan over the map, and choose its **opacity**.
 3. Search the list on name, kar number or team and click **Show on map** to go there.
 4. Click a point for its details: kar number, status and team, or name, zone and description.

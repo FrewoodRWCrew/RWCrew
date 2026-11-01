@@ -3,6 +3,47 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-01 — PR_0018: Kar Map icons instead of colour dots
+**Request:** replace the colour dots on KarTracker's Kar Map with small icons, because some people cannot see the difference
+between the colours.
+**Plan:**
+- One icon per layer (`ShoppingCart`, `MapPin`, `Warehouse`), keeping the colours as an extra clue, on desktop and phone.
+- Optional `icon` on `KarMapPin`, so the other maps keep their plain dots.
+**Changes:**
+- `kar-map-rows.tsx` (`LAYER_ICONS`, `LayerIcon`), `kar-map-leaflet.tsx` (`KarMapPin.icon`, `layerIcon`, 26px round marker via
+  `renderToStaticMarkup`), `kar-map.tsx`, `phone/module-2/kar-map-phone.tsx` (`LayerChip` takes `layer` instead of `color`).
+- Manual: one line in the Kar Map chapter (nl + en), new `kar-map.png`. No migration, no new endpoints.
+**Verification:** eslint clean on the changed files; `npx tsc --noEmit` shows no errors in `src` (only a stale generated
+`.next/types` file); `npm run build` passes; `tests/help` 28 passed. In headless Edge on localhost: desktop and phone maps show
+354 of 354 pins with an icon, icons on switches, chips and table, a pin's popup opens, no console errors; the Leveringsvolgorde
+map still draws without icons (124 markers). Phone search results and the Locate button were not clicked through.
+**Notes:** pins grew from 16 to 26 px, so busy spots overlap more until you zoom in. Only `kar-map.png` of the re-taken manual
+screenshots was kept. Colour-only meaning elsewhere (e.g. the printed moves map) is not part of this point.
+
+## 2026-11-01 — Super admin: "Wijzigingen" screen (changelog)
+**Request:** a super-admin-only screen under Login geschiedenis listing all updates, corrections and new functionalities, with
+the unique number from the colleagues' sheet, a date on every line, newest on top and the full commit SHA; also past work and
+open points; the same data on localhost, test and production. The user names the number when starting a point.
+**Plan:**
+- One source read live by every environment: `changelog.json` on its own undeployed git branch `changelog`, maintained by Claude.
+- Read-only screen with one list and filters on type, status, module and text; backfill from this file.
+**Changes:**
+- Branch `changelog` (`changelog.json`, 36 lines: 34 past entries, with the SHA of the commit that added each entry to this
+  file; 1 open point; this work).
+- Backend: `app/landing/changelog.py` (GitHub fetch, 60 s cache, last good copy), `app/schemas/changelog.py`,
+  `GET /api/admin/changelog`, `app/cli/changelog_check.py`, setting `CHANGELOG_GITHUB_TOKEN` (also compose + `.env` examples),
+  `tests/landing/test_changelog.py`. No migration.
+- Frontend: page `admin/changelog`, `components/admin/changelog-table.tsx`, sidebar link, `ChangelogEntry` type, translations
+  `sidebar.changelog` and `admin.changelog.*` (nl + en).
+- Docs: mandatory "Changelog" section in CLAUDE.md, repo tree in the developer handbook chapter (PDF not rebuilt).
+**Verification:** full backend suite 943 passed; `npx tsc --noEmit` and eslint clean; real fetch from GitHub without a token
+works; in Edge on localhost as super admin: link under Login geschiedenis, 36 lines newest first, search on a full SHA and the
+Type filter work, no console errors. A normal user's refusal is covered by the API test; the page was not opened as one. The
+layout was not checked by eye (both screenshots caught the loading overlay). Pushing to `changelog` started no deploy.
+**Notes:** the repository is publicly readable, so the token is optional (it only lifts GitHub's limit of 60 anonymous calls
+per hour) and the changelog is public, like this file. Older commits may share one SHA because one commit held several entries.
+Test and production show the screen once this code is deployed; until then only localhost has it.
+
 ## 2026-10-29 — Voice count: works on iPhone (home-screen app)
 **Request:** Testing the voice count in the test app: on an iPhone, opened from the home-screen icon, the microphone button
 gave no text and no lines (no error either).

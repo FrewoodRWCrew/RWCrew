@@ -11,7 +11,9 @@
 import "leaflet/dist/leaflet.css";
 
 import { divIcon, latLngBounds, type Map as LeafletMap, type Marker as LeafletMarker } from "leaflet";
+import type { LucideIcon } from "lucide-react";
 import { useEffect, useRef, type ReactNode } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { ImageOverlay, MapContainer, Marker, Polyline, Popup, TileLayer, Tooltip, useMapEvents } from "react-leaflet";
 
 export interface KarMapPin {
@@ -24,6 +26,9 @@ export interface KarMapPin {
   /** Optional: draw the pin as a rounded badge with this text (e.g. a tour
    * number) instead of the plain dot. */
   label?: string;
+  /** Optional: draw the pin as a round marker with this icon instead of the
+   * plain dot, so the pin's kind doesn't depend on its colour alone. */
+  icon?: LucideIcon;
   /** Optional: text shown while the mouse is over the pin. */
   tooltip?: string;
   /** Optional: raise the pin above others nearby (Leaflet otherwise stacks
@@ -97,6 +102,19 @@ function dotIcon(color: string) {
     iconSize: [16, 16],
     iconAnchor: [8, 8],
     popupAnchor: [0, -8],
+  });
+}
+
+/** A round coloured marker with a white icon inside — same plain-div approach
+ * as dotIcon. Leaflet needs an HTML string, so the icon is rendered to markup. */
+function layerIcon(color: string, Icon: LucideIcon) {
+  const svg = renderToStaticMarkup(<Icon size={15} color="white" strokeWidth={2.25} aria-hidden />);
+  return divIcon({
+    className: "",
+    html: `<span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;box-sizing:border-box;border-radius:9999px;background:${color};border:2px solid white;box-shadow:0 1px 3px rgba(0,0,0,0.4)">${svg}</span>`,
+    iconSize: [26, 26],
+    iconAnchor: [13, 13],
+    popupAnchor: [0, -13],
   });
 }
 
@@ -226,7 +244,13 @@ export function KarMapLeaflet({
         <Marker
           key={pin.key}
           position={[pin.latitude, pin.longitude]}
-          icon={pin.label !== undefined ? labelIcon(pin.color, pin.label) : dotIcon(pin.color)}
+          icon={
+            pin.label !== undefined
+              ? labelIcon(pin.color, pin.label)
+              : pin.icon
+                ? layerIcon(pin.color, pin.icon)
+                : dotIcon(pin.color)
+          }
           zIndexOffset={pin.zIndexOffset ?? 0}
           ref={(marker) => {
             if (marker) markerRefsByKey.current.set(pin.key, marker);

@@ -59,6 +59,7 @@
   "sidebar": {
     "manageAccess": "Toegangsbeheer",
     "loginHistory": "Login geschiedenis",
+    "changelog": "Wijzigingen",
     "landing": "Hoofdpagina",
     "version": "Versie (datum commit · commit)"
   },
@@ -134,6 +135,32 @@
       "pageOf": "Pagina {page} van {totalPages}",
       "loadFailed": "Laden van de logingeschiedenis is mislukt.",
       "empty": "Nog geen loginpogingen gevonden."
+    },
+    "changelog": {
+      "title": "Wijzigingen",
+      "description": "Alle updates, correcties en nieuwe functionaliteiten van de app, de nieuwste bovenaan. Dezelfde lijst op localhost, test en productie.",
+      "columnDate": "Datum",
+      "columnNumber": "Nr.",
+      "columnType": "Type",
+      "columnModule": "Module",
+      "columnTitle": "Titel",
+      "columnDescription": "Omschrijving",
+      "columnStatus": "Status",
+      "columnCommit": "Commit",
+      "typeFeature": "Nieuwe functionaliteit",
+      "typeUpdate": "Update",
+      "typeFix": "Correctie",
+      "statusOpen": "Open",
+      "statusInProgress": "In uitvoering",
+      "statusDone": "Klaar",
+      "filterSearch": "Zoeken",
+      "searchPlaceholder": "Nummer, titel, omschrijving, commit",
+      "all": "Alle",
+      "clearFilters": "Filters wissen",
+      "shown": "{shown} van {total} getoond",
+      "empty": "Nog geen wijzigingen gevonden.",
+      "noResults": "Geen wijzigingen gevonden met deze filters.",
+      "unavailable": "De lijst kan momenteel niet worden opgehaald. Probeer het later opnieuw."
     }
   },
   "tagscan": {

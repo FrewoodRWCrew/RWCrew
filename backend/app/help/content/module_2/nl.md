@@ -74,7 +74,7 @@ Het karblad toont het karnummer, de ploeg en per festival waar en wanneer de kar
 ## [kar-map | kartracker.karmap] Kar Map
 Een kaart met de **karren**, **afleverlocaties** en **distributiepunten** die een gekende locatie hebben.
 
-1. Zet de lagen **Karren**, **Afleverlocaties** en **Distributiepunten** aan of uit.
+1. Zet de lagen **Karren**, **Afleverlocaties** en **Distributiepunten** aan of uit. Elke laag heeft zijn eigen icoon, op de kaart en in de lijst: een winkelkar voor karren, een locatiespeld voor afleverlocaties en een magazijn voor distributiepunten.
 2. Zet de laag **Grondplan** aan om het plan van het terrein over de kaart te leggen, en kies de **dekking**.
 3. Zoek in de lijst op naam, karnummer of ploeg en klik op **Toon op kaart** om er naartoe te gaan.
 4. Klik op een punt voor de gegevens: karnummer, status en ploeg, of naam, zone en omschrijving.

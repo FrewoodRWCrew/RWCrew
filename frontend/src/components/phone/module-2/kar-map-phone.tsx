@@ -16,6 +16,8 @@ import type { GroundplanOverlay, KarMapLeafletHandle, KarMapPin } from "@/compon
 import {
   hasCoordinates,
   LAYER_COLORS,
+  LAYER_ICONS,
+  LayerIcon,
   textMatches,
   useKarMapRows,
   type LayerKey,
@@ -78,6 +80,7 @@ export function KarMapPhone({ data, groundplans, focusKey }: KarMapPhoneProps) {
           latitude: row.latitude as number,
           longitude: row.longitude as number,
           color: LAYER_COLORS[row.layer],
+          icon: LAYER_ICONS[row.layer],
           popup: row.popup,
         })),
     [rows, visibleLayers],
@@ -144,7 +147,7 @@ export function KarMapPhone({ data, groundplans, focusKey }: KarMapPhoneProps) {
             <LayerChip
               key={layer}
               label={label}
-              color={LAYER_COLORS[layer]}
+              layer={layer}
               isOn={visibleLayers[layer]}
               onToggle={() => toggleLayer(layer)}
             />
@@ -180,7 +183,7 @@ export function KarMapPhone({ data, groundplans, focusKey }: KarMapPhoneProps) {
                   onClick={() => handlePickResult(row)}
                   className="flex w-full items-center gap-3 border-b px-3 py-2 text-left last:border-b-0 disabled:opacity-60"
                 >
-                  <span className="size-3 shrink-0 rounded-full" style={{ backgroundColor: LAYER_COLORS[row.layer] }} />
+                  <LayerIcon layer={row.layer} className="size-5" />
                   <span className="flex min-w-0 flex-col">
                     <span className="font-medium">{row.name}</span>
                     <span className="truncate text-xs text-muted-foreground">
@@ -199,14 +202,14 @@ export function KarMapPhone({ data, groundplans, focusKey }: KarMapPhoneProps) {
 
 interface LayerChipProps {
   label: string;
-  /** The layer's pin colour, shown as a dot; none for the ground plan. */
-  color?: string;
+  /** The pin layer, shown as its icon; none for the ground plan. */
+  layer?: LayerKey;
   isOn: boolean;
   onToggle: () => void;
 }
 
 /** A round on/off button for one map layer. */
-function LayerChip({ label, color, isOn, onToggle }: LayerChipProps) {
+function LayerChip({ label, layer, isOn, onToggle }: LayerChipProps) {
   return (
     <button
       type="button"
@@ -217,7 +220,7 @@ function LayerChip({ label, color, isOn, onToggle }: LayerChipProps) {
         isOn ? "bg-muted font-medium" : "text-muted-foreground opacity-60",
       )}
     >
-      {color && <span className="size-2.5 rounded-full" style={{ backgroundColor: color }} />}
+      {layer && <LayerIcon layer={layer} />}
       {label}
     </button>
   );

@@ -89,6 +89,12 @@ class Settings(BaseSettings):
     # message is refused (and logged); the Test-scan screen works without it.
     atelier_webhook_token: str = ""
 
+    # Optional read-only GitHub token for reading the one changelog.json on the
+    # "changelog" branch (see app/landing/changelog.py). The repository is
+    # public, so it also works without; a token only lifts GitHub's limit of
+    # 60 anonymous calls per hour per server address.
+    changelog_github_token: str = ""
+
     # Outgoing email (see app/core/mail.py), sent through Resend's HTTP API
     # (https://resend.com). The API key is secret and set per environment in
     # the server's .env; left empty (the default, and in local dev/tests),

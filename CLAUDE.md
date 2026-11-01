@@ -37,6 +37,7 @@ frontend/
   src/app/[locale]/(protected)/           Everything requiring login (see Architecture below)
     page.tsx                    Landing tile grid ("Modules Overview")
     admin/access/                Super admin's "Manage Access" screen
+    admin/changelog/             Super admin's "Wijzigingen" list (see "Changelog" below)
     admin/master-data/           Redirects to its first sub-item (season/)
     admin/master-data/season/    "Season" master data (id, unique name) — sidebar groups
                                   future master-data entities as siblings here
@@ -83,6 +84,25 @@ the history of the work on the project.
   **Verification:** tests run / checks done and their result
   **Notes:** open points, follow-ups, deviations from the plan (optional)
   ```
+
+## Changelog ("Wijzigingen" screen) — mandatory
+
+The super admin's list of every update, correction and new functionality (`/admin/changelog`, under Login geschiedenis).
+Colleagues keep requirements and bugs in a sheet with unique numbers; the user names that number when starting a point.
+
+- **One source for localhost, test and production**: `changelog.json` on the git branch **`changelog`** (holds only that
+  file, not deployed). Every backend reads it at runtime through `app/landing/changelog.py` (`GET /api/admin/changelog`,
+  60 s cache, last good copy if GitHub fails, 503 without one), so a pushed change shows everywhere within a minute.
+  Never add an environment-specific copy. `CHANGELOG_GITHUB_TOKEN` is optional: it only lifts GitHub's anonymous rate limit.
+- **Keep it current as part of the work**, also for work without a number (and with or without plan mode):
+  starting a point = add or update its line, `in_progress`; finished = `done`; right after each commit = add its **full**
+  SHA to `commits`. Push the branch each time: this is the standing exception to "commit only when asked", for this branch only.
+- **Line**: `id` (next free integer, never reused), `issues` (sheet numbers as text, `[]` without), `date` (Belgian; day
+  finished, or day added/started while not done), `type` `feature|update|fix`, `status` `open|in_progress|done`, `module`
+  (plain name, `General` for app-wide), `title`, `description` (English, one sentence), `commits`.
+- **How to edit**: `git worktree add <scratchpad>/changelog-worktree changelog`, `git pull` there, edit `changelog.json`, from
+  `backend/` run `.venv/Scripts/python -m app.cli.changelog_check <path>`, then commit, push to `origin changelog` and
+  `git worktree remove`. A file that fails the check must not be pushed.
 
 ## StockMaster (module-4)
 

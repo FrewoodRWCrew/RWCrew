@@ -20,7 +20,9 @@ from app.db.models.module import Module
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
 from app.landing.auth import revoke_all_refresh_tokens
+from app.landing.changelog import ChangelogUnavailable, get_changelog
 from app.landing.deps import require_super_admin
+from app.schemas.changelog import ChangelogEntry
 from app.schemas.login_history import LoginHistoryEntry, LoginHistoryPage
 from app.schemas.module import SetUserAccessRequest
 from app.schemas.user import UserCreateRequest, UserSummaryResponse, UserUpdateRequest
@@ -234,3 +236,14 @@ def list_login_history(
         ],
         total=total,
     )
+
+
+@router.get("/changelog", response_model=list[ChangelogEntry])
+def list_changelog(_super_admin: User = Depends(require_super_admin)) -> list[ChangelogEntry]:
+    """List every update, correction and new functionality, newest first, for
+    the "Wijzigingen" screen. Not from the database: see app/landing/changelog.py.
+    """
+    try:
+        return get_changelog()
+    except ChangelogUnavailable as error:
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail="Changelog unavailable") from error

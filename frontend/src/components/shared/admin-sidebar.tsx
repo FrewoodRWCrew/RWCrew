@@ -5,7 +5,7 @@
 // back to the tile grid. Modules with their own complete shell (TagScan,
 // MasterData) get their own sidebar instead — see MODULES_WITH_OWN_SIDEBAR.
 
-import { History, LayoutGrid, ShieldCheck } from "lucide-react";
+import { History, LayoutGrid, ListChecks, ShieldCheck } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { APP_VERSION_LABEL } from "@/lib/config";
@@ -29,6 +29,7 @@ export function AdminSidebar() {
     { href: "/", label: t("landing"), icon: LayoutGrid },
     { href: "/admin/access", label: t("manageAccess"), icon: ShieldCheck },
     { href: "/admin/login-history", label: t("loginHistory"), icon: History },
+    { href: "/admin/changelog", label: t("changelog"), icon: ListChecks },
   ];
 
   return (

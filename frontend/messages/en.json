@@ -59,6 +59,7 @@
   "sidebar": {
     "manageAccess": "Manage Access",
     "loginHistory": "Login History",
+    "changelog": "Changes",
     "landing": "Main page",
     "version": "Version (commit date · commit)"
   },
@@ -134,6 +135,32 @@
       "pageOf": "Page {page} of {totalPages}",
       "loadFailed": "Failed to load the login history.",
       "empty": "No login attempts found yet."
+    },
+    "changelog": {
+      "title": "Changes",
+      "description": "All updates, corrections and new functionalities of the app, newest on top. The same list on localhost, test and production.",
+      "columnDate": "Date",
+      "columnNumber": "No.",
+      "columnType": "Type",
+      "columnModule": "Module",
+      "columnTitle": "Title",
+      "columnDescription": "Description",
+      "columnStatus": "Status",
+      "columnCommit": "Commit",
+      "typeFeature": "New functionality",
+      "typeUpdate": "Update",
+      "typeFix": "Correction",
+      "statusOpen": "Open",
+      "statusInProgress": "In progress",
+      "statusDone": "Done",
+      "filterSearch": "Search",
+      "searchPlaceholder": "Number, title, description, commit",
+      "all": "All",
+      "clearFilters": "Clear filters",
+      "shown": "{shown} of {total} shown",
+      "empty": "No changes found yet.",
+      "noResults": "No changes found with these filters.",
+      "unavailable": "The list can't be fetched right now. Try again later."
     }
   },
   "tagscan": {

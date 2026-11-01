@@ -1638,6 +1638,21 @@ export interface LoginHistoryPage {
   total: number;
 }
 
+// One line of the super admin's "Wijzigingen" screen (GET /api/admin/changelog).
+export interface ChangelogEntry {
+  id: number;
+  // The line's numbers in the colleagues' sheet; empty for past work.
+  issues: string[];
+  date: string;
+  type: "feature" | "update" | "fix";
+  status: "open" | "in_progress" | "done";
+  module: string;
+  title: string;
+  description: string;
+  // Full commit hashes; empty until the work is committed.
+  commits: string[];
+}
+
 // --- Altsien Select (module-8): Ploeg Wizard, Ploegfiche, special requests ---
 //
 // The custom-roles shapes are identical to Intervention Requests' (the
