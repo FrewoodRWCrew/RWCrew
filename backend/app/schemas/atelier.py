@@ -616,10 +616,12 @@ class ReturnRequest(BaseModel):
 
 
 class DeskExportRequest(BaseModel):
-    """An Excel download of a Balie list: the screen's festival + day and the
-    pieces it shows (its column filters only exist in the browser)."""
+    """An Excel download of a Balie list: the screen's festival + day (or its
+    season, for "Alle festivals") and the pieces it shows (its column filters
+    only exist in the browser)."""
 
-    festival_id: int
+    festival_id: int | None = None
+    season_id: int | None = None
     day: date | None = None
     line_ids: list[int]
     locale: str = "nl"
@@ -629,6 +631,7 @@ class ReturnIssueResponse(BaseModel):
     """One returned piece with a return status (Retourproblemen)."""
 
     line_id: int
+    festival_name: str
     team_name: str
     person_name: str
     bracelet_number: str | None

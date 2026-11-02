@@ -10,12 +10,18 @@ from app.modules.module_9.xlsx_common import build_xlsx
 from app.schemas.atelier import HandoutResponse, ReturnIssueResponse
 
 _OPEN_HEADERS = {
-    "nl": ["Ploeg", "Persoon", "Polsband", "Dag", "Artikel", "Maat", "Pasvorm", "Opgehaald"],
-    "en": ["Team", "Person", "Wristband", "Day", "Article", "Size", "Fit", "Picked up"],
+    "nl": ["Ploeg", "Festival", "Persoon", "Polsband", "Dag", "Artikel", "Maat", "Pasvorm", "Opgehaald"],
+    "en": ["Team", "Festival", "Person", "Wristband", "Day", "Article", "Size", "Fit", "Picked up"],
 }
 _ISSUE_HEADERS = {
-    "nl": ["Retourstatus", "Artikel", "Maat", "Pasvorm", "Ploeg", "Persoon", "Polsband", "Dag", "Teruggebracht", "Geboekt door"],
-    "en": ["Return status", "Article", "Size", "Fit", "Team", "Person", "Wristband", "Day", "Returned", "Booked by"],
+    "nl": [
+        "Retourstatus", "Artikel", "Maat", "Pasvorm", "Festival", "Ploeg", "Persoon", "Polsband", "Dag",
+        "Teruggebracht", "Geboekt door",
+    ],
+    "en": [
+        "Return status", "Article", "Size", "Fit", "Festival", "Team", "Person", "Wristband", "Day", "Returned",
+        "Booked by",
+    ],
 }
 _FITS = {
     "nl": {"women": "Dames", "men": "Heren", "unisex": "Unisex"},
@@ -55,6 +61,7 @@ def open_pieces_xlsx(handouts: list[HandoutResponse], line_ids: set[int], locale
     rows = [
         [
             _text(handout.team_name),
+            _text(handout.festival_name),
             _text(handout.person_name),
             _text(handout.bracelet_number),
             _day(handout.day),
@@ -78,6 +85,7 @@ def return_issues_xlsx(issues: list[ReturnIssueResponse], line_ids: set[int], lo
             _text(issue.article_name),
             _text(issue.size_name),
             _FITS[language][issue.fit],
+            _text(issue.festival_name),
             _text(issue.team_name),
             _text(issue.person_name),
             _text(issue.bracelet_number),

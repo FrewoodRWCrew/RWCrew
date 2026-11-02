@@ -1686,7 +1686,8 @@
       "seasonClosed": "closed",
       "noSeason": "No season",
       "festivalLabel": "Festival",
-      "noFestival": "No festival"
+      "noFestival": "No festival",
+      "allFestivals": "All festivals"
     },
     "fits": {
       "women": "Women",
@@ -2169,6 +2170,7 @@
       "scanTeamUnknown": "This team was not recognised: choose the right team when picking up."
     },
     "open": {
+      "festival": "Festival",
       "title": "Outstanding",
       "description": "Clothing that was picked up but not returned yet, per team and per person.",
       "dayLabel": "Day",
@@ -2201,6 +2203,7 @@
       "downloadFailed": "Download failed."
     },
     "returnIssues": {
+      "festival": "Festival",
       "title": "Return issues",
       "description": "Clothing that came back with a return status, such as damaged or very dirty.",
       "dayLabel": "Day",

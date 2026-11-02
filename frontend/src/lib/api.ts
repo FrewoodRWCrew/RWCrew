@@ -2918,7 +2918,7 @@ export function writeOffAtelierPersonLines(
 /** One Balie list's Excel download (`path` = "open" or "return-issues"), of the pieces the screen shows. */
 async function exportAtelierDeskList(
   path: "open" | "return-issues",
-  filters: { festivalId: number; day: string | null; lineIds: number[]; locale: string },
+  filters: { festivalId: number | null; seasonId?: number | null; day: string | null; lineIds: number[]; locale: string },
 ): Promise<Blob> {
   const response = await fetchWithRefresh(`${API_BASE_URL}${ATELIER_BASE}/desk/${path}/export`, {
     method: "POST",
@@ -2926,6 +2926,7 @@ async function exportAtelierDeskList(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       festival_id: filters.festivalId,
+      season_id: filters.seasonId ?? null,
       day: filters.day,
       line_ids: filters.lineIds,
       locale: filters.locale,
@@ -2954,8 +2955,15 @@ export function listAtelierDeskReturnStatuses(): Promise<AtelierReturnStatus[]> 
   return apiFetch<AtelierReturnStatus[]>(`${ATELIER_BASE}/desk/return-statuses`);
 }
 
-export function listAtelierReturnIssues(filters: { festivalId: number; day: string | null }): Promise<AtelierReturnIssue[]> {
-  const params = new URLSearchParams({ festival_id: String(filters.festivalId) });
+/** Retourproblemen of one festival, or of every festival of a season ("Alle festivals"). */
+export function listAtelierReturnIssues(filters: {
+  festivalId: number | null;
+  seasonId?: number | null;
+  day: string | null;
+}): Promise<AtelierReturnIssue[]> {
+  const params = new URLSearchParams();
+  if (filters.festivalId !== null) params.set("festival_id", String(filters.festivalId));
+  if (filters.seasonId != null) params.set("season_id", String(filters.seasonId));
   if (filters.day) params.set("day", filters.day);
   return apiFetch<AtelierReturnIssue[]>(`${ATELIER_BASE}/desk/return-issues?${params.toString()}`);
 }
@@ -3116,11 +3124,13 @@ export function cancelAtelierHandout(handoutId: number): Promise<AtelierHandout>
 /** Pick-ups with pieces still out, optionally per festival / day / team. */
 export function listAtelierOpenHandouts(filters: {
   festivalId: number | null;
+  seasonId?: number | null;
   day: string | null;
   teamId: number | null;
 }): Promise<AtelierHandout[]> {
   const params = new URLSearchParams();
   if (filters.festivalId !== null) params.set("festival_id", String(filters.festivalId));
+  if (filters.seasonId != null) params.set("season_id", String(filters.seasonId));
   if (filters.day) params.set("day", filters.day);
   if (filters.teamId !== null) params.set("team_id", String(filters.teamId));
   const query = params.toString();

@@ -1705,6 +1705,7 @@ export type AtelierReturnStatusInput = Omit<AtelierReturnStatus, "id">;
 /** One returned piece with a return status (Balie > Retourproblemen). */
 export interface AtelierReturnIssue {
   line_id: number;
+  festival_name: string;
   team_name: string;
   person_name: string;
   bracelet_number: string | null;

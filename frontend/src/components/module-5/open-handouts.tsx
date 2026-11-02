@@ -4,7 +4,9 @@
 // not brought back yet, grouped per team (ploeg), then per person (with
 // bracelet number; no email column, for privacy — GDPR), then one line per piece with
 // its festival day and since when. Filters: festival + day at the top (they
-// decide what's loaded) and a text filter above every column (client-side).
+// decide what's loaded; "Alle festivals" loads the whole season, without a day
+// choice) and a text filter above every column (client-side), so the Festival
+// column narrows the season's list down to one festival.
 // The Excel button downloads the pieces shown, without email addresses.
 // With the desk's rights, a person's "Inname" button opens the desk's return
 // form in a dialog, so the list can be worked through without leaving it.
@@ -36,7 +38,7 @@ import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 const ALL = "all";
 
 // The table's columns, in order (each has a text filter above it).
-const COLUMNS = ["team", "person", "bracelet", "day", "article", "size", "since"] as const;
+const COLUMNS = ["team", "festival", "person", "bracelet", "day", "article", "size", "since"] as const;
 type Column = (typeof COLUMNS)[number];
 
 // One open piece, with the texts its columns show (and filter on).
@@ -44,6 +46,7 @@ interface PieceRow {
   key: string;
   lineId: number;
   teamName: string;
+  festival: string;
   personId: number;
   personName: string;
   bracelet: string | null;
@@ -57,6 +60,7 @@ interface PieceRow {
 interface PersonGroup {
   personId: number;
   personName: string;
+  // The wristband number(s): one per festival, so several with "Alle festivals".
   bracelet: string | null;
   pieces: PieceRow[];
 }
@@ -81,8 +85,10 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
   const tFit = useTranslations("atelier.fits");
   const locale = useLocale();
   const seasonId = useAtelierSeasonId(seasons);
-  const { festivals, festival } = useAtelierFestival(seasonId);
+  const { festivals, festival, allFestivals } = useAtelierFestival(seasonId, { allowAll: true });
   const [day, setDay] = useState<string>(ALL);
+  // The chosen day (null = every day); "Alle festivals" has no day choice.
+  const dayFilter = allFestivals || day === ALL ? null : day;
   const { filters, setFilter, matches, active } = useColumnFilters<Column>();
   const [isDownloading, setIsDownloading] = useState(false);
   // The person whose Inname dialog is open.
@@ -93,12 +99,15 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
   const hasActions = canBook || canWriteOff;
   const columnCount = COLUMNS.length + (hasActions ? 1 : 0);
 
-  const key = festival ? `${festival.id}-${day}` : null;
+  // What's loaded: the whole season, or one festival (and day).
+  const key = allFestivals && seasonId !== null ? `all-${seasonId}` : festival ? `${festival.id}-${dayFilter}` : null;
   const rows = useKeyedLoad<AtelierHandout[]>(key, () =>
-    listAtelierOpenHandouts({ festivalId: festival!.id, day: day === ALL ? null : day, teamId: null }),
+    allFestivals
+      ? listAtelierOpenHandouts({ festivalId: null, seasonId, day: null, teamId: null })
+      : listAtelierOpenHandouts({ festivalId: festival!.id, day: dayFilter, teamId: null }),
   );
 
-  // Every open piece as one row, sorted by team, person, day and article.
+  // Every open piece as one row, sorted by team, person, day (so festival) and article.
   const pieces = useMemo<PieceRow[]>(() => {
     const list = (rows.data ?? []).flatMap((handout) =>
       handout.lines
@@ -107,6 +116,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
           key: `${handout.id}-${line.id}`,
           lineId: line.id,
           teamName: handout.team_name,
+          festival: handout.festival_name,
           personId: handout.person_id,
           personName: handout.person_name,
           bracelet: handout.bracelet_number,
@@ -129,6 +139,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
   const shown = pieces.filter((piece) =>
     matches({
       team: piece.teamName,
+      festival: piece.festival,
       person: piece.personName,
       bracelet: piece.bracelet,
       day: formatDateNl(piece.day),
@@ -151,6 +162,10 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
       person = { personId: piece.personId, personName: piece.personName, bracelet: piece.bracelet, pieces: [] };
       team.persons.push(person);
     }
+    // Another festival's wristband number is added to the person's numbers.
+    if (piece.bracelet && !(person.bracelet ?? "").split(", ").includes(piece.bracelet)) {
+      person.bracelet = person.bracelet ? `${person.bracelet}, ${piece.bracelet}` : piece.bracelet;
+    }
     person.pieces.push(piece);
     team.pieces += 1;
   }
@@ -158,16 +173,19 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
 
   // The Excel file of the pieces shown (column filters included).
   async function handleDownload() {
-    if (!festival) return;
+    const seasonName = seasons.find((season) => season.id === seasonId)?.name;
+    const fileName = allFestivals ? seasonName : festival?.name;
+    if (!fileName) return;
     setIsDownloading(true);
     try {
       const blob = await exportAtelierOpenHandouts({
-        festivalId: festival.id,
-        day: day === ALL ? null : day,
+        festivalId: allFestivals ? null : festival!.id,
+        seasonId: allFestivals ? seasonId : null,
+        day: dayFilter,
         lineIds: shown.map((piece) => piece.lineId),
         locale,
       });
-      saveExcel(blob, "atelier-openstaand", festival.name);
+      saveExcel(blob, "atelier-openstaand", fileName);
     } catch {
       toast.error(t("downloadFailed"));
     } finally {
@@ -191,21 +209,24 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <AtelierFestivalSelect festivals={festivals} festival={festival} />
-          <div className="flex w-40 flex-col gap-2">
-            <Label htmlFor="atelier-open-day">{t("dayLabel")}</Label>
-            <SearchableSelect
-              value={day}
-              onValueChange={(value) => setDay(value ?? ALL)}
-              id="atelier-open-day"
-              className="w-full"
-              renderValue={(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}
-              options={[
-                { value: ALL, label: t("allDays") },
-                ...(festival?.days ?? []).map((item) => ({ value: item, label: formatDateNl(item) })),
-              ]}
-            />
-          </div>
+          <AtelierFestivalSelect festivals={festivals} festival={festival} allowAll allFestivals={allFestivals} />
+          {/* The day choice only for one festival (days differ per festival). */}
+          {!allFestivals && (
+            <div className="flex w-40 flex-col gap-2">
+              <Label htmlFor="atelier-open-day">{t("dayLabel")}</Label>
+              <SearchableSelect
+                value={day}
+                onValueChange={(value) => setDay(value ?? ALL)}
+                id="atelier-open-day"
+                className="w-full"
+                renderValue={(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}
+                options={[
+                  { value: ALL, label: t("allDays") },
+                  ...(festival?.days ?? []).map((item) => ({ value: item, label: formatDateNl(item) })),
+                ]}
+              />
+            </div>
+          )}
           <AtelierSeasonSelect seasons={seasons} seasonId={seasonId} />
           <Button variant="outline" disabled={shown.length === 0 || isDownloading} onClick={() => void handleDownload()}>
             <Download className="size-4" />
@@ -265,7 +286,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
                   <Fragment key={person.personId}>
                     {/* Person row: who, with their bracelet number. */}
                     <TableRow className="group bg-muted/20">
-                      <TableCell />
+                      <TableCell colSpan={2} />
                       <TableCell className="font-medium">{person.personName}</TableCell>
                       <TableCell className="font-mono text-xs">{person.bracelet}</TableCell>
                       <TableCell colSpan={4} className="text-sm text-muted-foreground">
@@ -293,7 +314,9 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
                     {/* One line per piece the person still has. */}
                     {person.pieces.map((piece) => (
                       <TableRow key={piece.key} className="group">
-                        <TableCell colSpan={3} />
+                        <TableCell />
+                        <TableCell>{piece.festival}</TableCell>
+                        <TableCell colSpan={2} />
                         <TableCell>{formatDateNl(piece.day)}</TableCell>
                         <TableCell>{piece.article}</TableCell>
                         <TableCell>{piece.size}</TableCell>

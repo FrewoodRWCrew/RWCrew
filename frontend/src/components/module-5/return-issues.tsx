@@ -2,9 +2,11 @@
 
 // Atelier's "Balie > Retourproblemen" screen: the pieces that came back with a
 // return status (damaged, very dirty, ...), newest first. Read-only. Filters:
-// festival + day at the top (they decide what's loaded) and a text filter above
-// every column (client-side). The Excel button downloads the pieces shown. No
-// email column, for privacy (GDPR).
+// festival + day at the top (they decide what's loaded; "Alle festivals" loads
+// the whole season, without a day choice) and a text filter above every column
+// (client-side), so the Festival column narrows the season down to one
+// festival. The Excel button downloads the pieces shown. No email column, for
+// privacy (GDPR).
 
 import { useState } from "react";
 import { Download } from "lucide-react";
@@ -27,7 +29,7 @@ import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 const ALL = "all";
 
 // The table's columns, in order (each has a text filter above it).
-const COLUMNS = ["status", "article", "size", "team", "person", "bracelet", "day", "returned", "by"] as const;
+const COLUMNS = ["status", "article", "size", "festival", "team", "person", "bracelet", "day", "returned", "by"] as const;
 type Column = (typeof COLUMNS)[number];
 
 interface ReturnIssuesProps {
@@ -39,14 +41,19 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
   const tFit = useTranslations("atelier.fits");
   const locale = useLocale();
   const seasonId = useAtelierSeasonId(seasons);
-  const { festivals, festival } = useAtelierFestival(seasonId);
+  const { festivals, festival, allFestivals } = useAtelierFestival(seasonId, { allowAll: true });
   const [day, setDay] = useState<string>(ALL);
+  // The chosen day (null = every day); "Alle festivals" has no day choice.
+  const dayFilter = allFestivals || day === ALL ? null : day;
   const [isDownloading, setIsDownloading] = useState(false);
   const { filters, setFilter, matches, active } = useColumnFilters<Column>();
 
-  const key = festival ? `${festival.id}-${day}` : null;
+  // What's loaded: the whole season, or one festival (and day).
+  const key = allFestivals && seasonId !== null ? `all-${seasonId}` : festival ? `${festival.id}-${dayFilter}` : null;
   const rows = useKeyedLoad<AtelierReturnIssue[]>(key, () =>
-    listAtelierReturnIssues({ festivalId: festival!.id, day: day === ALL ? null : day }),
+    allFestivals
+      ? listAtelierReturnIssues({ festivalId: null, seasonId, day: null })
+      : listAtelierReturnIssues({ festivalId: festival!.id, day: dayFilter }),
   );
   const issues = rows.data ?? [];
 
@@ -56,6 +63,7 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
       status: issue.status_name,
       article: issue.article_name,
       size: `${issue.size_name} · ${tFit(issue.fit)}`,
+      festival: issue.festival_name,
       team: issue.team_name,
       person: issue.person_name,
       bracelet: issue.bracelet_number,
@@ -68,16 +76,19 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
 
   // The Excel file of the pieces shown (column filters included).
   async function handleDownload() {
-    if (!festival) return;
+    const seasonName = seasons.find((season) => season.id === seasonId)?.name;
+    const fileName = allFestivals ? seasonName : festival?.name;
+    if (!fileName) return;
     setIsDownloading(true);
     try {
       const blob = await exportAtelierReturnIssues({
-        festivalId: festival.id,
-        day: day === ALL ? null : day,
+        festivalId: allFestivals ? null : festival!.id,
+        seasonId: allFestivals ? seasonId : null,
+        day: dayFilter,
         lineIds: shown.map((issue) => issue.line_id),
         locale,
       });
-      saveExcel(blob, "atelier-retourproblemen", festival.name);
+      saveExcel(blob, "atelier-retourproblemen", fileName);
     } catch {
       toast.error(t("downloadFailed"));
     } finally {
@@ -93,21 +104,24 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
           <p className="text-muted-foreground">{t("description")}</p>
         </div>
         <div className="flex flex-wrap items-end gap-3">
-          <AtelierFestivalSelect festivals={festivals} festival={festival} />
-          <div className="flex w-40 flex-col gap-2">
-            <Label htmlFor="atelier-return-issues-day">{t("dayLabel")}</Label>
-            <SearchableSelect
-              value={day}
-              onValueChange={(value) => setDay(value ?? ALL)}
-              id="atelier-return-issues-day"
-              className="w-full"
-              renderValue={(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}
-              options={[
-                { value: ALL, label: t("allDays") },
-                ...(festival?.days ?? []).map((item) => ({ value: item, label: formatDateNl(item) })),
-              ]}
-            />
-          </div>
+          <AtelierFestivalSelect festivals={festivals} festival={festival} allowAll allFestivals={allFestivals} />
+          {/* The day choice only for one festival (days differ per festival). */}
+          {!allFestivals && (
+            <div className="flex w-40 flex-col gap-2">
+              <Label htmlFor="atelier-return-issues-day">{t("dayLabel")}</Label>
+              <SearchableSelect
+                value={day}
+                onValueChange={(value) => setDay(value ?? ALL)}
+                id="atelier-return-issues-day"
+                className="w-full"
+                renderValue={(value: string | null) => (value && value !== ALL ? formatDateNl(value) : t("allDays"))}
+                options={[
+                  { value: ALL, label: t("allDays") },
+                  ...(festival?.days ?? []).map((item) => ({ value: item, label: formatDateNl(item) })),
+                ]}
+              />
+            </div>
+          )}
           <AtelierSeasonSelect seasons={seasons} seasonId={seasonId} />
           <Button variant="outline" disabled={shown.length === 0 || isDownloading} onClick={() => void handleDownload()}>
             <Download className="size-4" />
@@ -153,6 +167,7 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
                   <TableCell className="font-medium">{row.status}</TableCell>
                   <TableCell>{row.article}</TableCell>
                   <TableCell>{row.size}</TableCell>
+                  <TableCell>{row.festival}</TableCell>
                   <TableCell>{row.team}</TableCell>
                   <TableCell>{row.person}</TableCell>
                   <TableCell className="font-mono text-xs">{row.bracelet}</TableCell>

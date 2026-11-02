@@ -542,13 +542,24 @@ def _xlsx(content: bytes, filename: str) -> Response:
     )
 
 
+def _in_season(season_id: int):
+    """Pick-ups at any festival of this season ("Alle festivals")."""
+    return AtelierHandout.festival_id.in_(select(Festival.id).where(Festival.season_id == season_id))
+
+
 def _open_handouts(
-    db: Session, festival_id: int | None, day: date | None, team_id: int | None = None
+    db: Session,
+    festival_id: int | None,
+    day: date | None,
+    team_id: int | None = None,
+    season_id: int | None = None,
 ) -> list[HandoutResponse]:
     """Pick-ups with pieces not returned yet, with only the pieces still out."""
     query = select(AtelierHandout).where(AtelierHandout.status == OPEN).order_by(AtelierHandout.day, AtelierHandout.id)
     if festival_id is not None:
         query = query.where(AtelierHandout.festival_id == festival_id)
+    if season_id is not None:
+        query = query.where(_in_season(season_id))
     if day is not None:
         query = query.where(AtelierHandout.day == day)
     if team_id is not None:
@@ -566,12 +577,13 @@ def list_open_handouts(
     festival_id: int | None = Query(default=None),
     day: date | None = Query(default=None),
     team_id: int | None = Query(default=None),
+    season_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(OPEN_SCREEN, "view")),
 ) -> list[HandoutResponse]:
     """Pick-ups with pieces not returned yet, oldest first, optionally per
-    festival / day / team. Only the pieces still out are listed."""
-    return _open_handouts(db, festival_id, day, team_id)
+    festival / day / team / season. Only the pieces still out are listed."""
+    return _open_handouts(db, festival_id, day, team_id, season_id)
 
 
 @router.post("/desk/open/export")
@@ -581,11 +593,13 @@ def export_open_handouts(
     _user: User = Depends(require_screen_permission(OPEN_SCREEN, "view")),
 ) -> Response:
     """Openstaand's Excel download: the pieces the screen shows."""
-    handouts = _open_handouts(db, payload.festival_id, payload.day)
+    handouts = _open_handouts(db, payload.festival_id, payload.day, season_id=payload.season_id)
     return _xlsx(open_pieces_xlsx(handouts, set(payload.line_ids), payload.locale), "atelier-openstaand.xlsx")
 
 
-def _return_issues(db: Session, festival_id: int | None, day: date | None) -> list[ReturnIssueResponse]:
+def _return_issues(
+    db: Session, festival_id: int | None, day: date | None, season_id: int | None = None
+) -> list[ReturnIssueResponse]:
     """The pieces that came back with a return status, newest first."""
     query = (
         select(AtelierHandoutLine, AtelierHandout, AtelierReturnStatus)
@@ -595,6 +609,8 @@ def _return_issues(db: Session, festival_id: int | None, day: date | None) -> li
     )
     if festival_id is not None:
         query = query.where(AtelierHandout.festival_id == festival_id)
+    if season_id is not None:
+        query = query.where(_in_season(season_id))
     if day is not None:
         query = query.where(AtelierHandout.day == day)
     result = []
@@ -604,6 +620,7 @@ def _return_issues(db: Session, festival_id: int | None, day: date | None) -> li
         result.append(
             ReturnIssueResponse(
                 line_id=line.id,
+                festival_name=db.get(Festival, handout.festival_id).name,
                 team_name=db.get(Team, handout.team_id).name,
                 person_name=db.get(AtelierPerson, handout.person_id).full_name,
                 bracelet_number=_bracelet_number(db, handout.person_id, handout.festival_id),
@@ -623,12 +640,13 @@ def _return_issues(db: Session, festival_id: int | None, day: date | None) -> li
 def list_return_issues(
     festival_id: int | None = Query(default=None),
     day: date | None = Query(default=None),
+    season_id: int | None = Query(default=None),
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission(RETURN_ISSUES_SCREEN, "view")),
 ) -> list[ReturnIssueResponse]:
     """Retourproblemen: the pieces that came back with a return status, newest
-    first, optionally per festival / day."""
-    return _return_issues(db, festival_id, day)
+    first, optionally per festival / day / season."""
+    return _return_issues(db, festival_id, day, season_id)
 
 
 @router.post("/desk/return-issues/export")
@@ -638,7 +656,7 @@ def export_return_issues(
     _user: User = Depends(require_screen_permission(RETURN_ISSUES_SCREEN, "view")),
 ) -> Response:
     """Retourproblemen's Excel download: the pieces the screen shows."""
-    issues = _return_issues(db, payload.festival_id, payload.day)
+    issues = _return_issues(db, payload.festival_id, payload.day, payload.season_id)
     return _xlsx(return_issues_xlsx(issues, set(payload.line_ids), payload.locale), "atelier-retourproblemen.xlsx")
 
 

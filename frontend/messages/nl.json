@@ -1686,7 +1686,8 @@
       "seasonClosed": "afgesloten",
       "noSeason": "Geen seizoen",
       "festivalLabel": "Festival",
-      "noFestival": "Geen festival"
+      "noFestival": "Geen festival",
+      "allFestivals": "Alle festivals"
     },
     "fits": {
       "women": "Dames",
@@ -2169,6 +2170,7 @@
       "scanTeamUnknown": "Deze ploeg is niet herkend: kies de juiste ploeg bij Ophalen."
     },
     "open": {
+      "festival": "Festival",
       "title": "Openstaand",
       "description": "Kledij die opgehaald werd maar nog niet teruggebracht is, per ploeg en per persoon.",
       "dayLabel": "Dag",
@@ -2201,6 +2203,7 @@
       "downloadFailed": "Downloaden is mislukt."
     },
     "returnIssues": {
+      "festival": "Festival",
       "title": "Retourproblemen",
       "description": "Kledij die teruggebracht werd met een retourstatus, zoals beschadigd of zeer vuil.",
       "dayLabel": "Dag",

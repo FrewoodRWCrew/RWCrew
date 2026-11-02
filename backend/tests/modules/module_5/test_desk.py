@@ -312,12 +312,12 @@ def test_excel_downloads(client: TestClient, as_atelier: TestClient, db_session:
 
     # Openstaand: only the pieces the screen shows, in the user's language, no email.
     rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/open/export", json={**body, "line_ids": [tshirt_line]}))
-    assert rows[0][:3] == ("Ploeg", "Persoon", "Polsband")
-    assert [row[4] for row in rows[1:]] == ["T-shirt"]
-    assert rows[1][1:4] == ("Jan Peeters", "B7", "03-07-2026")
+    assert rows[0][:4] == ("Ploeg", "Festival", "Persoon", "Polsband")
+    assert [row[5] for row in rows[1:]] == ["T-shirt"]
+    assert rows[1][1:5] == ("Rock Werchter", "Jan Peeters", "B7", "03-07-2026")
     assert not any("example.com" in str(cell).lower() for row in rows for cell in row)
     rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/open/export", json={**body, "line_ids": [apron_line], "locale": "en"}))
-    assert rows[0][0] == "Team" and [row[4] for row in rows[1:]] == ["Schort"]
+    assert rows[0][0] == "Team" and [row[5] for row in rows[1:]] == ["Schort"]
 
     # Retourproblemen.
     status_id = as_atelier.post(f"{BASE}/return-statuses", json={"name": "=Beschadigd"}).json()["id"]
@@ -329,7 +329,8 @@ def test_excel_downloads(client: TestClient, as_atelier: TestClient, db_session:
     assert rows[0][0] == "Retourstatus"
     # A value that looks like a formula stays text.
     assert rows[1][:2] == ("'=Beschadigd", "T-shirt")
-    assert not any("example.com" in str(cell).lower() for row in rows[1:] for cell in row[:9])
+    assert rows[1][4] == "Rock Werchter"
+    assert not any("example.com" in str(cell).lower() for row in rows[1:] for cell in row[:10])
     assert len(_sheet_rows(as_atelier.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": []}))) == 1
 
     # Each download needs view on its own screen.
@@ -339,6 +340,54 @@ def test_excel_downloads(client: TestClient, as_atelier: TestClient, db_session:
     _login(client, "kijker@example.com")
     assert client.post(f"{BASE}/desk/open/export", json={**body, "line_ids": []}).status_code == 200
     assert client.post(f"{BASE}/desk/return-issues/export", json={**body, "line_ids": []}).status_code == 403
+
+
+def test_all_festivals_of_a_season(as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    """Openstaand and Retourproblemen with season_id ("Alle festivals"): every
+    festival of that season, with its name; other seasons are left out."""
+    pukkelpop = Festival(name="Pukkelpop", start_date=date(2026, 8, 20), end_date=date(2026, 8, 22), season_id=world["season"].id)
+    older = Festival(name="Oud festival", start_date=date(2025, 7, 3), end_date=date(2025, 7, 3), season_id=world["previous"].id)
+    db_session.add_all([pukkelpop, older])
+    db_session.commit()
+    package = [{"article_id": desk["apron"], "quantity_per_person": 1}]
+    pick_ups = {}
+    for festival, day in ((pukkelpop, "2026-08-20"), (older, "2025-07-03")):
+        as_atelier.put(
+            f"{BASE}/reservations/{festival.id}",
+            json={"reservations": [{"team_id": world["terras"].id, "persons": 1, "lines": package}]},
+        )
+        response = as_atelier.post(
+            f"{BASE}/desk/handouts",
+            json={"first_name": "An", "last_name": f"Claes {festival.id}", "festival_id": festival.id,
+                  "team_id": world["terras"].id, "day": day,
+                  "lines": [{"article_id": desk["apron"], "article_size_id": desk["apron_size"]}]},
+        )
+        assert response.status_code == 201, response.text
+        pick_ups[festival.name] = response.json()
+    _pick_up(as_atelier, world, desk, [("tshirt", "m")])
+
+    # Openstaand: Rock Werchter and Pukkelpop, not last season's festival.
+    season = {"season_id": world["season"].id}
+    open_list = as_atelier.get(f"{BASE}/desk/open", params=season).json()
+    assert sorted(row["festival_name"] for row in open_list) == ["Pukkelpop", "Rock Werchter"]
+    line_ids = [line["id"] for row in open_list for line in row["lines"]]
+    rows = _sheet_rows(as_atelier.post(f"{BASE}/desk/open/export", json={**season, "line_ids": line_ids}))
+    assert sorted(row[1] for row in rows[1:]) == ["Pukkelpop", "Rock Werchter"]
+
+    # Retourproblemen: a damaged piece back at each festival, only this season's listed.
+    status_id = as_atelier.post(f"{BASE}/return-statuses", json={"name": "Beschadigd"}).json()["id"]
+    for handout in pick_ups.values():
+        line = handout["lines"][0]["id"]
+        as_atelier.post(
+            f"{BASE}/desk/persons/{handout['person_id']}/return",
+            json={"line_ids": [line], "line_statuses": {str(line): status_id}},
+        )
+    issues = as_atelier.get(f"{BASE}/desk/return-issues", params=season).json()
+    assert [row["festival_name"] for row in issues] == ["Pukkelpop"]
+    rows = _sheet_rows(
+        as_atelier.post(f"{BASE}/desk/return-issues/export", json={**season, "line_ids": [issues[0]["line_id"]]})
+    )
+    assert rows[1][4] == "Pukkelpop"
 
 
 # --- The desk-only role, Afboeken on Openstaand, the wristband warning ----------

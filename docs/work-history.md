@@ -3,6 +3,19 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-02 — Atelier: Openstaand and Retourproblemen over all festivals
+**Request:** On Openstaand, be able to pick all festivals for a full overview of the year; the same for Retourproblemen, and in both lists it must still be possible to select per festival.
+**Plan:**
+- Optional `season_id` filter on `GET /desk/open`, `GET /desk/return-issues` and their Excel exports.
+- "Alle festivals" choice (`?festival=all`) in the Atelier festival dropdown, offered only by these two screens; no day choice then.
+- A Festival column (with its text filter) in both lists and both Excel files.
+**Changes:**
+- Backend: `module_5/desk_router.py` (`_in_season`, `season_id` on both lists + exports), `schemas/atelier.py` (`DeskExportRequest.festival_id` optional + `season_id`, `ReturnIssueResponse.festival_name`), `module_5/desk_export.py` (Festival column in both sheets).
+- Frontend: `atelier-festival-select.tsx` (`allowAll` / `allFestivals`), `open-handouts.tsx`, `return-issues.tsx`, `lib/api.ts`, `lib/types.ts`, nl/en translations.
+- Module manual nl/en (Openstaand, Retourproblemen), `CLAUDE.md`.
+**Verification:** New test `test_all_festivals_of_a_season` + updated `test_excel_downloads`; full backend suite 974 passed. `tsc` and eslint clean.
+**Notes:** Deviation from the plan: the Festival column is always shown, also for a single festival, so a filter typed in it can never stay active while hidden (and it matches the Excel, which always has it). Not clicked through in the browser yet. Manual screenshots not re-taken (the screens gained a column).
+
 ## 2026-11-01 — Atelier: review and fixes before user acceptance tests
 **Request:** Review that Atelier is logical and its documentation up to date before delivering it for UAT, list the issues and questions. The user added: Retourstatussen are missing from Data Upload/Download.
 **Plan:**

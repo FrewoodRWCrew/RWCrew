@@ -346,7 +346,7 @@ only that shell.
   **Return status** per piece (optional, only a remark, not in the mail; stock still goes to wash):
   `Atelier_return_status` (screen `atelier.returnstatuses`, `/masterdata/return-statuses`, used = deactivate only),
   `Atelier_handout_line.return_status_id`, set through `line_statuses` on the return; overview "Retourproblemen"
-  (`atelier.returnissues`, `/desk/return-issues`, read-only). Openstaand and Retourproblemen have an **Excel** button: the screen POSTs its shown
+  (`atelier.returnissues`, `/desk/return-issues`, read-only). Both also offer **"Alle festivals"** (`?festival=all`, `allowAll` on `atelier-festival-select.tsx`): the API's `season_id` loads the whole season, with a Festival column (also in the Excel) whose filter narrows it to one festival. Openstaand and Retourproblemen have an **Excel** button: the screen POSTs its shown
   `line_ids` (the column filters are client-side) to `/desk/open/export` / `/desk/return-issues/export` (`module_5/desk_export.py`,
   no email column, values that look like a formula stay text). Openstaand and Reservaties have a text filter above every column
   (`components/module-5/column-filters.tsx`).
