@@ -575,5 +575,16 @@
     "title": "Openstaand and Retourproblemen over all festivals",
     "description": "Openstaand and Retourproblemen can show every festival of the season at once, with a Festival column to filter per festival.",
     "commits": []
+  },
+  {
+    "id": 46,
+    "issues": [],
+    "date": "2026-11-02",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "General",
+    "title": "Mass test with last year's data",
+    "description": "A runner loads last year's Excel lists through the API on localhost, test and production (starting with Atelier Uitgifte/Inname, with back-dated bookings) and logs every row that fails with a description and a proposed solution.",
+    "commits": []
   }
 ]
