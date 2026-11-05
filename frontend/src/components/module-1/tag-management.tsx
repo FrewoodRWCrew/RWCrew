@@ -129,6 +129,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
   const [productFilter, setProductFilter] = useState(ALL_VALUE);
   const [karFilter, setKarFilter] = useState(ALL_VALUE);
   const [csvCommentFilter, setCsvCommentFilter] = useState("");
+  const [atelierPieceFilter, setAtelierPieceFilter] = useState("");
   const [serialNumberFilter, setSerialNumberFilter] = useState("");
   const [dateRegisteredFilter, setDateRegisteredFilter] = useState("");
   const [dateAssignedFilter, setDateAssignedFilter] = useState("");
@@ -159,6 +160,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
       if (productFilter !== ALL_VALUE && String(tag.assigned_product_id ?? "") !== productFilter) return false;
       if (karFilter !== ALL_VALUE && String(tag.kar_id ?? "") !== karFilter) return false;
       if (!textMatches(tag.csv_comment_cell, csvCommentFilter)) return false;
+      if (!textMatches(tag.atelier_piece, atelierPieceFilter)) return false;
       if (!textMatches(tag.assigned_serial_number, serialNumberFilter)) return false;
       if (!textMatches(formatDate(tag.date_registered), dateRegisteredFilter)) return false;
       if (!textMatches(tag.date_assigned, dateAssignedFilter)) return false;
@@ -181,6 +183,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
     productFilter,
     karFilter,
     csvCommentFilter,
+    atelierPieceFilter,
     serialNumberFilter,
     dateRegisteredFilter,
     dateAssignedFilter,
@@ -274,6 +277,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedProduct")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCsvComment")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAtelierPiece")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateRegistered")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateAssigned")}</TableHead>
@@ -369,6 +373,15 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                   className="h-8 w-full min-w-32 font-normal"
                   value={csvCommentFilter}
                   onChange={(event) => setCsvCommentFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterAtelierPiece")}
+                  placeholder={t("filterAtelierPiece")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={atelierPieceFilter}
+                  onChange={(event) => setAtelierPieceFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
@@ -507,6 +520,8 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                 <TableCell className="text-muted-foreground">{karLabelFor(tag.kar_id)}</TableCell>
                 {/* Filled by TagScan from scanned CSVs' "Comment" column — not editable. */}
                 <TableCell className="text-muted-foreground">{tag.csv_comment_cell}</TableCell>
+                {/* Linked on the Raspberry Pi app (Atelier's "RFID-tags koppelen") — not editable here. */}
+                <TableCell className="text-muted-foreground">{tag.atelier_piece}</TableCell>
                 <TableCell className="text-muted-foreground">{tag.assigned_serial_number}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(tag.date_registered)}
@@ -592,7 +607,15 @@ function TagFormDialog({ tag, defaultOpen, trigger, onSaved, products, kars }: T
       onSaved(savedTag);
       setIsOpen(false);
     } catch (error) {
-      const message = error instanceof ApiError ? error.message : isEditing ? t("updateFailed") : t("createFailed");
+      // A tag of an Atelier piece can't also get a product or kar (the API says why).
+      const message =
+        error instanceof ApiError
+          ? error.message === "tag_is_atelier_piece"
+            ? t("tagIsAtelierPiece")
+            : error.message
+          : isEditing
+            ? t("updateFailed")
+            : t("createFailed");
       toast.error(message);
     } finally {
       setIsSubmitting(false);

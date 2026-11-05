@@ -22,7 +22,14 @@ from app.db.models.login_history import LoginHistory
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.landing.deps import ACCESS_TOKEN_COOKIE_NAME, REFRESH_TOKEN_COOKIE_NAME, get_current_user
-from app.schemas.auth import ChangePasswordRequest, CurrentUserResponse, LoginRequest
+from app.schemas.auth import (
+    ChangePasswordRequest,
+    CurrentUserResponse,
+    LoginRequest,
+    TokenLoginRequest,
+    TokenRefreshRequest,
+    TokenResponse,
+)
 from app.shared.access import get_accessible_module_keys
 from app.shared.device import classify_device
 
@@ -89,12 +96,14 @@ def revoke_all_refresh_tokens(db: Session, user_id: int) -> None:
 _USER_AGENT_MAX_LENGTH = 512
 
 
-def _record_login_attempt(db: Session, request: Request, payload: LoginRequest, user: User | None, success: bool) -> None:
+def _record_login_attempt(
+    db: Session, request: Request, payload: LoginRequest | TokenLoginRequest, user: User | None, success: bool
+) -> None:
     """Remember one login attempt (successful or not) for the admin
     "Login History" screen, so there's a record of who is using the tool
     and when — including attempts that failed. It also records which part of
     the app it came from (the website or the phone section, see
-    LoginRequest.client) and the kind of device (PC, phone or tablet).
+    LoginRequest.client; "pi" = the Raspberry Pi app) and the kind of device (PC, phone or tablet).
     """
     user_agent = request.headers.get("user-agent")
     db.add(
@@ -137,9 +146,12 @@ def _build_current_user_response(db: Session, user: User) -> CurrentUserResponse
     )
 
 
-@router.post("/login", response_model=CurrentUserResponse)
-def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> CurrentUserResponse:
-    """Check an email/password combination and, if valid, log the user in."""
+def _log_in(
+    db: Session, request: Request, payload: LoginRequest | TokenLoginRequest
+) -> tuple[User, str, str, datetime]:
+    """Check an email/password combination and, if valid, start a login
+    session: gives the user, a new access + refresh token and the session's
+    end. Shared by the website's cookie login and the Pi app's token login."""
     # Look up the user by email. We deliberately give the exact same error
     # message below whether the email doesn't exist or the password is
     # wrong, so an attacker can't use the error to guess valid emails.
@@ -158,7 +170,13 @@ def login(payload: LoginRequest, request: Request, response: Response, db: Sessi
     refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
     _record_login_attempt(db, request, payload, user, success=True)
     db.commit()
+    return user, access_token, refresh_token, session_end
 
+
+@router.post("/login", response_model=CurrentUserResponse)
+def login(payload: LoginRequest, request: Request, response: Response, db: Session = Depends(get_db)) -> CurrentUserResponse:
+    """Check an email/password combination and, if valid, log the user in."""
+    user, access_token, refresh_token, session_end = _log_in(db, request, payload)
     _set_auth_cookies(response, access_token, refresh_token, session_end)
     return _build_current_user_response(db, user)
 
@@ -176,6 +194,15 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not logged in")
 
+    user, new_access_token, new_refresh_token, session_end = _rotate_refresh_token(db, token)
+    _set_auth_cookies(response, new_access_token, new_refresh_token, session_end)
+    return _build_current_user_response(db, user)
+
+
+def _rotate_refresh_token(db: Session, token: str) -> tuple[User, str, str, datetime]:
+    """Swap a valid, unused refresh token for a new access + refresh token
+    (the old one can never be used again); the session keeps its end.
+    Shared by the cookie refresh and the Pi app's token refresh."""
     try:
         user_id = decode_token(token, expected_type="refresh")
     except InvalidTokenError as error:
@@ -207,9 +234,49 @@ def refresh(request: Request, response: Response, db: Session = Depends(get_db))
     new_access_token = create_access_token(user.id, session_end)
     new_refresh_token = _issue_and_store_refresh_token(db, user.id, session_end)
     db.commit()
+    return user, new_access_token, new_refresh_token, session_end
 
-    _set_auth_cookies(response, new_access_token, new_refresh_token, session_end)
-    return _build_current_user_response(db, user)
+
+def _token_response(db: Session, user: User, access_token: str, refresh_token: str, session_end: datetime) -> TokenResponse:
+    """The Pi app's tokens with their end moments and who is logged in."""
+    access_end = min(
+        datetime.now(timezone.utc) + timedelta(minutes=settings.access_token_minutes), _as_aware_utc(session_end)
+    )
+    return TokenResponse(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        access_expires_at=access_end,
+        session_expires_at=_as_aware_utc(session_end),
+        user=_build_current_user_response(db, user),
+    )
+
+
+# --- The Raspberry Pi app ------------------------------------------------------------
+# The Pi app is no browser, so it gets the same tokens in the response body
+# instead of cookies, and sends the access token as "Authorization: Bearer"
+# (read by deps.get_current_user). Same rules: 15-minute access token, a
+# rotated refresh token, the session ends 6 hours after the password.
+
+
+@router.post("/token", response_model=TokenResponse)
+def token_login(payload: TokenLoginRequest, request: Request, db: Session = Depends(get_db)) -> TokenResponse:
+    """The Pi app's login: email + password → tokens (login history: "pi")."""
+    user, access_token, refresh_token, session_end = _log_in(db, request, payload)
+    return _token_response(db, user, access_token, refresh_token, session_end)
+
+
+@router.post("/token/refresh", response_model=TokenResponse)
+def token_refresh(payload: TokenRefreshRequest, db: Session = Depends(get_db)) -> TokenResponse:
+    """The Pi app swaps its refresh token for new tokens (the old one is used up)."""
+    user, access_token, refresh_token, session_end = _rotate_refresh_token(db, payload.refresh_token)
+    return _token_response(db, user, access_token, refresh_token, session_end)
+
+
+@router.post("/token/logout")
+def token_logout(payload: TokenRefreshRequest, db: Session = Depends(get_db)) -> dict[str, bool]:
+    """The Pi app logs out: its refresh token can't renew the session any more."""
+    _revoke_refresh_token(db, payload.refresh_token)
+    return {"logged_out": True}
 
 
 @router.post("/change-password", response_model=CurrentUserResponse)
@@ -259,32 +326,36 @@ def logout(request: Request, response: Response, db: Session = Depends(get_db)) 
     """Log the current user out by revoking their refresh token and clearing cookies."""
     token = request.cookies.get(REFRESH_TOKEN_COOKIE_NAME)
     if token is not None:
-        try:
-            user_id = decode_token(token, expected_type="refresh")
-        except InvalidTokenError:
-            # Garbage or expired cookie: nothing to revoke, just clear it below.
-            user_id = None
-        if user_id is not None:
-            # Only this user's still-valid tokens can match. (Checking every
-            # user's tokens made logout take many seconds, because each
-            # comparison is a deliberately slow password-style hash.)
-            # Newest first, and stop at the match: a token hash is unique.
-            candidates = db.scalars(
-                select(RefreshToken)
-                .where(RefreshToken.user_id == user_id, RefreshToken.revoked.is_(False))
-                .order_by(RefreshToken.created_at.desc())
-            )
-            for record in candidates:
-                if verify_password(token, record.token_hash):
-                    # Revoke it so it can never be used again even if
-                    # someone still has a copy of it.
-                    record.revoked = True
-                    break
-            db.commit()
+        _revoke_refresh_token(db, token)
 
     response.delete_cookie(ACCESS_TOKEN_COOKIE_NAME, path="/")
     response.delete_cookie(REFRESH_TOKEN_COOKIE_NAME, path="/")
     return {"logged_out": True}
+
+
+def _revoke_refresh_token(db: Session, token: str) -> None:
+    """Revoke one refresh token so it can never renew the session again
+    (a garbage or expired token has nothing to revoke)."""
+    try:
+        user_id = decode_token(token, expected_type="refresh")
+    except InvalidTokenError:
+        return
+    # Only this user's still-valid tokens can match. (Checking every
+    # user's tokens made logout take many seconds, because each
+    # comparison is a deliberately slow password-style hash.)
+    # Newest first, and stop at the match: a token hash is unique.
+    candidates = db.scalars(
+        select(RefreshToken)
+        .where(RefreshToken.user_id == user_id, RefreshToken.revoked.is_(False))
+        .order_by(RefreshToken.created_at.desc())
+    )
+    for record in candidates:
+        if verify_password(token, record.token_hash):
+            # Revoke it so it can never be used again even if
+            # someone still has a copy of it.
+            record.revoked = True
+            break
+    db.commit()
 
 
 @router.get("/me", response_model=CurrentUserResponse)

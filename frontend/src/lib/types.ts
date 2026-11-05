@@ -360,6 +360,9 @@ export interface RfidTag {
   notes_5: string | null;
   /** "CSV Comment": the latest "Comment" cell scanned for this tag (read-only). */
   csv_comment_cell: string | null;
+  /** The Atelier piece this tag is sewn into, e.g. "T-shirt M" (read-only:
+   * linked on the Raspberry Pi app's "RFID-tags koppelen"). */
+  atelier_piece: string | null;
 }
 
 /** The fields sent to create or fully update an RFID tag. */
@@ -1627,9 +1630,9 @@ export interface LoginHistoryEntry {
   success: boolean;
   ip_address: string | null;
   /** Where the attempt came from: the website ("web"), the phone section
-   * ("pwa"), or the old native smartphone app ("mobile", historical rows
+   * ("pwa"), the Raspberry Pi app ("pi"), or the old native smartphone app ("mobile", historical rows
    * only). Null for attempts recorded before this was tracked. */
-  source: LoginClient | "mobile" | null;
+  source: LoginClient | "pi" | "mobile" | null;
   /** The kind of device, read from the browser's user agent. Null when
    * unknown (e.g. attempts recorded before this was tracked). */
   device_type: "desktop" | "mobile" | "tablet" | null;

@@ -34,6 +34,7 @@ from app.db.models.atelier_return_status import AtelierReturnStatus
 from app.db.models.atelier_size import AtelierSize
 from app.db.models.atelier_stock_document import AtelierStockDocument
 from app.db.models.festival import Festival
+from app.db.models.rfid_tag import RfidTag
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.wristband_scan import WristbandScan
@@ -61,7 +62,7 @@ from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
 from app.modules.wristband.scan_service import dismiss, waiting_scans
 from app.modules.wristband.visibility import atelier_team_ids, default_season_id
-from app.modules.module_5.stock_service import StockError
+from app.modules.module_5.stock_service import StockError, check_booked_at
 from app.modules.module_9.team_responsible_service import list_team_responsibles
 from app.schemas.wristband import ScannerResponse, ScanResponse
 from app.schemas.atelier import (
@@ -174,6 +175,7 @@ def _person_response(db: Session, person: AtelierPerson, festival_id: int | None
                 team_name=db.get(Team, handout.team_id).name,
                 day=handout.day,
                 handed_out_at=handout.created_at,
+                epc=db.get(RfidTag, line.rfid_tag_id).epc_uid if line.rfid_tag_id is not None else None,
             )
         )
     return DeskPersonResponse(
@@ -381,8 +383,10 @@ def post_handout(
     current_user: User = Depends(require_screen_permission(DESK_SCREEN, "create")),
 ) -> HandoutResponse:
     """Ophalen: hand out the package's pieces to a person (who then gets the
-    "Uitgifte" mail, when they have an email address)."""
+    "Uitgifte" mail, when they have an email address; a back-dated pick-up
+    from last year's lists never mails)."""
     try:
+        booked_at = check_booked_at(current_user, payload.booked_at)
         handout = create_handout(
             db,
             current_user,
@@ -396,6 +400,9 @@ def post_handout(
             lines=[(line.article_id, line.article_size_id) for line in payload.lines],
             scan_id=payload.scan_id,
             confirm_new_bracelet=payload.confirm_new_bracelet,
+            booked_at=booked_at,
+            # The pieces read by their RFID tag (the Raspberry Pi app).
+            line_tags={line.article_id: line.rfid_tag_id for line in payload.lines if line.rfid_tag_id is not None},
         )
         db.commit()
     except StockError as error:
@@ -409,9 +416,10 @@ def post_handout(
     lines = db.scalars(
         select(AtelierHandoutLine).where(AtelierHandoutLine.handout_id == handout.id).order_by(AtelierHandoutLine.id)
     ).all()
-    queue_desk_mail(
-        db, HANDOUT, person, handout, list(lines), _bracelet_number(db, person.id, handout.festival_id), background_tasks
-    )
+    if booked_at is None:
+        queue_desk_mail(
+            db, HANDOUT, person, handout, list(lines), _bracelet_number(db, person.id, handout.festival_id), background_tasks
+        )
     return _handout_response(db, handout)
 
 
@@ -455,15 +463,18 @@ def post_person_return(
 ) -> list[HandoutResponse]:
     """Terugbrengen (the desk's call): the ticked pieces of one person come
     back, from any of their open pick-ups, and the person gets one "Inname"
-    mail for the whole transaction."""
+    mail for the whole transaction (not for a back-dated return)."""
     try:
+        booked_at = check_booked_at(current_user, payload.booked_at)
         handouts, lines = return_person_lines(
-            db, current_user, person_id, payload.line_ids, payload.scan_id, payload.line_statuses
+            db, current_user, person_id, payload.line_ids, payload.scan_id, payload.line_statuses, booked_at=booked_at
         )
     except StockError as error:
         db.rollback()
         raise _error(error) from error
     db.commit()
+    if booked_at is not None:
+        return [_handout_response(db, handout) for handout in handouts]
     # The mail names the festival/team/day of the latest pick-up returned.
     latest = handouts[-1]
     queue_desk_mail(
@@ -488,7 +499,14 @@ def post_person_write_off(
     """Openstaand's Afboeken: these pieces of one person never came back.
     The same right as Stock > Afboeken; no mail goes out."""
     try:
-        handouts = write_off_person_lines(db, current_user, person_id, payload.line_ids, payload.note)
+        handouts = write_off_person_lines(
+            db,
+            current_user,
+            person_id,
+            payload.line_ids,
+            payload.note,
+            booked_at=check_booked_at(current_user, payload.booked_at),
+        )
     except StockError as error:
         db.rollback()
         raise _error(error) from error
@@ -506,7 +524,15 @@ def post_return(
     """Terugbrengen of one pick-up (sends no mail; the desk uses the
     person-level return above)."""
     try:
-        handout = return_lines(db, current_user, handout_id, payload.line_ids, payload.scan_id, payload.line_statuses)
+        handout = return_lines(
+            db,
+            current_user,
+            handout_id,
+            payload.line_ids,
+            payload.scan_id,
+            payload.line_statuses,
+            booked_at=check_booked_at(current_user, payload.booked_at),
+        )
     except StockError as error:
         db.rollback()
         raise _error(error) from error

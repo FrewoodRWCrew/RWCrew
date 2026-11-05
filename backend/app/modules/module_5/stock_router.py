@@ -36,6 +36,7 @@ from app.modules.module_5.stock_service import (
     CountLine,
     StockError,
     StockLine,
+    check_booked_at,
     count_stock,
     receive,
     reverse_document,
@@ -179,6 +180,7 @@ def book_receipt(
             [StockLine(line.article_size_id, line.quantity) for line in payload.lines],
             reference=payload.reference,
             note=payload.note,
+            booked_at=check_booked_at(current_user, payload.booked_at),
         )
     except StockError as error:
         db.rollback()
@@ -196,7 +198,11 @@ def book_wash(
     """Gewassen: pieces to wash become available."""
     try:
         document = wash(
-            db, current_user, [StockLine(line.article_size_id, line.quantity) for line in payload.lines], note=payload.note
+            db,
+            current_user,
+            [StockLine(line.article_size_id, line.quantity) for line in payload.lines],
+            note=payload.note,
+            booked_at=check_booked_at(current_user, payload.booked_at),
         )
     except StockError as error:
         db.rollback()
@@ -219,6 +225,7 @@ def book_write_off(
             [StockLine(line.article_size_id, line.quantity, line.from_status) for line in payload.lines],
             reason=payload.reason,
             note=payload.note,
+            booked_at=check_booked_at(current_user, payload.booked_at),
         )
     except StockError as error:
         db.rollback()
@@ -240,6 +247,7 @@ def book_count(
             current_user,
             [CountLine(line.article_size_id, line.status, line.counted) for line in payload.lines],
             note=payload.note,
+            booked_at=check_booked_at(current_user, payload.booked_at),
         )
     except StockError as error:
         db.rollback()

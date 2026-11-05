@@ -37,6 +37,8 @@ Staan er vandaag al evenveel of meer personen van de ploeg genoteerd dan gereser
 
 Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annuleren** (de stuks gaan terug naar beschikbaar).
 
+**Op de Raspberry Pi (RWCrew Pi)**: met de RFID-lezer verloopt hetzelfde zonder typen. Kies één keer seizoen, festival, dag en de polsbandscanner van de balie (wordt onthouden). Elke polsbandscan verschijnt als kaart met **Ophalen**, **Terugbrengen** en **Negeren**. Bij Ophalen leg je de stukken op de lezer: elk stuk met een tag (zie **RFID-tags koppelen**) wordt meteen getoond, groen als het geboekt wordt, oranje met de reden als het niet kan (niet in het pakket, nog in bezit, tweede stuk van hetzelfde artikel, bij iemand anders, geen stock). Bij Terugbrengen worden de gelezen stuks aangevinkt (ook stuks die zonder tag meegingen, per artikel); je kan nog met de hand aan- of afvinken en een retourstatus kiezen. **Bevestigen** boekt het, met dezelfde regels, mails en rechten als op de website. Zonder verbinding met RWCrew wordt er niets geboekt (rode balk).
+
 ![De balie: Ophalen of Terugbrengen](desk.png)
 
 ## [open | atelier.open] Openstaand
@@ -52,6 +54,15 @@ Met de knop **Excel** download je wat op het scherm staat, ook met de filters di
 ![Retourproblemen](return-issues.png)
 
 Alle kledij die teruggebracht werd met een **retourstatus**, de nieuwste bovenaan: status, artikel, maat, festival, ploeg, persoon, polsband, dag, wanneer teruggebracht en door wie geboekt. Kies bovenaan het festival en eventueel de dag, of **Alle festivals** voor het hele seizoen (filter dan per festival in de kolom **Festival**); boven elke kolom staat een tekstfilter. Dit scherm is enkel om te bekijken: een stuk dat niet meer bruikbaar is, boek je af via **Afboeken**. Met de knop **Excel** download je wat op het scherm staat, ook met de filters die je gebruikt.
+
+## [tags | atelier.tags] RFID-tags koppelen (Raspberry Pi)
+Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-lezer, niet op de website. Je geeft er nieuwe kledingstukken hun RFID-tag: de tag zegt voortaan welk **artikel in welke maat** het stuk is.
+
+1. Kies het **artikel** (zoekbaar) en daarna de **maat** (grote knoppen; per maat zie je hoeveel stuks al een tag hebben). Een artikel met één maat (OneSize) is meteen gekozen.
+2. Leg de stukken van die maat op de lezer. Elke gelezen tag krijgt een regel: **Nieuw — wordt gekoppeld** (groen), **Al deze maat** (groen, er verandert niets), **Al …** een ander stuk (oranje) of geweigerd (rood: de tag hoort bij een StockMaster-product of kar, of het stuk is uitgegeven aan iemand).
+3. Tik op **Koppelen**. Staan er tags bij die al een ander stuk zijn, dan vraagt de Pi eerst of je ze toch wil wijzigen.
+
+Met het recht Bekijken zie je het scherm, met Aanmaken mag je koppelen. De stock zelf verandert niet: die blijft per maat geteld; de tag zegt enkel welk fysiek stuk bij wie is.
 
 ## [reservations | atelier.reservations] Reservaties
 Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig hebben en **wat elke persoon krijgt** (het pakket, bv. 2 T-shirts en 1 hoodie). Een ploeg werkt **elke festivaldag** met dat aantal mensen en brengt de kledij **elke avond terug**, dus elke dag is er opnieuw *personen × pakket* nodig. De maat zit niet in het pakket: die wordt aan de balie gekozen.
@@ -110,6 +121,8 @@ Kies de artikelen die je geteld hebt. Per maat staan de geboekte aantallen al in
 
 ## [bookings | atelier.bookings] Boekingen
 Alle stockboekingen, de nieuwste eerst, met een filter op soort. Bekijk de lijnen, druk de **boekingsbon** af (PDF) of klik op **Ongedaan maken** (enkel met het recht Wijzigen): er wordt een tegenboeking gemaakt en de oorspronkelijke blijft zichtbaar als ongedaan gemaakt. Dat lukt enkel als de stuks er nog zijn (maak dan eerst de latere boeking ongedaan).
+
+Boekingen uit de lijsten van vorig jaar (ingeladen door de superbeheerder met de massatest) staan op hun oorspronkelijke datum en uur; voor die uitgiftes en innames werd geen mail verstuurd.
 
 ![Boekingen](bookings.png)
 

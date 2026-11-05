@@ -16,6 +16,9 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from app.core.security import hash_password
+from app.db.models.atelier_article import AtelierArticle
+from app.db.models.atelier_article_size import AtelierArticleSize
+from app.db.models.atelier_size import AtelierSize
 from app.db.models.kartracker_kar import KarTrackerKar
 from app.db.models.module import Module
 from app.db.models.product import Product
@@ -500,13 +503,38 @@ def list_tagscan_kars(
     return list(db.scalars(select(KarTrackerKar).order_by(KarTrackerKar.kar_nummer)).all())
 
 
+def _atelier_piece_labels(db: Session) -> dict[int, str]:
+    """"T-shirt M" per Atelier article size, for the tags sewn into Atelier pieces."""
+    rows = db.execute(
+        select(AtelierArticleSize.id, AtelierArticle.name, AtelierSize.name)
+        .join(AtelierArticle, AtelierArticle.id == AtelierArticleSize.article_id)
+        .join(AtelierSize, AtelierSize.id == AtelierArticleSize.size_id)
+    ).all()
+    return {article_size_id: f"{article_name} {size_name}" for article_size_id, article_name, size_name in rows}
+
+
+def _tag_response(tag: RfidTag, labels: dict[int, str]) -> RfidTagResponse:
+    """A tag for TagManagement, with its Atelier piece (if any) as text."""
+    return RfidTagResponse.model_validate(tag, from_attributes=True).model_copy(
+        update={"atelier_piece": labels.get(tag.atelier_article_size_id) if tag.atelier_article_size_id else None}
+    )
+
+
+def _check_not_atelier_piece(tag: RfidTag, payload: RfidTagUpdateRequest) -> None:
+    """A tag is either an Atelier piece or a StockMaster product / kar, never
+    both (see module_5/rfid_service.py)."""
+    if tag.atelier_article_size_id is not None and (payload.assigned_product_id is not None or payload.kar_id is not None):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="tag_is_atelier_piece")
+
+
 @router.get("/tags", response_model=list[RfidTagResponse])
 def list_tags(
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-management", "view")),
-) -> list[RfidTag]:
+) -> list[RfidTagResponse]:
     """List every registered RFID tag, for the TagManagement screen's table."""
-    return list(db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all())
+    labels = _atelier_piece_labels(db)
+    return [_tag_response(tag, labels) for tag in db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all()]
 
 
 @router.post("/tags", response_model=RfidTagResponse, status_code=status.HTTP_201_CREATED)
@@ -514,7 +542,7 @@ def create_tag(
     payload: RfidTagCreateRequest,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-management", "create")),
-) -> RfidTag:
+) -> RfidTagResponse:
     """Register a brand-new RFID tag."""
     _validate_tag_lookup_ids(db, payload)
 
@@ -529,7 +557,7 @@ def create_tag(
         ) from error
 
     db.refresh(new_tag)
-    return new_tag
+    return _tag_response(new_tag, {})
 
 
 @router.put("/tags/{tag_id}", response_model=RfidTagResponse)
@@ -538,13 +566,14 @@ def update_tag(
     payload: RfidTagUpdateRequest,
     db: Session = Depends(get_db),
     _user: User = Depends(require_screen_permission("tagscan.tag-management", "edit")),
-) -> RfidTag:
+) -> RfidTagResponse:
     """Update every field of an existing tag."""
     tag = db.get(RfidTag, tag_id)
     if tag is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Tag not found")
 
     _validate_tag_lookup_ids(db, payload)
+    _check_not_atelier_piece(tag, payload)
 
     for field, value in payload.model_dump().items():
         setattr(tag, field, value)
@@ -558,7 +587,7 @@ def update_tag(
         ) from error
 
     db.refresh(tag)
-    return tag
+    return _tag_response(tag, _atelier_piece_labels(db))
 
 
 def _unlink_tag_lines(db: Session, tag_ids: list[int]) -> None:

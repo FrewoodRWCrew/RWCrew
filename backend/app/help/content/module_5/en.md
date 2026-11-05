@@ -37,6 +37,8 @@ When the team already has as many or more people served today than reserved, the
 
 With the Edit right you can **cancel** a hand-out of which nothing came back yet (the pieces go back to available).
 
+**On the Raspberry Pi (RWCrew Pi)**: with the RFID reader the same happens without typing. Pick the season, festival, day and the counter's wristband scanner once (remembered). Every wristband scan shows as a card with **Pick up**, **Return** and **Ignore**. For Pick up you put the pieces on the reader: every piece with a tag (see **Link RFID tags**) shows at once, green when it will be booked, orange with the reason when it can't (not in the package, still held, second piece of the same article, out with someone else, no stock). For Return the pieces read are ticked (also pieces that went out without a tag, per article); you can still tick or untick by hand and pick a return status. **Confirm** books it, with the same rules, mails and rights as on the website. Without a connection to RWCrew nothing is booked (red bar).
+
 ![The counter: Pick up or Return](desk.png)
 
 ## [open | atelier.open] Outstanding
@@ -52,6 +54,15 @@ The **Excel** button downloads what's on screen, including the filters you use (
 ![Return issues](return-issues.png)
 
 All clothing that came back with a **return status**, newest first: status, article, size, festival, team, person, wristband, day, when it was returned and who booked it. Pick the festival and optionally the day at the top, or **All festivals** for the whole season (then filter per festival in the **Festival** column); every column has a text filter. This screen is read-only: a piece that can't be used any more is booked out via **Write-off**. The **Excel** button downloads what's on screen, including the filters you use.
+
+## [tags | atelier.tags] Link RFID tags (Raspberry Pi)
+This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID reader, not on the website. It gives new clothing pieces their RFID tag: from then on the tag says which **article in which size** the piece is.
+
+1. Pick the **article** (searchable), then the **size** (big buttons; each shows how many pieces of that size already carry a tag). An article with one size (OneSize) is picked at once.
+2. Put the pieces of that size on the reader. Every tag read gets a line: **New — will be linked** (green), **Already this size** (green, nothing changes), **Already …** another piece (orange) or refused (red: the tag belongs to a StockMaster product or kar, or the piece is out with someone).
+3. Tap **Link**. When some tags are already another piece, the Pi asks first whether to change them anyway.
+
+The View right shows the screen, Create allows linking. The stock itself doesn't change: it stays counted per size; the tag only says which physical piece is with whom.
 
 ## [reservations | atelier.reservations] Reservations
 Everything per festival on one page: per team **how many people** need clothing and **what each person gets** (the package, e.g. 2 T-shirts and 1 hoodie). A team works **every festival day** with that number of people and returns the clothing **every evening**, so every day needs *persons × package* again. The size isn't part of the package: it is picked at the counter.
@@ -110,6 +121,8 @@ Pick the articles you counted. The booked quantities are filled in per size; cha
 
 ## [bookings | atelier.bookings] Bookings
 All stock bookings, newest first, with a filter on type. View the lines, print the **booking note** (PDF) or click **Undo** (only with the Edit right): a counter-booking is made and the original stays visible as undone. That only works while the pieces are still there (undo the later booking first).
+
+Bookings from last year's lists (loaded by the super admin with the mass test) keep their original date and time; no mail was sent for those hand-outs and returns.
 
 ![Bookings](bookings.png)
 

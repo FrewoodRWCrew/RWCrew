@@ -41,7 +41,7 @@ class LoginHistory(Base):
     ip_address: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
     # Which part of the app the attempt came from: "web" (the website's login
-    # page) or "pwa" (the phone section /m). "mobile" only appears on older
+    # page), "pwa" (the phone section /m) or "pi" (the Raspberry Pi app). "mobile" only appears on older
     # rows, written by the former native smartphone app. Null for rows
     # recorded before this column existed, since those can't be told apart.
     source: Mapped[str | None] = mapped_column(String(16), nullable=True)

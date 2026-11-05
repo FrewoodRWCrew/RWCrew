@@ -17,11 +17,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-// Translation key per "source" value: website, phone section (/m), or the old
+// Translation key per "source" value: website, phone section (/m), the Raspberry Pi app, or the old
 // native smartphone app (only on historical rows).
 const SOURCE_LABEL_KEYS = {
   web: "sourceWeb",
   pwa: "sourcePwa",
+  pi: "sourcePi",
   mobile: "sourceNativeApp",
 } as const satisfies Record<NonNullable<LoginHistoryEntry["source"]>, string>;
 

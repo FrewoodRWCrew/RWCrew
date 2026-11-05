@@ -19,7 +19,9 @@
 #   - a known person with another wristband at this festival needs a
 #     confirmation (two people can share a name);
 #   - a piece that never comes back is written off from Openstaand, which
-#     closes its line like a return (its return document is the write-off).
+#     closes its line like a return (its return document is the write-off);
+#   - a piece read by its RFID tag (the Raspberry Pi app) must be a piece of
+#     exactly the line's article size and not out with someone (rfid_service).
 
 import re
 from datetime import date, datetime, timezone
@@ -43,6 +45,7 @@ from app.db.models.user import User
 from app.db.models.wristband_scan import WristbandScan
 from app.modules.module_5.reservation_service import festival_days, lines_by_reservation, reservations_by_team
 from app.modules.module_5.deps import MODULE_KEY
+from app.modules.module_5.rfid_service import check_handout_tags
 from app.modules.wristband.scan_service import NEW, mark_used
 from app.modules.module_5.stock_service import (
     AVAILABLE,
@@ -212,11 +215,16 @@ def create_handout(
     lines: list[tuple[int, int]],
     scan_id: int | None = None,
     confirm_new_bracelet: bool = False,
+    booked_at: datetime | None = None,
+    line_tags: dict[int, int] | None = None,
 ) -> AtelierHandout:
     """Ophalen: hand out one piece of each chosen (article, article size) to
     a person, after checking the rules above; books available → handed out.
     `confirm_new_bracelet`: the desk confirmed this is the same person, with
-    another wristband than the one known at this festival."""
+    another wristband than the one known at this festival. `booked_at`: a
+    back-dated pick-up (already checked by stock_service.check_booked_at).
+    `line_tags`: per article the RFID tag of the piece read (the Raspberry Pi
+    app), checked by rfid_service.check_handout_tags and kept on the line."""
     first_name = " ".join(first_name.split())
     last_name = " ".join(last_name.split())
     if not first_name or not last_name:
@@ -244,6 +252,10 @@ def create_handout(
         row = db.get(AtelierArticleSize, article_size_id)
         if row is None or row.article_id != article_id or not row.active:
             raise StockError("size_required", article.name)
+    tags = line_tags or {}
+    if not set(tags) <= set(article_ids):
+        raise StockError("tag_without_line")
+    check_handout_tags(db, [(article_id, article_size_id, tags.get(article_id)) for article_id, article_size_id in lines])
 
     # The person, found (or created) by first + family name; the latest
     # spelling, email (when given) and team win.
@@ -280,8 +292,13 @@ def create_handout(
     elif wristband_required(db) and bracelet_of(db, person.id, festival_id) is None:
         raise StockError("bracelet_required")
 
-    document = hand_out(db, user, [article_size_id for _article, article_size_id in lines], note=person.full_name)
+    document = hand_out(
+        db, user, [article_size_id for _article, article_size_id in lines], note=person.full_name, booked_at=booked_at
+    )
+    # A back-dated pick-up keeps its own moment (otherwise the database's now).
+    when = {"created_at": booked_at} if booked_at is not None else {}
     handout = AtelierHandout(
+        **when,
         person_id=person.id,
         festival_id=festival_id,
         team_id=team_id,
@@ -294,7 +311,14 @@ def create_handout(
     db.add(handout)
     db.flush()
     for article_id, article_size_id in lines:
-        db.add(AtelierHandoutLine(handout_id=handout.id, article_id=article_id, article_size_id=article_size_id))
+        db.add(
+            AtelierHandoutLine(
+                handout_id=handout.id,
+                article_id=article_id,
+                article_size_id=article_size_id,
+                rfid_tag_id=tags.get(article_id),
+            )
+        )
     if scan is not None:
         mark_used(db, scan, person.id, MODULE_KEY)
     db.flush()
@@ -333,11 +357,13 @@ def return_lines(
     line_ids: list[int],
     scan_id: int | None = None,
     line_statuses: dict[int, int] | None = None,
+    booked_at: datetime | None = None,
 ) -> AtelierHandout:
     """Terugbrengen: the ticked pieces come back (handed out → to wash). The
     pick-up is "returned" once every piece is back. A scan the return came
     from is marked used. `line_statuses` notes what was wrong with a piece
-    (only a remark: the stock booking stays the same)."""
+    (only a remark: the stock booking stays the same). `booked_at`: a
+    back-dated return (already checked)."""
     statuses = line_statuses or {}
     _check_return_statuses(db, line_ids, statuses)
     handout = _get_handout(db, handout_id)
@@ -355,8 +381,10 @@ def return_lines(
         chosen.append(line)
 
     person = db.get(AtelierPerson, handout.person_id)
-    document = return_pieces(db, user, [line.article_size_id for line in chosen], note=person.full_name)
-    now = datetime.now(timezone.utc)
+    document = return_pieces(
+        db, user, [line.article_size_id for line in chosen], note=person.full_name, booked_at=booked_at
+    )
+    now = booked_at or datetime.now(timezone.utc)
     for line in chosen:
         line.returned_at = now
         line.return_document_id = document.id
@@ -395,6 +423,7 @@ def return_person_lines(
     line_ids: list[int],
     scan_id: int | None = None,
     line_statuses: dict[int, int] | None = None,
+    booked_at: datetime | None = None,
 ) -> tuple[list[AtelierHandout], list[AtelierHandoutLine]]:
     """Terugbrengen of one person in one go: the ticked pieces may belong to
     several of their open pick-ups (one return booking per pick-up, as with
@@ -408,12 +437,19 @@ def return_person_lines(
     for index, handout in enumerate(handouts):
         handout_lines = [line.id for line in lines if line.handout_id == handout.id]
         handout_statuses = {line_id: statuses[line_id] for line_id in handout_lines if line_id in statuses}
-        return_lines(db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses)
+        return_lines(
+            db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses, booked_at=booked_at
+        )
     return handouts, lines
 
 
 def write_off_person_lines(
-    db: Session, user: User, person_id: int, line_ids: list[int], note: str | None = None
+    db: Session,
+    user: User,
+    person_id: int,
+    line_ids: list[int],
+    note: str | None = None,
+    booked_at: datetime | None = None,
 ) -> list[AtelierHandout]:
     """Openstaand's Afboeken: the ticked pieces of one person never came back.
     One write-off booking; each piece's line is closed (so the person can get
@@ -427,8 +463,8 @@ def write_off_person_lines(
 
     person = db.get(AtelierPerson, person_id)
     text = " — ".join(part for part in (person.full_name, (note or "").strip()) if part)
-    document = write_off_handed_out(db, user, [line.article_size_id for line in lines], note=text)
-    now = datetime.now(timezone.utc)
+    document = write_off_handed_out(db, user, [line.article_size_id for line in lines], note=text, booked_at=booked_at)
+    now = booked_at or datetime.now(timezone.utc)
     for line in lines:
         line.returned_at = now
         line.return_document_id = document.id

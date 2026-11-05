@@ -45,6 +45,13 @@ class RfidTag(Base):
         ForeignKey("KarTracker_karren.id", ondelete="SET NULL"), nullable=True, index=True
     )
 
+    # Which Atelier piece (article in a size) this tag is sewn into — set on
+    # the Raspberry Pi app's "Tags koppelen" (module_5/rfid_service.py). A tag
+    # is either an Atelier piece or a StockMaster product / kar, never both.
+    atelier_article_size_id: Mapped[int | None] = mapped_column(
+        ForeignKey("Atelier_article_size.id"), nullable=True, index=True
+    )
+
     # Set automatically the moment the row is created.
     date_registered: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     date_assigned: Mapped[date | None] = mapped_column(Date, nullable=True)

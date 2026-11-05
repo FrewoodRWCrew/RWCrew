@@ -31,6 +31,8 @@ class ScreenDefinition:
 # - desk / open / returnissues: the "Balie" group (Ophalen / Terugbrengen —
 #   "edit" also allows "Uitgifte annuleren" — the pieces not returned yet,
 #   and the pieces that came back with a return status);
+# - tags: linking RFID tags to pieces (article sizes), only on the Raspberry
+#   Pi app — "view" sees the articles, "create" links the read tags;
 # - reservations / preparation: the "Reservaties" group (persons per team per
 #   festival, and what to prepare each day + the picklist);
 # - stock / receipt / wash / writeoff / count / bookings / orderneeds: the
@@ -50,6 +52,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.desk", label="Uitgifte & inname", sort_order=2),
     ScreenDefinition(key="atelier.open", label="Openstaand", sort_order=3),
     ScreenDefinition(key="atelier.returnissues", label="Retourproblemen", sort_order=4),
+    ScreenDefinition(key="atelier.tags", label="RFID-tags koppelen", sort_order=14),
     ScreenDefinition(key="atelier.reservations", label="Reservaties", sort_order=5),
     ScreenDefinition(key="atelier.preparation", label="Voorbereiden", sort_order=6),
     ScreenDefinition(key="atelier.stock", label="Stock", sort_order=7),

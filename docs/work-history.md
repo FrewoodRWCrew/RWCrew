@@ -3,6 +3,68 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-05 — RWCrew Pi: Raspberry Pi app for Atelier Uitgifte/Inname with RFID
+**Request:** Analyse, then build a stand-alone Raspberry Pi app (own GitHub folder, its own touch UI) that works on RWCrew's data: Atelier Uitgifte/Inname on the Pi — wristband scan, then the pieces' RFID tags; GPIO usable for later; a landing page with only the Atelier tile, access rights as in RWCrew; Wassen/Ontvangst later.
+**Plan:**
+- Same data through the RWCrew API (no direct database connection); Bearer login with the operator's own account; online only.
+- Link RFID tags to Atelier pieces (block 6) + a resolve endpoint; the desk keeps its endpoints, a hand-out line can carry its tag.
+- New app `rwpi/` in the separate repo `RWRaspiTagScanner` (PySide6 + QML), reusing the CF-E714 driver and the Release-update mechanism; wristband scans from the Scans webhook as on the web desk.
+**Changes:**
+- **Backend (RWCrew):**
+  - `landing/deps.py` (Bearer header), `landing/auth.py` (`POST /api/auth/token`, `/token/refresh`, `/token/logout`; shared `_log_in` / `_rotate_refresh_token` / `_revoke_refresh_token`), `schemas/auth.py` (client `"pi"`).
+  - Migration `b6e2d9f4a817`: `Tagscan_rfid_tag.atelier_article_size_id`, `Atelier_handout_line.rfid_tag_id`.
+  - New `module_5/rfid_service.py` + `rfid_router.py` (`POST /rfid/resolve`, `GET /rfid/articles`, `POST /rfid/assign`); new screen `atelier.tags`.
+  - `desk_service.create_handout(line_tags=…)`, `HandoutLineInput.rfid_tag_id`, `DeskOpenLine.epc`.
+  - TagScan: `RfidTagResponse.atelier_piece` (read-only), PUT refuses a product/kar on an Atelier piece (`tag_is_atelier_piece`), Assignment processing leaves such a tag alone.
+- **Frontend:** TagManagement column "Atelier-stuk" (+ filter, error text); login history label "Raspberry Pi-app".
+- **Docs:** Atelier manual nl/en (chapter `atelier.tags`, Pi paragraph in the desk chapter), `CLAUDE.md` "RWCrew Pi".
+- **RWRaspiTagScanner:**
+  - `rwpi/`: api client, reader (+ fake), GPIO, session, i18n, icon provider, Atelier controllers (rights, desk, tags, review rules).
+  - QML screens: login, landing tiles, settings, Atelier home / desk (setup, waiting, Ophalen, Terugbrengen, done) / tags.
+  - Inter font (OFL), `tests/`, `deploy/install-rwpi.sh`, `requirements-rwpi.txt`; `update_check.sh` restarts the enabled app; README.
+**Verification:**
+- Backend: new `tests/landing/test_token_auth.py` (4) and `tests/modules/module_5/test_rfid.py` (5); help tests; full suite 990 passed.
+- Frontend: `tsc --noEmit` and eslint clean.
+- Pi app: pytest 10 passed (review rules, API client against a fake RWCrew, texts nl/en).
+- End-to-end, offscreen with screenshots, dark and light theme, against a **copy** of the local database (second backend on 8021, temporary `screenshot_user.py` user; copy dropped and user cleaned up afterwards, the real local data untouched): login → tile → setup → scan card → Ophalen by tags (extra / unknown tags shown, not booked) → booked with EPCs on the lines → Terugbrengen by tag → Tags koppelen.
+**Notes:**
+- Not tested on the real Pi + CF-E714 yet (only the fake reader).
+- The repo name `app/` from the plan became `rwpi/` (`app.py` of the old app would clash).
+- TagManagement shows the Atelier piece read-only: linking happens on the Pi.
+- Open: `Github Token.txt` is committed in `RWRaspiTagScanner` — revoke that token and remove the file from the repo.
+- Wassen / Ontvangst on the Pi and the two handbooks (HTML chapters) follow later.
+
+## 2026-11-02 — Mass test framework + Atelier Uitgifte/Inname of last year
+**Request:** Load last year's data through the modules (an Excel run on localhost, later test and prod) to test them with many lines and keep the data; log every issue with a detailed description and a proposed solution; for all modules over time. First list: Atelier Uitgifte/Inname (`TestMassload.xlsx`).
+**Plan:**
+- The runner `backend/masstest/` goes through the normal API: convert the old list into a load workbook, then run it per environment with preflight, a ledger (safe to repeat) and timing.
+- Excel issue report with a description and a rule-based proposed solution; review afterwards; confirmed bugs become changelog lines.
+- Packages and stock are not derived: refusals are logged. A rule break is logged and the row skipped.
+- A back-date option (`booked_at`) on Atelier desk and stock bookings, super admin only, never mailing.
+- Screen check script with Edge.
+**Changes:**
+- **Backend:**
+  - `module_5/stock_service.py`: `check_booked_at`; `booked_at` on every booking, `_new_document` takes over the date and year.
+  - `desk_service.py` (pick-up / return / write-off moment), `desk_router.py` (no mail when back-dated), `stock_router.py`, `schemas/atelier.py` (`booked_at` on 7 requests).
+  - Error codes `backdate_not_allowed` / `backdate_in_future` (nl/en, `atelier.stock.errors` + `atelier.desk.errors`).
+- **New:** `backend/masstest/`:
+  - `client`, `environments`, `ledger`, `load_workbook`, `messages`, `report`, `runner`, `solutions`, `__main__`;
+  - `convert/atelier_desk.py`;
+  - `steps/atelier.py`, `steps/common.py`.
+- **Frontend:** `frontend/scripts/mass-test-screens.mjs` + npm script `mass-test:screens`.
+- **Docs:** Atelier manual nl/en (Boekingen), `CLAUDE.md` "Mass test".
+**Verification:**
+- New tests: `tests/modules/module_5/test_backdate.py` (3) and `tests/masstest/test_masstest.py` (4), the latter including a full run through an httpx transport into the TestClient: dry run, load, second run without duplicates, no mails, blocker stops.
+- Full backend suite: 981 passed.
+- Real file converted: 29 rows → 23 transactions.
+- Dry run on localhost (temporary `screenshot_user.py` account, cleaned up afterwards): 0 loaded, 23 `festival_not_found` and 29 `size_unknown`.
+**Notes:**
+- Findings from the dry run, to decide with the user:
+  - Locally, every Atelier article size is Unisex, while the old list says "man …".
+  - No local festival covers 10, 19 or 27 June 2026.
+- Not yet done: the real localhost load (it needs a pg_dump snapshot first and a backend restart for `booked_at`), the screen check, test and prod.
+- Altsien Select follows once its lists arrive.
+
 ## 2026-11-02 — Atelier: Openstaand and Retourproblemen over all festivals
 **Request:** On Openstaand, be able to pick all festivals for a full overview of the year; the same for Retourproblemen, and in both lists it must still be possible to select per festival.
 **Plan:**

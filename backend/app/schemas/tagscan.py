@@ -185,6 +185,9 @@ class RfidTagResponse(BaseModel):
     notes_5: str | None
     # "CSV Comment": the latest "Comment" cell scanned for this tag (read-only).
     csv_comment_cell: str | None = None
+    # The Atelier piece this tag is sewn into, e.g. "T-shirt M" (read-only:
+    # linked on the Raspberry Pi app's "RFID-tags koppelen").
+    atelier_piece: str | None = None
 
 
 class RfidTagCreateRequest(BaseModel):

@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from app.core.timezone import belgian_now
+from app.core.timezone import BELGIAN_TZ, belgian_now, to_belgian
 from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_article_size import AtelierArticleSize
 from app.db.models.atelier_size import AtelierSize
@@ -104,6 +104,26 @@ class _Move:
     to_status: str | None
 
 
+# --- Back-dating ----------------------------------------------------------------
+
+
+def check_booked_at(user: User, booked_at: datetime | None) -> datetime | None:
+    """A back-dated booking (loading last year's lists, see backend/masstest):
+    only a super admin may send one, and never in the future. A time without
+    a zone is Belgian wall-clock time. Gives the moment in UTC, or None for
+    a normal booking (now)."""
+    if booked_at is None:
+        return None
+    if not user.is_super_admin:
+        raise StockError("backdate_not_allowed", status_code=403)
+    if booked_at.tzinfo is None:
+        booked_at = booked_at.replace(tzinfo=BELGIAN_TZ)
+    booked_at = booked_at.astimezone(timezone.utc)
+    if booked_at > datetime.now(timezone.utc):
+        raise StockError("backdate_in_future")
+    return booked_at
+
+
 # --- Lookups -------------------------------------------------------------------
 
 
@@ -167,9 +187,14 @@ def _change_balance(db: Session, article_size_id: int, status: str, delta: int) 
     db.flush()
 
 
-def _new_document(db: Session, user: User, doc_type: str, **fields: object) -> AtelierStockDocument:
+def _new_document(
+    db: Session, user: User, doc_type: str, booked_at: datetime | None = None, **fields: object
+) -> AtelierStockDocument:
     """The booking's header under the session user, with its readable
-    number AT-<Belgian year>-<id>."""
+    number AT-<Belgian year>-<id>. A back-dated booking (`booked_at`, already
+    checked) gets that moment as its date and year."""
+    if booked_at is not None:
+        fields["created_at"] = booked_at
     document = AtelierStockDocument(
         doc_number=f"TMP-{datetime.now(timezone.utc).timestamp()}",
         doc_type=doc_type,
@@ -180,7 +205,8 @@ def _new_document(db: Session, user: User, doc_type: str, **fields: object) -> A
     )
     db.add(document)
     db.flush()
-    document.doc_number = f"AT-{belgian_now().year}-{document.id:05d}"
+    year = to_belgian(booked_at).year if booked_at is not None else belgian_now().year
+    document.doc_number = f"AT-{year}-{document.id:05d}"
     db.flush()
     return document
 
@@ -235,7 +261,13 @@ def _clean(text: str | None) -> str | None:
 
 
 def receive(
-    db: Session, user: User, lines: Iterable[StockLine], *, reference: str | None = None, note: str | None = None
+    db: Session,
+    user: User,
+    lines: Iterable[StockLine],
+    *,
+    reference: str | None = None,
+    note: str | None = None,
+    booked_at: datetime | None = None,
 ) -> AtelierStockDocument:
     """Ontvangst: new pieces come into the store as available. Only active
     article sizes of active articles can be received."""
@@ -245,21 +277,29 @@ def receive(
         article = db.get(AtelierArticle, row.article_id)
         if not row.active or not article.active:
             raise StockError("article_size_inactive", article_size_label(db, line.article_size_id))
-    document = _new_document(db, user, RECEIPT, reference=_clean(reference), note=_clean(note))
+    document = _new_document(db, user, RECEIPT, booked_at, reference=_clean(reference), note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, None, AVAILABLE) for line in merged])
     return document
 
 
-def wash(db: Session, user: User, lines: Iterable[StockLine], *, note: str | None = None) -> AtelierStockDocument:
+def wash(
+    db: Session, user: User, lines: Iterable[StockLine], *, note: str | None = None, booked_at: datetime | None = None
+) -> AtelierStockDocument:
     """Gewassen: pieces waiting to be washed become available again."""
     merged = _merge(lines)
-    document = _new_document(db, user, WASHED, note=_clean(note))
+    document = _new_document(db, user, WASHED, booked_at, note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, TO_WASH, AVAILABLE) for line in merged])
     return document
 
 
 def write_off(
-    db: Session, user: User, lines: Iterable[StockLine], *, reason: str, note: str | None = None
+    db: Session,
+    user: User,
+    lines: Iterable[StockLine],
+    *,
+    reason: str,
+    note: str | None = None,
+    booked_at: datetime | None = None,
 ) -> AtelierStockDocument:
     """Afboeken: pieces leave the store for good (damaged, lost, ...), taken
     from available or from to-wash. "other" needs a note."""
@@ -271,12 +311,14 @@ def write_off(
     for line in merged:
         if line.from_status not in (AVAILABLE, TO_WASH):
             raise StockError("invalid_status")
-    document = _new_document(db, user, WRITE_OFF, reason=reason, note=_clean(note))
+    document = _new_document(db, user, WRITE_OFF, booked_at, reason=reason, note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, line.from_status, None) for line in merged])
     return document
 
 
-def count_stock(db: Session, user: User, lines: Iterable[CountLine], *, note: str | None = None) -> AtelierStockDocument:
+def count_stock(
+    db: Session, user: User, lines: Iterable[CountLine], *, note: str | None = None, booked_at: datetime | None = None
+) -> AtelierStockDocument:
     """Telling: compare the counted pieces (available and to-wash) with the
     booked ones and book only the differences. Refused when nothing differs."""
     moves: list[_Move] = []
@@ -298,35 +340,39 @@ def count_stock(db: Session, user: User, lines: Iterable[CountLine], *, note: st
             moves.append(_Move(line.article_size_id, -difference, line.status, None))
     if not moves:
         raise StockError("no_differences")
-    document = _new_document(db, user, COUNT, note=_clean(note))
+    document = _new_document(db, user, COUNT, booked_at, note=_clean(note))
     _post_moves(db, document, moves)
     return document
 
 
-def hand_out(db: Session, user: User, article_size_ids: list[int], *, note: str | None = None) -> AtelierStockDocument:
+def hand_out(
+    db: Session, user: User, article_size_ids: list[int], *, note: str | None = None, booked_at: datetime | None = None
+) -> AtelierStockDocument:
     """A pick-up at the counter: one piece of each article size, available →
     handed out (refused when a size has no piece available)."""
     merged = _merge(StockLine(article_size_id, 1) for article_size_id in article_size_ids)
-    document = _new_document(db, user, HAND_OUT, note=_clean(note))
+    document = _new_document(db, user, HAND_OUT, booked_at, note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, AVAILABLE, HANDED_OUT) for line in merged])
     return document
 
 
-def return_pieces(db: Session, user: User, article_size_ids: list[int], *, note: str | None = None) -> AtelierStockDocument:
+def return_pieces(
+    db: Session, user: User, article_size_ids: list[int], *, note: str | None = None, booked_at: datetime | None = None
+) -> AtelierStockDocument:
     """A return at the counter: the pieces come back, handed out → to wash."""
     merged = _merge(StockLine(article_size_id, 1) for article_size_id in article_size_ids)
-    document = _new_document(db, user, RETURN, note=_clean(note))
+    document = _new_document(db, user, RETURN, booked_at, note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, HANDED_OUT, TO_WASH) for line in merged])
     return document
 
 
 def write_off_handed_out(
-    db: Session, user: User, article_size_ids: list[int], *, note: str | None = None
+    db: Session, user: User, article_size_ids: list[int], *, note: str | None = None, booked_at: datetime | None = None
 ) -> AtelierStockDocument:
     """Openstaand's Afboeken: pieces that never came back leave the store for
     good, handed out → outside, reason "not_returned"."""
     merged = _merge(StockLine(article_size_id, 1) for article_size_id in article_size_ids)
-    document = _new_document(db, user, WRITE_OFF, reason=NOT_RETURNED, note=_clean(note))
+    document = _new_document(db, user, WRITE_OFF, booked_at, reason=NOT_RETURNED, note=_clean(note))
     _post_moves(db, document, [_Move(line.article_size_id, line.quantity, HANDED_OUT, None) for line in merged])
     return document
 

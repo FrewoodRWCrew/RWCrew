@@ -16,18 +16,28 @@ ACCESS_TOKEN_COOKIE_NAME = "rwcrew_access_token"
 REFRESH_TOKEN_COOKIE_NAME = "rwcrew_refresh_token"
 
 
+def bearer_token(request: Request) -> str | None:
+    """The token of an "Authorization: Bearer <token>" header, if sent."""
+    scheme, _, token = request.headers.get("authorization", "").partition(" ")
+    if scheme.lower() != "bearer" or not token.strip():
+        return None
+    return token.strip()
+
+
 def get_current_user(request: Request, db: Session = Depends(get_db)) -> User:
     """Identify the logged-in user making this request, or reject it.
 
     Reads the access-token cookie the browser automatically sends along
-    with the request, checks it's a valid, non-expired token, and looks up
-    the matching user. Any endpoint that depends on this function
-    automatically requires the caller to be logged in.
+    with the request (or the Bearer header of the Raspberry Pi app), checks
+    it's a valid, non-expired token, and looks up the matching user. Any
+    endpoint that depends on this function automatically requires the
+    caller to be logged in.
     """
-    # Read the access token out of the cookies the browser sent us. The
-    # cookie is the only way in: the website and the phone section (/m)
-    # are the same site, so both log in with the same cookies.
-    token = request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
+    # The website and the phone section (/m) are the same site, so both log
+    # in with the same cookies. The Raspberry Pi app isn't a browser: it
+    # sends the very same access token in an Authorization header instead
+    # (see /api/auth/token in auth.py).
+    token = bearer_token(request) or request.cookies.get(ACCESS_TOKEN_COOKIE_NAME)
     if token is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not logged in")
 

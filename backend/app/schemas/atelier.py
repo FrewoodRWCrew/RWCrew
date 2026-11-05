@@ -358,6 +358,8 @@ class ReceiptRequest(BaseModel):
     lines: list[StockLineInput] = Field(min_length=1)
     reference: str | None = Field(default=None, max_length=255)
     note: str | None = Field(default=None, max_length=2000)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class WashRequest(BaseModel):
@@ -365,6 +367,8 @@ class WashRequest(BaseModel):
 
     lines: list[StockLineInput] = Field(min_length=1)
     note: str | None = Field(default=None, max_length=2000)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class WriteOffRequest(BaseModel):
@@ -373,6 +377,8 @@ class WriteOffRequest(BaseModel):
     lines: list[StockLineInput] = Field(min_length=1)
     reason: WriteOffReason
     note: str | None = Field(default=None, max_length=2000)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class CountLineInput(BaseModel):
@@ -388,6 +394,8 @@ class CountRequest(BaseModel):
 
     lines: list[CountLineInput] = Field(min_length=1)
     note: str | None = Field(default=None, max_length=2000)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class ReverseRequest(BaseModel):
@@ -505,6 +513,9 @@ class DeskOpenLine(BaseModel):
     team_name: str
     day: date
     handed_out_at: datetime
+    # The EPC of the piece's RFID tag, when it went out by tag (the Pi app
+    # matches the tags read at a return against it).
+    epc: str | None = None
 
 
 class DeskPersonResponse(BaseModel):
@@ -574,10 +585,12 @@ class DeskContextResponse(BaseModel):
 
 
 class HandoutLineInput(BaseModel):
-    """One piece to hand out: the article and the size picked."""
+    """One piece to hand out: the article and the size picked (and, when
+    the piece was read by its RFID tag on the Raspberry Pi app, that tag)."""
 
     article_id: int
     article_size_id: int
+    rfid_tag_id: int | None = None
 
 
 class HandoutRequest(BaseModel):
@@ -596,6 +609,8 @@ class HandoutRequest(BaseModel):
     lines: list[HandoutLineInput] = Field(min_length=1)
     # The desk confirmed: same person, another wristband than the known one here.
     confirm_new_bracelet: bool = False
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class WriteOffLinesRequest(BaseModel):
@@ -603,6 +618,8 @@ class WriteOffLinesRequest(BaseModel):
 
     line_ids: list[int] = Field(min_length=1)
     note: str | None = Field(default=None, max_length=500)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class ReturnRequest(BaseModel):
@@ -613,6 +630,8 @@ class ReturnRequest(BaseModel):
     scan_id: int | None = None
     # What was wrong with a piece: hand-out line id → return status id.
     line_statuses: dict[int, int] = Field(default_factory=dict)
+    # Back-dated booking (super admin only, loading last year's lists).
+    booked_at: datetime | None = None
 
 
 class DeskExportRequest(BaseModel):
@@ -742,3 +761,57 @@ class MailTestResponse(BaseModel):
     sent_to: str
 
 
+# --- RFID pieces (the Raspberry Pi app) ------------------------------------------
+
+
+class RfidEpcsRequest(BaseModel):
+    """The EPCs an RFID reader read (each once is enough)."""
+
+    epcs: list[str] = Field(max_length=200)
+
+
+class RfidResolvedTag(BaseModel):
+    """What one read EPC is (rfid_service.ResolvedTag): "unknown",
+    "not_atelier", "inactive" or "piece", with the piece and — when it is
+    out — the open hand-out line and person that have it."""
+
+    epc: str
+    state: Literal["unknown", "not_atelier", "inactive", "piece"]
+    rfid_tag_id: int | None
+    article_id: int | None
+    article_name: str | None
+    article_size_id: int | None
+    size_name: str | None
+    fit: Fit | None
+    open_line_id: int | None
+    person_id: int | None
+    person_name: str | None
+
+
+class RfidAssignRequest(BaseModel):
+    """Tags koppelen: the read tags become pieces of this article size;
+    `replace` confirms changing tags that were another piece."""
+
+    epcs: list[str] = Field(min_length=1, max_length=200)
+    article_size_id: int
+    replace: bool = False
+
+
+class RfidArticleSizeOption(BaseModel):
+    """One size of an article on the Pi's Tags koppelen screen."""
+
+    article_size_id: int
+    size_name: str
+    fit: Fit
+    # How many pieces of this size already carry a tag.
+    tagged: int
+
+
+class RfidArticleOption(BaseModel):
+    """An active article with its active sizes (Tags koppelen's choice)."""
+
+    article_id: int
+    code: str
+    name: str
+    is_tag_managed: bool
+    sizes: list[RfidArticleSizeOption]

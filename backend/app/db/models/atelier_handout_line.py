@@ -2,6 +2,7 @@
 # (an article in the size chosen at the desk). It stays "out" until it is
 # returned ("Terugbrengen"), which fills returned_at and the return's stock
 # booking (handed out → to wash). Written only by module_5/desk_service.py.
+# A piece read by its RFID tag (the Raspberry Pi app) also keeps that tag.
 
 from datetime import datetime
 
@@ -27,6 +28,12 @@ class AtelierHandoutLine(Base):
     returned_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     return_document_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Atelier_stock_document.id"), nullable=True
+    )
+
+    # The physical piece (its RFID tag) that went out, when the pick-up was
+    # booked by reading tags (the Raspberry Pi app); NULL = picked by size only.
+    rfid_tag_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("Tagscan_rfid_tag.id", ondelete="SET NULL"), index=True, nullable=True
     )
 
     # What was wrong with it when it came back (NULL = no remark).

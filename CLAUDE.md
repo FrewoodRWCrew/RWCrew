@@ -277,8 +277,8 @@ only that shell.
   start of a shift and takes **everything** back afterwards. Workers are **not** in a database: they belong to a
   ploeg (MasterData team), whose package says what they get. Built in blocks (see `docs/work-history.md`,
   2026-10-25): **1 Masterdata (done)**, **2 reservations (done)**, **3 stock (done**: receipt without purchase orders or suppliers, own washing, write-off, count; one atelier store), **4 counter desk (done)**:
-  hand-out/return (first name, family name, email, bracelet number typed), **5 wristband scans via webhook (done)**, 6 RFID per piece
-  via TagScan.
+  hand-out/return (first name, family name, email, bracelet number typed), **5 wristband scans via webhook (done)**, **6 RFID per piece
+  (started: the Raspberry Pi app, see "RWCrew Pi" below)**.
 - **Atelier masterdata** (sidebar group "Masterdata", `/modules/module-5/masterdata/...`, screens
   `atelier.articles|sizes|dataupload`, endpoints in `module_5/masterdata_router.py`):
   `Atelier_size` = name + **fit** (`women`/`men`/`unisex`, fixed list `FITS` in the model, unique name+fit; seeded
@@ -450,6 +450,34 @@ counter, so their code is in **`app/modules/wristband/`**, not in a module:
 applications, on the team fiche and in the Teams XLSX (`aliases` column, `;`-separated, missing column = unchanged); `aliases` left out of
 `PUT /teams` keeps them. An alias may not be another team's alias or name (400).
 
+## RWCrew Pi (Raspberry Pi app, separate repo `RWRaspiTagScanner`)
+
+A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in the **separate repo**
+`RWRaspiTagScanner` (`rwpi/`; the old CSV app stays next to it), so only Pi code goes to a Pi (updates = GitHub Release,
+`update_check.sh`). It works **live on RWCrew's data through the normal HTTPS API** — never a direct database connection
+(Postgres only listens on 127.0.0.1, and the rules live in the services). Built 2026-11-05, see `docs/work-history.md`.
+
+- **Login = the operator's own account**: `POST /api/auth/token` (client `"pi"` in the login history) gives the same JWTs
+  in the body; the Pi sends `Authorization: Bearer <access>` (`landing/deps.py get_current_user` reads the Bearer header
+  before the cookie) and renews with `POST /api/auth/token/refresh` (body, rotated like the cookie) / `token/logout`. Same
+  15 min / 6 h limits, same rights: landing tiles = module access, Atelier screens = the user's Atelier role.
+- **RFID per piece (Atelier block 6)**: `Tagscan_rfid_tag.atelier_article_size_id` (what the piece is) and
+  `Atelier_handout_line.rfid_tag_id` (which piece went out; migration `b6e2d9f4a817`). Only
+  `module_5/rfid_service.py` links tags (`POST /rfid/assign`, screen **`atelier.tags`**, Pi-only "RFID-tags koppelen") and
+  resolves read EPCs (`POST /rfid/resolve`: unknown / not_atelier / inactive / piece + who has it out). A tag is an Atelier
+  piece **or** a StockMaster product/kar, never both (assign refuses, TagScan's tag PUT says `tag_is_atelier_piece`, its
+  Assignment processing leaves such a tag alone). Stock stays counted per article size; the tag adds traceability.
+- **Desk on the Pi** reuses the desk endpoints: `HandoutLineInput.rfid_tag_id` (checked by
+  `rfid_service.check_handout_tags`: exactly that size, not out), `DeskOpenLine.epc`, the person-level return. Wristband
+  scans come from the Scans webhook as on the web desk (`/desk/scanners`, `/desk/scans`). The Pi's review rules
+  (`rwpi/modules/atelier/review.py`) only explain; the server decides. TagManagement shows the piece read-only
+  (`RfidTagResponse.atelier_piece`).
+- **Pi structure**: `rwpi/api` (client), `hardware/rfid` + `hardware/gpio` (buzzer/LEDs/confirm button, gpiozero;
+  no-ops on a PC), `shared/` (session, i18n nl/en, icons via an image provider — no shader effects), `modules/registry.py`
+  (tiles) + `modules/<module>/` controllers, `qml/` screens. New Pi screens (Wassen, Ontvangst…) = controller + QML + texts
+  + a tile; a new Atelier screen key also gets a manual chapter. Develop on a PC with
+  `python -m rwpi --windowed --fake-reader --server http://127.0.0.1:8020`.
+
 ## TagScan action processing (module-1)
 
 Every scanned CSV line (`Tagscan_line_data`) and file (`Tagscan_header_data`) has a `process_status`
@@ -484,6 +512,32 @@ Lines start `new` at scan time; the file's status is derived from its lines
   (`kar_numbers_by_header`, computed, not stored). Both screens show it right after "Actie".
 - Rows on Tag Headerdata/Tag Linedata are coloured by `process_status` (`components/module-1/process-status.ts`:
   orange new, green loaded, red cancelled). Lines that existed before this feature were backfilled as `loaded`.
+
+## Mass test (loading last year's lists)
+
+`backend/masstest/` (run from `backend/` with the venv) loads last year's lists, old Excel files in their own layout, through
+the **normal API** as a real migration, on localhost → test → prod (`environments.py`). Every row that can't be loaded
+becomes a line in an Excel issue report (description + proposed solution from `solutions.py`; I review the bugs and fill in
+"Analysis"; confirmed bugs → changelog lines). The source lists and reports hold personal data: `--out` is refused inside
+the repo.
+
+- `python -m masstest convert <old.xlsx> --kind atelier-desk --out <dir>/load.xlsx` → the standard **load workbook**
+  (one sheet per step, reviewed by a person; unreadable rows → `load-convert-issues.xlsx`). Converters live in
+  `masstest/convert/` (registered in `CONVERTERS`).
+- `python -m masstest run --env local|test|prod --load <dir>/load.xlsx --out <dir> [--dry-run] [--only Sheet]`: login
+  (cookie), every step's **preflight** first (super admin, rights, lookups, settings: a blocker stops before any write),
+  then the steps in `masstest/steps/__init__.py` `STEPS` order. `<out>/<env>/ledger.json` keys every source row, so a
+  second run loads nothing twice. Calls > 2 s → performance issue. Prod needs `--confirm-production`, a prod dry run the
+  same day and a typed confirmation of a database dump. Password from `MASSTEST_PASSWORD` or prompted, never stored.
+- **Back-dating**: Atelier's desk and stock bookings accept an optional `booked_at` (super admin only,
+  `stock_service.check_booked_at`; `backdate_not_allowed` / `backdate_in_future`): documents, pick-ups and returns keep
+  that moment (doc number year = its Belgian year) and back-dated desk actions **never mail**.
+- Screen check: `npm run mass-test:screens <out.json> [web address]` (`frontend/scripts/mass-test-screens.mjs`, Edge,
+  `MASSTEST_EMAIL/PASSWORD/SEASON`) opens every Atelier screen per festival + the PDFs; `python -m masstest screens
+  <out.json> --env … --out …` turns it into the same report.
+- A new module = a converter + a step class (`sheet`, `module`, `preflight`, `run`; helpers in `steps/common.py`) + its
+  error namespaces in `messages.py` + rules in `solutions.py`. Tests: `tests/masstest/` (a full run through an httpx
+  transport into the TestClient).
 
 ## Module help manuals (PDF)
 
@@ -531,7 +585,7 @@ makes the site installable ("Add to Home Screen"), and the installed app opens `
 shows **only** the phone screens: login, module tiles, KarTracker (KarScan, Kar Planning, Kar Map, Karcode Simulator),
 Interventies (Akties list/create/edit, KPI overzicht) and StockMaster (Spraaktelling; the microphone needs HTTPS too). No desktop sidebar/topbar, no delete, no PDFs.
 This is the only phone app: there is no native (App Store / Play Store) app, no separate phone API, no Bearer
-tokens and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed
+tokens (only the Raspberry Pi app uses Bearer, see "RWCrew Pi") and no separate release — a web deploy updates the phone app too. (A React Native/Expo app existed
 until October 2026 and was removed entirely; only old login-history rows still mention it, see below.)
 
 - **Organised per module, like the web app**: routes in `frontend/src/app/[locale]/m/` (`login/` outside,

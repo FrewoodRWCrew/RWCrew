@@ -91,6 +91,10 @@ def _process_assignment(db: Session, line: TagLineData, context: ProcessContext)
         db.flush()
         return "created", f"Tag created for {product.name}"
 
+    # A tag sewn into an Atelier piece never gets a product (one or the other).
+    if existing.atelier_article_size_id is not None:
+        return "exists", "Tag is an Atelier piece — not changed"
+
     # Registered before without a product: fill it in.
     if existing.assigned_product_id is None:
         existing.assigned_product_id = product.id
