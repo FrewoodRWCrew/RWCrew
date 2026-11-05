@@ -596,6 +596,8 @@
     "module": "Atelier",
     "title": "Raspberry Pi app for Uitgifte/Inname with RFID tags",
     "description": "A stand-alone touch app on the Raspberry Pi books Atelier hand-outs and returns live in RWCrew by reading the pieces' RFID tags after the wristband scan.",
-    "commits": []
+    "commits": [
+      "cd3d4ab1f8c2349e54ad0761281d2d09bcdc9edd"
+    ]
   }
 ]
