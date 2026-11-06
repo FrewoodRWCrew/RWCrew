@@ -599,5 +599,16 @@
     "commits": [
       "cd3d4ab1f8c2349e54ad0761281d2d09bcdc9edd"
     ]
+  },
+  {
+    "id": 48,
+    "issues": [],
+    "date": "2026-11-06",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Trace pieces by RFID tag (Tag-historiek) + Pi reader tools and history",
+    "description": "Every hand-out and return keeps the RFID tag number and its source (Pi or web), viewable on a new Tag-historiek screen, while the Pi app gets reader info, antennas, logs, scanner name and a local history.",
+    "commits": []
   }
 ]
