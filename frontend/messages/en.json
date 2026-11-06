@@ -2046,7 +2046,9 @@
         "undo": "Undo",
         "undoTitle": "Undo {number}?",
         "undoDescription": "A counter-booking is made; the original booking stays visible as undone. This only works while the pieces are still there.",
-        "undone": "Undone with {number}."
+        "undone": "Undone with {number}.",
+        "piecesTitle": "Pieces and RFID tags",
+        "person": "Person"
       },
       "orderNeeds": {
         "title": "To order",

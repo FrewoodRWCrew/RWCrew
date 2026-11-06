@@ -3,6 +3,20 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-06 — Boekingen show the pieces and their EPC
+**Request:** The EPC number couldn't be found on a transaction in Atelier > Stock > Boekingen.
+**Plan:** Show a desk booking's pieces (person + EPC) and its source in the booking detail, on the Boekingsbon and as a "Pi" label in the list.
+**Changes:**
+- **Backend:**
+  - `StockDocumentResponse.source` + `pieces` (`StockDocumentPiece`), via `stock_router._desk_pieces`: a pick-up's lines, or the lines a return / write-off closed.
+  - The Boekingsbon PDF gets a "Stuks" table with EPC.
+- **Frontend:** `stock-bookings.tsx` adds a "Stuks en RFID-tags" table (EPC links to the Tag-historiek) and a "Pi" badge; types; nl/en.
+- **Docs:** Atelier manual (Boekingen).
+**Verification:**
+- New test in `test_rfid.py` (pieces, EPC, source, PDF).
+- Atelier + help tests: 116 passed.
+- `tsc` + eslint clean.
+
 ## 2026-11-06 — Trace Atelier pieces by RFID tag (Tag-historiek) + Pi reader tools and history
 **Request:**
 - Keep the tag number of every hand-out and return done with the Pi's RFID reader as a reference, so a piece can be traced later.

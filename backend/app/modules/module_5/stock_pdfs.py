@@ -33,6 +33,8 @@ LABELS = {
         "reversal_of": "Maakt ongedaan",
         "reversed_by": "Ongedaan gemaakt door {number}",
         "lines": "Lijnen",
+        "pieces": "Stuks",
+        "person": "Persoon",
         "article": "Artikel",
         "size": "Maat",
         "from": "Van",
@@ -71,6 +73,8 @@ LABELS = {
         "reversal_of": "Undoes",
         "reversed_by": "Undone by {number}",
         "lines": "Lines",
+        "pieces": "Pieces",
+        "person": "Person",
         "article": "Article",
         "size": "Size",
         "from": "From",
@@ -145,6 +149,19 @@ def build_booking_pdf(document: StockDocumentResponse, locale: str, printed_by: 
         align=("L", "L", "L", "L", "R"),
         total_row=[labels["total"], "", "", "", document.total_quantity],
     )
+    # A desk booking: every piece with who had it and its RFID tag (EPC).
+    if document.pieces:
+        section_heading(pdf, labels["pieces"] + (" · RWCrew Pi" if document.source == "pi" else ""))
+        data_table(
+            pdf,
+            [labels["article"], labels["size"], labels["person"], "EPC"],
+            [
+                [piece.article_name, f"{piece.size_name} · {labels['fits'][piece.fit]}", piece.person_name, piece.epc or "—"]
+                for piece in document.pieces
+            ],
+            col_widths=(50, 30, 44, 58),
+            align=("L", "L", "L", "L"),
+        )
     return finish(pdf)
 
 

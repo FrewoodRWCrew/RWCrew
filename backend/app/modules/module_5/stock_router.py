@@ -19,6 +19,9 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_article_size import AtelierArticleSize
+from app.db.models.atelier_handout import AtelierHandout
+from app.db.models.atelier_handout_line import AtelierHandoutLine
+from app.db.models.atelier_person import AtelierPerson
 from app.db.models.atelier_size import AtelierSize
 from app.db.models.atelier_stock_balance import AtelierStockBalance
 from app.db.models.atelier_stock_document import AtelierStockDocument
@@ -51,6 +54,7 @@ from app.schemas.atelier import (
     ReceiptRequest,
     ReverseRequest,
     StockArticleRow,
+    StockDocumentPiece,
     StockDocumentResponse,
     StockMovementResponse,
     StockTotalsResponse,
@@ -113,6 +117,7 @@ def _document_response(db: Session, document: AtelierStockDocument, *, with_line
                     quantity=move.quantity,
                 )
             )
+    source, pieces = _desk_pieces(db, document, with_lines)
     return StockDocumentResponse(
         id=document.id,
         doc_number=document.doc_number,
@@ -127,7 +132,42 @@ def _document_response(db: Session, document: AtelierStockDocument, *, with_line
         created_at=document.created_at,
         total_quantity=sum(move.quantity for move in movements),
         movements=lines,
+        source=source,
+        pieces=pieces,
     )
+
+
+def _desk_pieces(db: Session, document: AtelierStockDocument, with_lines: bool) -> tuple[str | None, list[StockDocumentPiece]]:
+    """A desk booking's source ("web" / "pi") and (with the lines) its pieces
+    with person and EPC: a pick-up's lines, or the lines this return or
+    write-off closed. Other bookings have neither."""
+    handout = db.scalar(select(AtelierHandout).where(AtelierHandout.stock_document_id == document.id))
+    if handout is not None:
+        lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.handout_id == handout.id)).all()
+        source = handout.source
+        epc_of = lambda line: line.handout_epc  # noqa: E731
+    else:
+        lines = db.scalars(select(AtelierHandoutLine).where(AtelierHandoutLine.return_document_id == document.id)).all()
+        if not lines:
+            return None, []
+        source = lines[0].return_source
+        epc_of = lambda line: line.return_epc or line.handout_epc  # noqa: E731
+    if not with_lines:
+        return source, []
+    pieces = []
+    for line in sorted(lines, key=lambda line: line.id):
+        size = db.get(AtelierSize, db.get(AtelierArticleSize, line.article_size_id).size_id)
+        person = db.get(AtelierPerson, db.get(AtelierHandout, line.handout_id).person_id)
+        pieces.append(
+            StockDocumentPiece(
+                article_name=db.get(AtelierArticle, line.article_id).name,
+                size_name=size.name,
+                fit=size.fit,
+                person_name=person.full_name,
+                epc=epc_of(line),
+            )
+        )
+    return source, pieces
 
 
 def _get_document_or_404(db: Session, document_id: int) -> AtelierStockDocument:

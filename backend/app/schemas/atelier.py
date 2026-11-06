@@ -417,6 +417,17 @@ class StockMovementResponse(BaseModel):
     quantity: int
 
 
+class StockDocumentPiece(BaseModel):
+    """One piece of a desk booking (Uitgifte / Inname / Afboeken from
+    Openstaand): who had it and its RFID tag, when it went by tag."""
+
+    article_name: str
+    size_name: str
+    fit: Fit
+    person_name: str
+    epc: str | None
+
+
 class StockDocumentResponse(BaseModel):
     """A booking with its lines (the history list leaves the lines empty)."""
 
@@ -433,6 +444,10 @@ class StockDocumentResponse(BaseModel):
     created_at: datetime
     total_quantity: int
     movements: list[StockMovementResponse]
+    # A desk booking: where it was booked ("web" / "pi"), and (with the lines)
+    # its pieces with person and EPC — the reference to the RFID tags.
+    source: str | None = None
+    pieces: list[StockDocumentPiece] = []
 
 
 class OrderNeedLine(BaseModel):

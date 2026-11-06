@@ -235,3 +235,30 @@ def test_tag_history_right(client: TestClient, db_session: Session, world: dict,
     tokens = client.post("/api/auth/token", json={"email": "balie@example.com", "password": "password123"}).json()
     headers = {"Authorization": f"Bearer {tokens['access_token']}"}
     assert client.get(f"{BASE}/rfid/history", params={"epc": "X"}, headers=headers).status_code == 403
+
+
+def test_bookings_show_the_pieces_and_epc(as_atelier: TestClient, world: dict, desk: dict) -> None:
+    # Boekingen: a desk booking lists its pieces with person and EPC, and its source.
+    tag_id = _assign(as_atelier, ["TS-1"], desk["m"]).json()[0]["rfid_tag_id"]
+    handout = as_atelier.post(
+        f"{BASE}/desk/handouts",
+        json={"first_name": "Jan", "last_name": "Peeters", "festival_id": desk["festival"], "team_id": world["terras"].id,
+              "day": DAY, "source": "pi",
+              "lines": [{"article_id": desk["tshirt"], "article_size_id": desk["m"], "rfid_tag_id": tag_id},
+                        {"article_id": desk["apron"], "article_size_id": desk["apron_size"]}]},
+    ).json()
+    tshirt_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "T-shirt")
+    as_atelier.post(f"{BASE}/desk/persons/{handout['person_id']}/return",
+                    json={"line_ids": [tshirt_line], "line_tags": {str(tshirt_line): tag_id}, "source": "pi"})
+
+    documents = {document["doc_type"]: document for document in as_atelier.get(f"{BASE}/stock/documents").json()}
+    assert (documents["hand_out"]["source"], documents["return"]["source"]) == ("pi", "pi")
+    hand_out = as_atelier.get(f"{BASE}/stock/documents/{documents['hand_out']['id']}").json()
+    assert sorted((piece["article_name"], piece["person_name"], piece["epc"]) for piece in hand_out["pieces"]) == [
+        ("Schort", "Jan Peeters", None), ("T-shirt", "Jan Peeters", "TS-1")]
+    returned = as_atelier.get(f"{BASE}/stock/documents/{documents['return']['id']}").json()
+    assert [(piece["article_name"], piece["epc"]) for piece in returned["pieces"]] == [("T-shirt", "TS-1")]
+    # Other bookings (the receipt) have no pieces; the slip prints with them.
+    assert documents["receipt"]["source"] is None
+    pdf = as_atelier.get(f"{BASE}/stock/documents/{documents['hand_out']['id']}/pdf")
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")

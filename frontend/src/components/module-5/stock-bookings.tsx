@@ -38,6 +38,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ATELIER_STOCK_CHANGED_EVENT, atelierStockErrorMessage } from "@/components/module-5/atelier-stock-common";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
+import { EpcLink } from "@/components/module-5/tag-history";
 
 const ALL = "all";
 const DOC_TYPES = ["receipt", "washed", "write_off", "count", "reversal", "hand_out", "return"] as const;
@@ -107,7 +108,15 @@ export function StockBookings({ canUndo }: StockBookingsProps) {
             {(documents.data ?? []).map((document) => (
               <TableRow key={document.id} className="group">
                 <TableCell className="font-mono text-sm">{document.doc_number}</TableCell>
-                <TableCell>{t(`docTypes.${document.doc_type}`)}</TableCell>
+                <TableCell>
+                  {t(`docTypes.${document.doc_type}`)}
+                  {/* Booked on RWCrew Pi (with the RFID reader). */}
+                  {document.source === "pi" && (
+                    <Badge variant="secondary" className="ml-2">
+                      Pi
+                    </Badge>
+                  )}
+                </TableCell>
                 <TableCell className="text-sm">{formatDateTimeNl(document.created_at)}</TableCell>
                 <TableCell className="text-sm">{document.created_by_name}</TableCell>
                 <TableCell className="text-right">{document.total_quantity}</TableCell>
@@ -208,6 +217,41 @@ function DocumentDialog({ documentId, docNumber }: { documentId: number; docNumb
             </TableBody>
           </Table>
         </div>
+        {/* A desk booking: every piece with who had it and its RFID tag. */}
+        {(detail.data?.pieces.length ?? 0) > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold">
+              {t("bookings.piecesTitle")}
+              {detail.data?.source === "pi" && <Badge className="ml-2">Pi</Badge>}
+            </p>
+            <div className="rounded-md border [&>div]:max-h-[40vh] [&>div]:overflow-y-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columns.article")}</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columns.size")}</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("bookings.person")}</TableHead>
+                    <TableHead className="sticky top-0 z-20 bg-background font-bold underline">EPC</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(detail.data?.pieces ?? []).map((piece, index) => (
+                    <TableRow key={index}>
+                      <TableCell>{piece.article_name}</TableCell>
+                      <TableCell>
+                        {piece.size_name} · {tFit(piece.fit)}
+                      </TableCell>
+                      <TableCell>{piece.person_name}</TableCell>
+                      <TableCell>
+                        <EpcLink epc={piece.epc} />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );

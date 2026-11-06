@@ -131,6 +131,8 @@ All stock bookings, newest first, with a filter on type. View the lines, print t
 
 Bookings from last year's lists (loaded by the super admin with the mass test) keep their original date and time; no mail was sent for those hand-outs and returns.
 
+A desk **Hand-out** or **Return** also shows its **pieces** under **View lines** (and on the booking note): article, size, person and the **RFID tag number (EPC)** when the piece was read with the Raspberry Pi; click the EPC for the **Tag history**. A **Pi** label in the list shows the booking was made on RWCrew Pi.
+
 ![Bookings](bookings.png)
 
 ## [orderneeds | atelier.orderneeds] To order

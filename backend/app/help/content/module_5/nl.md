@@ -131,6 +131,8 @@ Alle stockboekingen, de nieuwste eerst, met een filter op soort. Bekijk de lijne
 
 Boekingen uit de lijsten van vorig jaar (ingeladen door de superbeheerder met de massatest) staan op hun oorspronkelijke datum en uur; voor die uitgiftes en innames werd geen mail verstuurd.
 
+Een **Uitgifte** of **Inname** van de balie toont bij **Lijnen bekijken** (en op de boekingsbon) ook de **stuks**: artikel, maat, persoon en het **RFID-tagnummer (EPC)** als het stuk met de Raspberry Pi gelezen werd; klik op de EPC voor de **Tag-historiek**. Een label **Pi** in de lijst toont dat de boeking op RWCrew Pi gebeurde.
+
 ![Boekingen](bookings.png)
 
 ## [orderneeds | atelier.orderneeds] Te bestellen

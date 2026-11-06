@@ -1940,6 +1940,16 @@ export interface AtelierStockDocument {
     to_status: AtelierStockStatus | null;
     quantity: number;
   }[];
+  /** A desk booking: where it was booked ("web" / "pi"); null for other bookings. */
+  source: AtelierBookingSource | null;
+  /** A desk booking's pieces with person and RFID tag (only in the detail). */
+  pieces: {
+    article_name: string;
+    size_name: string;
+    fit: AtelierFit;
+    person_name: string;
+    epc: string | null;
+  }[];
 }
 
 /** One line of Atelier's "Te bestellen". */

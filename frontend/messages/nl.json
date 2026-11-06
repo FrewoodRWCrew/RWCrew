@@ -2046,7 +2046,9 @@
         "undo": "Ongedaan maken",
         "undoTitle": "{number} ongedaan maken?",
         "undoDescription": "Er wordt een tegenboeking gemaakt; de oorspronkelijke boeking blijft zichtbaar als ongedaan gemaakt. Dit lukt enkel als de stuks er nog zijn.",
-        "undone": "Ongedaan gemaakt met {number}."
+        "undone": "Ongedaan gemaakt met {number}.",
+        "piecesTitle": "Stuks en RFID-tags",
+        "person": "Persoon"
       },
       "orderNeeds": {
         "title": "Te bestellen",
