@@ -33,6 +33,8 @@ class ScreenDefinition:
 #   and the pieces that came back with a return status);
 # - tags: linking RFID tags to pieces (article sizes), only on the Raspberry
 #   Pi app — "view" sees the articles, "create" links the read tags;
+# - taghistory: the trace of a piece by its RFID tag (every hand-out and
+#   return with that EPC), in the "Balie" group on the website;
 # - reservations / preparation: the "Reservaties" group (persons per team per
 #   festival, and what to prepare each day + the picklist);
 # - stock / receipt / wash / writeoff / count / bookings / orderneeds: the
@@ -53,6 +55,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="atelier.open", label="Openstaand", sort_order=3),
     ScreenDefinition(key="atelier.returnissues", label="Retourproblemen", sort_order=4),
     ScreenDefinition(key="atelier.tags", label="RFID-tags koppelen", sort_order=14),
+    ScreenDefinition(key="atelier.taghistory", label="Tag-historiek", sort_order=15),
     ScreenDefinition(key="atelier.reservations", label="Reservaties", sort_order=5),
     ScreenDefinition(key="atelier.preparation", label="Voorbereiden", sort_order=6),
     ScreenDefinition(key="atelier.stock", label="Stock", sort_order=7),

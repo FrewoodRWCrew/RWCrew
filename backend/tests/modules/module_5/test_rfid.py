@@ -63,6 +63,12 @@ def test_assign_and_resolve(as_atelier: TestClient, db_session: Session, world: 
         "E200A1": "piece", "KAR-TAG": "not_atelier", "NEW-TAG": "unknown"
     }
     assert resolved["E200A1"]["open_line_id"] is None
+    # A refused tag says what it belongs to; a registered tag without anything is free to link.
+    assert resolved["KAR-TAG"]["assigned_to"] == "Bekers"
+    db_session.add(RfidTag(epc_uid="FREE-TAG", status="active"))
+    db_session.commit()
+    assert _resolve(as_atelier, ["FREE-TAG"])["FREE-TAG"]["assigned_to"] is None
+    assert _assign(as_atelier, ["FREE-TAG"], desk["m"]).json()[0]["state"] == "piece"
 
 
 def test_hand_out_and_return_by_tag(as_atelier: TestClient, world: dict, desk: dict) -> None:
@@ -152,3 +158,80 @@ def test_tagscan_shows_the_piece_and_keeps_it_apart(client: TestClient, as_ateli
     assert (refused.status_code, refused.json()["detail"]) == (400, "tag_is_atelier_piece")
     kept = client.put(f"/api/modules/module-1/tags/{tag_id}", json={"epc_uid": "TS-1", "notes_1": "zoom"})
     assert (kept.status_code, kept.json()["atelier_piece"]) == (200, "T-shirt M")
+
+
+# --- The trace (Tag-historiek) -----------------------------------------------------------------
+
+PI_READER = {"name": "ScanTag1", "location": "Atelier balie 1"}
+
+
+def test_trace_keeps_the_epc_and_source(as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    from io import BytesIO
+
+    from openpyxl import load_workbook
+
+    tags = {tag["epc"]: tag["rfid_tag_id"] for tag in as_atelier.post(
+        f"{BASE}/rfid/assign", json={"epcs": ["TS-1", "TS-2"], "article_size_id": desk["m"], "reader": PI_READER}).json()}
+    # Linking puts the tag in TagScan's register with the Pi's scanner and location.
+    registered = db_session.get(RfidTag, tags["TS-1"])
+    assert (registered.last_reader_id, registered.last_location) == ("ScanTag1", "Atelier balie 1")
+    assert registered.notes_1.startswith("Gekoppeld via RWCrew Pi door")
+
+    handout = as_atelier.post(
+        f"{BASE}/desk/handouts",
+        json={"first_name": "Jan", "last_name": "Peeters", "festival_id": desk["festival"], "team_id": world["terras"].id,
+              "day": DAY, "source": "pi", "reader": {"name": "ScanTag2", "location": "Balie 2"},
+              "lines": [{"article_id": desk["tshirt"], "article_size_id": desk["m"], "rfid_tag_id": tags["TS-1"]},
+                        {"article_id": desk["apron"], "article_size_id": desk["apron_size"]}]},
+    ).json()
+    db_session.expire_all()
+    assert db_session.get(RfidTag, tags["TS-1"]).last_reader_id == "ScanTag2"
+    # Openstaand (and its Excel) show the EPC.
+    open_lines = {line["article_name"]: line for row in as_atelier.get(f"{BASE}/desk/open").json() for line in row["lines"]}
+    assert (open_lines["T-shirt"]["epc"], open_lines["Schort"]["epc"]) == ("TS-1", None)
+    workbook = load_workbook(BytesIO(as_atelier.post(
+        f"{BASE}/desk/open/export", json={"line_ids": [line["id"] for line in handout["lines"]]}).content))
+    sheet = workbook.active
+    assert sheet.cell(1, 10).value == "EPC" and {sheet.cell(2, 10).value, sheet.cell(3, 10).value} == {"TS-1", None}
+
+    # The pieces of this pick-up.
+    tshirt_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "T-shirt")
+    apron_line = next(line["id"] for line in handout["lines"] if line["article_name"] == "Schort")
+    person_id = handout["person_id"]
+    # The return: the T-shirt by its tag; a tag of another article is refused; the apron by hand.
+    wrong = as_atelier.post(f"{BASE}/desk/persons/{person_id}/return",
+                            json={"line_ids": [apron_line], "line_tags": {str(apron_line): tags["TS-2"]}, "source": "pi"})
+    assert wrong.json()["detail"] == "tag_article_mismatch|TS-2|T-shirt M"
+    outside = as_atelier.post(f"{BASE}/desk/persons/{person_id}/return",
+                              json={"line_ids": [apron_line], "line_tags": {str(tshirt_line): tags["TS-1"]}})
+    assert outside.json()["detail"] == "tag_without_line"
+    back = as_atelier.post(
+        f"{BASE}/desk/persons/{person_id}/return",
+        json={"line_ids": [tshirt_line, apron_line], "line_tags": {str(tshirt_line): tags["TS-1"]}, "source": "pi",
+              "reader": PI_READER})
+    assert back.status_code == 200
+
+    history = as_atelier.get(f"{BASE}/rfid/history", params={"epc": "TS-1"}).json()
+    assert (history["piece"], history["last_reader_id"]) == ("T-shirt M", "ScanTag1")
+    [event] = history["events"]
+    assert (event["person_name"], event["state"], event["handout_source"], event["return_source"]) == (
+        "Jan Peeters", "returned", "pi", "pi")
+    assert (event["handout_epc"], event["return_epc"]) == ("TS-1", "TS-1")
+    # An EPC that never went out: the tag, no events; an unknown EPC: nothing.
+    assert as_atelier.get(f"{BASE}/rfid/history", params={"epc": "TS-2"}).json()["events"] == []
+    assert as_atelier.get(f"{BASE}/rfid/history", params={"epc": "NOPE"}).json()["rfid_tag_id"] is None
+
+    # Deleting the tag in TagScan doesn't erase the trace.
+    db_session.delete(db_session.get(RfidTag, tags["TS-1"]))
+    db_session.commit()
+    gone = as_atelier.get(f"{BASE}/rfid/history", params={"epc": "TS-1"}).json()
+    assert (gone["rfid_tag_id"], len(gone["events"])) == (None, 1)
+
+
+def test_tag_history_right(client: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    client.cookies.clear()
+    role = _make_role(db_session, "Balie", {"atelier.desk": (True, True, False, False)})
+    _make_user(db_session, world, "balie@example.com", role)
+    tokens = client.post("/api/auth/token", json={"email": "balie@example.com", "password": "password123"}).json()
+    headers = {"Authorization": f"Bearer {tokens['access_token']}"}
+    assert client.get(f"{BASE}/rfid/history", params={"epc": "X"}, headers=headers).status_code == 403

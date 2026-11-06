@@ -2208,7 +2208,8 @@
       "returnButton": "Return",
       "returnTitle": "Return",
       "download": "Excel",
-      "downloadFailed": "Download failed."
+      "downloadFailed": "Download failed.",
+      "epc": "EPC"
     },
     "returnIssues": {
       "festival": "Festival",
@@ -2232,7 +2233,47 @@
       "total": "{pieces, plural, one {# piece} other {# pieces}}",
       "filteredOf": "({shown} of {total} pieces shown)",
       "download": "Excel",
-      "downloadFailed": "Download failed."
+      "downloadFailed": "Download failed.",
+      "epc": "EPC"
+    },
+    "tagHistory": {
+      "title": "Tag history",
+      "description": "Everything a piece of clothing went through, by its RFID tag (EPC): every hand-out and return.",
+      "epcLabel": "EPC (tag number)",
+      "epcPlaceholder": "Type or paste the tag number…",
+      "search": "Search",
+      "loading": "Loading…",
+      "notFound": "This EPC isn't in Tag management (Scans).",
+      "noEvents": "Nothing was handed out or returned with this tag yet.",
+      "failed": "Loading failed.",
+      "tagCard": "In Tag management",
+      "piece": "Piece",
+      "noPiece": "Not an Atelier piece",
+      "status": "Status",
+      "lastRead": "Last read",
+      "lastReader": "by {reader}",
+      "at": "at {location}",
+      "handedOut": "Handed out",
+      "returned": "Returned",
+      "person": "Person",
+      "team": "Team",
+      "festival": "Festival",
+      "day": "Day",
+      "article": "Article",
+      "bookedBy": "Booked by",
+      "returnStatus": "Return status",
+      "events": "{count, plural, one {# transaction} other {# transactions}}",
+      "state": {
+        "out": "Still out",
+        "returned": "Back",
+        "written_off": "Written off",
+        "cancelled": "Cancelled"
+      },
+      "source": {
+        "web": "Website",
+        "pi": "Pi"
+      },
+      "otherTagBack": "Back with tag {epc}"
     },
     "settings": {
       "title": "Settings",

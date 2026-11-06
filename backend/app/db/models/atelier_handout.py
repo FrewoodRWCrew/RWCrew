@@ -32,6 +32,9 @@ class AtelierHandout(Base):
     # open (pieces still out) / returned (all back) / cancelled (undone at the desk).
     status: Mapped[str] = mapped_column(String(20), default="open", index=True, nullable=False)
 
+    # Where the pick-up was booked: "web" (the website's desk) or "pi" (RWCrew Pi).
+    source: Mapped[str] = mapped_column(String(10), default="web", server_default="web", nullable=False)
+
     # Who handed it out — always the session user, with a name snapshot.
     created_by: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Landing_users.id", ondelete="SET NULL"), nullable=True

@@ -2208,7 +2208,8 @@
       "returnButton": "Inname",
       "returnTitle": "Inname",
       "download": "Excel",
-      "downloadFailed": "Downloaden is mislukt."
+      "downloadFailed": "Downloaden is mislukt.",
+      "epc": "EPC"
     },
     "returnIssues": {
       "festival": "Festival",
@@ -2232,7 +2233,47 @@
       "total": "{pieces, plural, one {# stuk} other {# stuks}}",
       "filteredOf": "({shown} van {total} stuks getoond)",
       "download": "Excel",
-      "downloadFailed": "Downloaden is mislukt."
+      "downloadFailed": "Downloaden is mislukt.",
+      "epc": "EPC"
+    },
+    "tagHistory": {
+      "title": "Tag-historiek",
+      "description": "Alles wat een kledingstuk meemaakte, op basis van zijn RFID-tag (EPC): elke uitgifte en inname.",
+      "epcLabel": "EPC (tagnummer)",
+      "epcPlaceholder": "Typ of plak het tagnummer…",
+      "search": "Zoeken",
+      "loading": "Bezig met laden…",
+      "notFound": "Deze EPC staat niet in Tagbeheer (Scans).",
+      "noEvents": "Met deze tag werd nog niets uitgegeven of ingenomen.",
+      "failed": "Het ophalen is mislukt.",
+      "tagCard": "In Tagbeheer",
+      "piece": "Stuk",
+      "noPiece": "Geen Atelier-stuk",
+      "status": "Status",
+      "lastRead": "Laatst gelezen",
+      "lastReader": "door {reader}",
+      "at": "op {location}",
+      "handedOut": "Uitgegeven",
+      "returned": "Teruggebracht",
+      "person": "Persoon",
+      "team": "Ploeg",
+      "festival": "Festival",
+      "day": "Dag",
+      "article": "Artikel",
+      "bookedBy": "Geboekt door",
+      "returnStatus": "Retourstatus",
+      "events": "{count, plural, one {# transactie} other {# transacties}}",
+      "state": {
+        "out": "Nog uit",
+        "returned": "Terug",
+        "written_off": "Afgeboekt",
+        "cancelled": "Geannuleerd"
+      },
+      "source": {
+        "web": "Website",
+        "pi": "Pi"
+      },
+      "otherTagBack": "Terug met tag {epc}"
     },
     "settings": {
       "title": "Instellingen",

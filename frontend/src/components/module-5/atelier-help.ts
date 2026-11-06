@@ -12,6 +12,7 @@ export const ATELIER_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/desk`, topic: "desk", exact: true },
   { path: `${BASE}/desk/open`, topic: "open" },
   { path: `${BASE}/desk/return-issues`, topic: "returnissues" },
+  { path: `${BASE}/desk/tag-history`, topic: "taghistory" },
   { path: `${BASE}/reservations`, topic: "reservations" },
   { path: `${BASE}/reservations/preparation`, topic: "preparation" },
   { path: `${BASE}/stock`, topic: "stock", exact: true },

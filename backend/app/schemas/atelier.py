@@ -514,7 +514,7 @@ class DeskOpenLine(BaseModel):
     day: date
     handed_out_at: datetime
     # The EPC of the piece's RFID tag, when it went out by tag (the Pi app
-    # matches the tags read at a return against it).
+    # matches the tags read at a return against it; Openstaand shows it).
     epc: str | None = None
 
 
@@ -584,6 +584,18 @@ class DeskContextResponse(BaseModel):
     team_responsibles: list[DeskTeamResponsible] = []
 
 
+# Where a desk booking was made: the website's desk or RWCrew Pi.
+BookingSource = Literal["web", "pi"]
+
+
+class RfidReaderInput(BaseModel):
+    """The Pi's RFID reader (its settings screen): noted on the tags it read
+    in TagScan's register (last reader, last location, last read)."""
+
+    name: str | None = Field(default=None, max_length=255)
+    location: str | None = Field(default=None, max_length=255)
+
+
 class HandoutLineInput(BaseModel):
     """One piece to hand out: the article and the size picked (and, when
     the piece was read by its RFID tag on the Raspberry Pi app, that tag)."""
@@ -611,6 +623,9 @@ class HandoutRequest(BaseModel):
     confirm_new_bracelet: bool = False
     # Back-dated booking (super admin only, loading last year's lists).
     booked_at: datetime | None = None
+    # Where it was booked, and (on the Pi) the reader that read the tags.
+    source: BookingSource = "web"
+    reader: RfidReaderInput | None = None
 
 
 class WriteOffLinesRequest(BaseModel):
@@ -632,6 +647,11 @@ class ReturnRequest(BaseModel):
     line_statuses: dict[int, int] = Field(default_factory=dict)
     # Back-dated booking (super admin only, loading last year's lists).
     booked_at: datetime | None = None
+    # The RFID tag read per returned piece (the Pi): hand-out line id → tag id.
+    line_tags: dict[int, int] = Field(default_factory=dict)
+    # Where it was booked, and (on the Pi) the reader that read the tags.
+    source: BookingSource = "web"
+    reader: RfidReaderInput | None = None
 
 
 class DeskExportRequest(BaseModel):
@@ -661,6 +681,8 @@ class ReturnIssueResponse(BaseModel):
     status_name: str
     returned_at: datetime
     returned_by_name: str | None
+    # The piece's RFID tag (the one read at the return, else the one it went out with).
+    epc: str | None = None
 
 
 class HandoutLineResponse(BaseModel):
@@ -672,6 +694,8 @@ class HandoutLineResponse(BaseModel):
     size_name: str
     fit: Fit
     returned_at: datetime | None
+    # The EPC of the piece's RFID tag when it went out by tag (Openstaand, Excel).
+    epc: str | None = None
 
 
 class HandoutResponse(BaseModel):
@@ -786,6 +810,8 @@ class RfidResolvedTag(BaseModel):
     open_line_id: int | None
     person_id: int | None
     person_name: str | None
+    # "not_atelier": what the tag belongs to (product name, "Kar 36"); None = free to link.
+    assigned_to: str | None = None
 
 
 class RfidAssignRequest(BaseModel):
@@ -795,6 +821,8 @@ class RfidAssignRequest(BaseModel):
     epcs: list[str] = Field(min_length=1, max_length=200)
     article_size_id: int
     replace: bool = False
+    # The Pi's reader, noted on the tags in TagScan's register.
+    reader: RfidReaderInput | None = None
 
 
 class RfidArticleSizeOption(BaseModel):
@@ -815,3 +843,39 @@ class RfidArticleOption(BaseModel):
     name: str
     is_tag_managed: bool
     sizes: list[RfidArticleSizeOption]
+
+
+class TagHistoryEvent(BaseModel):
+    """One piece's hand-out (and return) with this EPC (Tag-historiek)."""
+
+    line_id: int
+    handout_id: int
+    person_name: str
+    team_name: str
+    festival_name: str
+    day: date
+    article_name: str
+    size_name: str
+    handed_out_at: datetime
+    handed_out_by: str | None
+    handout_source: BookingSource
+    handout_epc: str | None
+    returned_at: datetime | None
+    returned_by: str | None
+    return_source: BookingSource | None
+    return_epc: str | None
+    return_status: str | None
+    state: Literal["out", "returned", "written_off", "cancelled"]
+
+
+class TagHistoryResponse(BaseModel):
+    """A tag as TagScan's register knows it now, with every Atelier event of its EPC."""
+
+    epc: str
+    rfid_tag_id: int | None
+    status: str | None
+    piece: str | None
+    last_read_at: datetime | None
+    last_reader_id: str | None
+    last_location: str | None
+    events: list[TagHistoryEvent]

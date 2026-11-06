@@ -1719,6 +1719,45 @@ export interface AtelierReturnIssue {
   status_name: string;
   returned_at: string;
   returned_by_name: string | null;
+  /** The piece's RFID tag (read at the return, else the one it went out with). */
+  epc: string | null;
+}
+
+/** Where a desk booking was made: the website's desk or RWCrew Pi. */
+export type AtelierBookingSource = "web" | "pi";
+
+/** One hand-out (and return) of a piece with this EPC (Tag-historiek). */
+export interface AtelierTagHistoryEvent {
+  line_id: number;
+  handout_id: number;
+  person_name: string;
+  team_name: string;
+  festival_name: string;
+  day: string;
+  article_name: string;
+  size_name: string;
+  handed_out_at: string;
+  handed_out_by: string | null;
+  handout_source: AtelierBookingSource;
+  handout_epc: string | null;
+  returned_at: string | null;
+  returned_by: string | null;
+  return_source: AtelierBookingSource | null;
+  return_epc: string | null;
+  return_status: string | null;
+  state: "out" | "returned" | "written_off" | "cancelled";
+}
+
+/** A tag as TagScan's register knows it now, with every Atelier event of its EPC. */
+export interface AtelierTagHistory {
+  epc: string;
+  rfid_tag_id: number | null;
+  status: string | null;
+  piece: string | null;
+  last_read_at: string | null;
+  last_reader_id: string | null;
+  last_location: string | null;
+  events: AtelierTagHistoryEvent[];
 }
 
 /** One size an Atelier article comes in. */
@@ -2037,6 +2076,8 @@ export interface AtelierHandout {
     size_name: string;
     fit: AtelierFit;
     returned_at: string | null;
+    /** The EPC of the piece's RFID tag when it went out by tag (RWCrew Pi). */
+    epc: string | null;
   }[];
 }
 

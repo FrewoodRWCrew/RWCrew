@@ -21,7 +21,9 @@
 #   - a piece that never comes back is written off from Openstaand, which
 #     closes its line like a return (its return document is the write-off);
 #   - a piece read by its RFID tag (the Raspberry Pi app) must be a piece of
-#     exactly the line's article size and not out with someone (rfid_service).
+#     exactly the line's article size and not out with someone (rfid_service);
+#     the line keeps the tag and its EPC, a return by tag keeps the tag read,
+#     and every pick-up / return notes where it was booked ("web" / "pi").
 
 import re
 from datetime import date, datetime, timezone
@@ -40,12 +42,13 @@ from app.db.models.atelier_settings import AtelierSettings
 from app.db.models.atelier_size import FITS, AtelierSize
 from app.db.models.atelier_stock_document import AtelierStockDocument
 from app.db.models.festival import Festival
+from app.db.models.rfid_tag import RfidTag
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.wristband_scan import WristbandScan
 from app.modules.module_5.reservation_service import festival_days, lines_by_reservation, reservations_by_team
 from app.modules.module_5.deps import MODULE_KEY
-from app.modules.module_5.rfid_service import check_handout_tags
+from app.modules.module_5.rfid_service import Reader, check_handout_tags, check_return_tags, touch
 from app.modules.wristband.scan_service import NEW, mark_used
 from app.modules.module_5.stock_service import (
     AVAILABLE,
@@ -217,6 +220,8 @@ def create_handout(
     confirm_new_bracelet: bool = False,
     booked_at: datetime | None = None,
     line_tags: dict[int, int] | None = None,
+    source: str = "web",
+    reader: Reader | None = None,
 ) -> AtelierHandout:
     """Ophalen: hand out one piece of each chosen (article, article size) to
     a person, after checking the rules above; books available → handed out.
@@ -224,7 +229,9 @@ def create_handout(
     another wristband than the one known at this festival. `booked_at`: a
     back-dated pick-up (already checked by stock_service.check_booked_at).
     `line_tags`: per article the RFID tag of the piece read (the Raspberry Pi
-    app), checked by rfid_service.check_handout_tags and kept on the line."""
+    app), checked by rfid_service.check_handout_tags and kept on the line with
+    its EPC. `source`: "web" or "pi"; `reader`: the Pi's scanner, noted on the
+    tags in TagScan's register."""
     first_name = " ".join(first_name.split())
     last_name = " ".join(last_name.split())
     if not first_name or not last_name:
@@ -305,18 +312,23 @@ def create_handout(
         day=day,
         stock_document_id=document.id,
         status=OPEN,
+        source=source,
         created_by=user.id,
         created_by_name=user.display_name,
     )
     db.add(handout)
     db.flush()
     for article_id, article_size_id in lines:
+        tag = db.get(RfidTag, tags[article_id]) if article_id in tags else None
+        if tag is not None:
+            touch(tag, reader)
         db.add(
             AtelierHandoutLine(
                 handout_id=handout.id,
                 article_id=article_id,
                 article_size_id=article_size_id,
-                rfid_tag_id=tags.get(article_id),
+                rfid_tag_id=tag.id if tag is not None else None,
+                handout_epc=tag.epc_uid if tag is not None else None,
             )
         )
     if scan is not None:
@@ -358,12 +370,17 @@ def return_lines(
     scan_id: int | None = None,
     line_statuses: dict[int, int] | None = None,
     booked_at: datetime | None = None,
+    line_tags: dict[int, int] | None = None,
+    source: str = "web",
+    reader: Reader | None = None,
 ) -> AtelierHandout:
     """Terugbrengen: the ticked pieces come back (handed out → to wash). The
     pick-up is "returned" once every piece is back. A scan the return came
     from is marked used. `line_statuses` notes what was wrong with a piece
     (only a remark: the stock booking stays the same). `booked_at`: a
-    back-dated return (already checked)."""
+    back-dated return (already checked). `line_tags`: per line the RFID tag
+    read when it came back (the Pi; kept with its EPC). `source`: "web" or
+    "pi"; `reader`: the Pi's scanner, noted on the tags."""
     statuses = line_statuses or {}
     _check_return_statuses(db, line_ids, statuses)
     handout = _get_handout(db, handout_id)
@@ -379,6 +396,7 @@ def return_lines(
         if line.returned_at is not None:
             raise StockError("already_returned")
         chosen.append(line)
+    returned_tags = check_return_tags(db, {line.id: line for line in chosen}, line_tags or {})
 
     person = db.get(AtelierPerson, handout.person_id)
     document = return_pieces(
@@ -389,6 +407,12 @@ def return_lines(
         line.returned_at = now
         line.return_document_id = document.id
         line.return_status_id = statuses.get(line.id)
+        line.return_source = source
+        tag = returned_tags.get(line.id)
+        if tag is not None:
+            line.return_rfid_tag_id = tag.id
+            line.return_epc = tag.epc_uid
+            touch(tag, reader)
     if all(line.returned_at is not None for line in lines.values()):
         handout.status = RETURNED
     if scan is not None:
@@ -424,6 +448,9 @@ def return_person_lines(
     scan_id: int | None = None,
     line_statuses: dict[int, int] | None = None,
     booked_at: datetime | None = None,
+    line_tags: dict[int, int] | None = None,
+    source: str = "web",
+    reader: Reader | None = None,
 ) -> tuple[list[AtelierHandout], list[AtelierHandoutLine]]:
     """Terugbrengen of one person in one go: the ticked pieces may belong to
     several of their open pick-ups (one return booking per pick-up, as with
@@ -431,14 +458,19 @@ def return_person_lines(
     returned, so the desk can send one mail for the whole transaction."""
     statuses = line_statuses or {}
     _check_return_statuses(db, line_ids, statuses)
+    # A tag read can only go with a piece that comes back.
+    if not set(line_tags or {}) <= set(line_ids):
+        raise StockError("tag_without_line")
     handouts, lines = _person_lines(db, person_id, line_ids)
 
     # The scan (if any) goes with the first booking only: it can be used once.
     for index, handout in enumerate(handouts):
         handout_lines = [line.id for line in lines if line.handout_id == handout.id]
         handout_statuses = {line_id: statuses[line_id] for line_id in handout_lines if line_id in statuses}
+        handout_tags = {line_id: tag_id for line_id, tag_id in (line_tags or {}).items() if line_id in handout_lines}
         return_lines(
-            db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses, booked_at=booked_at
+            db, user, handout.id, handout_lines, scan_id if index == 0 else None, handout_statuses, booked_at=booked_at,
+            line_tags=handout_tags, source=source, reader=reader,
         )
     return handouts, lines
 

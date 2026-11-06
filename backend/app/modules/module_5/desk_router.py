@@ -59,6 +59,7 @@ from app.modules.module_5.desk_service import (
     write_off_person_lines,
 )
 from app.modules.module_5.notifications import HANDOUT, RETURN, queue_desk_mail
+from app.modules.module_5.rfid_service import Reader
 from app.modules.module_5.reservation_service import lines_by_reservation, reservations_by_team
 from app.modules.wristband.scan_service import dismiss, waiting_scans
 from app.modules.wristband.visibility import atelier_team_ids, default_season_id
@@ -81,6 +82,7 @@ from app.schemas.atelier import (
     ReturnIssueResponse,
     ReturnRequest,
     ReturnStatusResponse,
+    RfidReaderInput,
     WriteOffLinesRequest,
 )
 
@@ -93,6 +95,11 @@ KPI_SCREEN = "atelier.kpi"
 WRITE_OFF_SCREEN = "atelier.writeoff"
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+
+
+def _reader(reader: RfidReaderInput | None) -> Reader | None:
+    """The Pi's reader as the services take it (None from the website)."""
+    return Reader(name=reader.name, location=reader.location) if reader is not None else None
 
 
 def _error(error: StockError) -> HTTPException:
@@ -124,6 +131,7 @@ def _handout_response(db: Session, handout: AtelierHandout) -> HandoutResponse:
                 size_name=size_name,
                 fit=fit,
                 returned_at=line.returned_at,
+                epc=line.handout_epc,
             )
         )
     return HandoutResponse(
@@ -175,7 +183,7 @@ def _person_response(db: Session, person: AtelierPerson, festival_id: int | None
                 team_name=db.get(Team, handout.team_id).name,
                 day=handout.day,
                 handed_out_at=handout.created_at,
-                epc=db.get(RfidTag, line.rfid_tag_id).epc_uid if line.rfid_tag_id is not None else None,
+                epc=line.handout_epc,
             )
         )
     return DeskPersonResponse(
@@ -403,6 +411,8 @@ def post_handout(
             booked_at=booked_at,
             # The pieces read by their RFID tag (the Raspberry Pi app).
             line_tags={line.article_id: line.rfid_tag_id for line in payload.lines if line.rfid_tag_id is not None},
+            source=payload.source,
+            reader=_reader(payload.reader),
         )
         db.commit()
     except StockError as error:
@@ -467,7 +477,8 @@ def post_person_return(
     try:
         booked_at = check_booked_at(current_user, payload.booked_at)
         handouts, lines = return_person_lines(
-            db, current_user, person_id, payload.line_ids, payload.scan_id, payload.line_statuses, booked_at=booked_at
+            db, current_user, person_id, payload.line_ids, payload.scan_id, payload.line_statuses, booked_at=booked_at,
+            line_tags=payload.line_tags, source=payload.source, reader=_reader(payload.reader),
         )
     except StockError as error:
         db.rollback()
@@ -532,6 +543,9 @@ def post_return(
             payload.scan_id,
             payload.line_statuses,
             booked_at=check_booked_at(current_user, payload.booked_at),
+            line_tags=payload.line_tags,
+            source=payload.source,
+            reader=_reader(payload.reader),
         )
     except StockError as error:
         db.rollback()
@@ -657,6 +671,7 @@ def _return_issues(
                 status_name=return_status.name,
                 returned_at=line.returned_at,
                 returned_by_name=document.created_by_name if document else None,
+                epc=line.return_epc or line.handout_epc,
             )
         )
     return result

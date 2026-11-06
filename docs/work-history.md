@@ -3,6 +3,57 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-06 — Trace Atelier pieces by RFID tag (Tag-historiek) + Pi reader tools and history
+**Request:**
+- Keep the tag number of every hand-out and return done with the Pi's RFID reader as a reference, so a piece can be traced later.
+- Scans' Tagbeheer is the base of reference for every tag.
+- The Pi app gets the old app's reader info, antenna selection, communication log and editable scanner name, plus a "Geschiedenis".
+**Plan:**
+- EPC snapshot + source (web/pi) on hand-outs and returns; the tag read at a return.
+- Tagbeheer rows updated with the Pi's scanner name/location on every action.
+- A web Tag-historiek screen + an EPC column on Openstaand/Retourproblemen (+ Excel).
+- Pi: the reader tools on the settings screen and a local history screen.
+**Changes:**
+- **Backend:**
+  - Migration `c7f3a1e8d295` (`Atelier_handout.source`; `Atelier_handout_line.handout_epc`, `return_rfid_tag_id`, `return_epc`, `return_source`, backfill).
+  - `rfid_service.py`: `Reader`, `touch`, `check_return_tags`, `history`; `assign(reader=)`.
+  - `desk_service` create/return with `source`, `reader`, `line_tags`.
+  - Schemas (`BookingSource`, `RfidReaderInput`, `TagHistoryResponse`, `epc` on lines / return issues).
+  - `GET /rfid/history`, screen `atelier.taghistory`, EPC column in `desk_export.py`.
+  - Also yesterday's `assigned_to` on resolve (not committed yet).
+- **Frontend:**
+  - `components/module-5/tag-history.tsx` + page `desk/tag-history`.
+  - EPC column (+ filter, link) on `open-handouts.tsx` / `return-issues.tsx`.
+  - Sidebar, help route, landing `FALLBACK_SCREENS`, types, api, nl/en.
+- **Docs:** Atelier manual chapter `taghistory` (nl/en), `CLAUDE.md`.
+- **RWRaspiTagScanner:**
+  - `reader.py` rebuilt on `ReaderBase` (connect/disconnect + baud, reader info, power, antennas, logs).
+  - `config.scanner()` (scanner name/location), `device_settings.py`.
+  - New `shared/history.py` + `qml/screens/HistoryScreen.qml` (header clock button).
+  - `SettingsScreen.qml` rebuilt.
+  - The desk / tags controllers send `source: "pi"`, `reader` and `line_tags`, and log to the history.
+  - `review.py` keeps `rfid_tag_id`; nl/en texts; icons.
+  - Fix: screen switches through `Qt.callLater` (the login/logout handover could crash).
+**Verification:**
+- Backend: `test_rfid.py` 7 passed:
+  - snapshot survives deleting the tag;
+  - return tag + source stored, wrong article / tag without line refused;
+  - history events;
+  - Openstaand + Excel EPC;
+  - Tagbeheer last reader / location / note;
+  - Tag-historiek right.
+- Full backend suite: 992 passed.
+- Frontend: `tsc --noEmit` and eslint clean.
+- Pi: pytest 13 passed (history write/read/filter/purge, review rows keep the tag, reader info / antennas / power / logs against a stand-in reader); all 29 QML screens compile.
+- End-to-end offscreen on a **copy** of the local database (backend on 8021, temporary user; afterwards removed), dark + light:
+  - Pi Ophalen + Terugbrengen by tag;
+  - `GET /rfid/history` shows both with source `pi`, the EPC on both sides, and last reader `ScanTag1` / location in Tagbeheer;
+  - the history screen lists Koppelen / Terugbrengen / Ophalen;
+  - the settings screen shows connection, reader info, power, antennas and logs.
+**Notes:**
+- The web Tag-historiek screen was not opened in a browser (a second `next dev` would clash with the running one); covered by type check, lint and API tests.
+- Not yet tried on the real Pi + CF-E714.
+
 ## 2026-11-05 — RWCrew Pi: Raspberry Pi app for Atelier Uitgifte/Inname with RFID
 **Request:** Analyse, then build a stand-alone Raspberry Pi app (own GitHub folder, its own touch UI) that works on RWCrew's data: Atelier Uitgifte/Inname on the Pi — wristband scan, then the pieces' RFID tags; GPIO usable for later; a landing page with only the Atelier tile, access rights as in RWCrew; Wassen/Ontvangst later.
 **Plan:**

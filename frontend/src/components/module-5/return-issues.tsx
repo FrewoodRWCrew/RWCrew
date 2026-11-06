@@ -6,7 +6,7 @@
 // the whole season, without a day choice) and a text filter above every column
 // (client-side), so the Festival column narrows the season down to one
 // festival. The Excel button downloads the pieces shown. No email column, for
-// privacy (GDPR).
+// privacy (GDPR). The EPC (the piece's RFID tag) links to the Tag-historiek.
 
 import { useState } from "react";
 import { Download } from "lucide-react";
@@ -23,13 +23,14 @@ import { AtelierFestivalSelect, useAtelierFestival } from "@/components/module-5
 import { AtelierSeasonSelect, useAtelierSeasonId } from "@/components/module-5/atelier-season-select";
 import { FilterHeadCell, useColumnFilters } from "@/components/module-5/column-filters";
 import { saveExcel } from "@/components/module-5/desk-common";
+import { EpcLink } from "@/components/module-5/tag-history";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
 
 // The day filter's "every day" choice (Base UI's Select needs a non-empty value).
 const ALL = "all";
 
 // The table's columns, in order (each has a text filter above it).
-const COLUMNS = ["status", "article", "size", "festival", "team", "person", "bracelet", "day", "returned", "by"] as const;
+const COLUMNS = ["status", "article", "size", "festival", "team", "person", "bracelet", "day", "returned", "by", "epc"] as const;
 type Column = (typeof COLUMNS)[number];
 
 interface ReturnIssuesProps {
@@ -70,6 +71,7 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
       day: formatDateNl(issue.day),
       returned: formatDateTimeNl(issue.returned_at),
       by: issue.returned_by_name,
+      epc: issue.epc,
     };
   }
   const shown = issues.filter((issue) => matches(cells(issue)));
@@ -174,6 +176,9 @@ export function ReturnIssues({ seasons }: ReturnIssuesProps) {
                   <TableCell>{row.day}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{row.returned}</TableCell>
                   <TableCell className="text-sm text-muted-foreground">{row.by}</TableCell>
+                  <TableCell>
+                    <EpcLink epc={issue.epc} />
+                  </TableCell>
                 </TableRow>
               );
             })}

@@ -13,6 +13,7 @@ const FALLBACK_SCREENS: [string, string][] = [
   ["atelier.desk", "/modules/module-5/desk"],
   ["atelier.open", "/modules/module-5/desk/open"],
   ["atelier.returnissues", "/modules/module-5/desk/return-issues"],
+  ["atelier.taghistory", "/modules/module-5/desk/tag-history"],
   ["atelier.reservations", "/modules/module-5/reservations"],
   ["atelier.preparation", "/modules/module-5/reservations/preparation"],
   ["atelier.stock", "/modules/module-5/stock"],

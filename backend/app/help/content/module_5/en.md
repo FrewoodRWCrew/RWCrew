@@ -64,6 +64,13 @@ This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID re
 
 The View right shows the screen, Create allows linking. The stock itself doesn't change: it stays counted per size; the tag only says which physical piece is with whom.
 
+## [taghistory | atelier.taghistory] Tag history
+Everything one piece of clothing went through, by its **RFID tag (EPC)**. Type or paste the tag number and click **Search**; from **Outstanding** and **Return issues** you can also open it by clicking an EPC.
+
+At the top is the tag as **Scans > Tag management** knows it now: which piece (article and size), its status and when, by which scanner and where it was last read. Below it every **hand-out and return** with that EPC, newest first: when handed out and returned (or still out, written off, cancelled), person, team, festival, day, piece, who booked it and any return status. A label shows **where** it was booked: **Pi** (RWCrew Pi with the RFID reader) or **Website** (the desk on the website).
+
+The tag number is **stored with** every hand-out and return made with the Pi: even when the tag is later deleted in Tag management or linked to another piece, the history stays right. This screen is read-only.
+
 ## [reservations | atelier.reservations] Reservations
 Everything per festival on one page: per team **how many people** need clothing and **what each person gets** (the package, e.g. 2 T-shirts and 1 hoodie). A team works **every festival day** with that number of people and returns the clothing **every evening**, so every day needs *persons × package* again. The size isn't part of the package: it is picked at the counter.
 

@@ -10,17 +10,17 @@ from app.modules.module_9.xlsx_common import build_xlsx
 from app.schemas.atelier import HandoutResponse, ReturnIssueResponse
 
 _OPEN_HEADERS = {
-    "nl": ["Ploeg", "Festival", "Persoon", "Polsband", "Dag", "Artikel", "Maat", "Pasvorm", "Opgehaald"],
-    "en": ["Team", "Festival", "Person", "Wristband", "Day", "Article", "Size", "Fit", "Picked up"],
+    "nl": ["Ploeg", "Festival", "Persoon", "Polsband", "Dag", "Artikel", "Maat", "Pasvorm", "Opgehaald", "EPC"],
+    "en": ["Team", "Festival", "Person", "Wristband", "Day", "Article", "Size", "Fit", "Picked up", "EPC"],
 }
 _ISSUE_HEADERS = {
     "nl": [
         "Retourstatus", "Artikel", "Maat", "Pasvorm", "Festival", "Ploeg", "Persoon", "Polsband", "Dag",
-        "Teruggebracht", "Geboekt door",
+        "Teruggebracht", "Geboekt door", "EPC",
     ],
     "en": [
         "Return status", "Article", "Size", "Fit", "Festival", "Team", "Person", "Wristband", "Day", "Returned",
-        "Booked by",
+        "Booked by", "EPC",
     ],
 }
 _FITS = {
@@ -69,6 +69,7 @@ def open_pieces_xlsx(handouts: list[HandoutResponse], line_ids: set[int], locale
             _text(line.size_name),
             _FITS[language][line.fit],
             _moment(handout.created_at),
+            _text(line.epc),
         ]
         for handout, line in pieces
     ]
@@ -92,6 +93,7 @@ def return_issues_xlsx(issues: list[ReturnIssueResponse], line_ids: set[int], lo
             _day(issue.day),
             _moment(issue.returned_at),
             _text(issue.returned_by_name),
+            _text(issue.epc),
         ]
         for issue in issues
         if issue.line_id in line_ids

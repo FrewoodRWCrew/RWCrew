@@ -6,7 +6,7 @@
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer
+from sqlalchemy import DateTime, ForeignKey, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -35,6 +35,17 @@ class AtelierHandoutLine(Base):
     rfid_tag_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("Tagscan_rfid_tag.id", ondelete="SET NULL"), index=True, nullable=True
     )
+    # That tag's EPC at the moment of the hand-out: the fixed reference for the
+    # trace (also when the tag is later deleted or linked to another piece).
+    handout_epc: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
+
+    # The tag read when the piece came back (on the Pi), its EPC, and where the
+    # return was booked: "web" or "pi" (NULL while still out).
+    return_rfid_tag_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("Tagscan_rfid_tag.id", ondelete="SET NULL"), nullable=True
+    )
+    return_epc: Mapped[str | None] = mapped_column(String(255), index=True, nullable=True)
+    return_source: Mapped[str | None] = mapped_column(String(10), nullable=True)
 
     # What was wrong with it when it came back (NULL = no remark).
     return_status_id: Mapped[int | None] = mapped_column(

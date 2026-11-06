@@ -54,6 +54,9 @@ export function AtelierSidebar({ viewableScreenKeys }: AtelierSidebarProps) {
     ...(can("returnissues")
       ? [{ href: `${DESK}/return-issues`, label: t("returnIssues.title"), level: 1 as const }]
       : []),
+    ...(can("taghistory")
+      ? [{ href: `${DESK}/tag-history`, label: t("tagHistory.title"), level: 1 as const }]
+      : []),
   ];
   const RESERVATIONS = `${BASE}/reservations`;
   const reservationLinks: MenuLink[] = [

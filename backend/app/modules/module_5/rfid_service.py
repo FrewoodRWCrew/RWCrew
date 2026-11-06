@@ -6,9 +6,16 @@
 # person-level return. Stock stays counted per article size: the tag only
 # adds which physical piece is with whom.
 #
+# TagScan's tag register (Scans > Tagbeheer, Tagscan_rfid_tag) is the
+# reference for every tag: linking creates or updates its row there, and every
+# Pi action with a tag notes when and by which scanner it was last read
+# (touch). A hand-out line keeps the EPC as a fixed reference (handout_epc,
+# return_epc), so history() can trace a piece even after the tag changed.
+#
 # Nothing here commits: the router does.
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -19,19 +26,46 @@ from app.db.models.atelier_article_size import AtelierArticleSize
 from app.db.models.atelier_handout import AtelierHandout
 from app.db.models.atelier_handout_line import AtelierHandoutLine
 from app.db.models.atelier_person import AtelierPerson
+from app.db.models.atelier_return_status import AtelierReturnStatus
+from app.db.models.atelier_stock_document import AtelierStockDocument
+from app.db.models.festival import Festival
 from app.db.models.atelier_size import AtelierSize
+from app.db.models.kartracker_kar import KarTrackerKar
+from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
+from app.db.models.team import Team
 from app.db.models.user import User
 from app.modules.module_5.stock_service import StockError
 
 # What a read EPC turned out to be (ResolvedTag.state):
 UNKNOWN = "unknown"  # never registered
-NOT_ATELIER = "not_atelier"  # a registered tag without an Atelier piece (e.g. a StockMaster product or kar)
+NOT_ATELIER = "not_atelier"  # a registered tag without an Atelier piece (free, or a StockMaster product / kar)
 INACTIVE = "inactive"  # an Atelier piece whose tag is lost/damaged/retired
 PIECE = "piece"  # an Atelier piece that can be booked
 
 # The most EPCs one call may send (a counter reads a handful of pieces).
 MAX_EPCS = 200
+
+
+@dataclass
+class Reader:
+    """The RFID reader that read the tags: the Pi's scanner name and location
+    (its settings screen), noted on the tags in TagScan's register."""
+
+    name: str | None = None
+    location: str | None = None
+
+
+def touch(tag: RfidTag, reader: Reader | None) -> None:
+    """Note on the tag's row in TagScan's register that this reader read it
+    just now (nothing without a reader: e.g. the website's desk)."""
+    if reader is None:
+        return
+    tag.last_read_at = datetime.now(timezone.utc)
+    if reader.name:
+        tag.last_reader_id = reader.name[:255]
+    if reader.location:
+        tag.last_location = reader.location[:255]
 
 
 @dataclass
@@ -50,6 +84,9 @@ class ResolvedTag:
     open_line_id: int | None = None
     person_id: int | None = None
     person_name: str | None = None
+    # A registered tag that isn't an Atelier piece: what it belongs to ("Bekers",
+    # "Kar 36"); None = free, so "Tags koppelen" may still link it.
+    assigned_to: str | None = None
 
 
 def clean_epcs(epcs: list[str]) -> list[str]:
@@ -87,7 +124,7 @@ def resolve(db: Session, epcs: list[str]) -> list[ResolvedTag]:
             result.append(ResolvedTag(epc=epc, state=UNKNOWN))
             continue
         if tag.atelier_article_size_id is None:
-            result.append(ResolvedTag(epc=epc, state=NOT_ATELIER, rfid_tag_id=tag.id))
+            result.append(ResolvedTag(epc=epc, state=NOT_ATELIER, rfid_tag_id=tag.id, assigned_to=_assigned_to(db, tag)))
             continue
         article_size = db.get(AtelierArticleSize, tag.atelier_article_size_id)
         article = db.get(AtelierArticle, article_size.article_id)
@@ -112,13 +149,26 @@ def resolve(db: Session, epcs: list[str]) -> list[ResolvedTag]:
     return result
 
 
+def _assigned_to(db: Session, tag: RfidTag) -> str | None:
+    """What a non-Atelier tag belongs to: its StockMaster product, else its kar."""
+    if tag.assigned_product_id is not None:
+        product = db.get(Product, tag.assigned_product_id)
+        return product.name if product is not None else f"#{tag.assigned_product_id}"
+    if tag.kar_id is not None:
+        kar = db.get(KarTrackerKar, tag.kar_id)
+        return f"Kar {kar.kar_nummer}" if kar is not None else f"Kar #{tag.kar_id}"
+    return None
+
+
 def _piece_label(db: Session, article_size_id: int) -> str:
     """"T-shirt M" — an article size as shown in an error."""
     article_size = db.get(AtelierArticleSize, article_size_id)
     return f"{db.get(AtelierArticle, article_size.article_id).name} {db.get(AtelierSize, article_size.size_id).name}"
 
 
-def assign(db: Session, user: User, epcs: list[str], article_size_id: int, replace: bool = False) -> list[RfidTag]:
+def assign(
+    db: Session, user: User, epcs: list[str], article_size_id: int, replace: bool = False, reader: Reader | None = None
+) -> list[RfidTag]:
     """Tags koppelen: the read tags become pieces of this article size. A new
     EPC is registered in TagScan's registry; a known tag may not belong to a
     StockMaster product or kar, nor be out with someone. A tag already linked
@@ -137,14 +187,15 @@ def assign(db: Session, user: User, epcs: list[str], article_size_id: int, repla
     for epc in cleaned:
         tag = db.scalar(select(RfidTag).where(RfidTag.epc_uid == epc))
         if tag is None:
-            # A new tag, registered with who and where it was linked.
+            # A new tag in TagScan's register, with who linked it and where.
             tag = RfidTag(
                 epc_uid=epc,
                 status="active",
                 atelier_article_size_id=article_size.id,
                 date_assigned=belgian_today(),
-                last_reader_id=user.display_name,
+                notes_1=f"Gekoppeld via RWCrew Pi door {user.display_name}",
             )
+            touch(tag, reader)
             db.add(tag)
             db.flush()
             tags.append(tag)
@@ -161,6 +212,9 @@ def assign(db: Session, user: User, epcs: list[str], article_size_id: int, repla
         tag.atelier_article_size_id = article_size.id
         tag.status = "active"
         tag.date_assigned = belgian_today()
+        if not tag.notes_1:
+            tag.notes_1 = f"Gekoppeld via RWCrew Pi door {user.display_name}"
+        touch(tag, reader)
         tags.append(tag)
     db.flush()
     return tags
@@ -186,3 +240,115 @@ def check_handout_tags(db: Session, lines: list[tuple[int, int, int | None]]) ->
         if line is not None:
             person = db.get(AtelierPerson, db.get(AtelierHandout, line.handout_id).person_id)
             raise StockError("tag_out", tag.epc_uid, person.full_name)
+
+
+def check_return_tags(db: Session, lines: dict[int, AtelierHandoutLine], line_tags: dict[int, int]) -> dict[int, RfidTag]:
+    """Terugbrengen with tags (the Pi): the tag read for a returned line must
+    be an Atelier piece of that line's article (the size may differ from a
+    piece that went out by size), and one tag can return only one line.
+    Gives the tags by line id."""
+    if len(set(line_tags.values())) != len(line_tags):
+        raise StockError("tag_twice")
+    tags = {}
+    for line_id, tag_id in line_tags.items():
+        line = lines.get(line_id)
+        if line is None:
+            raise StockError("tag_without_line")
+        tag = db.get(RfidTag, tag_id)
+        if tag is None or tag.atelier_article_size_id is None:
+            raise StockError("tag_not_atelier", tag.epc_uid if tag else tag_id)
+        if db.get(AtelierArticleSize, tag.atelier_article_size_id).article_id != line.article_id:
+            raise StockError("tag_article_mismatch", tag.epc_uid, _piece_label(db, tag.atelier_article_size_id))
+        tags[line_id] = tag
+    return tags
+
+
+@dataclass
+class TagEvent:
+    """One piece's journey in the trace: the hand-out and (when back) the return."""
+
+    line_id: int
+    handout_id: int
+    person_name: str
+    team_name: str
+    festival_name: str
+    day: date
+    article_name: str
+    size_name: str
+    handed_out_at: datetime
+    handed_out_by: str | None
+    handout_source: str
+    handout_epc: str | None
+    returned_at: datetime | None = None
+    returned_by: str | None = None
+    return_source: str | None = None
+    return_epc: str | None = None
+    return_status: str | None = None
+    # "out", "returned", "written_off" or "cancelled".
+    state: str = "out"
+
+
+@dataclass
+class TagHistory:
+    """A tag as TagScan's register knows it now, and every Atelier event of its EPC."""
+
+    epc: str
+    rfid_tag_id: int | None = None
+    status: str | None = None
+    piece: str | None = None
+    last_read_at: datetime | None = None
+    last_reader_id: str | None = None
+    last_location: str | None = None
+    events: list[TagEvent] = field(default_factory=list)
+
+
+def history(db: Session, epc: str) -> TagHistory:
+    """Everything the piece with this EPC went through at the Atelier desk:
+    each hand-out line that went out or came back with this EPC, newest first."""
+    epc = epc.strip()
+    if not epc:
+        raise StockError("no_tags")
+    tag = db.scalar(select(RfidTag).where(RfidTag.epc_uid == epc))
+    result = TagHistory(epc=epc)
+    if tag is not None:
+        result.rfid_tag_id = tag.id
+        result.status = tag.status
+        result.piece = _piece_label(db, tag.atelier_article_size_id) if tag.atelier_article_size_id else None
+        result.last_read_at = tag.last_read_at
+        result.last_reader_id = tag.last_reader_id
+        result.last_location = tag.last_location
+    lines = db.scalars(
+        select(AtelierHandoutLine)
+        .where((AtelierHandoutLine.handout_epc == epc) | (AtelierHandoutLine.return_epc == epc))
+        .order_by(AtelierHandoutLine.id.desc())
+    ).all()
+    for line in lines:
+        handout = db.get(AtelierHandout, line.handout_id)
+        size = db.get(AtelierSize, db.get(AtelierArticleSize, line.article_size_id).size_id)
+        event = TagEvent(
+            line_id=line.id,
+            handout_id=handout.id,
+            person_name=db.get(AtelierPerson, handout.person_id).full_name,
+            team_name=db.get(Team, handout.team_id).name,
+            festival_name=db.get(Festival, handout.festival_id).name,
+            day=handout.day,
+            article_name=db.get(AtelierArticle, line.article_id).name,
+            size_name=size.name,
+            handed_out_at=handout.created_at,
+            handed_out_by=handout.created_by_name,
+            handout_source=handout.source,
+            handout_epc=line.handout_epc,
+        )
+        if handout.status == "cancelled":
+            event.state = "cancelled"
+        elif line.returned_at is not None:
+            document = db.get(AtelierStockDocument, line.return_document_id) if line.return_document_id else None
+            event.state = "written_off" if document is not None and document.doc_type == "write_off" else "returned"
+            event.returned_at = line.returned_at
+            event.returned_by = document.created_by_name if document is not None else None
+            event.return_source = line.return_source
+            event.return_epc = line.return_epc
+            if line.return_status_id:
+                event.return_status = db.get(AtelierReturnStatus, line.return_status_id).name
+        result.events.append(event)
+    return result

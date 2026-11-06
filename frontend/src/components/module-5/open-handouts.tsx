@@ -33,12 +33,13 @@ import { saveExcel } from "@/components/module-5/desk-common";
 import { ReturnForm } from "@/components/module-5/desk-return-form";
 import { WriteOffDialog } from "@/components/module-5/desk-write-off-dialog";
 import { useKeyedLoad } from "@/components/module-4/use-keyed-load";
+import { EpcLink } from "@/components/module-5/tag-history";
 
 // The day filter's "every day" choice (Base UI's Select needs a non-empty value).
 const ALL = "all";
 
 // The table's columns, in order (each has a text filter above it).
-const COLUMNS = ["team", "festival", "person", "bracelet", "day", "article", "size", "since"] as const;
+const COLUMNS = ["team", "festival", "person", "bracelet", "day", "article", "size", "since", "epc"] as const;
 type Column = (typeof COLUMNS)[number];
 
 // One open piece, with the texts its columns show (and filter on).
@@ -54,6 +55,7 @@ interface PieceRow {
   article: string;
   size: string;
   since: string;
+  epc: string | null;
 }
 
 // A person with their open pieces, and a team with its persons.
@@ -124,6 +126,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
           article: line.article_name,
           size: `${line.size_name} · ${tFit(line.fit)}`,
           since: handout.created_at,
+          epc: line.epc,
         })),
     );
     return list.sort(
@@ -146,6 +149,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
       article: piece.article,
       size: piece.size,
       since: formatDateTimeNl(piece.since),
+      epc: piece.epc,
     }),
   );
 
@@ -289,7 +293,7 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
                       <TableCell colSpan={2} />
                       <TableCell className="font-medium">{person.personName}</TableCell>
                       <TableCell className="font-mono text-xs">{person.bracelet}</TableCell>
-                      <TableCell colSpan={4} className="text-sm text-muted-foreground">
+                      <TableCell colSpan={5} className="text-sm text-muted-foreground">
                         {t("piecesCount", { pieces: person.pieces.length })}
                       </TableCell>
                       {hasActions && (
@@ -321,6 +325,9 @@ export function OpenHandouts({ seasons, canBook, canCancel, canWriteOff }: OpenH
                         <TableCell>{piece.article}</TableCell>
                         <TableCell>{piece.size}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{formatDateTimeNl(piece.since)}</TableCell>
+                        <TableCell>
+                          <EpcLink epc={piece.epc} />
+                        </TableCell>
                         {hasActions && <TableCell className="sticky right-0 z-10 bg-background group-hover:bg-muted/50" />}
                       </TableRow>
                     ))}

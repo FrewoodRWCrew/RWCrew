@@ -38,6 +38,7 @@ import type {
   AtelierPreviousReservations,
   AtelierRole,
   AtelierReturnIssue,
+  AtelierTagHistory,
   AtelierReturnStatus,
   AtelierReturnStatusInput,
   AtelierSize,
@@ -2956,6 +2957,11 @@ export function listAtelierDeskReturnStatuses(): Promise<AtelierReturnStatus[]> 
 }
 
 /** Retourproblemen of one festival, or of every festival of a season ("Alle festivals"). */
+/** Tag-historiek: the tag and every hand-out / return of a piece with this EPC. */
+export function getAtelierTagHistory(epc: string): Promise<AtelierTagHistory> {
+  return apiFetch<AtelierTagHistory>(`${ATELIER_BASE}/rfid/history?epc=${encodeURIComponent(epc)}`);
+}
+
 export function listAtelierReturnIssues(filters: {
   festivalId: number | null;
   seasonId?: number | null;

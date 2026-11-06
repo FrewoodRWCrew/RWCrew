@@ -64,6 +64,13 @@ Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-leze
 
 Met het recht Bekijken zie je het scherm, met Aanmaken mag je koppelen. De stock zelf verandert niet: die blijft per maat geteld; de tag zegt enkel welk fysiek stuk bij wie is.
 
+## [taghistory | atelier.taghistory] Tag-historiek
+Alles wat één kledingstuk meemaakte, op basis van zijn **RFID-tag (EPC)**. Typ of plak het tagnummer en klik **Zoeken**; vanuit **Openstaand** en **Retourproblemen** open je het ook door op een EPC te klikken.
+
+Bovenaan staat de tag zoals **Scans > Tagbeheer** hem nu kent: welk stuk (artikel en maat), de status en wanneer, door welke scanner en waar hij laatst gelezen werd. Daaronder elke **uitgifte en inname** met die EPC, de nieuwste bovenaan: wanneer uitgegeven en teruggebracht (of nog uit, afgeboekt, geannuleerd), persoon, ploeg, festival, dag, stuk, wie het boekte en een eventuele retourstatus. Een label toont **waar** het geboekt werd: **Pi** (RWCrew Pi met de RFID-lezer) of **Website** (de balie op de website).
+
+Het tagnummer wordt bij elke uitgifte en inname met de Pi **mee bewaard**: ook als de tag later in Tagbeheer verwijderd of aan een ander stuk gekoppeld wordt, blijft de historiek kloppen. Dit scherm is enkel om te bekijken.
+
 ## [reservations | atelier.reservations] Reservaties
 Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig hebben en **wat elke persoon krijgt** (het pakket, bv. 2 T-shirts en 1 hoodie). Een ploeg werkt **elke festivaldag** met dat aantal mensen en brengt de kledij **elke avond terug**, dus elke dag is er opnieuw *personen × pakket* nodig. De maat zit niet in het pakket: die wordt aan de balie gekozen.
 

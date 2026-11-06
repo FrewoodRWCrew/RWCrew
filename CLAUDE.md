@@ -472,6 +472,23 @@ A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in 
   scans come from the Scans webhook as on the web desk (`/desk/scanners`, `/desk/scans`). The Pi's review rules
   (`rwpi/modules/atelier/review.py`) only explain; the server decides. TagManagement shows the piece read-only
   (`RfidTagResponse.atelier_piece`).
+- **Tag trace (2026-11-06)**: Scans' Tagbeheer (`Tagscan_rfid_tag`) is the reference for every tag; every Pi action
+  sends `reader {name, location}` (the Pi's scanner name/location) and `rfid_service.touch` notes it on the tag
+  (`last_read_at`, `last_reader_id`, `last_location`; linking also writes `notes_1` when empty). A hand-out line keeps
+  `handout_epc` (snapshot, survives deleting/relinking the tag) and, on a Pi return, `return_rfid_tag_id` + `return_epc`
+  (`ReturnRequest.line_tags`, checked by `check_return_tags`: same **article**, error `tag_article_mismatch`);
+  `Atelier_handout.source` / `Atelier_handout_line.return_source` = `web` | `pi` (migration `c7f3a1e8d295`).
+  `GET /rfid/history?epc=` (`rfid_service.history`) feeds the **Tag-historiek** screen (`atelier.taghistory`,
+  `/modules/module-5/desk/tag-history`, `components/module-5/tag-history.tsx`, `EpcLink` used by the EPC column on
+  Openstaand and Retourproblemen and in their Excel).
+- **Pi settings / history**: the settings screen has the old app's reader tools (connect/disconnect with baud, reader
+  info, RF power kept on the reader, antennas 1–4, activity + communication log via `ReaderBase` in
+  `rwpi/hardware/rfid/reader.py`) and the scanner name + location (`config.scanner()`, default = the old app's scanner
+  name). `rwpi/shared/history.py` keeps the Pi's own log (`~/.local/state/rwcrew-pi/history.jsonl`, 90 days) of every
+  Ophalen/Terugbrengen/Koppelen incl. refused and offline ones, shown on `HistoryScreen.qml` (header clock icon).
+  Gotchas: QML screen switches from inside a signal handler of the screen being destroyed go through `Qt.callLater`;
+  PySide6 `Property` with notify must be declared on the class that declares the signal (not in a subclass), else
+  random crashes.
 - **Pi structure**: `rwpi/api` (client), `hardware/rfid` + `hardware/gpio` (buzzer/LEDs/confirm button, gpiozero;
   no-ops on a PC), `shared/` (session, i18n nl/en, icons via an image provider — no shader effects), `modules/registry.py`
   (tiles) + `modules/<module>/` controllers, `qml/` screens. New Pi screens (Wassen, Ontvangst…) = controller + QML + texts
