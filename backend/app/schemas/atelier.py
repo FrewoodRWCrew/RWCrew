@@ -330,6 +330,10 @@ class StockSizeRow(BaseModel):
     available: int
     to_wash: int
     handed_out: int
+    # Pieces with an active RFID tag, and the pieces still without one
+    # (owned − tagged, never below 0).
+    tagged: int = 0
+    untagged: int = 0
 
 
 class StockArticleRow(BaseModel):
@@ -591,9 +595,12 @@ class DeskContextResponse(BaseModel):
 
     team_id: int
     team_name: str
-    # The reservation's number of persons, and the people who already picked up today.
+    # The reservation's number of persons, the people who already picked up
+    # today, and the people who hold clothing right now (the limit: a new
+    # person can't pick up once that reaches the reservation).
     persons_reserved: int
     served_today: int
+    persons_holding: int = 0
     articles: list[DeskPackageArticle]
     # The team's leads in the festival's season (shown behind an icon at the desk).
     team_responsibles: list[DeskTeamResponsible] = []
@@ -636,6 +643,8 @@ class HandoutRequest(BaseModel):
     lines: list[HandoutLineInput] = Field(min_length=1)
     # The desk confirmed: same person, another wristband than the known one here.
     confirm_new_bracelet: bool = False
+    # A user with "edit" on the desk confirmed: hand out beyond the reservation.
+    confirm_over_reservation: bool = False
     # Back-dated booking (super admin only, loading last year's lists).
     booked_at: datetime | None = None
     # Where it was booked, and (on the Pi) the reader that read the tags.

@@ -25,7 +25,7 @@ Heeft een gekende persoon op dit festival al een **ander polsbandnummer**, dan v
 Een artikel dat de persoon nog niet teruggebracht heeft, kan niet opnieuw meegegeven worden. Een oranje kader toont wat de persoon nog heeft, met de knop **Eerst terugbrengen** die meteen het terugbrengen voor die persoon opent. Alle andere artikels kan de persoon wel ophalen — ook meerdere keren per dag.
 5. Klik op **Uitgeven** (of Enter).
 
-Staan er vandaag al evenveel of meer personen van de ploeg genoteerd dan gereserveerd, dan kleurt de teller oranje — uitgeven kan nog altijd.
+**De reservatie is een limiet.** De teller toont hoeveel personen van de ploeg op dit festival **nu kledij in bezit** hebben, tegenover het gereserveerde aantal personen. Is dat aantal bereikt, dan weigert de balie een **nieuwe** persoon (wie al iets heeft, mag wel een ander artikel ophalen); wie alles terugbracht, maakt een plaats vrij. Met het recht **Wijzigen** op Uitgifte & inname vraagt de balie of je **toch wil uitgeven** boven de reservatie; zonder dat recht verhoog je eerst de reservatie op **Reservaties**.
 
 **Terugbrengen**
 1. Zoek de persoon op naam, e-mailadres of polsbandnummer (enkel wie nog kledij heeft).
@@ -37,7 +37,7 @@ Staan er vandaag al evenveel of meer personen van de ploeg genoteerd dan gereser
 
 Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annuleren** (de stuks gaan terug naar beschikbaar).
 
-**Op de Raspberry Pi (RWCrew Pi)**: met de RFID-lezer verloopt hetzelfde zonder typen. Kies één keer seizoen, festival, dag en de polsbandscanner van de balie (wordt onthouden). Elke polsbandscan verschijnt als kaart met **Ophalen**, **Terugbrengen** en **Negeren**. Bij Ophalen leg je de stukken op de lezer: elk stuk met een tag (zie **RFID-tags koppelen**) wordt meteen getoond, groen als het geboekt wordt, oranje met de reden als het niet kan (niet in het pakket, nog in bezit, tweede stuk van hetzelfde artikel, bij iemand anders, geen stock). Bij Terugbrengen worden de gelezen stuks aangevinkt (ook stuks die zonder tag meegingen, per artikel); je kan nog met de hand aan- of afvinken en een retourstatus kiezen. **Bevestigen** boekt het, met dezelfde regels, mails en rechten als op de website. Zonder verbinding met RWCrew wordt er niets geboekt (rode balk).
+**Op de Raspberry Pi (RWCrew Pi)**: met de RFID-lezer verloopt hetzelfde zonder typen. Kies één keer seizoen, festival, dag en de polsbandscanner van de balie (wordt onthouden). Elke polsbandscan verschijnt als kaart met **Ophalen**, **Terugbrengen** en **Negeren**; het e-mailadres staat er, net als op de website, maar deels (bv. fr***@gm***.com). Bij Ophalen leg je de stukken op de lezer: elk stuk met een tag (zie **RFID-tags koppelen**) wordt meteen getoond, groen als het geboekt wordt, oranje met de reden als het niet kan (niet in het pakket, nog in bezit, tweede stuk van hetzelfde artikel, bij iemand anders, geen stock). Bij Terugbrengen worden de gelezen stuks aangevinkt (ook stuks die zonder tag meegingen, per artikel); je kan nog met de hand aan- of afvinken en een retourstatus kiezen. **Bevestigen** boekt het, met dezelfde regels, mails en rechten als op de website. Zonder verbinding met RWCrew wordt er niets geboekt (rode balk).
 
 ![De balie: Ophalen of Terugbrengen](desk.png)
 
@@ -60,7 +60,8 @@ Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-leze
 
 1. Kies het **artikel** (zoekbaar) en daarna de **maat** (grote knoppen; per maat zie je hoeveel stuks al een tag hebben). Een artikel met één maat (OneSize) is meteen gekozen.
 2. Leg de stukken van die maat op de lezer. Elke gelezen tag krijgt een regel: **Nieuw — wordt gekoppeld** (groen), **Al deze maat** (groen, er verandert niets), **Al …** een ander stuk (oranje) of geweigerd (rood: de tag hoort bij een StockMaster-product of kar, of het stuk is uitgegeven aan iemand).
-3. Tik op **Koppelen**. Staan er tags bij die al een ander stuk zijn, dan vraagt de Pi eerst of je ze toch wil wijzigen.
+3. Elke tag die gekoppeld kan worden, heeft een **vinkje** (standaard aan): tik een regel aan om een tag die per ongeluk mee gelezen werd **uit te vinken**.
+4. Tik op **Koppelen**: enkel de aangevinkte tags worden gekoppeld. Staan er aangevinkte tags bij die al een ander stuk zijn, dan vraagt de Pi eerst of je ze toch wil wijzigen.
 
 Met het recht Bekijken zie je het scherm, met Aanmaken mag je koppelen. De stock zelf verandert niet: die blijft per maat geteld; de tag zegt enkel welk fysiek stuk bij wie is.
 
@@ -102,7 +103,7 @@ Wat de winkel **elke festivaldag** klaarlegt (elke dag is hetzelfde, want de kle
 ![Voorbereiden](preparation.png)
 
 ## [stock | atelier.stock] Stock
-Per artikel en maat hoeveel stuks **beschikbaar** zijn, **te wassen** zijn (teruggebracht na een shift) en **uitgegeven** zijn, met het totaal en de minimumstock. Een maat onder de minimumstock kleurt oranje; boven elke Atelier-pagina staat dan ook een oranje melding. Met **Enkel onder minimumstock** zie je alleen die maten.
+Per artikel en maat hoeveel stuks **beschikbaar** zijn, **te wassen** zijn (teruggebracht na een shift) en **uitgegeven** zijn, met het totaal en de minimumstock. **Met RFID-tag** telt de stuks met een actieve tag in Scans > Tagbeheer (gekoppeld met de Raspberry Pi; verloren of beschadigde tags tellen niet), **Zonder tag** de stuks die er nog een nodig hebben (oranje). Een maat onder de minimumstock kleurt oranje; boven elke Atelier-pagina staat dan ook een oranje melding. Met **Enkel onder minimumstock** zie je alleen die maten.
 
 ![Stock](stock.png)
 

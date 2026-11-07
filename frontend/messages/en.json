@@ -1982,7 +1982,9 @@
         "size": "Size",
         "total": "Total",
         "minStock": "Min. stock",
-        "actions": "Actions"
+        "actions": "Actions",
+        "tagged": "With RFID tag",
+        "untagged": "Without tag"
       },
       "overview": {
         "title": "Stock",
@@ -1990,7 +1992,8 @@
         "search": "Search by article or code",
         "onlyBelow": "Only below minimum stock",
         "totals": "Available {available} · to wash {toWash} · handed out {handedOut}",
-        "empty": "No articles."
+        "empty": "No articles.",
+        "tagTotals": "with RFID tag {tagged} · without tag {untagged}"
       },
       "receipt": {
         "title": "Receipt",
@@ -2105,7 +2108,6 @@
       "teamLabel": "Team",
       "pickTeam": "Pick a team",
       "knownPerson": "Known: {name}",
-      "servedToday": "Already {served} of {reserved} reserved persons served today.",
       "noPackage": "This team has no package at this festival.",
       "onePiece": "1 piece — click the size again to skip",
       "notBackYet": "not returned yet — return it first",
@@ -2144,7 +2146,9 @@
         "bracelet_required": "A wristband number is required to pick up.",
         "scan_not_waiting": "This scan was already used or ignored.",
         "person_not_found": "This person doesn't exist (any more).",
-        "return_status_invalid": "This return status can't be chosen (any more)."
+        "return_status_invalid": "This return status can't be chosen (any more).",
+        "reservation_full": "{p1}'s reservation is full: {p2} of {p3} persons already hold clothing. Raise the reservation first (Reservations), or ask someone with the Edit right on the desk.",
+        "reservation_full_no_right": "Handing out beyond the reservation needs the Edit right on Hand-out & return."
       },
       "firstNameLabel": "First name",
       "lastNameLabel": "Family name",
@@ -2177,7 +2181,9 @@
       "scanBraceletDescription": "Hold the wristband in front of the camera.",
       "noReturnStatus": "No remark",
       "returnStatusLabel": "Return status of {article}",
-      "scanTeamUnknown": "This team was not recognised: choose the right team when picking up."
+      "scanTeamUnknown": "This team was not recognised: choose the right team when picking up.",
+      "personsHolding": "{holding} of {reserved} reserved persons hold clothing right now.",
+      "reservationFullConfirm": "{team}'s reservation is full: {holding} of {reserved} persons already hold clothing.\n\nHand out beyond the reservation anyway?"
     },
     "open": {
       "festival": "Festival",

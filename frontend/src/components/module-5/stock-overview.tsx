@@ -42,10 +42,12 @@ export function StockOverview({ articles }: StockOverviewProps) {
         sum.available += size.available;
         sum.toWash += size.to_wash;
         sum.handedOut += size.handed_out;
+        sum.tagged += size.tagged;
+        sum.untagged += size.untagged;
       }
       return sum;
     },
-    { available: 0, toWash: 0, handedOut: 0 },
+    { available: 0, toWash: 0, handedOut: 0, tagged: 0, untagged: 0 },
   );
 
   return (
@@ -70,6 +72,8 @@ export function StockOverview({ articles }: StockOverviewProps) {
         </div>
         <p className="ml-auto text-sm text-muted-foreground">
           {t("overview.totals", { available: totals.available, toWash: totals.toWash, handedOut: totals.handedOut })}
+          {" · "}
+          {t("overview.tagTotals", { tagged: totals.tagged, untagged: totals.untagged })}
         </p>
       </div>
 
@@ -92,6 +96,12 @@ export function StockOverview({ articles }: StockOverviewProps) {
                 {t("columns.total")}
               </TableHead>
               <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">
+                {t("columns.tagged")}
+              </TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">
+                {t("columns.untagged")}
+              </TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background text-right font-bold underline">
                 {t("columns.minStock")}
               </TableHead>
             </TableRow>
@@ -99,7 +109,7 @@ export function StockOverview({ articles }: StockOverviewProps) {
           <TableBody>
             {shown.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center text-muted-foreground">
+                <TableCell colSpan={9} className="text-center text-muted-foreground">
                   {t("overview.empty")}
                 </TableCell>
               </TableRow>
@@ -132,6 +142,13 @@ export function StockOverview({ articles }: StockOverviewProps) {
                       <TableCell className="text-right">{size.handed_out}</TableCell>
                       <TableCell className="text-right font-bold">
                         {size.available + size.to_wash + size.handed_out}
+                      </TableCell>
+                      {/* RFID: pieces with an active tag, and the ones still needing one (orange). */}
+                      <TableCell className="text-right">{size.tagged}</TableCell>
+                      <TableCell
+                        className={cn("text-right", size.untagged > 0 && "font-medium text-orange-700 dark:text-orange-300")}
+                      >
+                        {size.untagged}
                       </TableCell>
                       <TableCell className="text-right text-muted-foreground">{size.min_stock ?? ""}</TableCell>
                     </TableRow>

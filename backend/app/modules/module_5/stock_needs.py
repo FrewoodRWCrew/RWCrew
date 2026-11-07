@@ -1,6 +1,7 @@
 # What Atelier's stock means (block 3), worked out on the fly — nothing is
 # stored here:
-#   - the stock overview: per article its sizes with the pieces per status;
+#   - the stock overview: per article its sizes with the pieces per status,
+#     and how many pieces carry an RFID tag (and how many still don't);
 #   - "Te bestellen": per article size the highest festival-day need of the
 #     season (the size estimate of preparation_service) minus everything the
 #     atelier owns (available + to wash + handed out);
@@ -14,6 +15,7 @@ from app.db.models.atelier_article_size import AtelierArticleSize
 from app.db.models.atelier_size import FITS, AtelierSize
 from app.db.models.festival import Festival
 from app.modules.module_5.preparation_service import build_preparation
+from app.modules.module_5.rfid_service import tagged_counts
 from app.modules.module_5.stock_service import AVAILABLE, HANDED_OUT, STATUSES, TO_WASH, all_balances
 from app.schemas.atelier import MinStockLine, OrderNeedLine, StockArticleRow, StockSizeRow
 
@@ -27,6 +29,7 @@ def stock_overview(db: Session) -> list[StockArticleRow]:
     """Every article (inactive ones only while they still hold stock) with
     its sizes and the pieces per status."""
     balances = all_balances(db)
+    tagged = tagged_counts(db)
     sizes = {size.id: size for size in db.scalars(select(AtelierSize)).all()}
     rows_by_article: dict[int, list[AtelierArticleSize]] = {}
     for row in db.scalars(select(AtelierArticleSize)).all():
@@ -45,6 +48,8 @@ def stock_overview(db: Session) -> list[StockArticleRow]:
                 available=balances.get((row.id, AVAILABLE), 0),
                 to_wash=balances.get((row.id, TO_WASH), 0),
                 handed_out=balances.get((row.id, HANDED_OUT), 0),
+                tagged=tagged.get(row.id, 0),
+                untagged=max(0, sum(balances.get((row.id, status), 0) for status in STATUSES) - tagged.get(row.id, 0)),
             )
             for row in _sizes_in_order(rows_by_article.get(article.id, []), sizes)
         ]

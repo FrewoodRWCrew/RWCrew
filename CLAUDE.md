@@ -332,8 +332,11 @@ only that shell.
   open/returned/cancelled, its `hand_out` stock document) and `Atelier_handout_line` (article + article size,
   `returned_at` + return document)). **Every transaction starts with the choice "Ophalen" / "Terugbrengen"** (big
   buttons, keys 1/2) in `desk-screen.tsx`, then back to that choice. Ophalen: only articles of the team's package for
-  that festival, **1 piece each** (size picked at the desk), never an article the person still has out; more people than
-  reserved is only an orange warning. Terugbrengen: tick what's back (partial allowed) → `return` (handed out → to
+  that festival, **1 piece each** (size picked at the desk), never an article the person still has out. **The reservation's persons are a limit** (2026-11-07):
+  once as many people of the team at the festival **hold clothing now** (`desk_service.persons_holding`, open pick-ups)
+  as reserved, a new person gets `reservation_full|team|holding|reserved`. Only a user with **edit** on `atelier.desk`
+  may override (`confirm_over_reservation`, checked in `desk_router`, else 403 `reservation_full_no_right`); back-dated
+  loads are not limited. `DeskContextResponse.persons_holding` drives the "x / y" counter (web + Pi). Terugbrengen: tick what's back (partial allowed) → `return` (handed out → to
   wash). `stock_service.hand_out` / `return_pieces`; those documents can't be undone on Boekingen (`use_desk`) — only
   "Uitgifte annuleren" (`edit` on the desk, while nothing was returned). **Package quantity is always 1**
   (`reservation_service.PACKAGE_QUANTITY`, forced on save/copy/XLSX; migration `f9b3d6e1a475` set existing lines to 1;
@@ -481,6 +484,11 @@ A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in 
   `GET /rfid/history?epc=` (`rfid_service.history`) feeds the **Tag-historiek** screen (`atelier.taghistory`,
   `/modules/module-5/desk/tag-history`, `components/module-5/tag-history.tsx`, `EpcLink` used by the EPC column on
   Openstaand and Retourproblemen and in their Excel).
+- **Stock and tags**: Atelier's stock overview shows per size `tagged` (active tags, `rfid_service.tagged_counts`,
+  also used by the Pi's article list) and `untagged` (owned − tagged, ≥ 0).
+- **Pi details**: emails are masked in Python before they reach QML (`rwpi/shared/mask_email.py`, a port of
+  `lib/mask-email.ts`; the full scan email stays in `AtelierDesk._scan_emails`, sent only with the booking). Tags
+  koppelen has a checkbox per linkable tag (ticked by default; `StateRow.checkable`).
 - **Pi settings / history**: the settings screen has the old app's reader tools (connect/disconnect with baud, reader
   info, RF power kept on the reader, antennas 1–4, activity + communication log via `ReaderBase` in
   `rwpi/hardware/rfid/reader.py`) and the scanner name + location (`config.scanner()`, default = the old app's scanner

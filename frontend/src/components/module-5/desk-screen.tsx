@@ -329,6 +329,7 @@ export function DeskScreen({ seasons, canBook, canCancel }: DeskScreenProps) {
               day={day}
               scan={activeScan}
               wristbandRequired={wristbandRequired}
+              canOverride={canCancel}
               onDone={finish}
               onReturnFirst={(person) => {
                 setReturnPerson(person);
@@ -357,13 +358,15 @@ interface PickupFormProps {
   scan: WristbandScan | null;
   /** The global switch: a wristband number is needed. */
   wristbandRequired: boolean;
+  /** "Edit" on the desk: may hand out beyond the reservation (after confirming). */
+  canOverride: boolean;
   onDone: () => void;
   /** "Eerst terugbrengen": switch to the return of this person. */
   onReturnFirst: (person: AtelierDeskPerson) => void;
 }
 
 /** Ophalen: who, which team, and a size per package article taken. */
-function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFirst }: PickupFormProps) {
+function PickupForm({ festival, day, scan, wristbandRequired, canOverride, onDone, onReturnFirst }: PickupFormProps) {
   const t = useTranslations("atelier.desk");
   const tStock = useTranslations("atelier.stock");
   const tFit = useTranslations("atelier.fits");
@@ -456,10 +459,11 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
             : null;
   const ready = missing === null;
 
-  const served = context.data?.served_today ?? 0;
+  // The reservation's limit: the people of the team holding clothing now.
+  const holding = context.data?.persons_holding ?? 0;
   const reserved = context.data?.persons_reserved ?? 0;
 
-  async function handleSubmit(confirmNewBracelet = false) {
+  async function handleSubmit(confirmNewBracelet = false, confirmOverReservation = false) {
     if (!ready || teamId === null) return;
     setIsBooking(true);
     try {
@@ -474,6 +478,7 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         day,
         lines,
         confirm_new_bracelet: confirmNewBracelet,
+        confirm_over_reservation: confirmOverReservation,
       });
       toast.success(
         t("handedOut", {
@@ -488,7 +493,15 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
       if (error instanceof ApiError && error.message.startsWith("bracelet_differs|")) {
         const [, known, name] = error.message.split("|");
         if (window.confirm(t("braceletDiffersConfirm", { name, known, number: bracelet.trim() }))) {
-          await handleSubmit(true);
+          await handleSubmit(true, confirmOverReservation);
+        }
+        return;
+      }
+      // The reservation is full: only "edit" on the desk may still hand out.
+      if (error instanceof ApiError && error.message.startsWith("reservation_full|") && canOverride) {
+        const [, team, count, total] = error.message.split("|");
+        if (window.confirm(t("reservationFullConfirm", { team, holding: count, reserved: total }))) {
+          await handleSubmit(confirmNewBracelet, true);
         }
         return;
       }
@@ -670,11 +683,11 @@ function PickupForm({ festival, day, scan, wristbandRequired, onDone, onReturnFi
         <p
           className={cn(
             "flex items-center gap-2 text-sm",
-            served >= reserved ? "font-medium text-orange-700 dark:text-orange-300" : "text-muted-foreground",
+            holding >= reserved ? "font-medium text-orange-700 dark:text-orange-300" : "text-muted-foreground",
           )}
         >
-          {served >= reserved && <TriangleAlert className="size-4" />}
-          {t("servedToday", { served, reserved })}
+          {holding >= reserved && <TriangleAlert className="size-4" />}
+          {t("personsHolding", { holding, reserved })}
         </p>
       )}
 

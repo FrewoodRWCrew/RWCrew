@@ -512,3 +512,42 @@ def test_deleting_masterdata_with_hand_outs_is_refused_clearly(
         response = as_atelier.delete(f"{masterdata}/{path}")
         assert response.status_code == 400, path
         assert f"This {word} still has history" in response.json()["detail"]
+
+
+def test_reservation_limit(client: TestClient, as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    # Terras reserved 2 persons: the people holding clothing count, not who came earlier.
+    def detail(response) -> str:
+        return response.json()["detail"]
+
+    jan = _pick_up(as_atelier, world, desk, [("apron", "apron_size")], first="Jan").json()
+    assert _pick_up(as_atelier, world, desk, [("apron", "apron_size")], first="Piet").status_code == 201
+    context = as_atelier.get(
+        f"{BASE}/desk/context", params={"festival_id": desk["festival"], "team_id": world["terras"].id, "day": DAY}
+    ).json()
+    assert (context["persons_reserved"], context["persons_holding"]) == (2, 2)
+    # A third person is refused ...
+    assert detail(_pick_up(as_atelier, world, desk, [("apron", "apron_size")], first="An")) == "reservation_full|RW terras|2|2"
+    # ... but Jan, who already holds something, may pick up another article.
+    assert _pick_up(as_atelier, world, desk, [("tshirt", "m")], first="Jan").status_code == 201
+
+    # Jan brings everything back: his place is free again.
+    person = as_atelier.get(f"{BASE}/desk/persons", params={"q": "jan peeters"}).json()[0]
+    as_atelier.post(f"{BASE}/desk/persons/{person['id']}/return",
+                    json={"line_ids": [line["line_id"] for line in person["open_lines"]]})
+    assert jan["person_id"] == person["id"]
+    assert _pick_up(as_atelier, world, desk, [("apron", "apron_size")], first="An").status_code == 201
+
+    # Full again: only a user with "edit" on the desk may confirm going over it.
+    over = {"first_name": "Els", "last_name": "Peeters", "festival_id": desk["festival"], "team_id": world["terras"].id,
+            "day": DAY, "confirm_over_reservation": True,
+            "lines": [{"article_id": desk["apron"], "article_size_id": desk["apron_size"]}]}
+    as_atelier.post("/api/auth/logout")
+    role = _make_role(db_session, "Balie", {"atelier.desk": (True, True, False, False)})
+    _make_user(db_session, world, "balie@example.com", role)
+    _login(client, "balie@example.com")
+    assert detail(client.post(f"{BASE}/desk/handouts", json=over)) == "reservation_full_no_right"
+    assert detail(client.post(f"{BASE}/desk/handouts", json={**over, "confirm_over_reservation": False})).startswith(
+        "reservation_full|")
+    client.post("/api/auth/logout")
+    _login(client, "atelier@example.com")
+    assert client.post(f"{BASE}/desk/handouts", json=over).status_code == 201

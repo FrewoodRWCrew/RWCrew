@@ -39,7 +39,7 @@ from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.wristband_scan import WristbandScan
 from app.db.models.wristband_scanner import WristbandScanner
-from app.modules.module_5.deps import require_screen_permission, require_view_on_any
+from app.modules.module_5.deps import require_screen_permission, require_view_on_any, user_can
 from app.modules.module_5.desk_export import open_pieces_xlsx, return_issues_xlsx
 from app.modules.module_5.desk_service import (
     CANCELLED,
@@ -54,6 +54,7 @@ from app.modules.module_5.desk_service import (
     person_by_bracelet,
     return_lines,
     return_person_lines,
+    persons_holding,
     served_today,
     wristband_required,
     write_off_person_lines,
@@ -375,6 +376,7 @@ def get_desk_context(
         team_name=team.name,
         persons_reserved=reservation.persons if reservation else 0,
         served_today=served_today(db, festival_id, team_id, day),
+        persons_holding=len(persons_holding(db, festival_id, team_id)),
         articles=articles,
         team_responsibles=responsibles,
     )
@@ -393,6 +395,9 @@ def post_handout(
     """Ophalen: hand out the package's pieces to a person (who then gets the
     "Uitgifte" mail, when they have an email address; a back-dated pick-up
     from last year's lists never mails)."""
+    # Handing out beyond the reservation needs "edit" on the desk.
+    if payload.confirm_over_reservation and not user_can(db, current_user, DESK_SCREEN, "edit"):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="reservation_full_no_right")
     try:
         booked_at = check_booked_at(current_user, payload.booked_at)
         handout = create_handout(
@@ -413,6 +418,7 @@ def post_handout(
             line_tags={line.article_id: line.rfid_tag_id for line in payload.lines if line.rfid_tag_id is not None},
             source=payload.source,
             reader=_reader(payload.reader),
+            confirm_over_reservation=payload.confirm_over_reservation,
         )
         db.commit()
     except StockError as error:

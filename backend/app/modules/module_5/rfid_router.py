@@ -11,17 +11,16 @@
 from dataclasses import asdict
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import func, select
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.db.models.atelier_article import AtelierArticle
 from app.db.models.atelier_article_size import AtelierArticleSize
 from app.db.models.atelier_size import FITS, AtelierSize
-from app.db.models.rfid_tag import RfidTag
 from app.db.models.user import User
 from app.modules.module_5.deps import require_screen_permission, require_view_on_any
-from app.modules.module_5.rfid_service import Reader, assign, history, resolve
+from app.modules.module_5.rfid_service import Reader, assign, history, resolve, tagged_counts
 from app.modules.module_5.stock_service import StockError
 from app.schemas.atelier import (
     RfidArticleOption,
@@ -66,13 +65,7 @@ def list_rfid_articles(
     """Tags koppelen's choice: every active article (tag-managed ones first,
     then by name) with its active sizes and how many pieces carry a tag."""
     sizes = {size.id: size for size in db.scalars(select(AtelierSize)).all()}
-    tagged = dict(
-        db.execute(
-            select(RfidTag.atelier_article_size_id, func.count())
-            .where(RfidTag.atelier_article_size_id.is_not(None))
-            .group_by(RfidTag.atelier_article_size_id)
-        ).all()
-    )
+    tagged = tagged_counts(db)
     result = []
     for article in db.scalars(select(AtelierArticle).where(AtelierArticle.active.is_(True))).all():
         rows = [

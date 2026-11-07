@@ -25,7 +25,7 @@ If a known person already has a **different wristband number** at this festival,
 An article the person hasn't returned yet can't be handed out again. An orange box shows what the person still holds, with the button **Return first** that opens the return for that person right away. All other articles can be picked up — several times a day too.
 5. Click **Hand out** (or Enter).
 
-When the team already has as many or more people served today than reserved, the counter turns orange — handing out is still possible.
+**The reservation is a limit.** The counter shows how many people of the team at this festival **hold clothing right now**, against the reserved number of persons. Once that number is reached, the desk refuses a **new** person (someone who already holds something may still pick up another article); someone who returned everything frees a place. With the **Edit** right on Hand-out & return the desk asks whether to **hand out anyway** beyond the reservation; without that right, raise the reservation first on **Reservations**.
 
 **Return**
 1. Search the person by name, email address or wristband number (only people holding clothing).
@@ -37,7 +37,7 @@ When the team already has as many or more people served today than reserved, the
 
 With the Edit right you can **cancel** a hand-out of which nothing came back yet (the pieces go back to available).
 
-**On the Raspberry Pi (RWCrew Pi)**: with the RFID reader the same happens without typing. Pick the season, festival, day and the counter's wristband scanner once (remembered). Every wristband scan shows as a card with **Pick up**, **Return** and **Ignore**. For Pick up you put the pieces on the reader: every piece with a tag (see **Link RFID tags**) shows at once, green when it will be booked, orange with the reason when it can't (not in the package, still held, second piece of the same article, out with someone else, no stock). For Return the pieces read are ticked (also pieces that went out without a tag, per article); you can still tick or untick by hand and pick a return status. **Confirm** books it, with the same rules, mails and rights as on the website. Without a connection to RWCrew nothing is booked (red bar).
+**On the Raspberry Pi (RWCrew Pi)**: with the RFID reader the same happens without typing. Pick the season, festival, day and the counter's wristband scanner once (remembered). Every wristband scan shows as a card with **Pick up**, **Return** and **Ignore**; the email address is shown, as on the website, but only partly (e.g. fr***@gm***.com). For Pick up you put the pieces on the reader: every piece with a tag (see **Link RFID tags**) shows at once, green when it will be booked, orange with the reason when it can't (not in the package, still held, second piece of the same article, out with someone else, no stock). For Return the pieces read are ticked (also pieces that went out without a tag, per article); you can still tick or untick by hand and pick a return status. **Confirm** books it, with the same rules, mails and rights as on the website. Without a connection to RWCrew nothing is booked (red bar).
 
 ![The counter: Pick up or Return](desk.png)
 
@@ -60,7 +60,8 @@ This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID re
 
 1. Pick the **article** (searchable), then the **size** (big buttons; each shows how many pieces of that size already carry a tag). An article with one size (OneSize) is picked at once.
 2. Put the pieces of that size on the reader. Every tag read gets a line: **New — will be linked** (green), **Already this size** (green, nothing changes), **Already …** another piece (orange) or refused (red: the tag belongs to a StockMaster product or kar, or the piece is out with someone).
-3. Tap **Link**. When some tags are already another piece, the Pi asks first whether to change them anyway.
+3. Every tag that can be linked has a **tick** (on by default): tap a line to **untick** a tag that was read by accident.
+4. Tap **Link**: only the ticked tags are linked. When some ticked tags are already another piece, the Pi asks first whether to change them anyway.
 
 The View right shows the screen, Create allows linking. The stock itself doesn't change: it stays counted per size; the tag only says which physical piece is with whom.
 
@@ -102,7 +103,7 @@ What the store prepares **every festival day** (every day is the same, since the
 ![Preparation](preparation.png)
 
 ## [stock | atelier.stock] Stock
-Per article and size how many pieces are **available**, **to wash** (returned after a shift) and **handed out**, with the total and the minimum stock. A size below its minimum stock turns orange; every Atelier page then also shows an orange notice. **Only below minimum stock** shows just those sizes.
+Per article and size how many pieces are **available**, **to wash** (returned after a shift) and **handed out**, with the total and the minimum stock. **With RFID tag** counts the pieces with an active tag in Scans > Tag management (linked with the Raspberry Pi; lost or damaged tags don't count), **Without tag** the pieces that still need one (orange). A size below its minimum stock turns orange; every Atelier page then also shows an orange notice. **Only below minimum stock** shows just those sizes.
 
 ![Stock](stock.png)
 

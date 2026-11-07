@@ -3,6 +3,45 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-07 — Atelier: reservation limit, tags on Stock, Pi email and tag checkboxes
+**Request:** Four corrections:
+- the desk accepted more people than reserved;
+- Stock should show how many pieces have an RFID tag and how many don't;
+- the Pi should show the person's email partly masked, like the website;
+- the Pi's Tags koppelen needs a checkbox per tag (default on) to leave out tags read by accident.
+**Plan:**
+- **Limit:** people holding clothing now ≥ reserved → a new person is refused; override only with edit on the desk.
+- **Stock:** `tagged` / `untagged` per size.
+- **Pi:** `mask_email` port; a checkbox on linkable rows.
+**Changes:**
+- **Backend:**
+  - `desk_service.persons_holding` + the limit in `create_handout` (`reservation_full`, `confirm_over_reservation`);
+  - `desk_router` checks the edit right (`reservation_full_no_right`), `DeskContextResponse.persons_holding`;
+  - `rfid_service.tagged_counts`, `StockSizeRow.tagged/untagged`, used by `stock_needs.stock_overview` and `/rfid/articles`.
+- **Frontend:**
+  - `desk-screen.tsx`: counter "x van y … in bezit", confirm for desk-edit users;
+  - `stock-overview.tsx`: two columns + totals;
+  - types, api, nl/en.
+- **Docs:** manual (desk rule, Stock columns, Pi email, tag ticks), `CLAUDE.md`.
+- **RWRaspiTagScanner:**
+  - `shared/mask_email.py`;
+  - `desk.py`: masked emails, full scan email kept privately, reservation confirm, `persons_holding`;
+  - `rights.py` `deskEdit`;
+  - `tags.py`: unticked set, `toggle`, `selectable` / `checked`;
+  - `StateRow.qml` checkbox; `DeskWaiting` / `PersonCard` / `DeskScreen` / `DeskHandout` / `TagsScreen` QML; texts.
+**Verification:**
+- **Backend:**
+  - new `test_reservation_limit` (refusal, a second article for the same person allowed, a place freed after return, override only with edit);
+  - stock tag count test; full suite 995 passed.
+- **Frontend:** `tsc` + eslint clean.
+- **Pi:** pytest 15 passed (mask cases as the web, tag ticks); 29 QML screens compile.
+- **End to end** on a copy of the local database (removed afterwards):
+  - the scan card and person card show `fr***@gm***.com` (the full address nowhere in the screens);
+  - the counter "0 / 15 personen in bezit";
+  - an unticked tag is dimmed and Koppelen counts 1.
+**Notes:**
+- The "Reservatie volzet" confirm on the Pi and the website was not clicked through in the end-to-end run; covered by the backend tests.
+
 ## 2026-11-06 — Boekingen show the pieces and their EPC
 **Request:** The EPC number couldn't be found on a transaction in Atelier > Stock > Boekingen.
 **Plan:** Show a desk booking's pieces (person + EPC) and its source in the booking detail, on the Boekingsbon and as a "Pi" label in the list.

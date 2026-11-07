@@ -2882,6 +2882,8 @@ export function createAtelierHandout(payload: {
   day: string;
   lines: { article_id: number; article_size_id: number }[];
   confirm_new_bracelet: boolean;
+  /** "Toch uitgeven" beyond the reservation (needs "edit" on the desk). */
+  confirm_over_reservation?: boolean;
 }): Promise<AtelierHandout> {
   return apiFetch<AtelierHandout>(`${ATELIER_BASE}/desk/handouts`, { method: "POST", body: JSON.stringify(payload) });
 }

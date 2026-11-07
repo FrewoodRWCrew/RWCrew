@@ -14,7 +14,11 @@
 #     transaction then marks the scan "used";
 #   - only the articles of the team's package for that festival, 1 piece each;
 #   - a person can't get an article again while the previous one is out;
-#   - more people than reserved is only a warning (the screen shows it);
+#   - the reservation's number of persons is a limit (decided 2026-11-07):
+#     once as many people of the team at this festival hold clothing as
+#     reserved, a new person is refused (reservation_full) unless a user with
+#     "edit" on the desk confirms it; someone who brought everything back
+#     frees a place (persons_holding);
 #   - "Uitgifte annuleren" only while nothing of the pick-up was returned;
 #   - a known person with another wristband at this festival needs a
 #     confirmation (two people can share a name);
@@ -171,6 +175,20 @@ def open_lines_of(db: Session, person_id: int) -> list[AtelierHandoutLine]:
     )
 
 
+def persons_holding(db: Session, festival_id: int, team_id: int) -> set[int]:
+    """The people of the team at this festival who hold clothing right now
+    (an open pick-up = at least one piece not returned)."""
+    return set(
+        db.scalars(
+            select(AtelierHandout.person_id).where(
+                AtelierHandout.festival_id == festival_id,
+                AtelierHandout.team_id == team_id,
+                AtelierHandout.status == OPEN,
+            )
+        ).all()
+    )
+
+
 def served_today(db: Session, festival_id: int, team_id: int, day: date) -> int:
     """How many different people of the team picked up clothing that day."""
     return (
@@ -222,6 +240,7 @@ def create_handout(
     line_tags: dict[int, int] | None = None,
     source: str = "web",
     reader: Reader | None = None,
+    confirm_over_reservation: bool = False,
 ) -> AtelierHandout:
     """Ophalen: hand out one piece of each chosen (article, article size) to
     a person, after checking the rules above; books available → handed out.
@@ -231,7 +250,9 @@ def create_handout(
     `line_tags`: per article the RFID tag of the piece read (the Raspberry Pi
     app), checked by rfid_service.check_handout_tags and kept on the line with
     its EPC. `source`: "web" or "pi"; `reader`: the Pi's scanner, noted on the
-    tags in TagScan's register."""
+    tags in TagScan's register. `confirm_over_reservation`: a user with "edit"
+    on the desk confirmed handing out beyond the reservation (the router
+    checks that right)."""
     first_name = " ".join(first_name.split())
     last_name = " ".join(last_name.split())
     if not first_name or not last_name:
@@ -288,6 +309,15 @@ def create_handout(
         for article_id in article_ids:
             if article_id in still_out:
                 raise StockError("article_still_out", db.get(AtelierArticle, article_id).name)
+
+    # The reservation is full when as many people of the team hold clothing as
+    # reserved; a person already holding something takes no extra place.
+    # Back-dated loads of last year's lists are not limited.
+    if booked_at is None and not confirm_over_reservation:
+        holding = persons_holding(db, festival_id, team_id)
+        reserved = reservations_by_team(db, festival_id)[team_id].persons
+        if person.id not in holding and len(holding) >= reserved:
+            raise StockError("reservation_full", team.name, len(holding), reserved)
 
     # The wristband number at this festival: a typed/scanned one is stored
     # (an empty field keeps the one already known); required when switched on.

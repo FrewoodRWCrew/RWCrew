@@ -17,7 +17,7 @@
 from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.timezone import belgian_today
@@ -87,6 +87,18 @@ class ResolvedTag:
     # A registered tag that isn't an Atelier piece: what it belongs to ("Bekers",
     # "Kar 36"); None = free, so "Tags koppelen" may still link it.
     assigned_to: str | None = None
+
+
+def tagged_counts(db: Session) -> dict[int, int]:
+    """Per article size: how many pieces carry an active RFID tag (a lost,
+    damaged or retired tag no longer counts)."""
+    return dict(
+        db.execute(
+            select(RfidTag.atelier_article_size_id, func.count())
+            .where(RfidTag.atelier_article_size_id.is_not(None), RfidTag.status == "active")
+            .group_by(RfidTag.atelier_article_size_id)
+        ).all()
+    )
 
 
 def clean_epcs(epcs: list[str]) -> list[str]:

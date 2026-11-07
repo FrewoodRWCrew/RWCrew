@@ -1896,6 +1896,9 @@ export interface AtelierStockSize {
   available: number;
   to_wash: number;
   handed_out: number;
+  /** Pieces with an active RFID tag (Scans > Tagbeheer), and still without one. */
+  tagged: number;
+  untagged: number;
 }
 
 /** One article on Atelier's stock overview, with its sizes. */
@@ -2046,6 +2049,8 @@ export interface AtelierDeskContext {
   team_name: string;
   persons_reserved: number;
   served_today: number;
+  /** The team's people holding clothing right now (the reservation's limit). */
+  persons_holding: number;
   articles: {
     article_id: number;
     code: string;

@@ -262,3 +262,24 @@ def test_bookings_show_the_pieces_and_epc(as_atelier: TestClient, world: dict, d
     assert documents["receipt"]["source"] is None
     pdf = as_atelier.get(f"{BASE}/stock/documents/{documents['hand_out']['id']}/pdf")
     assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
+
+
+def test_stock_counts_pieces_with_and_without_tag(as_atelier: TestClient, db_session: Session, world: dict, desk: dict) -> None:
+    # The desk fixture received 3 pieces of T-shirt M and 5 aprons.
+    tags = {tag["epc"]: tag["rfid_tag_id"] for tag in _assign(as_atelier, ["TS-1", "TS-2"], desk["m"]).json()}
+    # A lost tag doesn't count.
+    db_session.get(RfidTag, tags["TS-2"]).status = "lost"
+    db_session.commit()
+    # More tags than pieces: never below 0 without a tag.
+    _assign(as_atelier, [f"L-{index}" for index in range(3)], desk["l"])
+
+    def size(article_size_id: int) -> dict:
+        return next(row for article in as_atelier.get(f"{BASE}/stock").json() for row in article["sizes"]
+                    if row["article_size_id"] == article_size_id)
+
+    assert (size(desk["m"])["tagged"], size(desk["m"])["untagged"]) == (1, 2)
+    assert (size(desk["l"])["tagged"], size(desk["l"])["untagged"]) == (3, 0)
+    assert (size(desk["apron_size"])["tagged"], size(desk["apron_size"])["untagged"]) == (0, 5)
+    # The Pi's article list counts the same way.
+    tshirt = next(article for article in as_atelier.get(f"{BASE}/rfid/articles").json() if article["name"] == "T-shirt")
+    assert tshirt["sizes"][0]["tagged"] == 1
