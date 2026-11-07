@@ -22,6 +22,7 @@ import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { formatFestivalPeriod, locationLabel } from "@/components/module-8/wizard/format";
 import type { WizardStepProps } from "@/components/module-8/wizard/step-types";
+import { wizardTableRowClassName, wizardUnsavedClassName } from "@/components/module-8/wizard/styles";
 import { AfleverlocatieMap, groupChosenAfleverlocaties } from "@/components/shared/afleverlocatie-map";
 import type { GroundplanOverlay } from "@/components/module-2/kar-map-leaflet";
 
@@ -124,7 +125,8 @@ export function AfleverlocatieStep({ state, teamId, seasonId, readOnly, onStateC
             {festivals.map((festival) => {
               const selected = draft[festival.festival_id] ?? null;
               return (
-                <TableRow key={festival.festival_id} className="group">
+                // A festival with a chosen location is tinted in the accent colour.
+                <TableRow key={festival.festival_id} className={wizardTableRowClassName(selected !== null)}>
                   <TableCell className="font-medium">{festival.festival_name}</TableCell>
                   <TableCell className="text-muted-foreground tabular-nums">
                     {formatFestivalPeriod(festival.start_date, festival.end_date)}
@@ -167,7 +169,7 @@ export function AfleverlocatieStep({ state, teamId, seasonId, readOnly, onStateC
           </TableBody>
         </Table>
       </div>
-      {isDirty && !readOnly && <p className="text-xs text-muted-foreground">{t("unsaved")}</p>}
+      {isDirty && !readOnly && <p className={wizardUnsavedClassName}>{t("unsaved")}</p>}
 
       <AfleverlocatieMap locations={chosenLocations} groundplanOverlays={groundplanOverlays} fitKey={mapFitKey} />
     </div>

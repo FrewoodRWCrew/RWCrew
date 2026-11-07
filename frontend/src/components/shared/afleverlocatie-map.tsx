@@ -159,8 +159,13 @@ export function AfleverlocatieMap({ locations, groundplanOverlays, fitKey }: Afl
           groundplanOverlays={groundplanOverlays}
           groundplanOpacity={groundplanOpacity}
           // Only a new team/location pick re-frames — ground plans that load
-          // after mount must not pull the map away from its default extent.
+          // after mount must not pull the map away again.
           fitKey={fitKey}
+          // Zoom in on the chosen locations themselves (not the whole ground
+          // plan), already when the map opens; nothing chosen = default extent.
+          fitTarget="pins"
+          fitMaxZoom={17}
+          fitOnMount
         />
       </div>
 

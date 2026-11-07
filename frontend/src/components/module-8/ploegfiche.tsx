@@ -271,7 +271,6 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
         </CardContent>
       </Card>
     ),
-    walkies: <PlaceholderCard key="walkies" title={stepText({ key: "walkies", label: "Walkie-talkies" }).title} />,
   };
 
   return (
@@ -339,7 +338,13 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
 
       <KarrenCard karren={state.karren} />
 
-      {state.steps.map((step) => sections[step.key] ?? null)}
+      {/* A step without its own section that is still a placeholder (content
+          from a future module) gets the generic "filled in later" card. */}
+      {state.steps.map(
+        (step) =>
+          sections[step.key] ??
+          (step.placeholder ? <PlaceholderCard key={step.key} title={stepText(step).title} /> : null),
+      )}
     </div>
   );
 }

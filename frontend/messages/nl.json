@@ -799,6 +799,45 @@
       "teamResponsibleDeleted": "Ploegverantwoordelijke verwijderd.",
       "deleteFailed": "Verwijderen van ploegverantwoordelijke is mislukt."
     },
+    "teamFestivals": {
+      "title": "Festivals per ploeg",
+      "description": "Per jaartal op welke festivals elke ploeg werkt: één rij per ploeg, één kolom per festival. Dezelfde keuze als stap 1 van de Ploeg Wizard in Altsien Select.",
+      "seasonLabel": "Jaartal",
+      "seasonClosedOption": "{name} (afgesloten)",
+      "searchTeam": "Zoek ploeg…",
+      "columnTeam": "Ploeg",
+      "teamCount": "{count, plural, =0 {geen ploegen} one {# ploeg} other {# ploegen}}",
+      "festivalCount": "{count, plural, =0 {geen festivals} one {# festival} other {# festivals}}",
+      "inactiveFestival": "niet actief",
+      "inactiveTeam": "niet actief",
+      "noFestivals": "Er zijn nog geen festivals voor dit jaartal. Maak ze eerst aan op het scherm Festivals.",
+      "noTeams": "Geen ploegen gevonden.",
+      "noSeasons": "Er zijn nog geen jaartallen.",
+      "shiftHint": "Tip: shift-klik op een festival of ploeg om de hele kolom of rij aan of uit te vinken.",
+      "closedNotice": "Dit jaartal is afgesloten: de keuzes zijn enkel te bekijken. Open het jaartal opnieuw op het scherm Jaartallen om iets te wijzigen.",
+      "readOnlyNotice": "Je mag dit scherm enkel bekijken.",
+      "changedCount": "{count, plural, one {# wijziging} other {# wijzigingen}} niet opgeslagen",
+      "save": "Opslaan",
+      "discard": "Wijzigingen weggooien",
+      "saved": "Festivals per ploeg opgeslagen.",
+      "saveFailed": "Opslaan is mislukt.",
+      "discardConfirm": "Er zijn niet-opgeslagen wijzigingen. Weggooien en een ander jaartal openen?",
+      "removeConfirmTitle": "Afleverlocaties worden verwijderd",
+      "removeConfirmDescription": "Bij deze ploegen is voor het festival al een afleverlocatie gekozen (Plan een kar). Uitvinken verwijdert die locatie, en de ploeg moet de stap Afleverlocaties opnieuw bevestigen.",
+      "removeConfirmAction": "Toch opslaan",
+      "cancel": "Annuleren",
+      "copyPrevious": "Kopieer van vorig jaar",
+      "copyNoPrevious": "Er is geen vorig jaartal.",
+      "copyNothing": "Niets te kopiëren uit {previous}: geen nieuwe koppelingen gevonden.",
+      "copyResult": "{count, plural, one {# koppeling} other {# koppelingen}} uit {previous} toegevoegd aan je wijzigingen. Controleer en klik op Opslaan.",
+      "copyAlreadyPresent": "{count, plural, one {# koppeling bestond} other {# koppelingen bestonden}} al.",
+      "copyUnmatched": "Geen festival met dezelfde naam dit jaar:",
+      "copyUnmatchedItem": "{name} ({count, plural, one {# ploeg} other {# ploegen}})",
+      "copyFailed": "Ophalen van vorig jaar is mislukt.",
+      "errors": {
+        "season_closed": "Dit jaartal is afgesloten: wijzigen kan niet meer."
+      }
+    },
     "teamLocation": {
       "title": "Teamlocatie",
       "description": "Beheer de lijst van teamlocaties die in de app gebruikt kunnen worden.",
@@ -1246,7 +1285,55 @@
     "moduleTitle": "Altsien Select",
     "actionsGroup": "Akties",
     "masterDataGroup": "MasterData",
+    "settingsGroup": "Instellingen",
     "accessRights": "Toegangsrechten",
+    "mailTemplates": {
+      "title": "E-mails",
+      "description": "De mails die Altsien Select verstuurt, en wie van elke mail een kopie krijgt.",
+      "loading": "Bezig met laden…",
+      "kinds": {
+        "ploegfiche": {
+          "title": "Ploegfiche",
+          "help": "Verstuurd naar het Kernlid dat erom vraagt nadat alle stappen van de Ploeg Wizard afgerond zijn, met de Ploegfiche (PDF) in bijlage."
+        }
+      },
+      "active": "Versturen",
+      "subject": "Onderwerp",
+      "body": "Tekst",
+      "placeholdersHelp": "Klik op een veld om het in te voegen op de plaats van de cursor (in het onderwerp of de tekst):",
+      "placeholders": {
+        "naam": "Naam van het Kernlid dat de mail vraagt",
+        "ploeg": "Ploeg",
+        "jaartal": "Jaartal",
+        "datum": "Datum van verzenden (dd-mm-jjjj)",
+        "stappen": "De afgeronde stappen, één per lijn"
+      },
+      "preview": "Voorbeeld (met voorbeeldgegevens)",
+      "changed": "Laatst gewijzigd: {when} · {who}",
+      "unsaved": "Niet opgeslagen wijzigingen",
+      "save": "Opslaan",
+      "saved": "E-mail opgeslagen.",
+      "sendTest": "Stuur test naar mij",
+      "testSent": "Testmail verstuurd naar {email}.",
+      "cc": {
+        "title": "In kopie (CC) van alle Altsien Select-mails",
+        "help": "Deze adressen krijgen een kopie van elke mail die Altsien Select verstuurt (niet van testmails).",
+        "empty": "Nog niemand in kopie.",
+        "add": "E-mailadres toevoegen",
+        "addButton": "Toevoegen",
+        "remove": "{email} verwijderen",
+        "invalid": "{email} is geen geldig e-mailadres.",
+        "changed": "Laatst gewijzigd: {when} · {who}",
+        "unsaved": "Niet opgeslagen wijzigingen",
+        "save": "Opslaan",
+        "saved": "Kopielijst opgeslagen."
+      },
+      "errors": {
+        "generic": "Er ging iets mis.",
+        "unknown_placeholder": "Onbekend veld: {p1}. Gebruik enkel de velden hieronder.",
+        "no_own_email": "Je account heeft geen e-mailadres."
+      }
+    },
     "common": {
       "seasonLabel": "Jaartal",
       "noSeason": "Kies een jaartal",
@@ -1276,7 +1363,8 @@
         "saved": "Festivals opgeslagen.",
         "saveFailed": "Opslaan van de festivals is mislukt.",
         "noFestivals": "Er zijn nog geen actieve festivals voor dit jaartal.",
-        "unsaved": "Niet-opgeslagen wijzigingen — ze worden bewaard bij Opslaan of Stap afronden."
+        "unsaved": "Niet-opgeslagen wijzigingen — ze worden bewaard bij Opslaan of Stap afronden.",
+        "masterdataHint": "Dezelfde keuze staat in MasterData onder Ploegen > Festivals per ploeg, met alle ploegen samen."
       },
       "afleverlocaties": {
         "title": "Afleverlocaties",
@@ -1342,16 +1430,13 @@
         "deleteConfirmDescription": "Deze aanvraag wordt definitief verwijderd.",
         "deleted": "Aanvraag ingetrokken.",
         "deleteFailed": "Intrekken van de aanvraag is mislukt."
-      },
-      "walkies": {
-        "title": "Walkie-talkies",
-        "description": "Heeft de ploeg walkie-talkies nodig?"
       }
     },
     "wizard": {
       "title": "Ploeg Wizard",
       "description": "Kies een ploeg en doorloop de stappen. Je keuzes worden de basis voor de instructies van de organisatie.",
       "teamTitle": "Ploeg Wizard — {team}",
+      "progress": "{done} / {total} stappen klaar",
       "backToTeams": "Terug naar de ploegen",
       "noSeason": "Er is nog geen jaartal aangemaakt.",
       "loading": "Bezig met laden…",
@@ -1368,6 +1453,20 @@
       "readOnly": "Dit jaartal is afgesloten: je keuzes kunnen niet meer gewijzigd worden.",
       "allDone": "Alle stappen zijn afgerond.",
       "openPloegfiche": "Ploegfiche bekijken",
+      "ploegficheMail": {
+        "askTitle": "Alle stappen zijn afgerond",
+        "askDescription": "Wil je een PDF met alle bevestigde gegevens van deze ploeg ontvangen op je eigen e-mailadres?",
+        "yes": "Ja, stuur de PDF",
+        "no": "Nee, bedankt",
+        "button": "PDF mailen",
+        "sent": "Ploegfiche verstuurd naar {email}.",
+        "errors": {
+          "generic": "De mail kon niet verstuurd worden.",
+          "steps_not_done": "Nog niet alle stappen zijn afgerond.",
+          "no_own_email": "Je account heeft geen e-mailadres.",
+          "template_inactive": "Deze mail staat uit (Instellingen > E-mails)."
+        }
+      },
       "stepOf": "Stap {current} van {total}",
       "stepDoneOn": "Afgerond op {date} door {name}",
       "previous": "Vorige",

@@ -140,8 +140,8 @@ STEP_DEFINITIONS: list[StepDefinition] = [
     # The kar needs of StockMaster (module-4), per kar of the team.
     StepDefinition(key="products", label="Products", sort_order=4, completion_check=_check_products),
     StepDefinition(key="special_requests", label="Special requests", sort_order=5),
-    # Placeholder until the walkie-talkie module exists.
-    StepDefinition(key="walkies", label="Walkie-talkies", sort_order=6, placeholder=True),
+    # The former "walkies" placeholder step (6) was removed on 2026-11-07:
+    # walkie-talkies are not managed in Altsien Select.
 ]
 
 # Quick lookup by key.

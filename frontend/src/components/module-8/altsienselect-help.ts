@@ -14,6 +14,7 @@ export const ALTSIEN_SELECT_HELP_ROUTES: HelpTopicRoute[] = [
   { path: `${BASE}/ploegfiche`, topic: "ploegfiche" },
   { path: `${BASE}/requests`, topic: "requests" },
   { path: `${BASE}/request-statuses`, topic: "statuses" },
+  { path: `${BASE}/settings/mails`, topic: "mails" },
   { path: `${BASE}/access-rights/roles`, topic: "roles" },
   { path: `${BASE}/access-rights/users`, topic: "users" },
 ];

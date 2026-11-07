@@ -108,6 +108,44 @@ export interface TeamResponsibleOptions {
   seasons: { id: number; name: string }[];
 }
 
+/** MasterData's "Festivals per ploeg" grid: its year dropdown. */
+export interface TeamFestivalOptions {
+  seasons: { id: number; name: string; periode_open: boolean }[];
+  /** The year the screen opens on (last open year, else the last year). */
+  default_season_id: number | null;
+}
+
+/** One year of the "Festivals per ploeg" grid. Pairs are [team_id, festival_id]. */
+export interface TeamFestivalGrid {
+  season_id: number;
+  season_name: string;
+  /** False for a closed year (periode_open off): read-only. */
+  editable: boolean;
+  /** Whether this user has "edit" on the screen. */
+  can_edit: boolean;
+  festivals: { id: number; name: string; start_date: string; end_date: string; active: boolean }[];
+  teams: { id: number; name: string; active: boolean }[];
+  links: [number, number][];
+  /** Links that also have a Plan a kar delivery location (unticking deletes it). */
+  planned: [number, number][];
+}
+
+/** One changed cell of the grid. */
+export interface TeamFestivalChange {
+  team_id: number;
+  festival_id: number;
+  selected: boolean;
+}
+
+/** Last year's links mapped onto this year — a proposal, nothing saved. */
+export interface TeamFestivalPrevious {
+  previous_season_id: number | null;
+  previous_season_name: string | null;
+  links: [number, number][];
+  already_present: number;
+  unmatched: { festival_name: string; team_count: number }[];
+}
+
 /** One team location, as managed on MasterData's Team Location screen (nested under Teams). */
 export interface TeamLocation {
   id: number;
@@ -2096,17 +2134,51 @@ export interface AtelierHandout {
   }[];
 }
 
-/** Which desk mail: "handout" (Uitgifte, after Ophalen) or "return" (Inname, after Terugbrengen). */
-export type AtelierMailTemplateKey = "handout" | "return";
-
-/** One desk mail text, with placeholders such as {voornaam}. */
-export interface AtelierMailTemplate {
-  key: AtelierMailTemplateKey;
+/** One editable mail text of any module's "Instellingen > E-mails" screen
+ * (shared MailTemplateCard), with placeholders such as {voornaam}. */
+export interface MailTemplate {
+  key: string;
   subject: string;
   body: string;
   active: boolean;
   updated_by_name: string | null;
   updated_at: string | null;
+}
+
+/** Which desk mail: "handout" (Uitgifte, after Ophalen) or "return" (Inname, after Terugbrengen). */
+export type AtelierMailTemplateKey = "handout" | "return";
+
+/** One desk mail text, with placeholders such as {voornaam}. */
+export interface AtelierMailTemplate extends MailTemplate {
+  key: AtelierMailTemplateKey;
+}
+
+/** Which Altsien Select mail: "ploegfiche" (the PDF once every wizard step is done). */
+export type AltsienSelectMailTemplateKey = "ploegfiche";
+
+/** One Altsien Select mail text, with placeholders such as {ploeg}. */
+export interface AltsienSelectMailTemplate extends MailTemplate {
+  key: AltsienSelectMailTemplateKey;
+}
+
+/** Altsien Select's E-mails screen: the texts, the placeholders and example values. */
+export interface AltsienSelectMailTemplates {
+  templates: AltsienSelectMailTemplate[];
+  placeholders: string[];
+  example_values: Record<string, string>;
+}
+
+/** The addresses that get a copy (CC) of every Altsien Select mail. */
+export interface AltsienSelectMailSettings {
+  cc_addresses: string[];
+  updated_by_name: string | null;
+  updated_at: string | null;
+}
+
+/** Where the Ploegfiche mail went: the session user and the CC list. */
+export interface AltsienSelectPloegficheMailResult {
+  sent_to: string;
+  cc: string[];
 }
 
 /** The E-mails screen: both texts, the placeholders and example values for the preview. */

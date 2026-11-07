@@ -133,15 +133,22 @@ def test_changing_festivals_reopens_the_location_step(
     assert "afleverlocaties" not in keys
 
 
-def test_placeholder_step_can_be_marked_done_and_reopened(as_kernlid: TestClient, world: AltsienWorld) -> None:
-    done = _complete(as_kernlid, world, "walkies")
+def test_step_without_check_can_be_marked_done_and_reopened(as_kernlid: TestClient, world: AltsienWorld) -> None:
+    done = _complete(as_kernlid, world, "special_requests")
     assert done.status_code == 200
-    assert [item["step_key"] for item in done.json()["progress"]] == ["walkies"]
+    assert [item["step_key"] for item in done.json()["progress"]] == ["special_requests"]
 
     reopened = as_kernlid.delete(
-        f"{BASE}/wizard/{world.own_team.id}/steps/walkies/complete?season_id={world.season.id}"
+        f"{BASE}/wizard/{world.own_team.id}/steps/special_requests/complete?season_id={world.season.id}"
     )
     assert reopened.json()["progress"] == []
+
+
+def test_removed_walkies_step_no_longer_exists(as_kernlid: TestClient, world: AltsienWorld) -> None:
+    # Walkie-talkies are not managed in Altsien Select (removed 2026-11-07).
+    assert _complete(as_kernlid, world, "walkies").status_code == 404
+    state = as_kernlid.get(f"{BASE}/wizard/{world.own_team.id}?season_id={world.season.id}").json()
+    assert "walkies" not in [step["key"] for step in state["steps"]]
 
 
 def test_unknown_step_returns_404(as_kernlid: TestClient, world: AltsienWorld) -> None:

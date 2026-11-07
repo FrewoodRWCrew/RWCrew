@@ -41,7 +41,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 import type { WizardStepProps } from "@/components/module-8/wizard/step-types";
+import { wizardRowClassName } from "@/components/module-8/wizard/styles";
 
 const EMPTY_FORM: AltsienSelectResponsibleInput = { name: "", email: "", phone: "", comments: "" };
 
@@ -82,7 +84,8 @@ export function PloegverantwoordelijkenStep({ state, teamId, seasonId, readOnly,
       ) : (
         <ul className="flex flex-col gap-2">
           {state.responsibles.map((person) => (
-            <li key={person.id} className="flex flex-col gap-1 rounded-md border p-3">
+            // Every listed person counts toward the step, so each card is shown "filled in".
+            <li key={person.id} className={cn("flex flex-col gap-1 p-3", wizardRowClassName(true))}>
               <div className="flex items-start justify-between gap-3">
                 <p className="font-medium">{person.name}</p>
                 {!readOnly && (

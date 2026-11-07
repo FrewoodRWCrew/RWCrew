@@ -47,6 +47,7 @@ from app.modules.module_5.stock_router import router as module_5_stock_router
 from app.modules.module_6.router import router as module_6_router
 from app.modules.module_6.screens import sync_screens as sync_walkies_screens
 from app.modules.module_7.router import router as module_7_router
+from app.modules.module_8.mail_template_router import router as module_8_mail_template_router
 from app.modules.module_8.router import router as module_8_router
 from app.modules.module_8.screens import sync_screens as sync_altsien_select_screens
 from app.modules.module_9.router import router as module_9_router
@@ -124,6 +125,7 @@ app.include_router(wristband_webhook_router)
 app.include_router(module_6_router)
 app.include_router(module_7_router)
 app.include_router(module_8_router)
+app.include_router(module_8_mail_template_router)
 app.include_router(module_9_router)
 app.include_router(module_10_router)
 

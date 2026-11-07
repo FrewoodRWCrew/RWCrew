@@ -21,7 +21,6 @@ const STEP_COMPONENTS: Record<string, ComponentType<WizardStepProps>> = {
   ploegverantwoordelijken: PloegverantwoordelijkenStep,
   products: ProductsStep,
   special_requests: SpecialRequestsStep,
-  // walkies: placeholder until the walkie-talkie module exists.
 };
 
 /** Renders the component registered for a step (or the placeholder). */

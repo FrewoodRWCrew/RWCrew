@@ -11,7 +11,7 @@
 // copy-previous-season.tsx).
 
 import { useCallback, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check, FileText, Lock, RotateCcw, Save } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronRight, FileText, Lock, RotateCcw, Save } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
@@ -22,12 +22,18 @@ import {
   setAltsienSelectStepComplete,
 } from "@/lib/api";
 import type { AltsienSelectStep, AltsienSelectTeamState, Season } from "@/lib/types";
+import { getModuleTheme } from "@/lib/module-theme";
 import { cn } from "@/lib/utils";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AltsienSeasonSelect, useAltsienSeasonId } from "@/components/module-8/altsien-season-select";
 import { useKeyedLoad } from "@/components/module-8/use-keyed-load";
 import { CopyPreviousSeason } from "@/components/module-8/wizard/copy-previous-season";
+import {
+  PloegficheMailButton,
+  PloegficheMailDialog,
+  usePloegficheMail,
+} from "@/components/module-8/wizard/ploegfiche-mail";
 import { formatDate } from "@/components/module-8/wizard/format";
 import type { StepSaver } from "@/components/module-8/wizard/step-types";
 import { WizardStep } from "@/components/module-8/wizard/steps";
@@ -119,6 +125,13 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
   const currentDone = currentStep ? doneByKey.get(currentStep.key) : undefined;
   const isLastStep = currentIndex === steps.length - 1;
   const allDone = steps.every((step) => doneByKey.has(step.key));
+  // How many steps are done, for the progress bar above the stepper.
+  const doneCount = steps.filter((step) => doneByKey.has(step.key)).length;
+  // The module's soft accent (fuchsia) tint, used for the step card's header.
+  const { badgeClassName } = getModuleTheme("module-8");
+  // The Ploegfiche PDF by mail: asked once the last open step is completed.
+  const ploegficheMail = usePloegficheMail(teamId, seasonId);
+  const [askMail, setAskMail] = useState(false);
 
   // Store the step's pending choices; false when that failed.
   async function saveCurrent(): Promise<boolean> {
@@ -153,6 +166,9 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
       const updated = await setAltsienSelectStepComplete(teamId, seasonId, currentStep.key, true);
       onStateChange(updated);
       toast.success(t("stepCompleted", { step: stepText(currentStep).title }));
+      // This completion finished the whole wizard: offer the PDF by mail.
+      const doneNow = new Set(updated.progress.map((item) => item.step_key));
+      if (!allDone && updated.steps.every((step) => doneNow.has(step.key))) setAskMail(true);
       if (!isLastStep) setCurrentKey(steps[currentIndex + 1].key);
     } catch (error) {
       toast.error(error instanceof ApiError ? error.message : t("completeFailed"));
@@ -213,43 +229,79 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
             <Check className="size-4 text-green-600" aria-hidden="true" />
             {t("allDone")}
           </span>
-          {canViewPloegfiche && (
-            <Link href={ploegficheHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
-              <FileText className="size-4" />
-              {t("openPloegfiche")}
-            </Link>
-          )}
+          <div className="flex flex-wrap gap-2">
+            <PloegficheMailButton isSending={ploegficheMail.isSending} onSend={ploegficheMail.send} />
+            {canViewPloegfiche && (
+              <Link href={ploegficheHref} className={buttonVariants({ variant: "outline", size: "sm" })}>
+                <FileText className="size-4" />
+                {t("openPloegfiche")}
+              </Link>
+            )}
+          </div>
         </div>
       )}
+      <PloegficheMailDialog
+        open={askMail}
+        onOpenChange={setAskMail}
+        isSending={ploegficheMail.isSending}
+        onSend={ploegficheMail.send}
+      />
 
-      {/* Stepper: one pill per step; done steps show a tick. */}
-      <ol className="flex flex-wrap gap-2">
+      {/* Progress: "x / y steps done" with a thin bar in the module's accent. */}
+      <div className="flex flex-col gap-1.5">
+        <p className="text-sm font-medium">{t("progress", { done: doneCount, total: steps.length })}</p>
+        <div
+          className="h-2 w-full overflow-hidden rounded-full bg-muted"
+          role="progressbar"
+          aria-valuemin={0}
+          aria-valuemax={steps.length}
+          aria-valuenow={doneCount}
+        >
+          <div
+            className={cn("h-full rounded-full transition-all", allDone ? "bg-green-600" : "bg-primary")}
+            style={{ width: `${steps.length > 0 ? (doneCount / steps.length) * 100 : 0}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Stepper: one pill per step. Current = filled accent with a ring,
+          done = soft green with a tick, still to do = dashed accent outline,
+          so it's clear at a glance where work is left. A chevron links the
+          pills on wider screens. */}
+      <ol className="flex flex-wrap items-center gap-2">
         {steps.map((step, index) => {
           const isDone = doneByKey.has(step.key);
           const isCurrent = step.key === currentStep.key;
           return (
-            <li key={step.key}>
+            <li key={step.key} className="flex items-center gap-2">
+              {index > 0 && (
+                <ChevronRight className="hidden size-4 shrink-0 text-muted-foreground/60 md:block" aria-hidden="true" />
+              )}
               <button
                 type="button"
                 onClick={() => goTo(step.key)}
                 disabled={isBusy}
                 aria-current={isCurrent ? "step" : undefined}
                 className={cn(
-                  "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition-colors",
-                  isCurrent ? "border-primary bg-primary text-primary-foreground" : "hover:bg-muted",
+                  "flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm font-medium transition-all",
+                  isCurrent
+                    ? "scale-105 border-primary bg-primary text-primary-foreground shadow-md ring-2 ring-primary/30 ring-offset-2 ring-offset-background"
+                    : isDone
+                      ? "border-green-600/40 bg-green-600/10 text-green-800 hover:bg-green-600/20 dark:text-green-300"
+                      : "border-dashed border-primary/60 bg-background text-foreground hover:bg-primary/10",
                 )}
               >
                 <span
                   className={cn(
                     "flex size-5 items-center justify-center rounded-full text-xs font-semibold",
-                    isDone
-                      ? "bg-green-600 text-white"
-                      : isCurrent
-                        ? "bg-primary-foreground text-primary"
-                        : "bg-muted text-muted-foreground",
+                    isCurrent
+                      ? "bg-primary-foreground text-primary"
+                      : isDone
+                        ? "bg-green-600 text-white"
+                        : "bg-primary/15 text-primary",
                   )}
                 >
-                  {isDone ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
+                  {isDone && !isCurrent ? <Check className="size-3.5" aria-hidden="true" /> : index + 1}
                 </span>
                 {stepText(step).title}
               </button>
@@ -258,14 +310,40 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
         })}
       </ol>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>
-            {t("stepOf", { current: currentIndex + 1, total: steps.length })} · {stepText(currentStep).title}
-          </CardTitle>
-          <CardDescription>{stepText(currentStep).description}</CardDescription>
+      {/* The step itself: accent line on top, tinted header with a big step
+          number, so the working area clearly stands out from the page. */}
+      <Card className="gap-0 border-t-4 border-t-primary py-0 shadow-md">
+        <CardHeader className={cn("gap-2 border-b py-4", badgeClassName)}>
+          <div className="flex flex-wrap items-center gap-4">
+            <span
+              className="flex size-11 shrink-0 items-center justify-center rounded-full bg-primary text-lg font-bold text-primary-foreground shadow-sm"
+              aria-hidden="true"
+            >
+              {currentDone ? <Check className="size-6" /> : currentIndex + 1}
+            </span>
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="text-xs font-semibold tracking-wide uppercase opacity-80">
+                {t("stepOf", { current: currentIndex + 1, total: steps.length })}
+              </span>
+              <CardTitle className="text-xl font-bold text-foreground">{stepText(currentStep).title}</CardTitle>
+            </div>
+            {/* "Done on … by …" as a green pill, next to the title. */}
+            {currentDone && (
+              <span className="flex items-center gap-1.5 rounded-full border border-green-600/40 bg-green-600/15 px-3 py-1 text-xs font-medium text-green-800 dark:text-green-300">
+                <Check className="size-3.5" aria-hidden="true" />
+                {t("stepDoneOn", {
+                  date: formatDate(currentDone.completed_at),
+                  name: currentDone.completed_by_name ?? "—",
+                })}
+              </span>
+            )}
+          </div>
+          {/* The step's question, in normal text colour so it's read first. */}
+          <CardDescription className="text-base text-foreground sm:pl-15">
+            {stepText(currentStep).description}
+          </CardDescription>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-4 py-5">
           {currentStep.copy_from_previous && !readOnly && (
             <CopyPreviousSeason
               key={currentStep.key}
@@ -288,16 +366,6 @@ function WizardBody({ state, teamId, seasonId, canViewPloegfiche, onStateChange 
             onStateChange={onStateChange}
             registerSave={registerSave}
           />
-
-          {currentDone && (
-            <p className="flex items-center gap-2 text-sm text-green-700 dark:text-green-400">
-              <Check className="size-4" aria-hidden="true" />
-              {t("stepDoneOn", {
-                date: formatDate(currentDone.completed_at),
-                name: currentDone.completed_by_name ?? "—",
-              })}
-            </p>
-          )}
         </CardContent>
       </Card>
 

@@ -26,11 +26,13 @@ Hoe ver staan de ploegen met hun Ploeg Wizard in het gekozen jaartal?
 ![Het KPI overzicht](overview.png)
 
 ## [wizard | altsienselect.wizard] Ploeg Wizard
-De lijst van jouw ploegen met hun voortgang ("3/6 stappen") en hun open aanvragen. Klik op **Starten** of **Verder** om de wizard van een ploeg te openen.
+De lijst van jouw ploegen met hun voortgang ("3/5 stappen") en hun open aanvragen. Klik op **Starten** of **Verder** om de wizard van een ploeg te openen.
 
 ![De Ploeg Wizard](wizard.png)
 
 In de wizard zie je de stappen bovenaan. Vul een stap in en klik op **Stap afronden & verder**. Een afgeronde stap toont wanneer en door wie hij afgerond werd; met **Heropenen** pas je hem opnieuw aan. Met **Vorige** en **Volgende** blader je zonder af te ronden.
+
+Rond je de laatste open stap af, dan vraagt de wizard of je een **PDF met alle bevestigde gegevens** wil ontvangen. Kies **Ja, stuur de PDF**: de Ploegfiche komt als bijlage in je eigen mailbox. Later kan het opnieuw met **PDF mailen** in de groene balk "Alle stappen zijn afgerond".
 
 ### 1. Festivals
 Vink de festivals van het jaartal aan waarop de ploeg actief is. Een festival weghalen, wist ook zijn afleverlocatie.
@@ -46,9 +48,6 @@ Kies een **kar** van de ploeg en stel haar lijst samen: welke producten en hoeve
 
 ### 5. Speciale aanvragen
 Heeft de ploeg iets speciaals nodig? Klik op **Aanvraag toevoegen** en beschrijf het zo duidelijk mogelijk. De organisatie zet er een status op en kan antwoorden; dat antwoord zie je bij de aanvraag. Geen aanvragen? Rond de stap gewoon af.
-
-### 6. Walkie-talkies
-Deze stap volgt later.
 
 > Bij de stappen Afleverlocaties, Ploegverantwoordelijken en Speciale aanvragen staat bovenaan **Overnemen van vorig jaartal**: klik op **Tonen**, vink de lijnen van vorig jaar aan die je wil overnemen en klik op **Geselecteerde overnemen**. Er wordt nooit iets gewist, en de stap wordt niet automatisch afgerond.
 
@@ -77,6 +76,13 @@ De statussen die een speciale aanvraag kan hebben, met een kleur en of ze **open
 2. Bepaal de **volgorde**: de status met de laagste volgorde is de beginstatus van elke nieuwe aanvraag.
 
 ![Statussen aanvragen](statuses.png)
+
+## [mails | altsienselect.mailtemplates] E-mails
+De mails die Altsien Select verstuurt en wie er een kopie van krijgt (menu **Instellingen > E-mails**).
+
+1. **In kopie (CC)**: typ een e-mailadres, druk op Enter of **Toevoegen**, en klik op **Opslaan**. Deze adressen krijgen een kopie van elke Altsien Select-mail. Met het kruisje haal je een adres weg.
+2. **Ploegfiche**: de mail met de Ploegfiche (PDF) die een Kernlid kan vragen zodra alle stappen afgerond zijn. Pas het **onderwerp** en de **tekst** aan; klik op een veld zoals {ploeg} om het in te voegen. Rechts zie je een voorbeeld.
+3. **Versturen** uitvinken zet de mail uit. **Stuur test naar mij** stuurt de tekst met voorbeeldgegevens enkel naar jezelf.
 
 ## [roles | altsienselect.roles] Rollen
 Een rol bepaalt wat iemand in Altsien Select mag doen, per scherm: **Bekijken**, **Aanmaken**, **Wijzigen** en **Verwijderen**.

@@ -3,8 +3,8 @@
 # own (optional) email address. Their subject and body are written by an
 # admin on "Instellingen > E-mails" (Atelier_mail_template), as plain text
 # with placeholders such as {voornaam} or {stuks}; this file holds the
-# placeholder list, the default texts, the check on unknown placeholders and
-# the rendering.
+# placeholder list and the default texts; the placeholder check and the
+# rendering are shared with Altsien Select (app/shared/mail_template.py).
 #
 # Like module_3/notifications.py: the mail is built inside the request's own
 # DB session (after the booking is committed) and only the network call
@@ -13,10 +13,7 @@
 # template = no mail, silently.
 
 import logging
-import re
 from collections.abc import Iterable
-from dataclasses import dataclass
-from html import escape
 
 from fastapi import BackgroundTasks
 from sqlalchemy import select
@@ -34,6 +31,8 @@ from app.db.models.atelier_size import AtelierSize
 from app.db.models.festival import Festival
 from app.db.models.team import Team
 from app.modules.module_5.desk_service import open_lines_of
+from app.shared.mail_template import RenderedMail, render  # noqa: F401  (re-exported for callers/tests)
+from app.shared.mail_template import unknown_placeholders as shared_unknown_placeholders
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +44,6 @@ TEMPLATE_KEYS = (HANDOUT, RETURN)
 # Every placeholder a subject or body may use, in the order the settings
 # screen lists them.
 PLACEHOLDERS = ("voornaam", "familienaam", "ploeg", "festival", "dag", "polsband", "stuks", "openstaand")
-
-# A placeholder in a text: a name between curly braces.
-_PLACEHOLDER_PATTERN = re.compile(r"\{([^{}\s]*)\}")
 
 # The fit as written in the mails.
 _FIT_NAMES = {"women": "Dames", "men": "Heren", "unisex": "Unisex"}
@@ -93,11 +89,7 @@ NOTHING_OPEN = "niets"
 
 def unknown_placeholders(text: str) -> list[str]:
     """The placeholders in a text that don't exist (in order, once each)."""
-    found: list[str] = []
-    for name in _PLACEHOLDER_PATTERN.findall(text):
-        if name not in PLACEHOLDERS and name not in found:
-            found.append(name)
-    return found
+    return shared_unknown_placeholders(text, PLACEHOLDERS)
 
 
 def get_template(db: Session, key: str) -> AtelierMailTemplate:
@@ -108,43 +100,6 @@ def get_template(db: Session, key: str) -> AtelierMailTemplate:
         subject, body = DEFAULT_TEMPLATES[key]
         row = AtelierMailTemplate(key=key, subject=subject, body=body, active=True)
     return row
-
-
-def _fill(text: str, values: dict[str, str], *, html: bool) -> str:
-    """Replace the placeholders by their values; for HTML both the text and
-    the values are escaped and line breaks become <br>."""
-
-    def value_of(match: re.Match) -> str:
-        name = match.group(1)
-        # An unknown placeholder (can't be saved, but just in case) stays as typed.
-        if name not in values:
-            return match.group(0)
-        return escape(values[name]) if html else values[name]
-
-    if not html:
-        return _PLACEHOLDER_PATTERN.sub(value_of, text)
-    # Escaping leaves the braces alone, so the placeholders are still found.
-    return _PLACEHOLDER_PATTERN.sub(value_of, escape(text)).replace("\n", "<br>")
-
-
-@dataclass(frozen=True)
-class RenderedMail:
-    """A template filled in with values: subject + plain text + HTML."""
-
-    subject: str
-    text: str
-    html: str
-
-
-def render(subject: str, body: str, values: dict[str, str]) -> RenderedMail:
-    """Fill in a subject and body (the subject without the environment's prefix)."""
-    # A subject is one line: line breaks in values become spaces.
-    one_line = {name: " ".join(value.split()) for name, value in values.items()}
-    return RenderedMail(
-        subject=_fill(subject, one_line, html=False),
-        text=_fill(body, values, html=False),
-        html=f'<div style="font-family:Arial,sans-serif;font-size:14px;color:#1f2937">{_fill(body, values, html=True)}</div>',
-    )
 
 
 def _piece_list(db: Session, lines: Iterable[AtelierHandoutLine]) -> str:

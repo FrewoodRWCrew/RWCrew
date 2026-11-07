@@ -18,7 +18,7 @@ from typing import Literal
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, Response, UploadFile, status
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -31,15 +31,12 @@ from app.db.models.altsien_select_screen import AltsienSelectScreen
 from app.db.models.altsien_select_special_request import AltsienSelectSpecialRequest
 from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress
 from app.db.models.altsien_select_user_role import AltsienSelectUserRole
-from app.db.models.festival import Festival
 from app.db.models.kartracker_groundplan import KarTrackerGroundplan
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_kar import KarTrackerKar
-from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.module import Module
 from app.db.models.product import Product
 from app.db.models.season import Season
-from app.db.models.team_festival import TeamFestival
 from app.db.models.team_responsible import TeamResponsible
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -84,9 +81,9 @@ from app.modules.module_8.service import (
     clear_step,
     first_request_status,
     list_steps,
-    selected_festivals_of,
 )
 from app.modules.module_8.steps import STEPS_BY_KEY, count_team_requirements, selected_festival_ids, team_kar_ids
+from app.modules.module_9.team_festival_service import TeamFestivalError, set_team_festivals
 from app.modules.module_9.team_responsible_service import (
     apply_team_responsible_fields,
     reopen_step_if_no_responsibles,
@@ -591,52 +588,16 @@ def save_festivals(
     current_user: User = Depends(require_screen_permission(WIZARD_SCREEN, "edit")),
 ) -> TeamStateResponse:
     """Step 1: replace the festivals the team is active at. A festival
-    that is deselected also loses its Plan a kar delivery location.
+    that is deselected also loses its Plan a kar delivery location. The
+    rules live in MasterData's team_festival_service (shared with its
+    "Festivals per ploeg" grid).
     """
     season, team = _load_for_change(db, current_user, team_id, payload.season_id)
-
-    wanted_ids = set(payload.festival_ids)
-    current_links = {link.festival_id: link for link in selected_festivals_of(db, season.id, team.id)}
-
-    # Newly added festivals must be active festivals of this season (ones
-    # already linked may stay, even if they were deactivated since).
-    added_ids = wanted_ids - set(current_links)
-    if added_ids:
-        valid_ids = set(
-            db.scalars(
-                select(Festival.id).where(
-                    Festival.id.in_(added_ids), Festival.season_id == season.id, Festival.active.is_(True)
-                )
-            ).all()
-        )
-        if valid_ids != added_ids:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Every festival must be an active festival of the year",
-            )
-
-    # Remove deselected festivals, and their delivery location with them.
-    removed_ids = set(current_links) - wanted_ids
-    for festival_id in removed_ids:
-        db.delete(current_links[festival_id])
-    if removed_ids:
-        db.execute(
-            delete(KarTrackerKarAfleverlocatie).where(
-                KarTrackerKarAfleverlocatie.season_id == season.id,
-                KarTrackerKarAfleverlocatie.team_id == team.id,
-                KarTrackerKarAfleverlocatie.festival_id.in_(removed_ids),
-            )
-        )
-    for festival_id in added_ids:
-        db.add(TeamFestival(season_id=season.id, team_id=team.id, festival_id=festival_id))
-
-    # A changed selection invalidates the steps built on top of it; the
-    # user confirms them again in the wizard.
-    if added_ids or removed_ids:
-        clear_step(db, season.id, team.id, "afleverlocaties")
-        if not wanted_ids:
-            clear_step(db, season.id, team.id, "festivals")
-
+    try:
+        set_team_festivals(db, season, team, set(payload.festival_ids))
+    except TeamFestivalError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
     db.commit()
     return build_team_state(db, current_user, season, team)
 

@@ -36,6 +36,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const tFestival = useTranslations("masterdata.festival");
   const tTeams = useTranslations("masterdata.teams");
   const tTeamResponsibles = useTranslations("masterdata.teamResponsibles");
+  const tTeamFestivals = useTranslations("masterdata.teamFestivals");
   const tTeamLocation = useTranslations("masterdata.teamLocation");
   const tDeliveryMethod = useTranslations("masterdata.deliveryMethod");
   const tTeamTasks = useTranslations("masterdata.teamTasks");
@@ -51,6 +52,7 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
   const canViewFestival = viewableScreenKeys.includes("masterdata.festival");
   const canViewTeams = viewableScreenKeys.includes("masterdata.teams");
   const canViewTeamResponsibles = viewableScreenKeys.includes("masterdata.team-responsibles");
+  const canViewTeamFestivals = viewableScreenKeys.includes("masterdata.team-festivals");
   const canViewTeamLocation = viewableScreenKeys.includes("masterdata.team-location");
   const canViewDeliveryMethod = viewableScreenKeys.includes("masterdata.delivery-method");
   const canViewTeamTasks = viewableScreenKeys.includes("masterdata.team-tasks");
@@ -83,6 +85,10 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
         canViewFestival ||
         canViewTeams ||
         canViewTeamResponsibles ||
+        canViewTeamFestivals ||
+        canViewTeamLocation ||
+        canViewDeliveryMethod ||
+        canViewTeamTasks ||
         canViewDataUpload) && (
         <>
           <div className="flex items-center gap-3 px-3 pt-3 pb-1 text-xs font-semibold tracking-wide text-sidebar-foreground/50 uppercase">
@@ -114,6 +120,15 @@ export function MasterDataSidebar({ viewableScreenKeys }: MasterDataSidebarProps
               className={linkClassName("/modules/module-9/teams/responsibles", 2)}
             >
               {tTeamResponsibles("title")}
+            </Link>
+          )}
+
+          {canViewTeamFestivals && (
+            <Link
+              href="/modules/module-9/teams/festivals"
+              className={linkClassName("/modules/module-9/teams/festivals", 2)}
+            >
+              {tTeamFestivals("title")}
             </Link>
           )}
 

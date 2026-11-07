@@ -3,6 +3,74 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-07 — Afleverlocaties map zooms in on the chosen locations
+**Request:** In Altsien Select's Afleverlocaties step, the map should zoom in on the chosen delivery locations.
+**Plan:** Optional fit props on the shared Leaflet map (defaults unchanged for the other maps); the afleverlocatie map
+frames only its pins, up to zoom 17, already when it opens.
+**Changes:** `components/module-2/kar-map-leaflet.tsx` (`fitTarget`, `fitMaxZoom`, `fitOnMount`; `fitToContent` returns
+whether it framed), `components/shared/afleverlocatie-map.tsx` (passes them) — so KarTracker's Plan a kar map zooms the same way.
+**Verification:** `tsc --noEmit` and eslint clean; to check in the browser (wizard step 2, Plan a kar, Kar Map unchanged).
+
+## 2026-11-07 — Altsien Select: ploegfiche PDF by mail, mail templates, CC list
+**Request:** Once every wizard step is completed, a popup asks the Kernlid whether they want a PDF with all confirmed data;
+an e-mail screen like Atelier's to edit the texts; a field with addresses that get a copy of every Altsien Select mail.
+**Plan:**
+- `cc` in `app/core/mail.py`; generic placeholder helpers shared with Atelier (`app/shared/mail_template.py`).
+- Mail template + settings tables, `build_altsien_mail` that always adds the CC list, send endpoint with the Ploegfiche PDF.
+- Popup in the wizard + "PDF mailen" in the all-done banner; Instellingen > E-mails screen with the shared template editor.
+**Changes:**
+- **Backend:** `OutgoingMail.cc`; `app/shared/mail_template.py` (Atelier's `notifications.py` uses it); models
+  `AltsienSelect_mail_template`, `AltsienSelect_settings` + migration `d4a8f2c6e917` (seeds `ploegfiche`);
+  `module_8/notifications.py`, `module_8/mail_template_router.py` (`/mail-templates`, `/mail-settings`,
+  `POST /wizard/{team}/ploegfiche/mail`); screen `altsienselect.mailtemplates`.
+- **Frontend:** `components/shared/mail-templates/mail-template-card.tsx` (Atelier's screen uses it),
+  `components/module-8/mail-settings-screen.tsx` + page `settings/mails`, `wizard/ploegfiche-mail.tsx`, sidebar group
+  Instellingen, api/types, nl/en.
+- **Docs:** help chapter `mails` (nl/en), wizard chapter paragraph, `CLAUDE.md`.
+**Verification:** `tests/modules/module_8/test_mails.py` (7) + `tests/core/test_mail.py` (2); full backend suite and
+`tsc`/eslint after merging all four requests (see below).
+**Notes:** Built in parallel in its own worktree; migration re-chained after `d2a7c4e9b136`. The popup doesn't show the
+address (the wizard doesn't know it); the success toast does. No help screenshot yet.
+
+## 2026-11-07 — Altsien Select: more visible Ploeg Wizard steps
+**Request:** The wizard's step screens are grey and boring; make the steps more visible so the user sees where to work.
+**Plan:** Frontend only, in the module's fuchsia: progress bar, done/current/to-do pills, step card with accent top
+border and tinted header, highlighted selected rows, orange unsaved pill.
+**Changes:** `wizard/styles.ts` (new: `wizardRowClassName`, `wizardTableRowClassName`, `wizardUnsavedClassName`),
+`team-wizard.tsx`, the festival/afleverlocatie/ploegverantwoordelijken/special-requests steps, `altsienSelect.wizard.progress` (nl/en).
+**Verification:** `tsc --noEmit` and eslint clean; not yet checked in a browser (light/dark/phone width).
+**Notes:** Products step left as is (its kar buttons already use the accent). Help screenshots for module-8 to retake.
+
+## 2026-11-07 — Altsien Select: walkie-talkies step removed
+**Request:** Walkie-talkies won't be managed in Altsien Select; delete that wizard step.
+**Plan:** Drop the step definition, its Ploegfiche sections, texts and help; delete its stored progress rows.
+**Changes:** `module_8/steps.py`, `ploegfiche_pdf.py` (placeholder steps now rendered generically), migration
+`d2a7c4e9b136` (deletes `walkies` progress rows), `ploegfiche.tsx`, `wizard/steps/index.ts`, nl/en texts, help
+`module_8/{nl,en}.md` (3/5 steps), user manual wizard diagram (five steps), developer handbook step table, `CLAUDE.md`.
+**Verification:** module-8 + help tests (108 passed) before merging; full suite after merging (see first entry).
+**Notes:** Walkies module (module-6) untouched. Handbook PDFs not rebuilt.
+
+## 2026-11-07 — MasterData: Festivals per ploeg (all teams × festivals per year)
+**Request:** Which festivals a team works at was only editable in Altsien Select; add a MasterData screen under Teams
+with per year a column per festival and a tick per team, all teams in one list; plus copy from the previous year.
+**Plan:**
+- One shared service `module_9/team_festival_service.py` used by the new grid, wizard step 1 and the XLSX import.
+- Grid edited as a draft with one Save; closed years read-only; "Kopieer van vorig jaar" as a proposal in the draft.
+- Wizard step 1 also gets "copy from last season".
+**Changes:**
+- **Backend:** `team_festival_service.py` (set/apply/grid/previous-year proposal; `previous_season_of` and
+  `normalize_festival_name` moved here, re-exported by `module_8/previous_season.py`), `module_8/router.py`
+  `save_festivals` and `team_festival_import.py` through it, `festivals` in `COPYABLE_STEPS`, screen
+  `masterdata.team-festivals`, endpoints `/team-festivals/{options,grid,previous}`, schemas.
+- **Frontend:** page `modules/module-9/teams/festivals`, `components/module-9/team-festival-grid.tsx`, sidebar, api/types,
+  `masterdata.teamFestivals.*` + `altsienSelect.steps.festivals.masterdataHint` (nl/en).
+- **Docs:** help chapter `team-festivals` (module 9), `CLAUDE.md`.
+**Verification:** `tests/modules/module_9/test_team_festivals.py` (12), `test_previous_season.py` (+3); after merging all
+four requests: full backend suite 1019 passed, `tsc --noEmit` and eslint clean.
+**Notes:** Requests 1, 3 and 4 were built in parallel by three agents in separate worktrees and merged into `develop`'s
+working tree (two small conflicts in `team-wizard.tsx` / `festival-step.tsx`, kept both sides). Help screenshots for
+module-8/9 still to take. Local data check: 2025 → 2026 copies Rock Werchter; 2027 has no festivals yet and is closed.
+
 ## 2026-11-07 — Atelier: reservation limit, tags on Stock, Pi email and tag checkboxes
 **Request:** Four corrections:
 - the desk accepted more people than reserved;

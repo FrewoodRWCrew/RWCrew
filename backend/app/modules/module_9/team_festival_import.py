@@ -3,12 +3,13 @@
 # team and festival, all by name (matched ignoring case). This is the same
 # data as step 1 of Altsien Select's Ploeg Wizard.
 #
-# Upload only adds links, with the wizard's rules: the festival must be an
+# Upload only adds links, through team_festival_service (the same rules as
+# the wizard and the "Festivals per ploeg" grid): the festival must be an
 # active festival of that season, a link that already exists is reported
 # "unchanged", and a new link un-marks the wizard's "afleverlocaties" step
 # (the delivery locations must be confirmed again for the new festival).
-# Links are never removed here — removing stays in the wizard, which also
-# cleans up the festival's delivery location.
+# Links are never removed here — removing goes through the grid or the
+# wizard, which also clean up the festival's delivery location.
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -17,8 +18,8 @@ from app.db.models.festival import Festival
 from app.db.models.season import Season
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
-from app.modules.module_8.service import clear_step
-from app.modules.module_9.team_link_common import add_link, link_key, resolve_season, resolve_team
+from app.modules.module_9.team_festival_service import add_team_festivals
+from app.modules.module_9.team_link_common import link_key, resolve_season, resolve_team
 from app.modules.module_9.xlsx_common import ImportOutcome, RowError, UploadedRow, build_xlsx, read_rows, run_import
 from app.schemas.masterdata import TeamLinkImportRowResult
 
@@ -56,9 +57,8 @@ def import_team_festivals_from_xlsx(db: Session, file_bytes: bytes) -> list[Team
             season = resolve_season(db, row.text("season_name"))
             team = resolve_team(db, row.text("team_name"))
             festival = _resolve_festival(db, season, row.text("festival_name"))
-            outcome = add_link(db, TeamFestival, season_id=season.id, team_id=team.id, festival_id=festival.id)
-            if outcome == "created":
-                clear_step(db, season.id, team.id, "afleverlocaties")
+            added = add_team_festivals(db, season, team, {festival.id})
+            outcome: ImportOutcome = "created" if added else "unchanged"
             return link_key(season.name, team.name, festival.name), outcome
         except ValueError as error:
             raise RowError(str(error), key) from None

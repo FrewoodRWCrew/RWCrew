@@ -58,6 +58,15 @@ interface KarMapLeafletProps {
    * was picked). Without it, the map only ever shows the default extent it
    * opens on. */
   fitKey?: string;
+  /** What a re-frame shows: "content" (default) = every pin plus the shown
+   * ground plans; "pins" = only the pins (the ground plans are only used
+   * while there are no pins), so a few close locations fill the map. */
+  fitTarget?: "content" | "pins";
+  /** How far a re-frame may zoom in (default 14). */
+  fitMaxZoom?: number;
+  /** When true, the map opens framed like a re-frame instead of on the fixed
+   * default extent (still the default extent while there's nothing to frame). */
+  fitOnMount?: boolean;
   /** Optional: called with the clicked point's coordinates whenever the
    * user clicks on the map (e.g. to pick a location on "Manuele kar
    * beweging"). Without it, clicking the map does nothing. */
@@ -138,22 +147,30 @@ function labelIcon(color: string, label: string) {
 }
 
 /** Frame the map around every given pin plus, when shown, every ground
- * plan's four corners. Does nothing when there's nothing to frame. */
-function fitToContent(map: LeafletMap, pins: KarMapPin[], overlays: GroundplanOverlay[]) {
-  const fitPoints = [
-    ...pins.map((pin) => [pin.latitude, pin.longitude] as [number, number]),
-    ...overlays.flatMap((overlay) => [
-      overlay.bounds[0],
-      [overlay.bounds[0][0], overlay.bounds[1][1]] as [number, number],
-      [overlay.bounds[1][0], overlay.bounds[0][1]] as [number, number],
-      overlay.bounds[1],
-    ]),
-  ];
-  if (fitPoints.length === 0) return;
+ * plan's four corners (or, with target "pins", only the pins as long as
+ * there are any). Returns false when there was nothing to frame. */
+function fitToContent(
+  map: LeafletMap,
+  pins: KarMapPin[],
+  overlays: GroundplanOverlay[],
+  target: "content" | "pins" = "content",
+  maxZoom = 14,
+): boolean {
+  const pinPoints = pins.map((pin) => [pin.latitude, pin.longitude] as [number, number]);
+  const overlayPoints = overlays.flatMap((overlay) => [
+    overlay.bounds[0],
+    [overlay.bounds[0][0], overlay.bounds[1][1]] as [number, number],
+    [overlay.bounds[1][0], overlay.bounds[0][1]] as [number, number],
+    overlay.bounds[1],
+  ]);
+  const fitPoints =
+    target === "pins" && pinPoints.length > 0 ? pinPoints : [...pinPoints, ...overlayPoints];
+  if (fitPoints.length === 0) return false;
   // maxZoom caps how far fitBounds is allowed to zoom in, so a single
-  // pin (or a tight cluster) settles at zoom 14 — the same zoom the
-  // "Locate" button already uses — instead of snapping to street level.
-  map.fitBounds(latLngBounds(fitPoints), { maxZoom: 14, padding: [24, 24] });
+  // pin (or a tight cluster) settles at that zoom (default 14 — the same
+  // zoom the "Locate" button uses) instead of snapping to street level.
+  map.fitBounds(latLngBounds(fitPoints), { maxZoom, padding: [24, 24] });
+  return true;
 }
 
 /** Forwards map clicks to the caller. Must live inside MapContainer, since
@@ -174,6 +191,9 @@ export function KarMapLeaflet({
   groundplanOverlays,
   groundplanOpacity,
   fitKey,
+  fitTarget = "content",
+  fitMaxZoom = 14,
+  fitOnMount = false,
   onMapClick,
   route,
 }: KarMapLeafletProps) {
@@ -197,11 +217,17 @@ export function KarMapLeaflet({
       },
     });
 
-    // Every map opens on the fixed default extent, not on its pins. The
-    // MapContainer already starts there via its `bounds` prop; fitting once
-    // more here corrects for the container's final size after layout.
+    // A map opens on the fixed default extent, not on its pins — unless the
+    // caller asked to open framed (fitOnMount) and there is something to
+    // frame. The MapContainer already starts on the default extent via its
+    // `bounds` prop; fitting once more here corrects for the container's
+    // final size after layout.
     const map = mapRef.current;
-    if (map) map.fitBounds(DEFAULT_VIEW_BOUNDS);
+    if (map) {
+      const framed =
+        fitOnMount && fitToContent(map, pins, showGroundplan ? groundplanOverlays : [], fitTarget, fitMaxZoom);
+      if (!framed) map.fitBounds(DEFAULT_VIEW_BOUNDS);
+    }
     // Only ever needs to fire once, when the map first mounts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -214,7 +240,7 @@ export function KarMapLeaflet({
     if (fitKey === undefined || fitKey === lastFitKeyRef.current) return;
     lastFitKeyRef.current = fitKey;
     const map = mapRef.current;
-    if (map) fitToContent(map, pins, showGroundplan ? groundplanOverlays : []);
+    if (map) fitToContent(map, pins, showGroundplan ? groundplanOverlays : [], fitTarget, fitMaxZoom);
     // Only a new fitKey should move the map — not toggling the ground plan
     // layer or any other re-render.
     // eslint-disable-next-line react-hooks/exhaustive-deps

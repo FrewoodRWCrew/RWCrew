@@ -43,7 +43,9 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RequestStatusBadge } from "@/components/module-8/request-status-badge";
 import { formatDate } from "@/components/module-8/wizard/format";
+import { cn } from "@/lib/utils";
 import type { WizardStepProps } from "@/components/module-8/wizard/step-types";
+import { wizardRowClassName } from "@/components/module-8/wizard/styles";
 
 export function SpecialRequestsStep({ state, teamId, seasonId, readOnly, onStateChange }: WizardStepProps) {
   const t = useTranslations("altsienSelect.steps.special_requests");
@@ -77,7 +79,8 @@ export function SpecialRequestsStep({ state, teamId, seasonId, readOnly, onState
       ) : (
         <ul className="flex flex-col gap-2">
           {state.requests.map((request) => (
-            <li key={request.id} className="flex flex-col gap-2 rounded-md border p-3">
+            // Each request is a filled-in card in the accent colour; its text stays normal weight.
+            <li key={request.id} className={cn("flex flex-col gap-2 p-3", wizardRowClassName(true), "font-normal")}>
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm whitespace-pre-wrap">{request.text}</p>
                 <div className="flex shrink-0 items-center gap-1">

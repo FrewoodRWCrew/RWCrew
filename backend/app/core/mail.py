@@ -47,6 +47,9 @@ class OutgoingMail:
     html: str
     text: str
     attachments: list[MailAttachment] = field(default_factory=list)
+    # Addresses that get a copy (Resend's "cc"). Only the first chunk of a
+    # long "to" list carries them, so a CC address never gets duplicates.
+    cc: list[str] = field(default_factory=list)
 
 
 def send_email(mail: OutgoingMail) -> None:
@@ -78,6 +81,8 @@ def send_email(mail: OutgoingMail) -> None:
         }
         if attachments:
             payload["attachments"] = attachments
+        if mail.cc and start == 0:
+            payload["cc"] = mail.cc
 
         try:
             response = httpx.post(

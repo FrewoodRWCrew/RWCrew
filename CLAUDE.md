@@ -392,6 +392,19 @@ tables, `backend/app/modules/module_8/screens.py`).
   (`AltsienSelect_special_requests` + editable `AltsienSelect_request_status`, lowest `sort_order` = the
   start status) live in module-8 tables. Festivals go to `MasterData_team_festival`; delivery locations go
   to KarTracker's Plan a kar table via `module_2/plan_kar_service.py` (shared with module-2's own screen).
+- **Festivals per team** are written only by `module_9/team_festival_service.py` (rules: only active festivals of
+  the year, unticking also deletes the Plan a kar location and re-opens `afleverlocaties`), used by wizard step 1,
+  the XLSX import and MasterData's **Festivals per ploeg** grid (Teams > Festivals per ploeg,
+  `/modules/module-9/teams/festivals`, screen `masterdata.team-festivals`, `components/module-9/team-festival-grid.tsx`):
+  all teams × the year's festivals, edited as a draft with one Save (`PUT /team-festivals/grid`, closed year → 403
+  `season_closed`), "Kopieer van vorig jaar" (`GET /team-festivals/previous`, a proposal only, added to the draft).
+  `previous_season_of` / `normalize_festival_name` live in that service (re-exported by `module_8/previous_season.py`).
+- **Mails**: every Altsien Select mail goes through `module_8/notifications.py` `build_altsien_mail`, which always adds
+  the CC list (`AltsienSelect_settings.cc_addresses`). Texts in `AltsienSelect_mail_template` (key `ploegfiche`),
+  edited on Instellingen > E-mails (screen `altsienselect.mailtemplates`, `module_8/mail_template_router.py`), with the
+  template editor shared with Atelier (`components/shared/mail-templates/`, placeholder helpers in
+  `app/shared/mail_template.py`). When completing a step finishes the wizard, a popup offers the Ploegfiche PDF by mail
+  (`POST /wizard/{team}/ploegfiche/mail`, to the session user + CC; also the "PDF mailen" button in the all-done banner).
 - **Adding a wizard step**: add a `StepDefinition` in `backend/app/modules/module_8/steps.py` (optional
   completion check), a component in `frontend/src/components/module-8/wizard/steps/` registered in its
   `index.ts` (unknown keys fall back to a placeholder), translations under `altsienSelect.steps.<key>`,
@@ -400,7 +413,7 @@ tables, `backend/app/modules/module_8/screens.py`).
   above them with last season's values line by line (checkbox each, select all, "Copy"). "Last season" is the
   season whose name sorts right before the current one; festivals are matched by name ignoring case, 4-digit
   years and punctuation. Copying only adds/updates, never removes and never marks the step done. Offered on
-  delivery locations, team leads and special requests (products has its own per-kar copy, see below).
+  festivals, delivery locations, team leads and special requests (products has its own per-kar copy, see below).
 - **Products** (step 4) = StockMaster's kar needs of the team's kars, written only through
   `module_4/requirement_service.py`. Module-8 serves its own endpoints for it (`/wizard/{team}/products/...`,
   `/products-import`, `/products/{id}/image`) gated by the wizard screen, team scope and season lock, so a Kernlid
@@ -412,7 +425,8 @@ tables, `backend/app/modules/module_8/screens.py`).
   (`GET /plan-kar/overview`, kars of active teams, "x/y festivals" per team); `?team=<id>` opens the team's matrix.
   Both count only the festivals the team picked in the wizard (`MasterData_team_festival`), falling back to every
   active festival while it picked none (`module_2/plan_kar_service.py` `festivals_for_team`).
-- Walkie-talkies is a placeholder step until its own module exists.
+- There is **no walkie-talkies step** (removed 2026-11-07, migration `d2a7c4e9b136` deleted its progress rows):
+  walkie-talkies are not managed in Altsien Select.
 - **Ploegverantwoordelijken** (team leads, per team + season, not RWCrew users) live in MasterData's
   `MasterData_team_responsible`, managed on module-9's `masterdata.team-responsibles` screen (Teams >
   Ploegverantwoordelijken) *and* by wizard step `ploegverantwoordelijken` (step 3, needs ≥1 person) — both

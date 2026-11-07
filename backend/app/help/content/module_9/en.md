@@ -58,6 +58,19 @@ The responsible people per team and per year, with their email, phone number and
 
 > This is the same list as step 3 of the Team Wizard in Altsien Select: what the core members enter there shows up here, and the other way round.
 
+## [team-festivals | masterdata.team-festivals] Festivals per team
+Which festivals each team works at, per year: one row per team, one column per festival, a tick where the team works. Every team is in one list.
+
+1. Pick the **Year** (the last open year is chosen by default). The search box narrows the list to certain teams.
+2. Tick or untick the festivals. Changed boxes turn orange; above the table you see how many changes aren't saved yet. **Shift-click** a festival or a team to tick or untick the whole column or row.
+3. Click **Save**. When you untick a festival for which the team already chose a delivery location (Plan a kar), the screen asks for confirmation first: that location is then deleted. **Discard changes** puts everything back as saved.
+
+**Copy from last year** prepares every team's festivals of the previous year as changes. Festivals are matched by name, ignoring years and case ("Rock Werchter 2025" becomes "Rock Werchter 2026"). It only adds, never unticks, and nothing is saved until you click **Save**. Festivals without a counterpart this year are listed. So create the new year's festivals first.
+
+A closed year (period not open) is read-only. An inactive festival can only be unticked.
+
+> This is the same choice as step 1 of the Team Wizard in Altsien Select: what the Kernleden tick there shows here, and the other way round. A changed choice re-opens that team's Delivery locations step.
+
 ## [team-location | masterdata.team-location] Team Location
 The locations you can choose for a team. Click **New team location** to add one, or **Change** to rename one.
 

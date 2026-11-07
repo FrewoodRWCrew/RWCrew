@@ -94,19 +94,61 @@ def test_steps_say_whether_they_offer_a_copy(as_kernlid: TestClient, world: Alts
     steps = as_kernlid.get(f"{BASE}/wizard/{world.own_team.id}?season_id={world.season.id}").json()["steps"]
 
     copyable = {step["key"] for step in steps if step["copy_from_previous"]}
-    assert copyable == {"afleverlocaties", "ploegverantwoordelijken", "special_requests"}
+    assert copyable == {"festivals", "afleverlocaties", "ploegverantwoordelijken", "special_requests"}
 
 
 def test_step_without_copy_returns_404(as_kernlid: TestClient, world: AltsienWorld) -> None:
-    url = f"{BASE}/wizard/{world.own_team.id}/steps/festivals/previous-season?season_id={world.season.id}"
+    url = f"{BASE}/wizard/{world.own_team.id}/steps/products/previous-season?season_id={world.season.id}"
     assert as_kernlid.get(url).status_code == 404
-    assert _copy(as_kernlid, world, "festivals", []).status_code == 404
+    assert _copy(as_kernlid, world, "products", []).status_code == 404
 
 
 def test_no_previous_season_gives_no_lines(as_kernlid: TestClient, world: AltsienWorld) -> None:
     body = _lines(as_kernlid, world, "ploegverantwoordelijken")
 
     assert body == {"previous_season_id": None, "previous_season_name": None, "lines": []}
+
+
+# --- festivals -------------------------------------------------------------------
+
+
+def test_festival_lines_are_matched_and_flagged(
+    as_kernlid: TestClient, world: AltsienWorld, last_season: Season
+) -> None:
+    # TW Classic is already chosen this season.
+    _select_festivals(as_kernlid, world, [world.festival_b.id])
+
+    by_label = {line["label"]: line for line in _lines(as_kernlid, world, "festivals")["lines"]}
+
+    assert by_label["Rock Werchter 2025"]["target"] == "Rock Werchter"
+    assert by_label["Rock Werchter 2025"]["already_present"] is False
+    assert by_label["TW Classic"]["already_present"] is True
+    assert by_label["Pukkelpop"]["unavailable_reason"] == "not_in_season"
+
+
+def test_copying_festivals_adds_them_and_reopens_the_location_step(
+    as_kernlid: TestClient, world: AltsienWorld, last_season: Season
+) -> None:
+    _select_festivals(as_kernlid, world, [world.festival_b.id])
+    keys = [line["key"] for line in _lines(as_kernlid, world, "festivals")["lines"]]
+
+    response = _copy(as_kernlid, world, "festivals", keys)
+
+    assert response.status_code == 200
+    selected = {row["festival_id"] for row in response.json()["festivals"] if row["selected"]}
+    # Added, never removed; Pukkelpop has no 2026 festival and is skipped.
+    assert selected == {world.festival_a.id, world.festival_b.id}
+
+
+def test_inactive_festival_this_season_is_not_offered(
+    as_kernlid: TestClient, world: AltsienWorld, last_season: Season, db_session: Session
+) -> None:
+    db_session.get(Festival, world.festival_a.id).active = False
+    db_session.commit()
+
+    by_label = {line["label"]: line for line in _lines(as_kernlid, world, "festivals")["lines"]}
+
+    assert by_label["Rock Werchter 2025"]["unavailable_reason"] == "not_in_season"
 
 
 # --- delivery locations -----------------------------------------------------

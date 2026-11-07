@@ -204,6 +204,96 @@ class TeamResponsibleOptionsResponse(BaseModel):
     seasons: list[TeamResponsibleOptionItem]
 
 
+# --- "Festivals per ploeg" grid (MasterData_team_festival) -------------------
+
+
+class TeamFestivalSeasonOption(BaseModel):
+    """One year in the grid's year dropdown."""
+
+    id: int
+    name: str
+    periode_open: bool
+
+
+class TeamFestivalOptionsResponse(BaseModel):
+    """The grid's year dropdown (so no Years screen right is needed), plus
+    the year it opens on: the last open one, else the last one.
+    """
+
+    seasons: list[TeamFestivalSeasonOption]
+    default_season_id: int | None
+
+
+class TeamFestivalGridFestival(BaseModel):
+    """One column of the grid."""
+
+    id: int
+    name: str
+    start_date: date
+    end_date: date
+    active: bool
+
+
+class TeamFestivalGridTeam(BaseModel):
+    """One row of the grid."""
+
+    id: int
+    name: str
+    active: bool
+
+
+class TeamFestivalGridResponse(BaseModel):
+    """Every team × festival of one year. `links` and `planned` are
+    [team_id, festival_id] pairs; `planned` = links that also have a Plan a
+    kar delivery location (unticking deletes it). `editable` is False for a
+    closed year (periode_open off); `can_edit` says whether this user has
+    "edit" on the screen.
+    """
+
+    season_id: int
+    season_name: str
+    editable: bool
+    can_edit: bool
+    festivals: list[TeamFestivalGridFestival]
+    teams: list[TeamFestivalGridTeam]
+    links: list[tuple[int, int]]
+    planned: list[tuple[int, int]]
+
+
+class TeamFestivalGridChange(BaseModel):
+    """One ticked (selected) or unticked cell."""
+
+    team_id: int
+    festival_id: int
+    selected: bool
+
+
+class TeamFestivalGridSaveRequest(BaseModel):
+    """The changed cells of one year, saved in one go."""
+
+    season_id: int
+    changes: list[TeamFestivalGridChange]
+
+
+class TeamFestivalUnmatched(BaseModel):
+    """A festival of last year without a festival of the same name this year."""
+
+    festival_name: str
+    team_count: int
+
+
+class TeamFestivalPreviousResponse(BaseModel):
+    """Last year's links mapped onto this year (nothing saved). Empty
+    `previous_season_*` when there is no earlier year.
+    """
+
+    previous_season_id: int | None
+    previous_season_name: str | None
+    links: list[tuple[int, int]]
+    already_present: int
+    unmatched: list[TeamFestivalUnmatched]
+
+
 class DeliveryMethodResponse(BaseModel):
     """One delivery method, as shown on the Delivery Method screen."""
 

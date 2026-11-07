@@ -5,10 +5,12 @@
 # list of models.
 
 from app.core.database import Base  # noqa: F401  (re-exported for convenience)
+from app.db.models.altsien_select_mail_template import AltsienSelectMailTemplate  # noqa: F401
 from app.db.models.altsien_select_request_status import AltsienSelectRequestStatus  # noqa: F401
 from app.db.models.altsien_select_role import AltsienSelectRole  # noqa: F401
 from app.db.models.altsien_select_role_permission import AltsienSelectRolePermission  # noqa: F401
 from app.db.models.altsien_select_screen import AltsienSelectScreen  # noqa: F401
+from app.db.models.altsien_select_settings import AltsienSelectSettings  # noqa: F401
 from app.db.models.altsien_select_special_request import AltsienSelectSpecialRequest  # noqa: F401
 from app.db.models.altsien_select_step_progress import AltsienSelectStepProgress  # noqa: F401
 from app.db.models.altsien_select_user_role import AltsienSelectUserRole  # noqa: F401

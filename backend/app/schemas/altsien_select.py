@@ -23,6 +23,15 @@ from app.schemas.intervention_requests import (  # noqa: F401  (re-exported for 
 )
 from app.schemas.masterdata import TeamResponsibleResponse
 
+# The mail template shapes ("Instellingen > E-mails") are the same as Atelier's.
+from app.schemas.atelier import (  # noqa: F401  (re-exported for the mail router)
+    MailTemplateRequest,
+    MailTemplateResponse,
+    MailTemplatesResponse,
+    MailTestRequest,
+    MailTestResponse,
+)
+
 
 # --- Wizard steps ---------------------------------------------------------
 
@@ -314,3 +323,27 @@ class DashboardResponse(BaseModel):
     open_requests: int
     step_breakdown: list[StepBreakdownItem]
     status_breakdown: list[StatusBreakdownItem]
+
+
+# --- Mails ("Instellingen > E-mails") -------------------------------------
+
+
+class MailSettingsResponse(BaseModel):
+    """The addresses that get a copy (CC) of every Altsien Select mail."""
+
+    cc_addresses: list[str]
+    updated_by_name: str | None = None
+    updated_at: datetime | None = None
+
+
+class MailSettingsRequest(BaseModel):
+    """Save the CC list (each a valid email; duplicates are removed)."""
+
+    cc_addresses: list[EmailStr] = Field(max_length=50)
+
+
+class PloegficheMailResponse(BaseModel):
+    """Where the Ploegfiche mail went: the session user and the CC list."""
+
+    sent_to: str
+    cc: list[str]

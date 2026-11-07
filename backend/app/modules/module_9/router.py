@@ -76,6 +76,13 @@ from app.modules.module_9.team_responsible_import import (
     import_team_responsibles_from_xlsx,
 )
 from app.modules.module_9.team_alias_service import aliases_of, check_aliases, clean_aliases, replace_aliases
+from app.modules.module_9.team_festival_service import (
+    GridChange,
+    TeamFestivalError,
+    previous_year_proposal,
+)
+from app.modules.module_9.team_festival_service import apply_grid_changes as apply_team_festival_changes
+from app.modules.module_9.team_festival_service import build_grid as build_team_festival_grid
 from app.modules.module_9.team_responsible_service import (
     apply_team_responsible_fields,
     reopen_step_if_no_responsibles,
@@ -122,6 +129,14 @@ from app.schemas.masterdata import (
     TeamLocationImportResponse,
     TeamLocationResponse,
     TeamLocationUpdateRequest,
+    TeamFestivalGridFestival,
+    TeamFestivalGridResponse,
+    TeamFestivalGridSaveRequest,
+    TeamFestivalGridTeam,
+    TeamFestivalOptionsResponse,
+    TeamFestivalPreviousResponse,
+    TeamFestivalSeasonOption,
+    TeamFestivalUnmatched,
     TeamResponsibleCreateRequest,
     TeamResponsibleOptionItem,
     TeamResponsibleOptionsResponse,
@@ -790,6 +805,124 @@ def delete_team_responsible(
     # The last one gone means Altsien Select's wizard step no longer holds.
     reopen_step_if_no_responsibles(db, team_responsible.season_id, team_responsible.team_id)
     db.commit()
+
+
+# --- Festivals per ploeg (MasterData_team_festival) ---------------------------
+# One grid per year: a row per team, a column per festival, a tick where the
+# team works. All writes go through team_festival_service (shared with
+# Altsien Select's wizard step 1). A closed year (periode_open off) is
+# read-only here, the same lock the wizard has.
+
+TEAM_FESTIVALS_SCREEN = "masterdata.team-festivals"
+
+
+def _team_festival_season(db: Session, season_id: int) -> Season:
+    """The year, or a 404."""
+    season = db.get(Season, season_id)
+    if season is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Year not found")
+    return season
+
+
+def _ensure_season_open(season: Season) -> None:
+    """Changes to a closed year are refused (translated by the frontend)."""
+    if not season.periode_open:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="season_closed")
+
+
+@router.get("/team-festivals/options", response_model=TeamFestivalOptionsResponse)
+def get_team_festival_options(
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(TEAM_FESTIVALS_SCREEN, "view")),
+) -> TeamFestivalOptionsResponse:
+    """Every year for the grid's dropdown, and the one it opens on (the
+    last open year, else the last year).
+    """
+    seasons = db.scalars(select(Season).order_by(Season.name)).all()
+    open_seasons = [season for season in seasons if season.periode_open]
+    default = open_seasons[-1] if open_seasons else (seasons[-1] if seasons else None)
+    return TeamFestivalOptionsResponse(
+        seasons=[
+            TeamFestivalSeasonOption(id=season.id, name=season.name, periode_open=season.periode_open)
+            for season in seasons
+        ],
+        default_season_id=default.id if default else None,
+    )
+
+
+@router.get("/team-festivals/grid", response_model=TeamFestivalGridResponse)
+def get_team_festival_grid(
+    season_id: int,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_screen_permission(TEAM_FESTIVALS_SCREEN, "view")),
+) -> TeamFestivalGridResponse:
+    """The grid of one year: festivals, teams and their links."""
+    season = _team_festival_season(db, season_id)
+    grid = build_team_festival_grid(db, season.id)
+    return TeamFestivalGridResponse(
+        season_id=season.id,
+        season_name=season.name,
+        editable=season.periode_open,
+        can_edit=user_can(db, user, TEAM_FESTIVALS_SCREEN, "edit"),
+        festivals=[
+            TeamFestivalGridFestival(
+                id=festival.id,
+                name=festival.name,
+                start_date=festival.start_date,
+                end_date=festival.end_date,
+                active=festival.active,
+            )
+            for festival in grid.festivals
+        ],
+        teams=[TeamFestivalGridTeam(id=team.id, name=team.name, active=team.active) for team in grid.teams],
+        links=grid.links,
+        planned=grid.planned,
+    )
+
+
+@router.put("/team-festivals/grid", response_model=TeamFestivalGridResponse)
+def save_team_festival_grid(
+    payload: TeamFestivalGridSaveRequest,
+    db: Session = Depends(get_db),
+    user: User = Depends(require_screen_permission(TEAM_FESTIVALS_SCREEN, "edit")),
+) -> TeamFestivalGridResponse:
+    """Save the grid's changed cells in one transaction; returns the new grid."""
+    season = _team_festival_season(db, payload.season_id)
+    _ensure_season_open(season)
+    try:
+        changes = [
+            GridChange(team_id=change.team_id, festival_id=change.festival_id, selected=change.selected)
+            for change in payload.changes
+        ]
+        apply_team_festival_changes(db, season, changes)
+    except TeamFestivalError as error:
+        db.rollback()
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(error)) from error
+    db.commit()
+    return get_team_festival_grid(season.id, db, user)
+
+
+@router.get("/team-festivals/previous", response_model=TeamFestivalPreviousResponse)
+def get_team_festival_previous(
+    season_id: int,
+    db: Session = Depends(get_db),
+    _user: User = Depends(require_screen_permission(TEAM_FESTIVALS_SCREEN, "view")),
+) -> TeamFestivalPreviousResponse:
+    """Last year's links mapped onto this year's festivals by name — a
+    proposal only: the screen adds them to its draft, nothing is saved here.
+    """
+    season = _team_festival_season(db, season_id)
+    proposal = previous_year_proposal(db, season)
+    return TeamFestivalPreviousResponse(
+        previous_season_id=proposal.previous_season.id if proposal.previous_season else None,
+        previous_season_name=proposal.previous_season.name if proposal.previous_season else None,
+        links=proposal.links,
+        already_present=proposal.already_present,
+        unmatched=[
+            TeamFestivalUnmatched(festival_name=item.festival_name, team_count=item.team_count)
+            for item in proposal.unmatched
+        ],
+    )
 
 
 @router.get("/delivery-methods", response_model=list[DeliveryMethodResponse])

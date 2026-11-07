@@ -43,6 +43,8 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="altsienselect.statuses", label="Request statuses", sort_order=5),
     ScreenDefinition(key="altsienselect.roles", label="Roles", sort_order=6),
     ScreenDefinition(key="altsienselect.users", label="Users", sort_order=7),
+    # "Instellingen > E-mails": the mail texts and the CC list of every Altsien Select mail.
+    ScreenDefinition(key="altsienselect.mailtemplates", label="E-mails", sort_order=8),
 ]
 
 

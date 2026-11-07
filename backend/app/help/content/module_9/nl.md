@@ -58,6 +58,19 @@ De verantwoordelijken per ploeg en per jaartal, met hun e-mail, telefoonnummer e
 
 > Dit is dezelfde lijst als stap 3 van de Ploeg Wizard in Altsien Select: wat de Kernleden daar ingeven, zie je hier, en omgekeerd.
 
+## [team-festivals | masterdata.team-festivals] Festivals per ploeg
+Op welke festivals elke ploeg werkt, per jaartal: één rij per ploeg, één kolom per festival, een vinkje waar de ploeg werkt. Alle ploegen staan in één lijst.
+
+1. Kies het **Jaartal** (het laatste open jaartal staat standaard gekozen). Met het zoekvak beperk je de lijst tot bepaalde ploegen.
+2. Vink de festivals aan of uit. Gewijzigde vakjes kleuren oranje; boven de tabel staat hoeveel wijzigingen nog niet bewaard zijn. Met **shift-klik** op een festival of een ploeg vink je de hele kolom of rij aan of uit.
+3. Klik op **Opslaan**. Vink je een festival uit waarvoor de ploeg al een afleverlocatie koos (Plan een kar), dan vraagt het scherm eerst bevestiging: die locatie wordt dan verwijderd. **Wijzigingen weggooien** zet alles terug zoals het bewaard is.
+
+**Kopieer van vorig jaar** zet de festivals van elke ploeg van het vorige jaartal klaar als wijziging. Festivals worden op naam gekoppeld, zonder jaartal of hoofdletters ("Rock Werchter 2025" wordt "Rock Werchter 2026"). Er wordt enkel toegevoegd, nooit iets uitgevinkt, en pas bewaard als je op **Opslaan** klikt. Festivals zonder tegenhanger dit jaar worden opgesomd. Maak dus eerst de festivals van het nieuwe jaartal aan.
+
+Een afgesloten jaartal (periode niet open) kan je enkel bekijken. Een niet-actief festival kan je enkel uitvinken.
+
+> Dit is dezelfde keuze als stap 1 van de Ploeg Wizard in Altsien Select: wat de Kernleden daar aanduiden, zie je hier, en omgekeerd. Een gewijzigde keuze zet de stap Afleverlocaties van die ploeg terug open.
+
 ## [team-location | masterdata.team-location] Teamlocatie
 De locaties die je bij een ploeg kan kiezen. Klik op **Nieuwe teamlocatie** om er een toe te voegen, of op **Wijzigen** om een naam aan te passen.
 

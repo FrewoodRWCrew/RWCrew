@@ -6,6 +6,11 @@
 import { API_BASE_URL } from "./config";
 import type {
   AltsienSelectDashboardStats,
+  AltsienSelectMailSettings,
+  AltsienSelectMailTemplate,
+  AltsienSelectMailTemplateKey,
+  AltsienSelectMailTemplates,
+  AltsienSelectPloegficheMailResult,
   AltsienSelectPreviousSeason,
   AltsienSelectRequestStatus,
   AltsienSelectRequestStatusInput,
@@ -174,6 +179,9 @@ import type {
   TeamKarUser,
   TeamLocation,
   TeamLocationImportResponse,
+  TeamFestivalChange,
+  TeamFestivalGrid,
+  TeamFestivalPrevious,
   TeamResponsible,
   TeamResponsibleInput,
   TeamTask,
@@ -465,6 +473,19 @@ export function updateTeamResponsible(teamResponsibleId: number, payload: TeamRe
 
 export function deleteTeamResponsible(teamResponsibleId: number): Promise<void> {
   return apiFetch<void>(`/api/modules/module-9/team-responsibles/${teamResponsibleId}`, { method: "DELETE" });
+}
+
+// --- Festivals per ploeg (module-9's "masterdata.team-festivals" screen, nested under Teams) ---
+
+export function saveTeamFestivalGrid(seasonId: number, changes: TeamFestivalChange[]): Promise<TeamFestivalGrid> {
+  return apiFetch<TeamFestivalGrid>("/api/modules/module-9/team-festivals/grid", {
+    method: "PUT",
+    body: JSON.stringify({ season_id: seasonId, changes }),
+  });
+}
+
+export function getTeamFestivalPrevious(seasonId: number): Promise<TeamFestivalPrevious> {
+  return apiFetch<TeamFestivalPrevious>(`/api/modules/module-9/team-festivals/previous?season_id=${seasonId}`);
 }
 
 // --- Delivery Method (module-9's "masterdata.delivery-method" screen, nested under Teams) ---
@@ -2477,6 +2498,56 @@ export function getAltsienSelectPloegfiche(teamId: number, seasonId: number): Pr
 /** Direct link to the Ploegfiche PDF (opened in a new tab; the auth cookies travel along). */
 export function altsienSelectPloegfichePdfUrl(teamId: number, seasonId: number, locale: string): string {
   return `${API_BASE_URL}${ALTSIEN_SELECT_BASE}/ploegfiche/${teamId}/pdf?season_id=${seasonId}&locale=${locale}`;
+}
+
+/** Mail the Ploegfiche PDF to yourself (CC list in copy); only once every wizard step is done. */
+export function mailAltsienSelectPloegfiche(
+  teamId: number,
+  seasonId: number,
+  locale: string,
+): Promise<AltsienSelectPloegficheMailResult> {
+  return apiFetch<AltsienSelectPloegficheMailResult>(
+    `${ALTSIEN_SELECT_BASE}/wizard/${teamId}/ploegfiche/mail?season_id=${seasonId}&locale=${locale}`,
+    { method: "POST" },
+  );
+}
+
+// --- Altsien Select (module-8): mail texts and CC list (Instellingen > E-mails) ---
+
+export function getAltsienSelectMailTemplates(): Promise<AltsienSelectMailTemplates> {
+  return apiFetch<AltsienSelectMailTemplates>(`${ALTSIEN_SELECT_BASE}/mail-templates`);
+}
+
+export function saveAltsienSelectMailTemplate(
+  key: AltsienSelectMailTemplateKey,
+  payload: { subject: string; body: string; active: boolean },
+): Promise<AltsienSelectMailTemplate> {
+  return apiFetch<AltsienSelectMailTemplate>(`${ALTSIEN_SELECT_BASE}/mail-templates/${key}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
+
+/** Send the text as typed, filled with the example values, to yourself (never to the CC list). */
+export function sendAltsienSelectTestMail(
+  key: AltsienSelectMailTemplateKey,
+  payload: { subject: string; body: string },
+): Promise<{ sent_to: string }> {
+  return apiFetch<{ sent_to: string }>(`${ALTSIEN_SELECT_BASE}/mail-templates/${key}/test`, {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}
+
+export function getAltsienSelectMailSettings(): Promise<AltsienSelectMailSettings> {
+  return apiFetch<AltsienSelectMailSettings>(`${ALTSIEN_SELECT_BASE}/mail-settings`);
+}
+
+export function saveAltsienSelectMailSettings(ccAddresses: string[]): Promise<AltsienSelectMailSettings> {
+  return apiFetch<AltsienSelectMailSettings>(`${ALTSIEN_SELECT_BASE}/mail-settings`, {
+    method: "PUT",
+    body: JSON.stringify({ cc_addresses: ccAddresses }),
+  });
 }
 
 export function listAltsienSelectFollowUpRequests(seasonId: number): Promise<AltsienSelectSpecialRequest[]> {

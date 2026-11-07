@@ -26,11 +26,13 @@ How far are the teams with their Team Wizard in the chosen year?
 ![The KPI overview](overview.png)
 
 ## [wizard | altsienselect.wizard] Team Wizard
-The list of your teams with their progress ("3/6 steps") and their open requests. Click **Start** or **Continue** to open a team's wizard.
+The list of your teams with their progress ("3/5 steps") and their open requests. Click **Start** or **Continue** to open a team's wizard.
 
 ![The Team Wizard](wizard.png)
 
 In the wizard you see the steps at the top. Fill in a step and click **Complete step & continue**. A completed step shows when and by whom it was completed; **Reopen** lets you change it again. **Previous** and **Next** browse without completing.
+
+When you complete the last open step, the wizard asks whether you want a **PDF with all confirmed data**. Choose **Yes, send the PDF**: the team sheet arrives as an attachment in your own mailbox. You can send it again later with **Mail PDF** in the green "All steps are completed" bar.
 
 ### 1. Festivals
 Tick the year's festivals the team is active at. Removing a festival also removes its delivery location.
@@ -46,9 +48,6 @@ Choose one of the team's **carts** and put together its list: which products and
 
 ### 5. Special requests
 Does the team need something special? Click **Add request** and describe it as clearly as possible. The organisation sets a status and can answer; you see that answer with the request. No requests? Just complete the step.
-
-### 6. Walkie-talkies
-This step follows later.
 
 > The Delivery locations, Team leads and Special requests steps have **Copy from last year** at the top: click **Show**, tick last year's lines you want to take over and click **Copy selected**. Nothing is ever deleted, and the step isn't completed automatically.
 
@@ -77,6 +76,13 @@ The statuses a special request can have, with a colour and whether they're **ope
 2. Set the **order**: the status with the lowest order is the start status of every new request.
 
 ![Request statuses](statuses.png)
+
+## [mails | altsienselect.mailtemplates] Emails
+The mails Altsien Select sends and who gets a copy (menu **Settings > Emails**).
+
+1. **In copy (CC)**: type an email address, press Enter or **Add**, and click **Save**. These addresses get a copy of every Altsien Select mail. The cross removes an address.
+2. **Team sheet**: the mail with the team sheet (PDF) a Kernlid can ask for once every step is completed. Change the **subject** and **text**; click a field such as {ploeg} to insert it. The preview is on the right.
+3. Untick **Send** to switch the mail off. **Send test to me** sends the text with example data to yourself only.
 
 ## [roles | altsienselect.roles] Roles
 A role decides what someone may do in Altsien Select, per screen: **View**, **Create**, **Edit** and **Delete**.

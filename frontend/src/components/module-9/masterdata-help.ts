@@ -14,6 +14,7 @@ export const MASTERDATA_HELP_ROUTES: HelpTopicRoute[] = [
   // /teams itself; its sub-screens below win because they're more specific.
   { path: `${BASE}/teams`, topic: "teams" },
   { path: `${BASE}/teams/responsibles`, topic: "team-responsibles" },
+  { path: `${BASE}/teams/festivals`, topic: "team-festivals" },
   { path: `${BASE}/teams/location`, topic: "team-location" },
   { path: `${BASE}/teams/delivery-method`, topic: "delivery-method" },
   { path: `${BASE}/teams/tasks`, topic: "team-tasks" },

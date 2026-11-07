@@ -50,6 +50,8 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="masterdata.team-tasks", label="Team Tasks", sort_order=13),
     ScreenDefinition(key="masterdata.team-responsibles", label="Ploegverantwoordelijken", sort_order=14),
     ScreenDefinition(key="masterdata.dataupload", label="Data Upload/Download", sort_order=15),
+    # Nested under Teams: which festivals each team works at, per year.
+    ScreenDefinition(key="masterdata.team-festivals", label="Festivals per ploeg", sort_order=16),
 ]
 
 

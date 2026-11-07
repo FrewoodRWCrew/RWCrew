@@ -102,7 +102,6 @@ LABELS = {
             "ploegverantwoordelijken": "Ploegverantwoordelijken",
             "products": "Producten",
             "special_requests": "Speciale aanvragen",
-            "walkies": "Walkie-talkies",
         },
     },
     "en": {
@@ -158,7 +157,6 @@ LABELS = {
             "ploegverantwoordelijken": "Team leads",
             "products": "Products",
             "special_requests": "Special requests",
-            "walkies": "Walkie-talkies",
         },
     },
 }
@@ -564,11 +562,14 @@ def build_ploegfiche_pdf(state: TeamStateResponse, locale: str = "nl") -> bytes:
         "ploegverantwoordelijken": lambda: _render_responsibles(pdf, state, labels),
         "products": lambda: _render_products(pdf, state, labels),
         "special_requests": lambda: _render_requests(pdf, state, labels),
-        "walkies": lambda: _render_placeholder(pdf, labels["steps"]["walkies"], labels),
     }
     for step in state.steps:
         renderer = step_renderers.get(step.key)
         if renderer is not None:
             renderer()
+        elif step.placeholder:
+            # A step whose content still lives in a future module: a short
+            # "filled in later" section under its own title.
+            _render_placeholder(pdf, labels["steps"].get(step.key, step.label), labels)
 
     return bytes(pdf.output())

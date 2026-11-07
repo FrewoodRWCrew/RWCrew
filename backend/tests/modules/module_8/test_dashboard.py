@@ -10,7 +10,7 @@ BASE = "/api/modules/module-8"
 
 def test_dashboard_counts_only_the_users_teams(as_kernlid: TestClient, world: AltsienWorld) -> None:
     team_id = world.own_team.id
-    as_kernlid.post(f"{BASE}/wizard/{team_id}/steps/walkies/complete?season_id={world.season.id}")
+    as_kernlid.post(f"{BASE}/wizard/{team_id}/steps/special_requests/complete?season_id={world.season.id}")
     as_kernlid.post(f"{BASE}/wizard/{team_id}/requests?season_id={world.season.id}", json={"text": "Iets extra"})
 
     body = as_kernlid.get(f"{BASE}/dashboard?season_id={world.season.id}").json()
@@ -19,8 +19,10 @@ def test_dashboard_counts_only_the_users_teams(as_kernlid: TestClient, world: Al
     assert body["in_progress_teams"] == 1
     assert body["completed_teams"] == 0
     assert body["open_requests"] == 1
-    walkies = next(item for item in body["step_breakdown"] if item["step_key"] == "walkies")
-    assert walkies["completed_count"] == 1
+    requests_step = next(item for item in body["step_breakdown"] if item["step_key"] == "special_requests")
+    assert requests_step["completed_count"] == 1
+    # The removed "walkies" step is no longer part of the breakdown.
+    assert all(item["step_key"] != "walkies" for item in body["step_breakdown"])
     assert {item["status_name"]: item["count"] for item in body["status_breakdown"]} == {
         "New": 1,
         "In Progress": 0,

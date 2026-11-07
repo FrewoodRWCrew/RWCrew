@@ -10,7 +10,6 @@
 # step doesn't use this: its kar list (StockMaster's) has its own per-kar
 # "copy from last season" panel.
 
-import re
 from collections.abc import Callable
 from dataclasses import dataclass, field
 
@@ -23,10 +22,18 @@ from app.db.models.festival import Festival
 from app.db.models.kartracker_afleverlocatie import KarTrackerAfleverlocatie
 from app.db.models.kartracker_kar_afleverlocatie import KarTrackerKarAfleverlocatie
 from app.db.models.season import Season
+from app.db.models.team import Team
+from app.db.models.team_festival import TeamFestival
 from app.db.models.team_responsible import TeamResponsible
 from app.db.models.user import User
 from app.modules.module_2.plan_kar_service import upsert_plan_kar_rows
 from app.modules.module_8.steps import selected_festival_ids
+from app.modules.module_9.team_festival_service import (
+    active_festivals_by_name,
+    add_team_festivals,
+    normalize_festival_name,
+    previous_season_of,
+)
 from app.modules.module_9.team_responsible_service import apply_team_responsible_fields, list_team_responsibles
 
 # Why a line can't be copied (the frontend translates these codes).
@@ -75,23 +82,54 @@ class CopyHandler:
     copy_lines: Callable[[Session, User, Season, int, list[PreviousLine]], None]
 
 
-def previous_season_of(db: Session, season: Season) -> Season | None:
-    """The season right before this one, by name — the same order as the
-    module's season dropdown ("2025" comes before "2026").
+# previous_season_of and normalize_festival_name live in MasterData's
+# team_festival_service.py (its grid copies from last year too); they are
+# re-exported here because other modules import them from this file.
+__all__ = ["COPYABLE_STEPS", "list_previous_lines", "normalize_festival_name", "previous_season_of"]
+
+
+# --- Step 1: festivals -------------------------------------------------------
+
+
+def _festival_lines(db: Session, previous: Season, season: Season, team_id: int) -> list[PreviousLine]:
+    """Last season's festivals of the team, each matched to this season's
+    active festival with the same (normalized) name.
     """
-    return db.scalar(select(Season).where(Season.name < season.name).order_by(Season.name.desc()).limit(1))
+    previous_festivals = db.scalars(
+        select(Festival)
+        .join(TeamFestival, TeamFestival.festival_id == Festival.id)
+        .where(TeamFestival.season_id == previous.id, TeamFestival.team_id == team_id)
+        .order_by(Festival.start_date, Festival.name)
+    ).all()
+    if not previous_festivals:
+        return []
+
+    current_by_name = active_festivals_by_name(db, season.id)
+    selected_ids = selected_festival_ids(db, season.id, team_id)
+    lines = []
+    for festival in previous_festivals:
+        target = current_by_name.get(normalize_festival_name(festival.name))
+        lines.append(
+            PreviousLine(
+                key=str(festival.id),
+                label=festival.name,
+                target=target.name if target is not None and target.name != festival.name else None,
+                already_present=target is not None and target.id in selected_ids,
+                # No active festival of that name this season: can't be copied.
+                unavailable_reason=None if target is not None else NOT_IN_SEASON,
+                payload=target.id if target is not None else None,
+            )
+        )
+    return lines
 
 
-_YEAR_PATTERN = re.compile(r"\b(19|20)\d{2}\b")
-_NON_WORD_PATTERN = re.compile(r"[\W_]+")
-
-
-def normalize_festival_name(name: str) -> str:
-    """A festival's name without case, years and punctuation, so that
-    "Rock Werchter 2025" and "rock werchter 2026" count as the same festival.
+def _copy_festivals(db: Session, user: User, season: Season, team_id: int, lines: list[PreviousLine]) -> None:
+    """Add this season's matching festivals to the team's choice, through
+    MasterData's festival service (which also re-opens the delivery step).
     """
-    without_years = _YEAR_PATTERN.sub(" ", name.lower())
-    return " ".join(_NON_WORD_PATTERN.sub(" ", without_years).split())
+    team = db.get(Team, team_id)
+    if team is not None:
+        add_team_festivals(db, season, team, {line.payload for line in lines})
 
 
 # --- Step 2: delivery locations --------------------------------------------
@@ -285,6 +323,7 @@ def _copy_requests(db: Session, user: User, season: Season, team_id: int, lines:
 
 # The steps that offer "copy from last season", by step key.
 COPYABLE_STEPS: dict[str, CopyHandler] = {
+    "festivals": CopyHandler(_festival_lines, _copy_festivals),
     "afleverlocaties": CopyHandler(_afleverlocatie_lines, _copy_afleverlocaties),
     "ploegverantwoordelijken": CopyHandler(_responsible_lines, _copy_responsibles),
     "special_requests": CopyHandler(_request_lines, _copy_requests),

@@ -799,6 +799,45 @@
       "teamResponsibleDeleted": "Team lead deleted.",
       "deleteFailed": "Failed to delete team lead."
     },
+    "teamFestivals": {
+      "title": "Festivals per team",
+      "description": "Per year, which festivals each team works at: one row per team, one column per festival. The same choice as step 1 of Altsien Select's Team Wizard.",
+      "seasonLabel": "Year",
+      "seasonClosedOption": "{name} (closed)",
+      "searchTeam": "Search team…",
+      "columnTeam": "Team",
+      "teamCount": "{count, plural, =0 {no teams} one {# team} other {# teams}}",
+      "festivalCount": "{count, plural, =0 {no festivals} one {# festival} other {# festivals}}",
+      "inactiveFestival": "inactive",
+      "inactiveTeam": "inactive",
+      "noFestivals": "This year has no festivals yet. Create them first on the Festivals screen.",
+      "noTeams": "No teams found.",
+      "noSeasons": "There are no years yet.",
+      "shiftHint": "Tip: shift-click a festival or team to tick or untick the whole column or row.",
+      "closedNotice": "This year is closed: the choices are read-only. Reopen the year on the Years screen to change anything.",
+      "readOnlyNotice": "You may only view this screen.",
+      "changedCount": "{count, plural, one {# unsaved change} other {# unsaved changes}}",
+      "save": "Save",
+      "discard": "Discard changes",
+      "saved": "Festivals per team saved.",
+      "saveFailed": "Saving failed.",
+      "discardConfirm": "There are unsaved changes. Discard them and open another year?",
+      "removeConfirmTitle": "Delivery locations will be deleted",
+      "removeConfirmDescription": "These teams already chose a delivery location for the festival (Plan a kar). Unticking deletes that location, and the team has to confirm the Delivery locations step again.",
+      "removeConfirmAction": "Save anyway",
+      "cancel": "Cancel",
+      "copyPrevious": "Copy from last year",
+      "copyNoPrevious": "There is no previous year.",
+      "copyNothing": "Nothing to copy from {previous}: no new links found.",
+      "copyResult": "{count, plural, one {# link} other {# links}} from {previous} added to your changes. Check them and click Save.",
+      "copyAlreadyPresent": "{count, plural, one {# link already existed} other {# links already existed}}.",
+      "copyUnmatched": "No festival with the same name this year:",
+      "copyUnmatchedItem": "{name} ({count, plural, one {# team} other {# teams}})",
+      "copyFailed": "Loading last year failed.",
+      "errors": {
+        "season_closed": "This year is closed: it can no longer be changed."
+      }
+    },
     "teamLocation": {
       "title": "Team Location",
       "description": "Manage the list of team locations that can be used throughout the app.",
@@ -1246,7 +1285,55 @@
     "moduleTitle": "Altsien Select",
     "actionsGroup": "Actions",
     "masterDataGroup": "MasterData",
+    "settingsGroup": "Settings",
     "accessRights": "Access Rights",
+    "mailTemplates": {
+      "title": "Emails",
+      "description": "The mails Altsien Select sends, and who gets a copy of each mail.",
+      "loading": "Loading…",
+      "kinds": {
+        "ploegfiche": {
+          "title": "Team sheet",
+          "help": "Sent to the Kernlid who asks for it once every step of the Team Wizard is done, with the team sheet (PDF) attached."
+        }
+      },
+      "active": "Send",
+      "subject": "Subject",
+      "body": "Text",
+      "placeholdersHelp": "Click a field to insert it at the cursor (in the subject or the text):",
+      "placeholders": {
+        "naam": "Name of the Kernlid asking for the mail",
+        "ploeg": "Team",
+        "jaartal": "Year",
+        "datum": "Date sent (dd-mm-yyyy)",
+        "stappen": "The completed steps, one per line"
+      },
+      "preview": "Preview (with example data)",
+      "changed": "Last changed: {when} · {who}",
+      "unsaved": "Unsaved changes",
+      "save": "Save",
+      "saved": "Email saved.",
+      "sendTest": "Send test to me",
+      "testSent": "Test mail sent to {email}.",
+      "cc": {
+        "title": "In copy (CC) of every Altsien Select mail",
+        "help": "These addresses get a copy of every mail Altsien Select sends (not of test mails).",
+        "empty": "Nobody in copy yet.",
+        "add": "Add an email address",
+        "addButton": "Add",
+        "remove": "Remove {email}",
+        "invalid": "{email} is not a valid email address.",
+        "changed": "Last changed: {when} · {who}",
+        "unsaved": "Unsaved changes",
+        "save": "Save",
+        "saved": "Copy list saved."
+      },
+      "errors": {
+        "generic": "Something went wrong.",
+        "unknown_placeholder": "Unknown field: {p1}. Only use the fields below.",
+        "no_own_email": "Your account has no email address."
+      }
+    },
     "common": {
       "seasonLabel": "Year",
       "noSeason": "Choose a year",
@@ -1276,7 +1363,8 @@
         "saved": "Festivals saved.",
         "saveFailed": "Saving the festivals failed.",
         "noFestivals": "There are no active festivals for this year yet.",
-        "unsaved": "Unsaved changes — they are stored on Save or Complete step."
+        "unsaved": "Unsaved changes — they are stored on Save or Complete step.",
+        "masterdataHint": "The same choice is in MasterData under Teams > Festivals per team, with every team together."
       },
       "afleverlocaties": {
         "title": "Delivery locations",
@@ -1342,16 +1430,13 @@
         "deleteConfirmDescription": "This request will be permanently removed.",
         "deleted": "Request withdrawn.",
         "deleteFailed": "Withdrawing the request failed."
-      },
-      "walkies": {
-        "title": "Walkie-talkies",
-        "description": "Does the team need walkie-talkies?"
       }
     },
     "wizard": {
       "title": "Team Wizard",
       "description": "Choose a team and walk through the steps. Your choices become the basis for the organisation's instructions.",
       "teamTitle": "Team Wizard — {team}",
+      "progress": "{done} / {total} steps done",
       "backToTeams": "Back to the teams",
       "noSeason": "No year has been created yet.",
       "loading": "Loading…",
@@ -1368,6 +1453,20 @@
       "readOnly": "This year is closed: your choices can no longer be changed.",
       "allDone": "All steps are completed.",
       "openPloegfiche": "View team sheet",
+      "ploegficheMail": {
+        "askTitle": "All steps are completed",
+        "askDescription": "Would you like a PDF with all confirmed data of this team at your own email address?",
+        "yes": "Yes, send the PDF",
+        "no": "No, thanks",
+        "button": "Mail PDF",
+        "sent": "Team sheet sent to {email}.",
+        "errors": {
+          "generic": "The mail could not be sent.",
+          "steps_not_done": "Not every step is completed yet.",
+          "no_own_email": "Your account has no email address.",
+          "template_inactive": "This mail is switched off (Settings > Emails)."
+        }
+      },
       "stepOf": "Step {current} of {total}",
       "stepDoneOn": "Completed on {date} by {name}",
       "previous": "Previous",

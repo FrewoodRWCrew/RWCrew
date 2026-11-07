@@ -5,10 +5,10 @@
 // (see docs/module-custom-roles-pattern.md): a header bar in the module's
 // tile colour, the unconditional "KPI overview" landing link, then the
 // "Akties" group (Ploeg Wizard, Ploegfiche, and the organisation's request
-// follow-up), the "MasterData" group (request statuses) and "Access Rights"
-// (Roles/Users) — each link gated by the user's Altsien Select role.
+// follow-up), the "MasterData" group (request statuses), "Instellingen"
+// (E-mails) and "Access Rights" (Roles/Users) — each link gated by the user's Altsien Select role.
 
-import { Database, ShieldCheck, Zap } from "lucide-react";
+import { Database, Settings, ShieldCheck, Zap } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Link, usePathname } from "@/i18n/navigation";
 import { getModuleTheme } from "@/lib/module-theme";
@@ -32,6 +32,7 @@ export function AltsienSelectSidebar({ viewableScreenKeys }: AltsienSelectSideba
   const canViewPloegfiche = can("ploegfiche");
   const canViewRequests = can("requests");
   const canViewStatuses = can("statuses");
+  const canViewMails = can("mailtemplates");
   const canViewRoles = can("roles");
   const canViewUsers = can("users");
 
@@ -91,6 +92,18 @@ export function AltsienSelectSidebar({ viewableScreenKeys }: AltsienSelectSideba
           </div>
           <Link href={`${BASE}/request-statuses`} className={linkClassName(`${BASE}/request-statuses`, 1)}>
             {t("status.title")}
+          </Link>
+        </>
+      )}
+
+      {canViewMails && (
+        <>
+          <div className={groupClassName}>
+            <Settings className="size-4" />
+            {t("settingsGroup")}
+          </div>
+          <Link href={`${BASE}/settings/mails`} className={linkClassName(`${BASE}/settings/mails`, 1)}>
+            {t("mailTemplates.title")}
           </Link>
         </>
       )}
