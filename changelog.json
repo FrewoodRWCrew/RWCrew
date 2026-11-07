@@ -700,5 +700,16 @@
     "title": "Ploegfiche PDF by mail, mail templates and CC list",
     "description": "After the last wizard step the Kernlid can receive the ploegfiche PDF by mail; mail texts are editable and a CC list gets a copy of every Altsien Select mail.",
     "commits": []
+  },
+  {
+    "id": 57,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "fix",
+    "status": "done",
+    "module": "Altsien Select",
+    "title": "Afleverlocaties map zooms in on the chosen locations",
+    "description": "The delivery-location map (wizard step 2 and KarTracker's Plan a kar) now opens and re-frames on the chosen locations instead of the wide default view.",
+    "commits": []
   }
 ]
