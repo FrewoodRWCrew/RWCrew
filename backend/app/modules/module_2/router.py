@@ -649,7 +649,12 @@ def update_kar(
 
     _validate_kar_lookup_ids(db, payload.status_id, payload.transport_type_id, payload.team_id)
 
-    for field, value in payload.model_dump().items():
+    # Every field is replaced, except a kar code the request didn't mention
+    # (an older client), which keeps the stored lock code.
+    changes = payload.model_dump()
+    if "kar_code" not in payload.model_fields_set:
+        changes.pop("kar_code")
+    for field, value in changes.items():
         setattr(kar, field, value)
 
     try:
@@ -739,6 +744,7 @@ def print_kar_planning(
     karren = db.execute(
         select(
             KarTrackerKar.kar_nummer,
+            KarTrackerKar.kar_code,
             KarTrackerKar.team_id,
             Team.name.label("team_name"),
             Product.name.label("transport_type_name"),
@@ -818,6 +824,7 @@ def print_kar_planning(
         pages.append(
             KarbladData(
                 kar_nummer=kar.kar_nummer,
+                kar_code=kar.kar_code,
                 team_name=kar.team_name,
                 transport_type=kar.transport_type_name,
                 festivals=festivals,

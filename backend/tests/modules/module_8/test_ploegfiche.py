@@ -20,10 +20,18 @@ def _add_karren(db_session: Session, world: AltsienWorld) -> None:
     transport_type = Product(name="Bierkar")
     db_session.add_all([kar_status, transport_type])
     db_session.flush()
-    for kar_nummer, team in (("K002", world.own_team), ("K001", world.own_team), ("K003", world.other_team)):
+    for kar_nummer, team, kar_code in (
+        ("K002", world.own_team, None),
+        ("K001", world.own_team, "2111"),
+        ("K003", world.other_team, None),
+    ):
         db_session.add(
             KarTrackerKar(
-                kar_nummer=kar_nummer, status_id=kar_status.id, team_id=team.id, transport_type_id=transport_type.id
+                kar_nummer=kar_nummer,
+                status_id=kar_status.id,
+                team_id=team.id,
+                transport_type_id=transport_type.id,
+                kar_code=kar_code,
             )
         )
     db_session.commit()
@@ -40,6 +48,10 @@ def test_ploegfiche_lists_the_team_karren(
     karren = response.json()["karren"]
     assert [kar["kar_nummer"] for kar in karren] == ["K001", "K002"]
     assert {kar["transport_type"] for kar in karren} == {"Bierkar"}
+    # The lock code stored on KarManagement (None = not filled in).
+    assert [kar["kar_code"] for kar in karren] == ["2111", None]
+    pdf = as_kernlid.get(f"{BASE}/ploegfiche/{world.own_team.id}/pdf?season_id={world.season.id}")
+    assert pdf.status_code == 200 and pdf.content.startswith(b"%PDF")
 
 
 def test_ploegfiche_shows_every_choice(as_kernlid: TestClient, world: AltsienWorld) -> None:

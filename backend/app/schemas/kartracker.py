@@ -6,7 +6,7 @@
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 
 class ScreenResponse(BaseModel):
@@ -148,6 +148,8 @@ class KarResponse(BaseModel):
     last_latitude: float | None
     last_longitude: float | None
     last_recorded_at: datetime | None
+    # The stored lock code (see the model); None = not filled in.
+    kar_code: str | None = None
 
 
 class KarCreateRequest(BaseModel):
@@ -163,10 +165,19 @@ class KarCreateRequest(BaseModel):
     last_latitude: float | None = None
     last_longitude: float | None = None
     last_recorded_at: datetime | None = None
+    # The lock code as physically set, typed by hand (no automatic value).
+    # Trimmed; an empty text is stored as "not filled in".
+    kar_code: str | None = Field(default=None, max_length=20)
+
+    @field_validator("kar_code")
+    @classmethod
+    def _clean_kar_code(cls, value: str | None) -> str | None:
+        return (value or "").strip() or None
 
 
 class KarUpdateRequest(KarCreateRequest):
-    """What's sent to update an existing kar — same shape as creating one."""
+    """What's sent to update an existing kar — same shape as creating one.
+    A request without kar_code at all keeps the stored code."""
 
 
 class KarPlanningResponse(BaseModel):

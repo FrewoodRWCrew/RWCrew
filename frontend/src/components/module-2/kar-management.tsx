@@ -72,6 +72,7 @@ const EMPTY_FORM: KarFormState = {
   last_latitude: null,
   last_longitude: null,
   last_recorded_at: null,
+  kar_code: null,
 };
 
 function toFormValues(kar: KarTrackerKar): KarFormState {
@@ -83,6 +84,7 @@ function toFormValues(kar: KarTrackerKar): KarFormState {
     last_latitude: kar.last_latitude,
     last_longitude: kar.last_longitude,
     last_recorded_at: kar.last_recorded_at,
+    kar_code: kar.kar_code,
   };
 }
 
@@ -142,6 +144,7 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStatus")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTeam")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnTransportType")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKarCode")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLatitude")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLongitude")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnLastRecordedAt")}</TableHead>
@@ -157,6 +160,7 @@ export function KarManagement({ initialKarren, karStatuses, products, teams }: K
                 <TableCell className="text-muted-foreground">{statusLabelFor(kar.status_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{teamLabelFor(kar.team_id)}</TableCell>
                 <TableCell className="text-muted-foreground">{transportTypeLabelFor(kar.transport_type_id)}</TableCell>
+                <TableCell className="font-medium tabular-nums">{kar.kar_code ?? ""}</TableCell>
                 <TableCell className="text-muted-foreground">{kar.last_latitude ?? ""}</TableCell>
                 <TableCell className="text-muted-foreground">{kar.last_longitude ?? ""}</TableCell>
                 <TableCell className="text-muted-foreground">{toDateTimeLocalValue(kar.last_recorded_at)}</TableCell>
@@ -282,7 +286,7 @@ function KarFormDialog({ kar, defaultOpen, trigger, onSaved, karStatuses, produc
               options={products.map((product) => ({ value: String(product.id), label: product.name }))}
             />
           </div>
-          <div className="col-span-2 flex flex-col gap-2">
+          <div className="flex flex-col gap-2">
             <Label htmlFor="kar-team">{t("teamLabel")}</Label>
             <SearchableSelect
               value={form.team_id ? String(form.team_id) : NO_TEAM_VALUE}
@@ -298,6 +302,20 @@ function KarFormDialog({ kar, defaultOpen, trigger, onSaved, karStatuses, produc
                 ...teams.map((team) => ({ value: String(team.id), label: team.name })),
               ]}
             />
+          </div>
+          {/* The lock code as physically set — typed by hand. The formula
+              (Instellingen > Karcode formule) only calculates; this stored
+              value is what the Ploegfiche and the Karblad print. */}
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="kar-code">{t("karCodeLabel")}</Label>
+            <Input
+              id="kar-code"
+              maxLength={20}
+              autoComplete="off"
+              value={form.kar_code ?? ""}
+              onChange={(event) => updateField("kar_code", event.target.value || null)}
+            />
+            <p className="text-xs text-muted-foreground">{t("karCodeHint")}</p>
           </div>
           <div className="flex flex-col gap-2">
             <Label htmlFor="kar-latitude">{t("latitudeLabel")}</Label>

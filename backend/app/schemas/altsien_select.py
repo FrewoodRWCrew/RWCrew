@@ -79,13 +79,14 @@ class TeamInfoResponse(BaseModel):
 
 
 class TeamKarResponse(BaseModel):
-    """One kar from KarManagement (module-2) currently assigned to the team.
-    The kar's cijfercode is not stored yet; it is a placeholder on screen.
+    """One kar from KarManagement (module-2) currently assigned to the team,
+    with the lock code stored there (None = not filled in yet).
     """
 
     id: int
     kar_nummer: str
     transport_type: str | None
+    kar_code: str | None = None
 
 
 class KarRequirementLineResponse(BaseModel):

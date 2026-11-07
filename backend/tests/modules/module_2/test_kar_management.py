@@ -222,6 +222,42 @@ def test_update_kar_changes_its_fields(client: TestClient, db_session: Session) 
     assert response.json()["status_id"] == other_status.id
 
 
+def test_kar_code_is_stored_trimmed_and_kept_when_not_sent(client: TestClient, db_session: Session) -> None:
+    _login_as_admin(client, db_session)
+    kar_status = _create_kar_status(db_session)
+    product = _create_product(db_session)
+    base = {"kar_nummer": "B001", "status_id": kar_status.id, "transport_type_id": product.id}
+
+    created = client.post("/api/modules/module-2/karren", json={**base, "kar_code": " 2111 "})
+    assert created.status_code == 201
+    assert created.json()["kar_code"] == "2111"
+    kar_id = created.json()["id"]
+
+    # A request without kar_code (an older client) keeps the stored code.
+    kept = client.put(f"/api/modules/module-2/karren/{kar_id}", json=base)
+    assert kept.json()["kar_code"] == "2111"
+
+    # Another code is stored; an empty one means "not filled in".
+    assert client.put(f"/api/modules/module-2/karren/{kar_id}", json={**base, "kar_code": "0815"}).json()["kar_code"] == "0815"
+    assert client.put(f"/api/modules/module-2/karren/{kar_id}", json={**base, "kar_code": "  "}).json()["kar_code"] is None
+    assert client.get("/api/modules/module-2/karren").json()[0]["kar_code"] is None
+
+    # Longer than the column allows → refused.
+    too_long = client.put(f"/api/modules/module-2/karren/{kar_id}", json={**base, "kar_code": "1" * 21})
+    assert too_long.status_code == 422
+
+
+def test_formula_code_for_kar_nummer_uses_the_digits() -> None:
+    from app.modules.module_2.karcode_formula import DEFAULT_KARCODE_FORMULA, formula_code_for_kar_nummer
+
+    # LEFT(kar*500+3118; 4): kar 36 = 2111, kar 1 = 3618, kar 131 = 6861.
+    assert formula_code_for_kar_nummer(DEFAULT_KARCODE_FORMULA, "036") == "2111"
+    assert formula_code_for_kar_nummer(DEFAULT_KARCODE_FORMULA, "B001") == "3618"
+    assert formula_code_for_kar_nummer(DEFAULT_KARCODE_FORMULA, "K131") == "6861"
+    assert formula_code_for_kar_nummer(DEFAULT_KARCODE_FORMULA, "BOX") is None
+    assert formula_code_for_kar_nummer("LEFT(", "K131") is None
+
+
 def test_delete_kar_removes_it(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
     kar_status = _create_kar_status(db_session)

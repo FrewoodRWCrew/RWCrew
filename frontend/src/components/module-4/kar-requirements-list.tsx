@@ -10,7 +10,7 @@
 // endpoints and rights), the list itself is the same.
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Copy, FileSpreadsheet, FileText, Trash2, Upload, X } from "lucide-react";
+import { Copy, FileSpreadsheet, FileText, Plus, Trash2, Upload, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { toast } from "sonner";
 import type {
@@ -147,36 +147,53 @@ export function KarRequirementsList({
   }, [api, seasonId, karId, t]);
 
   // Tell the parent when the list has unsaved changes (e.g. to confirm a kar switch).
+  // A picked-but-not-added product counts too.
   useEffect(() => {
-    onDirtyChange?.(isDirty);
-  }, [isDirty, onDirtyChange]);
+    onDirtyChange?.(isDirty || pendingProduct !== null);
+  }, [isDirty, pendingProduct, onDirtyChange]);
 
   function change(updater: (current: EditLine[]) => EditLine[]) {
     setEdit((current) => (current !== null && current.key === currentKey ? { key: current.key, lines: updater(current.lines) } : current));
     setIsDirty(true);
   }
 
-  function addPending() {
-    if (!pendingProduct) return;
+  // A product picked in the add row but not added yet: it still counts as an
+  // unsaved change, and saving adds it first, so it's never lost.
+  const hasPending = pendingProduct !== null;
+  const hasChanges = isDirty || hasPending;
+
+  /** The list with the picked product + quantity added (or added to its
+   *  existing line); null when the quantity is invalid. */
+  function withPending(current: EditLine[]): EditLine[] | null {
+    if (!pendingProduct) return current;
     const quantity = Number.parseInt(pendingQuantity, 10);
-    if (!Number.isFinite(quantity) || quantity < 1) {
+    if (!Number.isFinite(quantity) || quantity < 1) return null;
+    const product = pendingProduct;
+    const existing = current.find((line) => line.productId === product.product_id);
+    if (existing) {
+      return current.map((line) => (line === existing ? { ...line, quantity: line.quantity + quantity } : line));
+    }
+    const inKar = product.kars.find((kar) => kar.kar_id === karId)?.quantity ?? 0;
+    return [
+      ...current,
+      { productId: product.product_id, name: product.name, binLabel: product.bin_label, quantity, comment: "", inKar, stored: false },
+    ];
+  }
+
+  function clearPending() {
+    setPendingProduct(null);
+    setPendingQuantity("1");
+  }
+
+  function addPending() {
+    if (!pendingProduct || lines === null) return;
+    const next = withPending(lines);
+    if (next === null) {
       toast.error(t("booking.quantityTooLow"));
       return;
     }
-    const product = pendingProduct;
-    change((current) => {
-      const existing = current.find((line) => line.productId === product.product_id);
-      if (existing) {
-        return current.map((line) => (line === existing ? { ...line, quantity: line.quantity + quantity } : line));
-      }
-      const inKar = product.kars.find((kar) => kar.kar_id === karId)?.quantity ?? 0;
-      return [
-        ...current,
-        { productId: product.product_id, name: product.name, binLabel: product.bin_label, quantity, comment: "", inKar, stored: false },
-      ];
-    });
-    setPendingProduct(null);
-    setPendingQuantity("1");
+    change(() => next);
+    clearPending();
     window.setTimeout(() => searchRef.current?.focus(), 0);
   }
 
@@ -267,7 +284,9 @@ export function KarRequirementsList({
   /** Store the list; false when that failed (or a quantity is invalid). */
   async function save(): Promise<boolean> {
     if (!lines) return true;
-    if (invalid) {
+    // A picked product the user didn't click "Toevoegen" for is added first.
+    const toSave = withPending(lines);
+    if (invalid || toSave === null) {
       toast.error(t("booking.quantityTooLow"));
       return false;
     }
@@ -276,10 +295,11 @@ export function KarRequirementsList({
       const rows = await api.save(
         seasonId,
         karId,
-        lines.map((line) => ({ product_id: line.productId, quantity: line.quantity, comment: line.comment.trim() || null })),
+        toSave.map((line) => ({ product_id: line.productId, quantity: line.quantity, comment: line.comment.trim() || null })),
       );
       setEdit({ key: `${seasonId}:${karId}`, lines: rows.map(toEditLine) });
       setIsDirty(false);
+      clearPending();
       toast.success(tReq("saved"));
       await onSaved?.();
       return true;
@@ -294,7 +314,7 @@ export function KarRequirementsList({
   // Offer the parent a saver for the pending list (only stores when something changed).
   useEffect(() => {
     if (!registerSave) return;
-    registerSave(async () => (!isDirty || readOnly ? true : save()));
+    registerSave(async () => (!hasChanges || readOnly ? true : save()));
     return () => registerSave(null);
   });
 
@@ -312,57 +332,74 @@ export function KarRequirementsList({
       onKeyDown={(event) => {
         if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();
-          if (isDirty && !invalid && !readOnly) void save();
+          if (hasChanges && !invalid && !readOnly) void save();
         }
       }}
     >
       <div className="flex flex-col gap-4">
+        {/* The add row. While a product is picked but not added yet, the row
+            lights up in the accent colour with a reminder under it (saving
+            adds it anyway, see withPending). */}
         {!readOnly && canCreate && (
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex min-w-64 flex-1 flex-col gap-2">
-              <Label htmlFor="req-product">{t("booking.productLabel")}</Label>
-              {pendingProduct ? (
-                <div className="flex h-8 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
-                  <span className="font-medium">{pendingProduct.name}</span>
-                  <button type="button" className="ml-auto text-xs text-muted-foreground underline" onClick={() => setPendingProduct(null)}>
-                    {t("booking.otherProduct")}
-                  </button>
-                </div>
-              ) : (
-                <ProductSearch
-                  id="req-product"
-                  ref={searchRef}
-                  products={stock}
-                  onSelect={(product) => {
-                    setPendingProduct(product);
-                    window.setTimeout(() => quantityRef.current?.select(), 0);
+          <div
+            className={cn(
+              "flex flex-col gap-2 rounded-lg border p-3 transition-colors",
+              hasPending ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "border-dashed",
+            )}
+          >
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="flex min-w-64 flex-1 flex-col gap-2">
+                <Label htmlFor="req-product">{t("booking.productLabel")}</Label>
+                {pendingProduct ? (
+                  <div className="flex h-8 items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm">
+                    <span className="font-medium">{pendingProduct.name}</span>
+                    <button type="button" className="ml-auto text-xs text-muted-foreground underline" onClick={() => setPendingProduct(null)}>
+                      {t("booking.otherProduct")}
+                    </button>
+                  </div>
+                ) : (
+                  <ProductSearch
+                    id="req-product"
+                    ref={searchRef}
+                    products={stock}
+                    onSelect={(product) => {
+                      setPendingProduct(product);
+                      window.setTimeout(() => quantityRef.current?.select(), 0);
+                    }}
+                  />
+                )}
+              </div>
+              <div className="flex w-28 flex-col gap-2">
+                <Label htmlFor="req-quantity">{t("booking.quantityLabel")}</Label>
+                <Input
+                  id="req-quantity"
+                  ref={quantityRef}
+                  type="number"
+                  min={1}
+                  step={1}
+                  inputMode="numeric"
+                  disabled={!pendingProduct}
+                  value={pendingQuantity}
+                  onChange={(event) => setPendingQuantity(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
+                      event.preventDefault();
+                      addPending();
+                    }
                   }}
                 />
-              )}
+              </div>
+              {/* Filled accent button, so it can't be overlooked. */}
+              <Button onClick={addPending} disabled={!pendingProduct}>
+                <Plus />
+                {t("booking.addLine")}
+              </Button>
             </div>
-            <div className="flex w-28 flex-col gap-2">
-              <Label htmlFor="req-quantity">{t("booking.quantityLabel")}</Label>
-              <Input
-                id="req-quantity"
-                ref={quantityRef}
-                type="number"
-                min={1}
-                step={1}
-                inputMode="numeric"
-                disabled={!pendingProduct}
-                value={pendingQuantity}
-                onChange={(event) => setPendingQuantity(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" && !event.ctrlKey && !event.metaKey) {
-                    event.preventDefault();
-                    addPending();
-                  }
-                }}
-              />
-            </div>
-            <Button variant="outline" onClick={addPending} disabled={!pendingProduct}>
-              {t("booking.addLine")}
-            </Button>
+            {pendingProduct && (
+              <p className="w-fit rounded-full border border-orange-600/40 bg-orange-500/10 px-3 py-1 text-xs font-medium text-orange-700 dark:text-orange-300">
+                {tReq("pendingHint", { product: pendingProduct.name })}
+              </p>
+            )}
           </div>
         )}
 
@@ -515,7 +552,7 @@ export function KarRequirementsList({
             Save on the right. */}
         <div className="flex flex-wrap items-center gap-3">
           <p className="text-sm text-muted-foreground">{t("booking.summary", { products: lines.length, pieces: total })}</p>
-          {isDirty && <p className="text-xs text-orange-700 dark:text-orange-300">{tReq("unsaved")}</p>}
+          {hasChanges && <p className="text-xs text-orange-700 dark:text-orange-300">{tReq("unsaved")}</p>}
           <div className="ml-auto flex flex-wrap gap-2">
             <a
               href={api.loadListPdfUrl(karId, seasonId, locale)}
@@ -527,7 +564,7 @@ export function KarRequirementsList({
               {t("kars.loadList")}
             </a>
             {!readOnly && showSaveButton && (
-              <Button onClick={() => void save()} disabled={!isDirty || invalid || isSaving}>
+              <Button onClick={() => void save()} disabled={!hasChanges || invalid || isSaving}>
                 {tReq("save")}
               </Button>
             )}

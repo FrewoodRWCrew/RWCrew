@@ -237,11 +237,18 @@ def build_team_state(db: Session, user: User, season: Season, team: Team) -> Tea
     ]
 
     # The karren KarManagement currently assigned to the team, with their
-    # transport type (a product name), sorted by kar number.
+    # transport type (a product name) and stored lock code, sorted by kar number.
     karren = [
-        TeamKarResponse(id=row.id, kar_nummer=row.kar_nummer, transport_type=row.transport_type)
+        TeamKarResponse(
+            id=row.id, kar_nummer=row.kar_nummer, transport_type=row.transport_type, kar_code=row.kar_code
+        )
         for row in db.execute(
-            select(KarTrackerKar.id, KarTrackerKar.kar_nummer, Product.name.label("transport_type"))
+            select(
+                KarTrackerKar.id,
+                KarTrackerKar.kar_nummer,
+                KarTrackerKar.kar_code,
+                Product.name.label("transport_type"),
+            )
             .outerjoin(Product, Product.id == KarTrackerKar.transport_type_id)
             .where(KarTrackerKar.team_id == team.id)
             .order_by(KarTrackerKar.kar_nummer)

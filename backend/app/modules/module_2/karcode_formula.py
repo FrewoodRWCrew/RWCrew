@@ -265,6 +265,21 @@ def compute_code(formula: str, kar: str) -> str:
     return code
 
 
+def formula_code_for_kar_nummer(formula: str, kar_nummer: str) -> str | None:
+    """What the formula gives for a stored kar number such as "B001" or
+    "K131": only its digits count (B001 -> 1, K131 -> 131), the same idea as
+    the QR scan that keeps the digits. None when the number has no digits or
+    the formula can't give a code. Used once to fill KarTracker_karren.kar_code.
+    """
+    digits = "".join(character for character in kar_nummer or "" if character.isdigit())
+    if not digits:
+        return None
+    try:
+        return compute_code(formula, digits)
+    except KarcodeError:
+        return None
+
+
 def validate_formula(formula: str) -> str:
     """Check a formula before saving it (syntax + a trial run with kar 1) and
     return it trimmed. Raises KarcodeError when it can't be used.

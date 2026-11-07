@@ -48,6 +48,7 @@ LABELS = {
         "delivery": "Levering:",
         "pickup": "Ophaling:",
         "type": "Type",
+        "kar_code": "Karcode:",
         "remarks": "Opmerkingen:",
         "help_line_1": "Iets te kort? Vragen?",
         "help_line_2": "Contacteer ons via de onderstaande link.",
@@ -67,6 +68,7 @@ LABELS = {
         "delivery": "Delivery:",
         "pickup": "Pick-up:",
         "type": "Type",
+        "kar_code": "Cart code:",
         "remarks": "Remarks:",
         "help_line_1": "Missing something? Questions?",
         "help_line_2": "Contact us via the link below.",
@@ -115,6 +117,8 @@ class KarbladData:
     pick_order: str | None = None
     route: str | None = None
     remarks: str | None = None
+    # The lock code stored on KarManagement (empty field while not filled in).
+    kar_code: str | None = None
 
 
 def build_request_url(
@@ -285,11 +289,13 @@ def _draw_page(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
         for index, festival in enumerate(kar.festivals):
             _draw_festival_block(pdf, BLOCKS_TOP + index * pitch, pitch, festival, labels)
 
-    # --- Type + remarks (left empty: nothing stores remarks yet) ---
+    # --- Type, the stored lock code, remarks (left empty: nothing stores remarks yet) ---
     _cell(pdf, TABLE_X, 164.0, LABEL_W, 6, labels["type"], size=10)
     _cell(pdf, VALUE_X, 164.0, VALUE_W, 6, kar.transport_type, size=10)
-    _cell(pdf, TABLE_X, 170.0, LABEL_W, 17, labels["remarks"], size=10)
-    _cell(pdf, VALUE_X, 170.0, VALUE_W, 17, kar.remarks, size=10, align="L")
+    _cell(pdf, TABLE_X, 170.0, LABEL_W, 6, labels["kar_code"], size=10)
+    _cell(pdf, VALUE_X, 170.0, VALUE_W, 6, kar.kar_code, style="B", size=10)
+    _cell(pdf, TABLE_X, 176.0, LABEL_W, 11, labels["remarks"], size=10)
+    _cell(pdf, VALUE_X, 176.0, VALUE_W, 11, kar.remarks, size=10, align="L")
 
     # --- Help box with the lower QR (opens the prefilled intervention request) ---
     pdf.rect(TABLE_X, 187.0, TABLE_W, 47.0)

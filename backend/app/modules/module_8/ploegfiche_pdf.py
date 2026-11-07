@@ -63,7 +63,7 @@ LABELS = {
         "kar_nummer": "Karnummer",
         "transport_type": "Transporttype",
         "kar_code": "Kar cijfercode",
-        "kar_code_placeholder": "Later in te vullen",
+        "kar_code_placeholder": "Niet ingevuld",
         "no_karren": "Er zijn geen karren aan deze ploeg toegewezen.",
         "progress_heading": "Voortgang wizard",
         "step_done": "Afgerond op {date}{by}",
@@ -118,7 +118,7 @@ LABELS = {
         "kar_nummer": "Cart number",
         "transport_type": "Transport type",
         "kar_code": "Cart code",
-        "kar_code_placeholder": "To be filled in later",
+        "kar_code_placeholder": "Not filled in",
         "no_karren": "No carts are assigned to this team.",
         "progress_heading": "Wizard progress",
         "step_done": "Completed on {date}{by}",
@@ -340,8 +340,8 @@ def _table_heading_style() -> FontFace:
 
 
 def _render_karren(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
-    """Zebra table of the karren assigned to the team; the cijfercode column
-    is a placeholder until KarManagement stores it.
+    """Zebra table of the karren assigned to the team, with the lock code
+    stored on KarManagement (muted "not filled in" while it's empty).
     """
     _section_heading(pdf, labels["karren_heading"])
     if not state.karren:
@@ -367,7 +367,10 @@ def _render_karren(pdf: FPDF, state: TeamStateResponse, labels: dict) -> None:
             row = table.row()
             row.cell(_pdf_text(kar.kar_nummer), style=FontFace(emphasis="BOLD"))
             row.cell(_pdf_text(kar.transport_type or "-"))
-            row.cell(_pdf_text(labels["kar_code_placeholder"]), style=FontFace(emphasis="ITALICS", color=MUTED_TEXT))
+            if kar.kar_code:
+                row.cell(_pdf_text(kar.kar_code), style=FontFace(emphasis="BOLD"))
+            else:
+                row.cell(_pdf_text(labels["kar_code_placeholder"]), style=FontFace(emphasis="ITALICS", color=MUTED_TEXT))
     pdf.ln(2)
 
 

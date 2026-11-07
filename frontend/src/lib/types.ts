@@ -986,6 +986,8 @@ export interface KarTrackerKar {
   last_latitude: number | null;
   last_longitude: number | null;
   last_recorded_at: string | null;
+  /** The stored lock code (null = not filled in); the formula only calculates. */
+  kar_code: string | null;
 }
 
 /** What's sent to create or update a kar. */
@@ -997,6 +999,7 @@ export interface KarTrackerKarInput {
   last_latitude: number | null;
   last_longitude: number | null;
   last_recorded_at: string | null;
+  kar_code: string | null;
 }
 
 /** One row of the read-only Kar Planning report (joined KarManagement + lookups). */
@@ -2339,11 +2342,13 @@ export interface AltsienSelectTeamInfo {
   kernleden: string[];
 }
 
-/** One kar from KarManagement (module-2) assigned to the team; its cijfercode is not stored yet. */
+/** One kar from KarManagement (module-2) assigned to the team, with its stored lock code. */
 export interface AltsienSelectTeamKar {
   id: number;
   kar_nummer: string;
   transport_type: string | null;
+  /** null = not filled in on KarManagement yet. */
+  kar_code: string | null;
 }
 
 /** One festival of the season, whether the team is active there, and its delivery location. */

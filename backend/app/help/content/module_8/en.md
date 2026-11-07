@@ -52,7 +52,7 @@ Does the team need something special? Click **Add request** and describe it as c
 > The Delivery locations, Team leads and Special requests steps have **Copy from last year** at the top: click **Show**, tick last year's lines you want to take over and click **Copy selected**. Nothing is ever deleted, and the step isn't completed automatically.
 
 ## [ploegfiche | altsienselect.ploegfiche] Team sheet
-All choices of one team on one screen: team info (location, delivery method, core members), the wizard's progress, the carts, festivals and delivery locations, team leads, products per cart and special requests.
+All choices of one team on one screen: team info (location, delivery method, core members), the wizard's progress, the carts (with the lock code stored on KarTracker's KarManagement), festivals and delivery locations, team leads, products per cart and special requests.
 
 1. Choose the year and the team.
 2. Click **PDF** to print the team sheet.

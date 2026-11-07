@@ -195,6 +195,46 @@ def test_import_creates_new_karren_updates_existing_and_rejects_bad_lookups(
     assert db_session.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == "B_BADPRODUCT")) is None
 
 
+def test_kar_code_column_is_exported_and_imported(client: TestClient, db_session: Session) -> None:
+    _login_as_admin(client, db_session)
+    kar_status = _create_kar_status(db_session)
+    product = _create_product(db_session)
+    db_session.add_all(
+        [
+            KarTrackerKar(kar_nummer="B001", status_id=kar_status.id, transport_type_id=product.id, kar_code="0123"),
+            KarTrackerKar(kar_nummer="B002", status_id=kar_status.id, transport_type_id=product.id, kar_code="5555"),
+        ]
+    )
+    db_session.commit()
+
+    # Export: the code as text, so a leading zero survives.
+    exported = load_workbook(io.BytesIO(client.get("/api/modules/module-2/karren/export").content))
+    rows = list(exported["Karren"].iter_rows(values_only=True))
+    code_index = rows[0].index("kar_code")
+    assert rows[1][code_index] == "0123"
+
+    # Import: a filled cell overwrites (a number typed in Excel loses its ".0"),
+    # an empty one keeps the stored code, a new kar takes the given code.
+    xlsx_bytes = _build_xlsx(
+        ["kar_nummer", "status_name", "transport_type_name", "kar_code"],
+        [
+            ["B001", None, None, 2111.0],
+            ["B002", None, None, None],
+            ["B003", kar_status.name, product.name, "7777"],
+            ["B004", kar_status.name, product.name, "1" * 21],
+        ],
+    )
+    response = client.post(
+        "/api/modules/module-2/kar-import", files={"file": ("karren.xlsx", xlsx_bytes, XLSX_CONTENT_TYPE)}
+    )
+    outcomes = {row["kar_nummer"]: row["outcome"] for row in response.json()["results"]}
+    assert outcomes == {"B001": "updated", "B002": "updated", "B003": "created", "B004": "error"}
+
+    db_session.expire_all()
+    codes = {kar.kar_nummer: kar.kar_code for kar in db_session.scalars(select(KarTrackerKar)).all()}
+    assert codes == {"B001": "2111", "B002": "5555", "B003": "7777"}
+
+
 def test_import_update_overwrites_filled_cells_and_keeps_empty_ones(client: TestClient, db_session: Session) -> None:
     _login_as_admin(client, db_session)
     old_status = _create_kar_status(db_session, name="Actief")

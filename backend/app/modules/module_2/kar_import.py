@@ -42,7 +42,13 @@ TEMPLATE_COLUMNS = [
     "last_latitude",
     "last_longitude",
     "last_recorded_at",
+    # The stored lock code (typed by hand; the formula only calculates).
+    # Last, so files made with the older template keep their column order.
+    "kar_code",
 ]
+
+# A kar code is at most this long (KarTrackerKar.kar_code).
+KAR_CODE_MAX_LENGTH = 20
 
 def build_kar_template_xlsx() -> bytes:
     """The downloadable XLSX template: just a bold header row. Deliberately
@@ -71,6 +77,18 @@ def _cell_text(value: object) -> str | None:
         return None
     text = str(value).strip()
     return text or None
+
+
+def _kar_code_cell(value: object) -> str | None:
+    """A kar code cell as text. Excel turns a typed 2111 into a number, so a
+    whole number is written without ".0"; longer than the column allows → error.
+    """
+    if isinstance(value, float) and value.is_integer():
+        value = int(value)
+    text = _cell_text(value)
+    if text is not None and len(text) > KAR_CODE_MAX_LENGTH:
+        raise ValueError(f"kar_code is longer than {KAR_CODE_MAX_LENGTH} characters")
+    return text
 
 
 def _parse_datetime_cell(value: object) -> datetime | None:
@@ -157,6 +175,7 @@ def import_karren_from_xlsx(db: Session, file_bytes: bytes) -> list[KarImportRow
             latitude = _float_or_none(cell(row, "last_latitude"))
             longitude = _float_or_none(cell(row, "last_longitude"))
             recorded_at = _parse_datetime_cell(cell(row, "last_recorded_at"))
+            kar_code = _kar_code_cell(cell(row, "kar_code"))
 
             existing = db.scalar(select(KarTrackerKar).where(KarTrackerKar.kar_nummer == kar_nummer))
             if existing is not None:
@@ -173,6 +192,8 @@ def import_karren_from_xlsx(db: Session, file_bytes: bytes) -> list[KarImportRow
                     existing.last_longitude = longitude
                 if recorded_at is not None:
                     existing.last_recorded_at = recorded_at
+                if kar_code is not None:
+                    existing.kar_code = kar_code
                 db.flush()
                 outcome = "updated"
             else:
@@ -186,6 +207,7 @@ def import_karren_from_xlsx(db: Session, file_bytes: bytes) -> list[KarImportRow
                         last_latitude=latitude,
                         last_longitude=longitude,
                         last_recorded_at=recorded_at,
+                        kar_code=kar_code,
                     )
                 )
                 outcome = "created"
@@ -232,6 +254,8 @@ def export_karren_to_xlsx(db: Session) -> bytes:
                 kar.last_longitude,
                 # Excel has no timezones: write the Belgian wall-clock time.
                 to_belgian(kar.last_recorded_at).replace(tzinfo=None) if kar.last_recorded_at else None,
+                # Written as text, so a code like "0123" keeps its leading zero.
+                kar.kar_code or "",
             ]
         )
     for index, column in enumerate(TEMPLATE_COLUMNS, start=1):

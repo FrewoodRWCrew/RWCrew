@@ -194,6 +194,8 @@ Het wagenpark: elke kar met zijn karnummer, status, ploeg, transporttype, laatst
 3. Zoek of filter met de velden onder de kolomtitels.
 4. **Verwijderen** haalt een kar definitief uit het wagenpark.
 
+**Karcode**: de code van het cijferslot zoals die echt op de kar ingesteld is. Deze opgeslagen code staat op de Ploegfiche (Altsien Select) en op het karblad. De formule onder Instellingen rekent enkel een code uit: een nieuwe formule wijzigt de opgeslagen codes niet. Verander je het slot van een kar, pas dan hier de code aan. Ook via de kar-Excel (kolom `kar_code`; leeg = ongewijzigd).
+
 ![KarManagement](kar-management.png)
 
 > De ploeg van een kar bepaalt naar welke afleverlocaties hij gaat (Plan a kar) en wat er in StockMaster voor die kar voorzien wordt. Een kar waarin nog voorraad zit, kan niet verwijderd worden. Klik je in Scans op een karnummer, dan opent het formulier van die kar hier meteen.

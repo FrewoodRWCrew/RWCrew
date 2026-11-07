@@ -52,7 +52,7 @@ Heeft de ploeg iets speciaals nodig? Klik op **Aanvraag toevoegen** en beschrijf
 > Bij de stappen Afleverlocaties, Ploegverantwoordelijken en Speciale aanvragen staat bovenaan **Overnemen van vorig jaartal**: klik op **Tonen**, vink de lijnen van vorig jaar aan die je wil overnemen en klik op **Geselecteerde overnemen**. Er wordt nooit iets gewist, en de stap wordt niet automatisch afgerond.
 
 ## [ploegfiche | altsienselect.ploegfiche] Ploegfiche
-Alle keuzes van één ploeg op één scherm: ploeginfo (locatie, leveringswijze, kernleden), de voortgang van de wizard, de karren, festivals en afleverlocaties, ploegverantwoordelijken, producten per kar en speciale aanvragen.
+Alle keuzes van één ploeg op één scherm: ploeginfo (locatie, leveringswijze, kernleden), de voortgang van de wizard, de karren (met de karcode die in KarTracker bij KarManagement bewaard is), festivals en afleverlocaties, ploegverantwoordelijken, producten per kar en speciale aanvragen.
 
 1. Kies het jaartal en de ploeg.
 2. Klik op **PDF** om de ploegfiche af te drukken.

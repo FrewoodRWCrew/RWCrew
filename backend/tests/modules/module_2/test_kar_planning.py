@@ -348,3 +348,21 @@ def test_karblad_pdf_handles_many_festivals_and_non_latin1_text() -> None:
 
     assert pdf.startswith(b"%PDF")
     assert _page_count(pdf) == 2
+
+
+def test_karblad_pdf_prints_the_stored_kar_code() -> None:
+    kar = KarbladData(kar_nummer="B001", team_name="Chiro", transport_type="Box", kar_code="2111")
+
+    pdf = build_karbladen_pdf([kar], "Rock Werchter 2026", "nl")
+
+    # The page content is Flate-compressed: inflate every stream and look
+    # for the code and its label in the drawn text.
+    import zlib
+
+    content = b"".join(
+        zlib.decompress(stream)
+        for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", pdf, re.DOTALL)
+        if stream[:1] == b"x"
+    )
+    assert b"(2111)" in content
+    assert b"(Karcode:)" in content

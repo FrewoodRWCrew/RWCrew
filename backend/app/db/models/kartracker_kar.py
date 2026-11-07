@@ -48,3 +48,10 @@ class KarTrackerKar(Base):
     last_longitude: Mapped[float | None] = mapped_column(nullable=True)
 
     last_recorded_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
+    # The code of the kar's lock, as it is physically set. This stored value
+    # is what every screen/PDF shows; the admin formula (karcode_formula.py)
+    # only calculates a code, so changing the formula never changes a kar's
+    # code until someone updates it here after changing the lock. Filled once
+    # from the formula by migration e5b9c3d7a428; typed by hand afterwards.
+    kar_code: Mapped[str | None] = mapped_column(String(20), nullable=True)

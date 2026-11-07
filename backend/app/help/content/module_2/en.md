@@ -194,6 +194,8 @@ The fleet: every kar with its kar number, status, team, transport type, last loc
 3. Search or filter with the fields under the column titles.
 4. **Delete** removes a kar from the fleet for good.
 
+**Kar code**: the code of the combination lock as it is actually set on the kar. This stored code is shown on the Team sheet (Altsien Select) and the karblad. The formula under Settings only calculates a code: a new formula doesn't change the stored codes. When you change a kar's lock, update its code here. Also possible through the kar Excel (column `kar_code`; empty = unchanged).
+
 ![KarManagement](kar-management.png)
 
 > A kar's team decides which delivery locations it goes to (Plan a kar) and what StockMaster plans for that kar. A kar that still holds stock can't be deleted. Clicking a kar number in Scans opens that kar's form here straight away.

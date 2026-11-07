@@ -3,8 +3,7 @@
 // Altsien Select's "Ploegfiche": pick a team (and season), and see everything
 // chosen for it in the Ploeg Wizard on one screen — team info, the progress
 // of every wizard step, the karren KarManagement assigned to the team, the festivals with their delivery locations, the
-// products each kar needs, the walkie-talkies (a placeholder until that module exists) and
-// the special requests with their status and the organisation's answer.
+// products each kar needs and the special requests with their status and the organisation's answer.
 // The "PDF" button opens the same overview as a printable PDF with the
 // Altsien logo (built by the backend, module_8/ploegfiche_pdf.py).
 
@@ -349,8 +348,8 @@ function PloegficheContent({ state }: { state: AltsienSelectTeamState }) {
   );
 }
 
-/** The karren KarManagement (module-2) assigned to the team. The cijfercode
- * column is a placeholder until KarManagement stores that code. */
+/** The karren KarManagement (module-2) assigned to the team, with the lock
+ * code stored there ("not filled in" while empty). */
 function KarrenCard({ karren }: { karren: AltsienSelectTeamKar[] }) {
   const t = useTranslations("altsienSelect.ploegfiche");
   return (
@@ -382,7 +381,11 @@ function KarrenCard({ karren }: { karren: AltsienSelectTeamKar[] }) {
                   <TableRow key={kar.id}>
                     <TableCell className="font-medium">{kar.kar_nummer}</TableCell>
                     <TableCell>{kar.transport_type ?? "—"}</TableCell>
-                    <TableCell className="text-muted-foreground italic">{t("karCodePlaceholder")}</TableCell>
+                    {kar.kar_code ? (
+                      <TableCell className="font-semibold tabular-nums">{kar.kar_code}</TableCell>
+                    ) : (
+                      <TableCell className="text-muted-foreground italic">{t("karCodePlaceholder")}</TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>

@@ -3,6 +3,31 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-07 — Products step: "Toevoegen" impossible to miss
+**Request:** In Altsien Select's step 4 a picked product only lands in the list after clicking "Toevoegen", which is
+easy to miss, so products get forgotten.
+**Plan:** Keep product + quantity + button but make it obvious; never lose a picked product (asked: keep the button).
+**Changes:** `components/module-4/kar-requirements-list.tsx` (shared with StockMaster's Benodigdheden): filled accent
+"+ Toevoegen" button, the add row lights up with an orange reminder while a product is picked, saving (wizard step
+change or Opslaan) adds a pending product first (`withPending`), a pending product counts as an unsaved change;
+`stockMaster.requirements.pendingHint` (nl/en).
+**Verification:** `tsc --noEmit`, eslint clean; not yet checked in the browser.
+
+## 2026-11-07 — Kar code stored per kar (KarManagement) and shown on Ploegfiche + Karblad
+**Request:** A field on KarManagement to store each kar's lock code: the formula only calculates, and a changed formula
+must not change codes of locks that weren't physically changed. Show the stored code on the PDFs/mails with a kar code.
+**Plan:** `KarTracker_karren.kar_code`, filled once from the current formula; typed by hand afterwards; shown on the
+Ploegfiche (screen/PDF/mail), Karblad, KarManagement table + kar Excel (asked).
+**Changes:**
+- **Backend:** model + migration `e5b9c3d7a428` (column + one-time fill), `karcode_formula.formula_code_for_kar_nummer`,
+  kar schemas/`/karren` (`kar_code`, trimmed, max 20; PUT without it keeps it), `kar_import.py` (column `kar_code`,
+  numbers without ".0", exported as text), Ploegfiche service/schema/PDF ("Niet ingevuld" when empty), Karblad
+  (`Karcode:` row under Type, `/kar-planning/print`).
+- **Frontend:** `kar-management.tsx` (field + column), `ploegfiche.tsx`, types, nl/en.
+- **Docs:** help KarManagement (module 2) + Ploegfiche (module 8), `CLAUDE.md`.
+**Verification:** new tests in `test_kar_management.py`, `test_kar_import.py`, `test_kar_planning.py` (Karblad text),
+`test_ploegfiche.py`; full backend suite 1023 passed; local migration filled all 232 kars (B001 → 3618, K131 → 6861).
+
 ## 2026-11-07 — Afleverlocaties map zooms in on the chosen locations
 **Request:** In Altsien Select's Afleverlocaties step, the map should zoom in on the chosen delivery locations.
 **Plan:** Optional fit props on the shared Leaflet map (defaults unchanged for the other maps); the afleverlocatie map
