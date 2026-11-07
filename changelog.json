@@ -711,5 +711,27 @@
     "title": "Afleverlocaties map zooms in on the chosen locations",
     "description": "The delivery-location map (wizard step 2 and KarTracker's Plan a kar) now opens and re-frames on the chosen locations instead of the wide default view.",
     "commits": []
+  },
+  {
+    "id": 58,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "feature",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Kar code stored per kar",
+    "description": "Each kar's lock code is stored on KarManagement (filled once from the formula) and shown on the Ploegfiche and the Karblad, so a new formula never changes existing codes.",
+    "commits": []
+  },
+  {
+    "id": 59,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "update",
+    "status": "done",
+    "module": "Altsien Select",
+    "title": "Products step: Toevoegen impossible to miss",
+    "description": "The add button in the products list is now a filled accent button with a reminder, and a picked product is added automatically when saving.",
+    "commits": []
   }
 ]
