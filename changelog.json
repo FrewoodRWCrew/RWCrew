@@ -612,5 +612,49 @@
     "commits": [
       "f39bab422c9d93f000c4bd279e2369b2391bbb10"
     ]
+  },
+  {
+    "id": 49,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "fix",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Reservation's number of persons is a real limit at the desk",
+    "description": "Ophalen for an extra person is refused once as many people of the team hold clothing as reserved, unless a user with edit on the desk confirms it.",
+    "commits": []
+  },
+  {
+    "id": 50,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Stock shows pieces with and without an RFID tag",
+    "description": "The Atelier stock overview shows per size how many pieces carry an active RFID tag and how many still need one.",
+    "commits": []
+  },
+  {
+    "id": 51,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "RWCrew Pi shows the person's email, masked",
+    "description": "The Raspberry Pi desk shows the scanned person's email partly hidden, like the website's desk.",
+    "commits": []
+  },
+  {
+    "id": 52,
+    "issues": [],
+    "date": "2026-11-07",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "RWCrew Pi: untick read tags before linking",
+    "description": "On the Pi's RFID-tags koppelen every linkable tag gets a checkbox, ticked by default, so tags read by accident can be left out.",
+    "commits": []
   }
 ]
