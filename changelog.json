@@ -744,5 +744,16 @@
     "title": "Pi: Massa-inname (mass return of a team's box)",
     "description": "A third tile on the Raspberry Pi's Atelier app reads a whole box of returned clothing, shows the number of tags and the pieces per person, and after confirming returns them per person with one mail each, blocking the box while any tag isn't a handed-out piece.",
     "commits": []
+  },
+  {
+    "id": 61,
+    "issues": [],
+    "date": "2026-11-08",
+    "type": "update",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Massa-inname: team next to the person",
+    "description": "The Pi's Massa-inname screen shows each person's team behind their name in the grouping.",
+    "commits": []
   }
 ]
