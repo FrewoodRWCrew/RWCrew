@@ -772,7 +772,7 @@
     "issues": [],
     "date": "2026-11-08",
     "type": "update",
-    "status": "in_progress",
+    "status": "done",
     "module": "Atelier",
     "title": "Atelier documentation refresh (web, Pi, handbooks)",
     "description": "The Atelier help manual, user handbook and developer handbook are brought up to date with new screenshots, including the RWCrew Pi screens and a note that Atelier has no phone screens.",
