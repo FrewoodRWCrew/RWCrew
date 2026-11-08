@@ -733,5 +733,16 @@
     "title": "Products step: Toevoegen impossible to miss",
     "description": "The add button in the products list is now a filled accent button with a reminder, and a picked product is added automatically when saving.",
     "commits": []
+  },
+  {
+    "id": 60,
+    "issues": [],
+    "date": "2026-11-08",
+    "type": "feature",
+    "status": "done",
+    "module": "Atelier",
+    "title": "Pi: Massa-inname (mass return of a team's box)",
+    "description": "A third tile on the Raspberry Pi's Atelier app reads a whole box of returned clothing, shows the number of tags and the pieces per person, and after confirming returns them per person with one mail each, blocking the box while any tag isn't a handed-out piece.",
+    "commits": []
   }
 ]
