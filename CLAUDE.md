@@ -504,6 +504,12 @@ A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in 
   `GET /rfid/history?epc=` (`rfid_service.history`) feeds the **Tag-historiek** screen (`atelier.taghistory`,
   `/modules/module-5/desk/tag-history`, `components/module-5/tag-history.tsx`, `EpcLink` used by the EPC column on
   Openstaand and Retourproblemen and in their Excel).
+- **Massa-inname (2026-11-08)**: third Atelier tile on the Pi (`rwpi/modules/atelier/mass_return.py`,
+  `MassReturnScreen.qml`, grouping in `review.py` `review_mass_return`): a team's box of dirty clothing is read at once,
+  a big number shows the tags in the box, the pieces are listed per person who has them out. Bevestigen →
+  `POST /desk/mass-return` (`desk_service.mass_return`, screen **`atelier.massreturn`** "create", Pi-only like
+  `atelier.tags`): one transaction, `return_person_lines` per person, one Inname mail per person. **Any** tag that isn't
+  a handed-out piece refuses the whole box (`mass_return_blocked|n`); max 500 tags (`MASS_RETURN_MAX_EPCS`).
 - **Stock and tags**: Atelier's stock overview shows per size `tagged` (active tags, `rfid_service.tagged_counts`,
   also used by the Pi's article list) and `untagged` (owned − tagged, ≥ 0).
 - **Pi details**: emails are masked in Python before they reach QML (`rwpi/shared/mask_email.py`, a port of

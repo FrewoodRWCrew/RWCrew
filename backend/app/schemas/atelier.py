@@ -678,6 +678,31 @@ class ReturnRequest(BaseModel):
     reader: RfidReaderInput | None = None
 
 
+class MassReturnRequest(BaseModel):
+    """Massa-inname (the Pi): every tag read in a team's box of clothing."""
+
+    epcs: list[str] = Field(min_length=1, max_length=1000)
+    source: BookingSource = "pi"
+    reader: RfidReaderInput | None = None
+
+
+class MassReturnPersonResponse(BaseModel):
+    """What came back for one person in a mass return."""
+
+    person_id: int
+    person_name: str
+    pieces: int
+    # Whether an "Inname" mail was queued (only with an email address).
+    mailed: bool
+
+
+class MassReturnResponse(BaseModel):
+    """The result of a mass return: per person, and the total pieces."""
+
+    persons: list[MassReturnPersonResponse]
+    pieces: int
+
+
 class DeskExportRequest(BaseModel):
     """An Excel download of a Balie list: the screen's festival + day (or its
     season, for "Alle festivals") and the pieces it shows (its column filters

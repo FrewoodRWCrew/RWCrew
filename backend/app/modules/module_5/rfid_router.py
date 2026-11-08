@@ -36,6 +36,7 @@ router = APIRouter(prefix="/api/modules/module-5", tags=["Atelier"])
 DESK_SCREEN = "atelier.desk"
 TAGS_SCREEN = "atelier.tags"
 TAG_HISTORY_SCREEN = "atelier.taghistory"
+MASS_RETURN_SCREEN = "atelier.massreturn"
 
 
 def _error(error: StockError) -> HTTPException:
@@ -47,7 +48,7 @@ def _error(error: StockError) -> HTTPException:
 def post_resolve(
     payload: RfidEpcsRequest,
     db: Session = Depends(get_db),
-    _user: User = Depends(require_view_on_any(DESK_SCREEN, TAGS_SCREEN)),
+    _user: User = Depends(require_view_on_any(DESK_SCREEN, TAGS_SCREEN, MASS_RETURN_SCREEN)),
 ) -> list[RfidResolvedTag]:
     """What each read EPC is: unknown, not an Atelier piece, an inactive
     piece, or a piece (with who has it, when it is out)."""

@@ -49,6 +49,7 @@ from app.modules.module_5.desk_service import (
     create_handout,
     find_person,
     get_festival,
+    mass_return,
     open_lines_of,
     package_for_desk,
     person_by_bracelet,
@@ -80,6 +81,9 @@ from app.schemas.atelier import (
     HandoutLineResponse,
     HandoutRequest,
     HandoutResponse,
+    MassReturnPersonResponse,
+    MassReturnRequest,
+    MassReturnResponse,
     ReturnIssueResponse,
     ReturnRequest,
     ReturnStatusResponse,
@@ -94,6 +98,7 @@ OPEN_SCREEN = "atelier.open"
 RETURN_ISSUES_SCREEN = "atelier.returnissues"
 KPI_SCREEN = "atelier.kpi"
 WRITE_OFF_SCREEN = "atelier.writeoff"
+MASS_RETURN_SCREEN = "atelier.massreturn"
 
 XLSX_MEDIA_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
@@ -504,6 +509,49 @@ def post_person_return(
         background_tasks,
     )
     return [_handout_response(db, handout) for handout in handouts]
+
+
+@router.post("/desk/mass-return", response_model=MassReturnResponse)
+def post_mass_return(
+    payload: MassReturnRequest,
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_screen_permission(MASS_RETURN_SCREEN, "create")),
+) -> MassReturnResponse:
+    """Massa-inname (the Pi): every piece in a team's box comes back, booked
+    per person who had it out, in one transaction; each person gets their own
+    "Inname" mail (only with an email)."""
+    try:
+        booked = mass_return(db, current_user, payload.epcs, source=payload.source, reader=_reader(payload.reader))
+    except StockError as error:
+        db.rollback()
+        raise _error(error) from error
+    db.commit()
+
+    persons = []
+    for entry in booked:
+        person = db.get(AtelierPerson, entry.person_id)
+        # The mail names the festival/team/day of the latest pick-up returned.
+        latest = entry.handouts[-1]
+        mailed = queue_desk_mail(
+            db,
+            RETURN,
+            person,
+            latest,
+            entry.lines,
+            _bracelet_number(db, entry.person_id, latest.festival_id),
+            background_tasks,
+        )
+        persons.append(
+            MassReturnPersonResponse(
+                person_id=person.id,
+                person_name=person.full_name,
+                pieces=len(entry.lines),
+                mailed=mailed,
+            )
+        )
+    persons.sort(key=lambda row: row.person_name.lower())
+    return MassReturnResponse(persons=persons, pieces=sum(row.pieces for row in persons))
 
 
 @router.post("/desk/persons/{person_id}/write-off", response_model=list[HandoutResponse])

@@ -65,6 +65,16 @@ This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID re
 
 The View right shows the screen, Create allows linking. The stock itself doesn't change: it stays counted per size; the tag only says which physical piece is with whom.
 
+## [massreturn | atelier.massreturn] Mass return (Raspberry Pi)
+This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID reader. During the day a team collects its dirty clothing in a **box** and brings it to the atelier: Mass return takes the whole box back in one go, without putting every person through the desk.
+
+1. Put the box on the reader. The **big number** shows how many tags (pieces) were read in the box.
+2. On the right, the pieces are listed **per person** who has them out (article and size, with the tag number).
+3. A **red line** (unknown tag, a StockMaster product's or kar's tag, an inactive tag, or a piece that isn't handed out) blocks confirming: take that piece out of the box and tap **Read again**.
+4. Tap **Confirm** (or press the Pi's confirm button): every piece is returned per person (to the wash), and every person with an email address gets the usual **return mail**.
+
+The View right shows the tile, Create allows confirming. **Tag history** shows these returns with the **Pi** label.
+
 ## [taghistory | atelier.taghistory] Tag history
 Everything one piece of clothing went through, by its **RFID tag (EPC)**. Type or paste the tag number and click **Search**; from **Outstanding** and **Return issues** you can also open it by clicking an EPC.
 

@@ -3,6 +3,27 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-08 — Atelier Pi: Massa-inname (mass return of a team's box)
+**Request:** A third tile in the Pi's Atelier app: a team collects its dirty clothing in a box during the day; the Pi
+reads all tags, finds who each piece was handed out to and books the return per person (product + tag), with a big
+number of tags in the box.
+**Plan:** Review first, Bevestigen (screen or the Pi's confirm button) books; one Inname mail per person; any tag that
+isn't a handed-out piece blocks the box until it's taken out; own screen key `atelier.massreturn` (all asked).
+**Changes:**
+- **Backend:** screen `atelier.massreturn` (Pi-only), `POST /desk/mass-return` (`MassReturnRequest/Response`),
+  `desk_service.mass_return` (resolve, block, `return_person_lines` per person in one transaction),
+  `rfid_service.clean_epcs/resolve` take a `limit` (500 for a box), `/rfid/resolve` also with the new screen,
+  `queue_desk_mail` returns whether a mail was queued; manual chapter `massreturn` (nl/en).
+- **Pi (RWRaspiTagScanner):** `modules/atelier/mass_return.py` (`AtelierMassReturn`), `review.review_mass_return`,
+  rights `massReturn/massReturnCreate`, wiring in `main.py`, `qml/modules/atelier/MassReturnScreen.qml` (big count,
+  blocked rows first, then per person), teal "Massa-inname" tile on `AtelierHome.qml`, texts nl/en + error codes.
+- **Docs:** `CLAUDE.md` (RWCrew Pi section).
+**Verification:** new `tests/modules/module_5/test_mass_return.py` (per-person booking + one mail, blocked box books
+nothing, own right); full backend suite 1026 passed; Pi tests 16 passed (new `review_mass_return` test); the screen was
+rendered offscreen with fake data (reading + done state) without QML errors.
+**Notes:** Not yet tried end to end with a real reader / the Pi against localhost. The RFID error codes have no web
+translations (those endpoints are Pi-only), so none were added there.
+
 ## 2026-11-07 — Products step: "Toevoegen" impossible to miss
 **Request:** In Altsien Select's step 4 a picked product only lands in the list after clicking "Toevoegen", which is
 easy to miss, so products get forgotten.

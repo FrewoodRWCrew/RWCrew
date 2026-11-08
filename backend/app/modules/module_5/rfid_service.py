@@ -45,6 +45,8 @@ PIECE = "piece"  # an Atelier piece that can be booked
 
 # The most EPCs one call may send (a counter reads a handful of pieces).
 MAX_EPCS = 200
+# A mass return reads a whole box of clothing, so it may send more at once.
+MASS_RETURN_MAX_EPCS = 500
 
 
 @dataclass
@@ -101,12 +103,12 @@ def tagged_counts(db: Session) -> dict[int, int]:
     )
 
 
-def clean_epcs(epcs: list[str]) -> list[str]:
+def clean_epcs(epcs: list[str], limit: int = MAX_EPCS) -> list[str]:
     """The EPCs as stored by TagScan (trimmed), each once, in reading order;
-    refused when there are too many."""
+    refused when there are more than `limit`."""
     cleaned = list(dict.fromkeys(epc.strip() for epc in epcs if epc and epc.strip()))
-    if len(cleaned) > MAX_EPCS:
-        raise StockError("too_many_tags", MAX_EPCS)
+    if len(cleaned) > limit:
+        raise StockError("too_many_tags", limit)
     return cleaned
 
 
@@ -124,10 +126,10 @@ def open_line_of_tag(db: Session, tag_id: int) -> AtelierHandoutLine | None:
     )
 
 
-def resolve(db: Session, epcs: list[str]) -> list[ResolvedTag]:
+def resolve(db: Session, epcs: list[str], limit: int = MAX_EPCS) -> list[ResolvedTag]:
     """What each read EPC is: unknown, not an Atelier piece, an inactive
     piece, or a piece (with who has it, when it is out)."""
-    cleaned = clean_epcs(epcs)
+    cleaned = clean_epcs(epcs, limit)
     tags = {tag.epc_uid: tag for tag in db.scalars(select(RfidTag).where(RfidTag.epc_uid.in_(cleaned))).all()} if cleaned else {}
     result = []
     for epc in cleaned:

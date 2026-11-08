@@ -27,9 +27,13 @@
 #   - a piece read by its RFID tag (the Raspberry Pi app) must be a piece of
 #     exactly the line's article size and not out with someone (rfid_service);
 #     the line keeps the tag and its EPC, a return by tag keeps the tag read,
-#     and every pick-up / return notes where it was booked ("web" / "pi").
+#     and every pick-up / return notes where it was booked ("web" / "pi");
+#   - Massa-inname (the Pi, 2026-11-08): a team's box of clothing comes back
+#     in one go, returned per person who has the pieces out; any tag in the
+#     box that isn't a handed-out piece refuses the whole box.
 
 import re
+from dataclasses import dataclass
 from datetime import date, datetime, timezone
 
 from sqlalchemy import func, select
@@ -52,7 +56,15 @@ from app.db.models.user import User
 from app.db.models.wristband_scan import WristbandScan
 from app.modules.module_5.reservation_service import festival_days, lines_by_reservation, reservations_by_team
 from app.modules.module_5.deps import MODULE_KEY
-from app.modules.module_5.rfid_service import Reader, check_handout_tags, check_return_tags, touch
+from app.modules.module_5.rfid_service import (
+    MASS_RETURN_MAX_EPCS,
+    PIECE,
+    Reader,
+    check_handout_tags,
+    check_return_tags,
+    resolve,
+    touch,
+)
 from app.modules.wristband.scan_service import NEW, mark_used
 from app.modules.module_5.stock_service import (
     AVAILABLE,
@@ -503,6 +515,50 @@ def return_person_lines(
             line_tags=handout_tags, source=source, reader=reader,
         )
     return handouts, lines
+
+
+@dataclass
+class MassReturnPerson:
+    """What a mass return booked for one person: the pick-ups touched (oldest
+    first) and the pieces that came back (for the person's "Inname" mail)."""
+
+    person_id: int
+    handouts: list[AtelierHandout]
+    lines: list[AtelierHandoutLine]
+
+
+def mass_return(
+    db: Session,
+    user: User,
+    epcs: list[str],
+    source: str = "pi",
+    reader: Reader | None = None,
+) -> list[MassReturnPerson]:
+    """Massa-inname (the Pi): a box of clothing collected by a team comes back
+    in one go. Every read tag must be a piece that is handed out right now —
+    one tag that isn't (unknown, not Atelier, inactive, in stock) refuses the
+    whole box, so the operator takes it out first. The pieces are grouped per
+    person who has them out and returned per person (as Terugbrengen), all in
+    the caller's one transaction."""
+    resolved = resolve(db, epcs, MASS_RETURN_MAX_EPCS)
+    if not resolved:
+        raise StockError("mass_return_empty")
+    blocked = [tag for tag in resolved if tag.state != PIECE or tag.open_line_id is None]
+    if blocked:
+        raise StockError("mass_return_blocked", len(blocked))
+
+    # Per person: their lines and the tag read for each line.
+    per_person: dict[int, dict[int, int]] = {}
+    for tag in resolved:
+        per_person.setdefault(tag.person_id, {})[tag.open_line_id] = tag.rfid_tag_id
+
+    result = []
+    for person_id, line_tags in per_person.items():
+        handouts, lines = return_person_lines(
+            db, user, person_id, list(line_tags), line_tags=line_tags, source=source, reader=reader
+        )
+        result.append(MassReturnPerson(person_id=person_id, handouts=handouts, lines=lines))
+    return result
 
 
 def write_off_person_lines(

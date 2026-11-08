@@ -65,6 +65,16 @@ Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-leze
 
 Met het recht Bekijken zie je het scherm, met Aanmaken mag je koppelen. De stock zelf verandert niet: die blijft per maat geteld; de tag zegt enkel welk fysiek stuk bij wie is.
 
+## [massreturn | atelier.massreturn] Massa-inname (Raspberry Pi)
+Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-lezer. Een ploeg verzamelt in de loop van de dag de vuile kledij in een **bak** en brengt die naar het atelier: met Massa-inname neem je de hele bak in één keer in, zonder elke persoon apart aan de balie te zetten.
+
+1. Zet de bak op de lezer. Het **grote getal** toont hoeveel tags (stukken) er in de bak gelezen zijn.
+2. Rechts staan de stukken **per persoon** die ze uit heeft (artikel en maat, met het tagnummer).
+3. Staat er een **rode regel** bij (onbekende tag, tag van een StockMaster-product of kar, inactieve tag, of een stuk dat niet uitgegeven is), dan kan je niet bevestigen: haal dat stuk uit de bak en tik **Opnieuw lezen**.
+4. Tik **Bevestigen** (of druk op de bevestigknop van de Pi): elk stuk wordt per persoon teruggebracht (naar de was), en elke persoon met een e-mailadres krijgt zijn gewone **Inname-mail**.
+
+Met het recht Bekijken zie je de tegel, met Aanmaken mag je bevestigen. In **Tag-historiek** staan deze innames met het label **Pi**.
+
 ## [taghistory | atelier.taghistory] Tag-historiek
 Alles wat één kledingstuk meemaakte, op basis van zijn **RFID-tag (EPC)**. Typ of plak het tagnummer en klik **Zoeken**; vanuit **Openstaand** en **Retourproblemen** open je het ook door op een EPC te klikken.
 

@@ -156,14 +156,17 @@ def queue_desk_mail(
     lines: list[AtelierHandoutLine],
     bracelet: str | None,
     background_tasks: BackgroundTasks,
-) -> None:
+) -> bool:
     """Called by the desk endpoints right after committing a pick-up (key
     HANDOUT) or a return (key RETURN): builds the mail now, sends it once the
-    response has gone out. Errors are logged and ignored."""
+    response has gone out. Errors are logged and ignored. Gives whether a mail
+    was queued (no email, or the template switched off = no mail)."""
     try:
         mail = build_mail(db, key, person.email, desk_values(db, person, handout, lines, bracelet))
     except Exception:
         logger.exception("Building the Atelier %s mail for person %s failed", key, person.id)
-        return
-    if mail is not None:
-        background_tasks.add_task(send_email, mail)
+        return False
+    if mail is None:
+        return False
+    background_tasks.add_task(send_email, mail)
+    return True
