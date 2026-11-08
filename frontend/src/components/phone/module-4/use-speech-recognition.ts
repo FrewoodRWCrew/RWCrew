@@ -15,7 +15,11 @@
 // - in the home-screen app the recognition often ends at once without a word
 //   or an error: that's reported as "unavailable", so the screen can point to
 //   the keyboard's own dictation instead of staying silent;
-// - with Dictation (Siri) switched off it answers "service-not-allowed".
+// - with Dictation (Siri) switched off it answers "service-not-allowed";
+// - a *new* recognition object made after the first one has run never hears
+//   anything again until the page reloads (the voice count only worked once
+//   per app start): so one object is made per screen and reused for every
+//   turn; a fresh one is only made when the old one is stuck or refuses.
 
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
 
@@ -97,7 +101,11 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
   // The words heard so far during this turn, shown live under the button.
   const [interimText, setInterimText] = useState("");
 
+  // The one recognition object of this screen, reused for every turn (see the iPhone quirks above).
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  // Whether a turn is running, and its number: events of an older turn are ignored.
+  const turnOpenRef = useRef(false);
+  const turnRef = useRef(0);
   // The final pieces of this turn, and the last not-yet-final text (iOS often never finalises).
   const finalPartsRef = useRef<string[]>([]);
   const lastInterimRef = useRef("");
@@ -124,19 +132,30 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
     if (!Recognition) return;
     const debug = (line: string) => onDebugRef.current?.(line);
 
+    /** Switch an object off for good: no more events, microphone released. */
+    const discard = (old: SpeechRecognitionLike) => {
+      old.onstart = null;
+      old.onaudiostart = null;
+      old.onresult = null;
+      old.onerror = null;
+      old.onend = null;
+      old.abort();
+    };
+
     // A previous turn that never reported its end (iOS sometimes doesn't):
-    // throw it away instead of silently ignoring every tap from now on.
-    const stale = recognitionRef.current;
-    if (stale) {
+    // throw that object away instead of silently ignoring every tap from now on.
+    if (recognitionRef.current && turnOpenRef.current) {
       debug("previous turn still open: aborted");
-      stale.onresult = null;
-      stale.onerror = null;
-      stale.onend = null;
-      stale.abort();
+      discard(recognitionRef.current);
       recognitionRef.current = null;
     }
 
-    const recognition = new Recognition();
+    // Reuse this screen's object; only the very first turn (or after a stuck one) makes a new one.
+    const reused = recognitionRef.current !== null;
+    const recognition = recognitionRef.current ?? new Recognition();
+    recognitionRef.current = recognition;
+    debug(reused ? "reusing recognition" : "new recognition");
+    const turn = ++turnRef.current;
     recognition.lang = lang;
     // Android keeps listening until the second tap; iOS takes one sentence
     // per turn (its continuous mode loses the results).
@@ -150,61 +169,91 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
     stoppedByUserRef.current = false;
     startedAtRef.current = Date.now();
 
-    recognition.onstart = () => debug("start");
-    recognition.onaudiostart = () => {
-      heardAudioRef.current = true;
-      debug("audiostart");
+    // This turn's handlers (set again on every turn, also on a reused object).
+    const attach = (target: SpeechRecognitionLike) => {
+      target.onstart = () => debug("start");
+      target.onaudiostart = () => {
+        heardAudioRef.current = true;
+        debug("audiostart");
+      };
+      target.onresult = (event) => {
+        if (turn !== turnRef.current) return;
+        let interim = "";
+        for (let index = event.resultIndex; index < event.results.length; index += 1) {
+          const result = event.results[index];
+          if (result.isFinal) finalPartsRef.current.push(result[0].transcript);
+          else interim += result[0].transcript;
+          debug(`result ${result.isFinal ? "final" : "interim"}: ${result[0].transcript}`);
+        }
+        lastInterimRef.current = interim.trim();
+        setInterimText([...finalPartsRef.current, interim].join(" ").trim());
+      };
+      target.onerror = (event) => {
+        if (turn !== turnRef.current) return;
+        debug(`error: ${event.error}`);
+        // Silence or a deliberate stop isn't an error worth showing.
+        if (event.error === "no-speech" || event.error === "aborted") return;
+        failedRef.current = true;
+        if (event.error === "not-allowed") onFailureRef.current("denied");
+        else if (event.error === "service-not-allowed") onFailureRef.current("dictationOff");
+        else if (event.error === "network") onFailureRef.current("network");
+        else onFailureRef.current("failed");
+      };
+      target.onend = () => {
+        // A turn that was replaced by a newer one no longer counts.
+        if (turn !== turnRef.current) return;
+        const elapsed = Date.now() - startedAtRef.current;
+        debug(`end after ${elapsed} ms`);
+        // The object itself is kept for the next turn.
+        turnOpenRef.current = false;
+        setListening(false);
+        setInterimText("");
+        // Everything recognised this turn: the final text, else what was last heard.
+        const text = (finalPartsRef.current.join(" ") || lastInterimRef.current).trim();
+        finalPartsRef.current = [];
+        lastInterimRef.current = "";
+        if (text) {
+          onFinalRef.current(text);
+          return;
+        }
+        // Ended by itself almost at once, without audio or an error: it didn't really run.
+        if (!failedRef.current && !stoppedByUserRef.current && !heardAudioRef.current && elapsed < DEAD_START_MS) {
+          onFailureRef.current("unavailable");
+        }
+      };
     };
-    recognition.onresult = (event) => {
-      let interim = "";
-      for (let index = event.resultIndex; index < event.results.length; index += 1) {
-        const result = event.results[index];
-        if (result.isFinal) finalPartsRef.current.push(result[0].transcript);
-        else interim += result[0].transcript;
-        debug(`result ${result.isFinal ? "final" : "interim"}: ${result[0].transcript}`);
-      }
-      lastInterimRef.current = interim.trim();
-      setInterimText([...finalPartsRef.current, interim].join(" ").trim());
-    };
-    recognition.onerror = (event) => {
-      debug(`error: ${event.error}`);
-      // Silence or a deliberate stop isn't an error worth showing.
-      if (event.error === "no-speech" || event.error === "aborted") return;
-      failedRef.current = true;
-      if (event.error === "not-allowed") onFailureRef.current("denied");
-      else if (event.error === "service-not-allowed") onFailureRef.current("dictationOff");
-      else if (event.error === "network") onFailureRef.current("network");
-      else onFailureRef.current("failed");
-    };
-    recognition.onend = () => {
-      // A turn that was replaced by a newer one no longer counts.
-      if (recognitionRef.current !== recognition) return;
-      const elapsed = Date.now() - startedAtRef.current;
-      debug(`end after ${elapsed} ms`);
-      recognitionRef.current = null;
-      setListening(false);
-      setInterimText("");
-      // Everything recognised this turn: the final text, else what was last heard.
-      const text = (finalPartsRef.current.join(" ") || lastInterimRef.current).trim();
-      finalPartsRef.current = [];
-      lastInterimRef.current = "";
-      if (text) {
-        onFinalRef.current(text);
-        return;
-      }
-      // Ended by itself almost at once, without audio or an error: it didn't really run.
-      if (!failedRef.current && !stoppedByUserRef.current && !heardAudioRef.current && elapsed < DEAD_START_MS) {
-        onFailureRef.current("unavailable");
+
+    /** Start a turn on this object; false when the browser refuses (it throws). */
+    const tryStart = (target: SpeechRecognitionLike) => {
+      attach(target);
+      try {
+        target.start();
+        return true;
+      } catch (error) {
+        debug(`start threw: ${String(error)}`);
+        return false;
       }
     };
 
-    recognitionRef.current = recognition;
-    try {
-      recognition.start();
+    let started = tryStart(recognition);
+    // A reused object that refuses (e.g. "already started"): one more try with a fresh object.
+    if (!started && reused) {
+      discard(recognition);
+      const fresh = new Recognition();
+      fresh.lang = lang;
+      fresh.continuous = !isIos();
+      fresh.interimResults = true;
+      fresh.maxAlternatives = 1;
+      recognitionRef.current = fresh;
+      debug("new recognition (retry)");
+      started = tryStart(fresh);
+    }
+    if (started) {
+      turnOpenRef.current = true;
       setListening(true);
-    } catch (error) {
+    } else {
+      if (recognitionRef.current) discard(recognitionRef.current);
       recognitionRef.current = null;
-      debug(`start threw: ${String(error)}`);
       onFailureRef.current("failed");
     }
   }, [lang]);
@@ -212,17 +261,21 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
   /** Stop listening (second tap); the last words still arrive via onend. */
   const stop = useCallback(() => {
     stoppedByUserRef.current = true;
-    recognitionRef.current?.stop();
+    if (turnOpenRef.current) recognitionRef.current?.stop();
   }, []);
 
-  // Leaving the screen while listening: switch the microphone off.
+  // Leaving the screen: switch the microphone off and drop the object.
   useEffect(
     () => () => {
       const recognition = recognitionRef.current;
       if (recognition) {
+        recognition.onresult = null;
+        recognition.onerror = null;
         recognition.onend = null;
         recognition.abort();
       }
+      recognitionRef.current = null;
+      turnOpenRef.current = false;
     },
     [],
   );
