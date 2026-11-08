@@ -766,5 +766,16 @@
     "title": "Spraaktelling: microphone only worked once on iPhone",
     "description": "The phone's voice count reuses one speech recognition per screen, because on iOS a new one made after the first never heard anything until the app was restarted.",
     "commits": []
+  },
+  {
+    "id": 63,
+    "issues": [],
+    "date": "2026-11-08",
+    "type": "update",
+    "status": "in_progress",
+    "module": "Atelier",
+    "title": "Atelier documentation refresh (web, Pi, handbooks)",
+    "description": "The Atelier help manual, user handbook and developer handbook are brought up to date with new screenshots, including the RWCrew Pi screens and a note that Atelier has no phone screens.",
+    "commits": []
   }
 ]
