@@ -755,5 +755,16 @@
     "title": "Massa-inname: team next to the person",
     "description": "The Pi's Massa-inname screen shows each person's team behind their name in the grouping.",
     "commits": []
+  },
+  {
+    "id": 62,
+    "issues": [],
+    "date": "2026-11-08",
+    "type": "fix",
+    "status": "in_progress",
+    "module": "StockMaster",
+    "title": "Spraaktelling: microphone only worked once on iPhone",
+    "description": "The phone's voice count reuses one speech recognition per screen, because on iOS a new one made after the first never heard anything until the app was restarted.",
+    "commits": []
   }
 ]
