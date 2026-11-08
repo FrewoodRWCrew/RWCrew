@@ -16,10 +16,12 @@
 //   or an error: that's reported as "unavailable", so the screen can point to
 //   the keyboard's own dictation instead of staying silent;
 // - with Dictation (Siri) switched off it answers "service-not-allowed";
-// - a *new* recognition object made after the first one has run never hears
-//   anything again until the page reloads (the voice count only worked once
-//   per app start): so one object is made per screen and reused for every
-//   turn; a fresh one is only made when the old one is stuck or refuses;
+// - only the first turn after a page load gets words: every later turn opens
+//   the microphone ("audiostart") but never returns a result, with a reused
+//   or a new object alike, in Safari and in the home-screen app (tested
+//   2026-11-08); a page reload makes it work once more. So on iOS `spent`
+//   turns true after a turn, and the screen reloads itself (keeping its
+//   lines) before the next one. Elsewhere one object is reused for every turn;
 // - after stop() iOS often never sends "end", which left the button on
 //   "listening" so it couldn't be restarted: on iOS the stop tap finishes the
 //   turn itself (with the text heard so far) and throws the object away;
@@ -116,6 +118,8 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
   const [listening, setListening] = useState(false);
   // The words heard so far during this turn, shown live under the button.
   const [interimText, setInterimText] = useState("");
+  // iOS only: this page's one working turn has been used (see above); the screen must reload.
+  const [spent, setSpent] = useState(false);
 
   // The one recognition object of this screen, reused for every turn (see the iPhone quirks above).
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -228,6 +232,7 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
       turnOpenRef.current = false;
       finishTurnRef.current = null;
       setListening(false);
+      if (isIos()) setSpent(true);
       setInterimText("");
       // Everything recognised this turn: the final text, else what was last heard.
       const text = (finalPartsRef.current.join(" ") || lastInterimRef.current).trim();
@@ -319,5 +324,5 @@ export function useSpeechRecognition({ lang, onFinal, onFailure, onDebug }: UseS
     [],
   );
 
-  return { supported, listening, interimText, start, stop };
+  return { supported, listening, interimText, spent, start, stop };
 }

@@ -3328,6 +3328,7 @@
         "saved": "Count of kar {kar} saved.",
         "tapToTalk": "Tap to speak",
         "tapToStop": "Tap to stop",
+        "preparingMic": "Getting the microphone ready…",
         "tapToTalkHint": "Tap the microphone and say e.g. \"20 rolls of tape and 5 cable reels\". Tap again when you are done. \"Delete last\" removes the last line.",
         "dictateLabel": "Dictate or type",
         "dictateHint": "Button not working (e.g. in the app on your iPhone)? Tap the box, use your keyboard's microphone and tap Process.",

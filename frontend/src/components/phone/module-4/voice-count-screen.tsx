@@ -13,9 +13,13 @@
 //    recognised for sure and needs a tap.
 // "Opslaan" stores the count in StockMaster (it doesn't change stock yet)
 // and starts again at the scan. Lines can also be added by hand.
-// With ?debug=1 a log of the speech recognition's events shows under the button.
+// With ?debug=1 (or 5 taps on the text under the microphone) a log of the
+// speech recognition's events shows under the button.
+// iPhone: its speech recognition only works once per page load, so after each
+// turn the screen saves the kar, direction and lines in sessionStorage, reloads
+// itself and picks them up again (see use-speech-recognition.ts).
 
-import { useMemo, useRef, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ArrowDownToLine, ArrowUpFromLine, Check, Mic, MicOff, Minus, Plus, Trash2 } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -46,6 +50,44 @@ const NO_PRODUCT_VALUE = "";
 const SPEECH_LANG: Record<string, string> = { nl: "nl-BE", en: "en-GB" };
 // How many lines the ?debug=1 log keeps.
 const DEBUG_LINES = 30;
+// iPhone reload between turns: where the count waits, how long the result stays
+// visible before reloading, and how old a saved count may be to pick it up again.
+const RELOAD_DRAFT_KEY = "rwcrew.voiceCount.reloadDraft";
+const RELOAD_DELAY_MS = 1200;
+const RELOAD_DRAFT_MAX_AGE_MS = 2 * 60 * 1000;
+
+/** What the screen keeps across its own reload (iPhone, between two turns). */
+interface ReloadDraft {
+  savedAt: number;
+  karId: number;
+  direction: StockMasterVoiceCountDirection;
+  lines: CountLine[];
+  nextKey: number;
+  debug: boolean;
+  debugLog: string[];
+}
+
+/** The saved count, or null when there's none or it's old (only read: it's removed after opening). */
+function readReloadDraft(): ReloadDraft | null {
+  try {
+    const raw = window.sessionStorage.getItem(RELOAD_DRAFT_KEY);
+    if (!raw) return null;
+    const draft = JSON.parse(raw) as ReloadDraft;
+    return Date.now() - draft.savedAt <= RELOAD_DRAFT_MAX_AGE_MS ? draft : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Save the count for after the reload; false when the browser refuses (then don't reload). */
+function saveReloadDraft(draft: ReloadDraft): boolean {
+  try {
+    window.sessionStorage.setItem(RELOAD_DRAFT_KEY, JSON.stringify(draft));
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 /** True in an iPhone's home-screen app, where the browser's speech recognition
  *  is unreliable: the keyboard-dictation box then comes first. */
@@ -75,7 +117,23 @@ function normalizeKarNummer(value: string): string {
   return value.trim().toLowerCase();
 }
 
+// Rendering only happens in the browser: nothing to subscribe to.
+const subscribeNothing = () => () => {};
+
+/** Renders the screen only in the browser, so it can start from a count saved
+ *  before its own reload (sessionStorage) without a server/browser mismatch. */
 export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLookups }) {
+  const inBrowser = useSyncExternalStore(subscribeNothing, () => true, () => false);
+  return inBrowser ? <VoiceCountBody lookups={lookups} /> : null;
+}
+
+function VoiceCountBody({ lookups }: { lookups: StockMasterVoiceCountLookups }) {
+  // A count saved before the screen's own reload (iPhone), read once when the screen opens.
+  const [initialDraft] = useState(() => {
+    const draft = readReloadDraft();
+    const draftKar = draft ? lookups.kars.find((candidate) => candidate.id === draft.karId) : undefined;
+    return draft && draftKar ? { ...draft, kar: draftKar } : null;
+  });
   const t = useTranslations("stockMaster.phone.voiceCount");
   const tStock = useTranslations("stockMaster");
   const locale = useLocale();
@@ -83,7 +141,7 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   // The speech log: ?debug=1, or 5 taps on the text under the microphone (the
   // iPhone home-screen app has no address bar to add ?debug=1 to).
   const debugParam = useSearchParams().get("debug") === "1";
-  const [debugToggled, setDebugToggled] = useState(false);
+  const [debugToggled, setDebugToggled] = useState(initialDraft?.debug ?? false);
   const debugTapsRef = useRef<number[]>([]);
   const debugMode = debugParam || debugToggled;
 
@@ -98,10 +156,11 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   }
   const dictationFirst = useSyncExternalStore(subscribeNever, isIosHomeScreenApp, () => false);
 
-  const [kar, setKar] = useState<StockMasterVoiceCountKar | null>(null);
-  const [direction, setDirection] = useState<StockMasterVoiceCountDirection | null>(null);
-  const [lines, setLines] = useState<CountLine[]>([]);
-  const [isScanning, setIsScanning] = useState(true);
+  const [kar, setKar] = useState<StockMasterVoiceCountKar | null>(initialDraft?.kar ?? null);
+  const [direction, setDirection] = useState<StockMasterVoiceCountDirection | null>(initialDraft?.direction ?? null);
+  const [lines, setLines] = useState<CountLine[]>(initialDraft?.lines ?? []);
+  // No scanning when picking up a count after the screen's own reload.
+  const [isScanning, setIsScanning] = useState(initialDraft === null);
   const [isSaving, setIsSaving] = useState(false);
   // The hand-add row (also the fallback without speech recognition).
   const [manualProductId, setManualProductId] = useState(NO_PRODUCT_VALUE);
@@ -109,8 +168,8 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   // The keyboard-dictation box (iPhone: the keyboard's own microphone).
   const [dictatedText, setDictatedText] = useState("");
   // The speech recognition's events, shown with ?debug=1.
-  const [debugLog, setDebugLog] = useState<string[]>([]);
-  const nextKeyRef = useRef(1);
+  const [debugLog, setDebugLog] = useState<string[]>(initialDraft?.debugLog ?? []);
+  const nextKeyRef = useRef(initialDraft?.nextKey ?? 1);
 
   const productNames = useMemo(
     () => new Map(lookups.products.map((product) => [product.id, product.name])),
@@ -193,6 +252,38 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
     onFailure: handleSpeechFailure,
     onDebug: debugMode ? handleDebug : undefined,
   });
+
+  // The saved count has been picked up (or wasn't usable): remove it, so it never comes back later.
+  useEffect(() => {
+    try {
+      window.sessionStorage.removeItem(RELOAD_DRAFT_KEY);
+    } catch {
+      // Storage blocked: nothing was saved either.
+    }
+  }, []);
+
+  // iPhone: once a turn has used up the microphone, save the count and reload,
+  // so the next tap works again. A short wait first, so the new line (or a
+  // "not understood" message) can be seen.
+  const spentDuringCount = speech.spent && !speech.listening && kar !== null && direction !== null;
+  // The microphone waits for that reload.
+  const isReloading = spentDuringCount;
+  useEffect(() => {
+    if (!spentDuringCount || !kar || !direction) return;
+    const saved = saveReloadDraft({
+      savedAt: Date.now(),
+      karId: kar.id,
+      direction,
+      lines,
+      nextKey: nextKeyRef.current,
+      debug: debugToggled,
+      debugLog,
+    });
+    if (!saved) return;
+    const timer = window.setTimeout(() => window.location.reload(), RELOAD_DELAY_MS);
+    // Lines changed (or the count was left) during the wait: the effect saves again and restarts the wait.
+    return () => window.clearTimeout(timer);
+  }, [spentDuringCount, kar, direction, lines, debugToggled, debugLog]);
 
   /** "Verwerk" (or Enter) in the dictation box: same handling as a spoken sentence. */
   function processDictatedText() {
@@ -322,12 +413,17 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
                 "flex size-28 items-center justify-center rounded-full shadow-md select-none",
                 speech.listening ? "bg-red-600 text-white" : "bg-primary text-primary-foreground",
               )}
+              disabled={isReloading && !speech.listening}
               onClick={speech.listening ? speech.stop : speech.start}
             >
               {speech.listening ? <MicOff className="size-12 animate-pulse" /> : <Mic className="size-12" />}
             </button>
             <p className="min-h-10 text-center text-sm text-muted-foreground select-none" onClick={countDebugTap}>
-              {speech.listening ? speech.interimText || t("listening") : t("tapToTalkHint")}
+              {speech.listening
+                ? speech.interimText || t("listening")
+                : isReloading
+                  ? t("preparingMic")
+                  : t("tapToTalkHint")}
             </p>
           </div>
         ) : (
