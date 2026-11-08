@@ -2,7 +2,9 @@
 
 In Atelier volgt het atelierteam tijdens de festivaldagen de werkkledij op. Medewerkers van ploegen die op een plaats werken met eigen kledij (VIP, RW terras, ...) krijgen die kledij (T-shirts, hoodies, ...) bij het begin van hun shift en geven ze na de shift terug. Atelier houdt bij wat uitgegeven en teruggebracht werd, zodat alles traceerbaar blijft.
 
-> Deze module wordt in blokken gebouwd. Nu klaar: de masterdata (artikelen en maten), de reservaties (personen en pakket per ploeg per festival), de stock (ontvangst, wassen, afboeken, telling, te bestellen), de balie (ophalen en terugbrengen) en de polsbandscans (aan de balie en via Test-scan; de scans zelf staan in de module Scans). Daarna volgt het opvolgen van elk kledingstuk via RFID (Scans).
+> Deze module wordt in blokken gebouwd. Nu klaar: de masterdata (artikelen en maten), de reservaties (personen en pakket per ploeg per festival), de stock (ontvangst, wassen, afboeken, telling, te bestellen), de balie (ophalen en terugbrengen), de polsbandscans (aan de balie en via Test-scan; de scans zelf staan in de module Scans) en het opvolgen van elk kledingstuk via zijn RFID-tag met de **Raspberry Pi (RWCrew Pi)**: tags koppelen, uitgifte en inname met de lezer, massa-inname en de Tag-historiek.
+
+> Atelier zit **niet in de telefoon-app**. Aan de balie werk je op de website (op een pc, laptop of tablet) of op RWCrew Pi met de RFID-lezer (zie **Atelier op de Raspberry Pi**).
 
 ## [overview | atelier.kpi] KPI overzicht
 De startpagina van Atelier. Het blok **Balie** toont hoeveel stuks vandaag uitgegeven werden, hoeveel stuks nog niet terug zijn en hoeveel personen nog kledij in bezit hebben. Het blok **Masterdata** toont hoeveel actieve artikelen en maten er zijn en hoeveel artikelmaten uitgegeven kunnen worden. Het blok **Reservaties** toont per festival van het gekozen **seizoen** de personen en stuks per dag, het aantal ploegen met een reservatie en hoeveel daarvan nog geen pakket hebben. De kolom **Vergeten?** telt de ploegen die op een ander festival van dit seizoen een reservatie hebben, maar hier nog niets (geen personen, geen opmerking). Klik op het getal voor de namen en een link naar de reservaties van dat festival. Komt een ploeg echt niet, vul dan 0 personen in met een opmerking (bv. "komt niet"). Het blok **Stock** toont de stuks die beschikbaar zijn, te wassen zijn en uitgegeven zijn, en hoeveel maten onder hun minimumstock zitten. Het blok **Gewassen** toont voor hetzelfde seizoen hoeveel stuks er gewassen werden: het totaal, en per festival per dag. Een wasbeurt telt voor het festival dat op die dag liep; wat in de dagen na een festival gewassen werd, staat onder **Geen festival** van dat seizoen. Ongedaan gemaakte wasbeurten tellen niet mee.
@@ -37,7 +39,7 @@ Een artikel dat de persoon nog niet teruggebracht heeft, kan niet opnieuw meegeg
 
 Met het recht Wijzigen kan je een uitgifte waarvan nog niets terug is **annuleren** (de stuks gaan terug naar beschikbaar).
 
-**Op de Raspberry Pi (RWCrew Pi)**: met de RFID-lezer verloopt hetzelfde zonder typen. Kies één keer seizoen, festival, dag en de polsbandscanner van de balie (wordt onthouden). Elke polsbandscan verschijnt als kaart met **Ophalen**, **Terugbrengen** en **Negeren**; het e-mailadres staat er, net als op de website, maar deels (bv. fr***@gm***.com). Bij Ophalen leg je de stukken op de lezer: elk stuk met een tag (zie **RFID-tags koppelen**) wordt meteen getoond, groen als het geboekt wordt, oranje met de reden als het niet kan (niet in het pakket, nog in bezit, tweede stuk van hetzelfde artikel, bij iemand anders, geen stock). Bij Terugbrengen worden de gelezen stuks aangevinkt (ook stuks die zonder tag meegingen, per artikel); je kan nog met de hand aan- of afvinken en een retourstatus kiezen. **Bevestigen** boekt het, met dezelfde regels, mails en rechten als op de website. Zonder verbinding met RWCrew wordt er niets geboekt (rode balk).
+**Op de Raspberry Pi (RWCrew Pi)** gebeurt hetzelfde met de RFID-lezer, zonder typen: de stukken op de lezer leggen volstaat. Zie het hoofdstuk **Atelier op de Raspberry Pi**.
 
 ![De balie: Ophalen of Terugbrengen](desk.png)
 
@@ -55,6 +57,46 @@ Met de knop **Excel** download je wat op het scherm staat, ook met de filters di
 
 Alle kledij die teruggebracht werd met een **retourstatus**, de nieuwste bovenaan: status, artikel, maat, festival, ploeg, persoon, polsband, dag, wanneer teruggebracht en door wie geboekt. Kies bovenaan het festival en eventueel de dag, of **Alle festivals** voor het hele seizoen (filter dan per festival in de kolom **Festival**); boven elke kolom staat een tekstfilter. Dit scherm is enkel om te bekijken: een stuk dat niet meer bruikbaar is, boek je af via **Afboeken**. Met de knop **Excel** download je wat op het scherm staat, ook met de filters die je gebruikt.
 
+## [pi] Atelier op de Raspberry Pi (RWCrew Pi)
+RWCrew Pi is een aanraakscherm (7 inch) met een RFID-lezer, aan de balie of in het atelier. Het werkt rechtstreeks op de gegevens van RWCrew, met **dezelfde regels, mails en rechten** als de website; enkel het lezen van de tags gebeurt op de Pi. Wat de Pi boekt, zie je meteen op de website (Openstaand, Boekingen met het label **Pi**, Tag-historiek).
+
+### Aanmelden
+- Meld aan met je **eigen RWCrew-account** (e-mailadres en wachtwoord) en kies de **omgeving**: Productie of Test. Net als op de website blijf je maximaal 6 uur aangemeld.
+- Je ziet een tegel per module waartoe je toegang hebt. In Atelier zie je een tegel per scherm waarop je rol het recht Bekijken heeft: **Uitgifte & inname**, **RFID-tags koppelen** en **Massa-inname**.
+- Bovenaan staan altijd de omgeving, de status van de lezer en de verbinding, de **Geschiedenis** (klokje), de **Instellingen** (tandwiel) en **Afmelden**.
+- Een **rode balk** "Geen verbinding met RWCrew" betekent dat er niets geboekt wordt tot de verbinding terug is.
+
+![Aanmelden op RWCrew Pi](pi-login.png)
+
+![De tegels van Atelier op de Pi](pi-atelier.png)
+
+### Uitgifte & inname met de lezer
+1. De eerste keer kies je **seizoen**, **festival**, **dag** en de **polsbandscanner** van deze balie en tik je **Starten**. De Pi onthoudt dat; met **Wijzigen** (rechtsonder) kies je opnieuw. Een polsbandscanner staat pas in de lijst na zijn eerste scan.
+2. Elke polsbandscan verschijnt als kaart met naam, ploeg, polsbandnummer en het afgeschermde e-mailadres (bv. lo***@ex***.com), met **Ophalen**, **Terugbrengen** en het kruisje (negeren). Herkent RWCrew de ploeg niet, dan kies je ze zelf.
+3. **Ophalen**: leg de stukken op de lezer. Links staan de persoon, het pakket van de ploeg en de teller "x / y personen in bezit" (de reservatie is ook hier een limiet). Rechts elk gelezen stuk: **groen** = wordt geboekt, **oranje** met de reden = wordt niet geboekt (niet in het pakket, nog in bezit, tweede stuk van hetzelfde artikel, bij iemand anders, geen stock in die maat). Tik **Bevestigen** of druk op de bevestigknop (of het voetpedaal).
+4. **Terugbrengen**: links de gelezen tags, rechts wat de persoon **in bezit** heeft. Gelezen stuks worden aangevinkt; een stuk dat zonder tag meeging (of waarvan de tag niet gelezen werd) tik je met de hand aan. Kies per stuk eventueel een **opmerking** (retourstatus). **Bevestigen** boekt; wat niet aangevinkt is, blijft openstaan.
+5. Na het boeken toont de Pi kort het resultaat (en of er een mail vertrekt) en wacht hij op de volgende scan. **Opnieuw lezen** begint het lezen van voren af; **Annuleren** keert terug zonder te boeken.
+
+Heeft de persoon op dit festival al een andere polsband, dan vraagt de Pi eerst **Toch bevestigen**. Is de reservatie volzet, dan kan enkel wie het recht Wijzigen op Uitgifte & inname heeft **Toch uitgeven**.
+
+![Balie instellen](pi-desk-setup.png)
+
+![Een polsbandscan wacht](pi-desk-waiting.png)
+
+![Ophalen: de gelezen stukken](pi-desk-handout.png)
+
+![Terugbrengen](pi-desk-return.png)
+
+### Geschiedenis
+Het klokje toont wat **deze Pi** de laatste 90 dagen deed: elke Ophalen, Terugbrengen en Koppelen, ook geweigerde en die zonder verbinding, met de stuks en hun EPC. Filter op soort of zoek op naam of EPC. De officiële historiek per stuk staat in RWCrew, op **Tag-historiek**.
+
+![De geschiedenis van de Pi](pi-history.png)
+
+### Instellingen
+Het tandwiel (ook vóór het aanmelden): taal en thema; de **scannernaam en locatie** (die komen bij elke actie op de tag in Scans > Tagbeheer); de lezer (verbinden of verbreken, lezerinfo, het **RF-vermogen** — laag = enkel de stukken op de toonbank worden gelezen —, de **antennes** 1–4 en de activiteiten- en communicatielog); een optionele EPC-prefix; en de pinnen van zoemer, groene en rode LED en bevestigknop of voetpedaal.
+
+![De instellingen van de Pi](pi-settings.png)
+
 ## [tags | atelier.tags] RFID-tags koppelen (Raspberry Pi)
 Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-lezer, niet op de website. Je geeft er nieuwe kledingstukken hun RFID-tag: de tag zegt voortaan welk **artikel in welke maat** het stuk is.
 
@@ -64,6 +106,8 @@ Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-leze
 4. Tik op **Koppelen**: enkel de aangevinkte tags worden gekoppeld. Staan er aangevinkte tags bij die al een ander stuk zijn, dan vraagt de Pi eerst of je ze toch wil wijzigen.
 
 Met het recht Bekijken zie je het scherm, met Aanmaken mag je koppelen. De stock zelf verandert niet: die blijft per maat geteld; de tag zegt enkel welk fysiek stuk bij wie is.
+
+![RFID-tags koppelen op de Pi](pi-tags.png)
 
 ## [massreturn | atelier.massreturn] Massa-inname (Raspberry Pi)
 Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-lezer. Een ploeg verzamelt in de loop van de dag de vuile kledij in een **bak** en brengt die naar het atelier: met Massa-inname neem je de hele bak in één keer in, zonder elke persoon apart aan de balie te zetten.
@@ -75,12 +119,18 @@ Dit scherm bestaat enkel op de **Raspberry Pi-app (RWCrew Pi)** met de RFID-leze
 
 Met het recht Bekijken zie je de tegel, met Aanmaken mag je bevestigen. In **Tag-historiek** staan deze innames met het label **Pi**.
 
+![Massa-inname: een rode tag blokkeert](pi-mass-return-blocked.png)
+
+![Massa-inname: klaar om te bevestigen](pi-mass-return.png)
+
 ## [taghistory | atelier.taghistory] Tag-historiek
 Alles wat één kledingstuk meemaakte, op basis van zijn **RFID-tag (EPC)**. Typ of plak het tagnummer en klik **Zoeken**; vanuit **Openstaand** en **Retourproblemen** open je het ook door op een EPC te klikken.
 
 Bovenaan staat de tag zoals **Scans > Tagbeheer** hem nu kent: welk stuk (artikel en maat), de status en wanneer, door welke scanner en waar hij laatst gelezen werd. Daaronder elke **uitgifte en inname** met die EPC, de nieuwste bovenaan: wanneer uitgegeven en teruggebracht (of nog uit, afgeboekt, geannuleerd), persoon, ploeg, festival, dag, stuk, wie het boekte en een eventuele retourstatus. Een label toont **waar** het geboekt werd: **Pi** (RWCrew Pi met de RFID-lezer) of **Website** (de balie op de website).
 
 Het tagnummer wordt bij elke uitgifte en inname met de Pi **mee bewaard**: ook als de tag later in Tagbeheer verwijderd of aan een ander stuk gekoppeld wordt, blijft de historiek kloppen. Dit scherm is enkel om te bekijken.
+
+![Tag-historiek](tag-history.png)
 
 ## [reservations | atelier.reservations] Reservaties
 Alles per festival op één pagina: per ploeg **hoeveel mensen** kledij nodig hebben en **wat elke persoon krijgt** (het pakket, bv. 2 T-shirts en 1 hoodie). Een ploeg werkt **elke festivaldag** met dat aantal mensen en brengt de kledij **elke avond terug**, dus elke dag is er opnieuw *personen × pakket* nodig. De maat zit niet in het pakket: die wordt aan de balie gekozen.
@@ -229,6 +279,8 @@ Een rol bepaalt wat iemand in Atelier mag doen, per scherm: **Bekijken**, **Aanm
 3. Sla de rechten op.
 
 De knop **Afboeken** op Openstaand volgt het recht Aanmaken op het scherm **Afboeken**. Wie enkel de balie doet, heeft genoeg aan de balieschermen: de festivals worden dan mee geladen.
+
+**RFID-tags koppelen** en **Massa-inname** zijn schermen van de Raspberry Pi (RWCrew Pi): ze bestaan niet op de website, maar hun rechten stel je hier in. Op de Pi gebruikt **Uitgifte & inname** dezelfde rechten als de balie op de website. **Tag-historiek** is een gewoon scherm op de website.
 
 ![Rollen](roles.png)
 

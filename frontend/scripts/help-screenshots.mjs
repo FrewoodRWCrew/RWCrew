@@ -33,6 +33,10 @@ const KAR = process.env.HELP_SHOTS_KAR ?? "36";
 const TEAM = process.env.HELP_SHOTS_TEAM ?? "1";
 // An Atelier festival with reservations and hand-outs.
 const FESTIVAL = process.env.HELP_SHOTS_FESTIVAL ?? "4";
+// An Atelier piece's RFID tag with hand-outs/returns, for Tag-historiek. The default is
+// the first fake EPC of RWCrew Pi's demo (RWRaspiTagScanner tools/screenshots.py):
+// run that first, so the tag and its Pi bookings exist locally.
+const EPC = process.env.HELP_SHOTS_EPC ?? "E2806894000050DC00000001";
 
 // Per module: the page to open, the file to write and, optionally, the name
 // of a button to click first (e.g. to load a list) or a "prepare" step that
@@ -102,6 +106,7 @@ const SHOTS = {
     { file: "desk.png", path: `/modules/module-5/desk?festival=${FESTIVAL}` },
     { file: "open.png", path: `/modules/module-5/desk/open?festival=${FESTIVAL}` },
     { file: "return-issues.png", path: `/modules/module-5/desk/return-issues?festival=${FESTIVAL}` },
+    { file: "tag-history.png", path: `/modules/module-5/desk/tag-history?epc=${EPC}` },
     { file: "reservations.png", path: `/modules/module-5/reservations?season=${SEASON}&festival=${FESTIVAL}` },
     { file: "preparation.png", path: `/modules/module-5/reservations/preparation?season=${SEASON}&festival=${FESTIVAL}` },
     { file: "stock.png", path: "/modules/module-5/stock" },

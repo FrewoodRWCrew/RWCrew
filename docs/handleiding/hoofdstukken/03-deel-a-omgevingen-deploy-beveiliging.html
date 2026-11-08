@@ -436,6 +436,10 @@ meegestuurd met verzoeken die vanaf andere websites vertrekken):</p>
   <tr><td><code>rwcrew_access_token</code></td><td>15 minuten</td><td>Bewijst bij elk verzoek wie je bent.</td></tr>
   <tr><td><code>rwcrew_refresh_token</code></td><td>tot 6 uur na inloggen</td><td>Alleen om een nieuw toegangstoken te halen (<code>POST /api/auth/refresh</code>).</td></tr>
 </table>
+<p><strong>RWCrew Pi</strong> (de Raspberry Pi-app van Atelier) heeft geen browser en dus geen cookies: ze logt in met
+<code>POST /api/auth/token</code> en krijgt dezelfde twee tokens in de body. Ze stuurt het toegangstoken mee als header
+<code>Authorization: Bearer …</code> (die leest de backend vóór de cookie) en vernieuwt met <code>POST /api/auth/token/refresh</code>. De
+grenzen (15 minuten, 6 uur), de rotatie en de rechten zijn dezelfde; de inloghistoriek toont ze als <code>pi</code>.</p>
 
 <figure class="diagram" id="fig-sessie">
 <svg viewBox="0 0 660 200" xmlns="http://www.w3.org/2000/svg">

@@ -108,7 +108,7 @@ planning en het magazijn, dan het festival zelf en tot slot de terugkeer en het 
   <li>Laad de karren (<em>Kar laden</em>, met de laadlijst) tot het kardetail niets meer als <em>Ontbreekt</em> toont.</li>
   <li>Druk de karbladen af in <em>Kar Planning</em> en hang er één aan elke kar.</li>
   <li>Druk de <em>Initiële leverplanning</em> af voor de chauffeurs, en voor elke wissel de <em>Verplaatsingen tussen festivals</em>.</li>
-  <li>Bestel in Atelier wat <em>Te bestellen</em> aangeeft en boek de <em>Ontvangst</em> in.</li>
+  <li>Bestel in Atelier wat <em>Te bestellen</em> aangeeft, boek de <em>Ontvangst</em> in en geef de nieuwe stukken hun RFID-tag op RWCrew Pi (<em>RFID-tags koppelen</em>).</li>
   <li>Boek <em>Kar vertrekt</em> (met ploeg en festival) en laat de vertrekbon tekenen.</li>
 </ul>
 
@@ -182,8 +182,19 @@ Voorraadoverzicht), ofwel klopt de voorraad niet en doe je eerst een telling.</p
 Een artikel dat de persoon nog niet terugbracht, kan niet opnieuw meegegeven worden: kies dan eerst <span class="knop">Eerst terugbrengen</span>.</p></div>
 
 <div class="faq"><div class="vraag">Atelier: een polsbandscan verschijnt niet aan de balie.</div>
-<p>Kijk of bovenaan de juiste <em>Scanner van deze balie</em> gekozen is. Op <em>Instellingen</em> zie je bij <em>Ontvangen berichten</em> of het bericht
-binnenkwam en waarom het eventueel geweigerd werd.</p></div>
+<p>Kijk of bovenaan de juiste <em>Scanner van deze balie</em> gekozen is. In de module <em>Scans</em>, onder <em>Polsbanden</em>, zie je of het bericht
+binnenkwam en waarom het eventueel geweigerd werd. Een scan verschijnt enkel aan de balie als de ploeg op een festival van het seizoen een reservatie
+met pakket heeft (of als de ploegnaam niet herkend werd).</p></div>
+
+<div class="faq"><div class="vraag">Atelier: "De reservatie is volzet".</div>
+<p>Er hebben al evenveel mensen van die ploeg op dit festival kledij als gereserveerd. Wie al iets heeft, kan wel een ander artikel ophalen; wie alles
+terugbracht, maakt een plaats vrij. Verhoog anders de reservatie op <em>Reservaties</em>, of laat iemand met het recht <em>Wijzigen</em> op Uitgifte &amp;
+inname toch uitgeven.</p></div>
+
+<div class="faq"><div class="vraag">RWCrew Pi: een stuk op de lezer blijft oranje of rood.</div>
+<p>De reden staat op de regel. Oranje (bijvoorbeeld "tweede stuk van dit artikel" of "niet in het pakket") wordt gewoon niet geboekt. Rood bij
+Massa-inname blokkeert de hele bak: haal dat stuk eruit en tik <em>Opnieuw lezen</em>. "Onbekende tag" betekent dat het stuk nog geen tag heeft
+gekregen via <em>RFID-tags koppelen</em>.</p></div>
 
 <div class="faq"><div class="vraag">Er komen geen e-mails binnen bij nieuwe interventies.</div>
 <p>Kijk in <em>Instellingen › Mailinglijst</em> of het adres er staat en op <em>Actief</em> staat (niet <em>Gepauzeerd</em>). Kijk ook in je map met
@@ -206,7 +217,7 @@ RWCrew. Vermeld ook de versie die de super admin onderaan het linkermenu ziet.</
   <dt>Boeking</dt><dd>In StockMaster: één registratie van goederen die van plaats veranderen, met een nummer, op naam van wie ze boekte.</dd>
   <dt>CSV-bestand</dt><dd>Een eenvoudig tekstbestand met gegevens in kolommen, zoals een scanner dat maakt. Te openen met Excel.</dd>
   <dt>Distributiepunt</dt><dd>Een centraal punt op het terrein vanwaar meerdere afleverlocaties bediend worden.</dd>
-  <dt>EPC / UID</dt><dd>Het unieke nummer van een RFID-tag.</dd>
+  <dt>EPC / UID</dt><dd>Het unieke nummer van een RFID-tag. In Atelier volg je er één kledingstuk mee op (Tag-historiek).</dd>
   <dt>Grondplan</dt><dd>De plattegrond van het festivalterrein, als laag over de kaart gelegd.</dd>
   <dt>Jaartal / seizoen</dt><dd>Het festivaljaar waartoe gegevens behoren. Open = er wordt aan gewerkt; afgesloten = enkel nog bekijken.</dd>
   <dt>Kar</dt><dd>Een (vaak genummerde) kar of box met materiaal die aan een ploeg wordt geleverd.</dd>
@@ -216,13 +227,16 @@ RWCrew. Vermeld ook de versie die de super admin onderaan het linkermenu ziet.</
   <dt>Levertoer</dt><dd>De route waarin de karren over het terrein geleverd worden; de volgorde staat in KarTracker (Leveringsvolgorde). Een <em>speciale levertoer</em>
   (bijvoorbeeld de wastoer) komt regelmatig langs bepaalde ploegen.</dd>
   <dt>Module</dt><dd>Een afgebakend deel van RWCrew met eigen schermen, geopend via een tegel op de hoofdpagina.</dd>
+  <dt>Massa-inname</dt><dd>In Atelier, op RWCrew Pi: een hele bak teruggebrachte kledij van een ploeg in één keer innemen.</dd>
   <dt>Pakket</dt><dd>In Atelier: de artikelen die elke persoon van een ploeg op een festival krijgt, één stuk per artikel.</dd>
   <dt>Ploeg</dt><dd>Een team of vereniging die meewerkt op de festivals.</dd>
   <dt>Polsband</dt><dd>Het festivalpolsbandje van een medewerker. Elk festival heeft nieuwe polsbanden; in Atelier herkent de balie iemand aan zijn polsbandnummer.</dd>
   <dt>Ploegfiche</dt><dd>Het overzicht van alle keuzes van één ploeg uit de Ploeg Wizard, ook als PDF.</dd>
   <dt>QR-code</dt><dd>Een vierkante code die je met de camera van een telefoon scant om een nummer of een webpagina te openen.</dd>
   <dt>RFID-tag</dt><dd>Een klein elektronisch label op materiaal dat een scanner op afstand kan lezen, zonder het te zien.</dd>
+  <dt>Retourstatus</dt><dd>In Atelier: een opmerking bij een teruggebracht stuk, zoals "Beschadigd". Het stuk gaat toch naar de was.</dd>
   <dt>Rol</dt><dd>Een set rechten binnen één module (per scherm: bekijken, aanmaken, wijzigen, verwijderen).</dd>
+  <dt>RWCrew Pi</dt><dd>Een aanraakscherm met RFID-lezer (een Raspberry Pi) waarmee Atelier kledingstukken een tag geeft, uitgeeft en inneemt.</dd>
   <dt>Super admin</dt><dd>De hoofdbeheerder die accounts aanmaakt en de toegang tot modules geeft.</dd>
   <dt>TeamKar</dt><dd>De ploeg die interventies bij de ploegen uitvoert en opvolgt.</dd>
   <dt>Telefoon-app</dt><dd>De telefoonversie van RWCrew, die je op je beginscherm zet (geen download uit een app store).</dd>
@@ -320,23 +334,29 @@ Deze tabel helpt je de juiste lijn te vinden. <em>B · A · W · V</em> = Bekijk
 <table class="compact">
   <caption>Atelier en Walkies</caption>
   <tr><th style="width:20%">Module</th><th style="width:30%">Naam in het raster</th><th>Scherm in het menu / wat het opent</th></tr>
-  <tr><td rowspan="19"><strong>Atelier</strong></td><td>KPI</td><td>KPI overzicht (startpagina)</td></tr>
-  <tr><td>Uitgifte &amp; inname</td><td>Balie › Uitgifte &amp; inname (<em>Aanmaken</em> = ophalen en terugbrengen; <em>Wijzigen</em> = een uitgifte annuleren)</td></tr>
+  <tr><td rowspan="25"><strong>Atelier</strong></td><td>KPI</td><td>KPI overzicht (startpagina)</td></tr>
+  <tr><td>Uitgifte &amp; inname</td><td>Balie › Uitgifte &amp; inname, ook op RWCrew Pi (<em>Aanmaken</em> = ophalen en terugbrengen; <em>Wijzigen</em> = een uitgifte annuleren en uitgeven boven de reservatie)</td></tr>
   <tr><td>Openstaand</td><td>Balie › Openstaand</td></tr>
+  <tr><td>Retourproblemen</td><td>Balie › Retourproblemen</td></tr>
   <tr><td>Reservaties</td><td>Reservaties › Reservaties</td></tr>
   <tr><td>Voorbereiden</td><td>Reservaties › Voorbereiden</td></tr>
   <tr><td>Stock</td><td>Stock › Stock</td></tr>
   <tr><td>Ontvangst</td><td>Stock › Ontvangst</td></tr>
   <tr><td>Wassen</td><td>Stock › Wassen</td></tr>
-  <tr><td>Afboeken</td><td>Stock › Afboeken</td></tr>
+  <tr><td>Afboeken</td><td>Stock › Afboeken (<em>Aanmaken</em> ook voor de knop Afboeken op Openstaand)</td></tr>
   <tr><td>Telling</td><td>Stock › Telling</td></tr>
   <tr><td>Boekingen</td><td>Stock › Boekingen (<em>Wijzigen</em> = ongedaan maken)</td></tr>
   <tr><td>Te bestellen</td><td>Stock › Te bestellen</td></tr>
+  <tr><td>RFID-tags koppelen</td><td>Enkel op RWCrew Pi (<em>Aanmaken</em> = koppelen)</td></tr>
+  <tr><td>Tag-historiek</td><td>Balie › Tag-historiek</td></tr>
+  <tr><td>Massa-inname</td><td>Enkel op RWCrew Pi (<em>Aanmaken</em> = bevestigen)</td></tr>
   <tr><td>Artikelen</td><td>Masterdata › Artikelen</td></tr>
   <tr><td>Maten</td><td>Masterdata › Artikelen › Maten</td></tr>
   <tr><td>Data Upload/Download</td><td>Masterdata › Data Upload/Download</td></tr>
+  <tr><td>Retourstatussen</td><td>Masterdata › Retourstatussen</td></tr>
   <tr><td>Instellingen</td><td>Instellingen › Instellingen</td></tr>
   <tr><td>Test-scan</td><td>Instellingen › Test-scan (<em>Aanmaken</em> = een bericht versturen)</td></tr>
+  <tr><td>E-mails</td><td>Instellingen › E-mails (<em>Wijzigen</em> = opslaan en testmail)</td></tr>
   <tr><td>Roles</td><td>Toegangsrechten › Rollen</td></tr>
   <tr><td>Users</td><td>Toegangsrechten › Gebruikers</td></tr>
   <tr><td rowspan="3"><strong>Walkies</strong></td><td>KPI</td><td>Startpagina</td></tr>

@@ -267,7 +267,9 @@ gebouwd:</p>
   familienaam; e-mail is optioneel en het polsbandnummer geldt per festival. "Openstaand" toont wat nog niet terug is.</td></tr>
   <tr><td>5 Polsbandscans</td><td>Het polsbandbedrijf stuurt elke scan aan onze balie als JSON naar een <strong>webhook</strong>; de balie toont de persoon
   binnen enkele seconden en vult de transactie in. Een testscherm speelt berichten na tot de echte koppeling (vanaf mei 2027).</td></tr>
-  <tr><td>6 RFID</td><td>Elk kledingstuk opvolgen via Scans (nog niet gebouwd).</td></tr>
+  <tr><td>6 RFID</td><td>Elk kledingstuk heeft een RFID-tag (in Scans › Tagbeheer). Gestart op <strong>RWCrew Pi</strong>, een Raspberry Pi met
+  RFID-lezer (aparte repo <code>RWRaspiTagScanner</code>): tags koppelen, uitgifte &amp; inname door de stukken op de lezer te leggen en
+  massa-inname van een hele bak. Op de website volgt <em>Tag-historiek</em> één stuk. Wassen en ontvangst op de Pi volgen later.</td></tr>
 </table>
 
 <figure class="diagram" data-soort="scherm" id="fig-scr-atelier-balie">
@@ -289,6 +291,9 @@ gebouwd:</p>
   <img src="afbeeldingen/55-atelier-instellingen.png" alt="">
   <figcaption>Atelier · Instellingen: polsband verplicht of niet. Het webhookadres, de token, de scanners en de ontvangen berichten staan in de module Scans.</figcaption>
 </figure>
+
+<p>Atelier heeft <strong>geen schermen in de telefoon-app</strong>. Aan de balie werkt men op de website (pc, laptop of tablet) of op RWCrew Pi;
+zie <a class="ref" href="#h-rwcrew-pi"></a>.</p>
 
 <h3 id="s-mod-mobile">Walkies (module 6), Mobile App (module 10) en de plaatshouder (module 7)</h3>
 <p><strong>Walkies</strong> heeft al een tegel, een KPI-pagina en het volledige rechtensysteem met rollen per scherm; het beheer van
@@ -331,7 +336,7 @@ bij Hostinger): de <strong>frontend</strong> (Next.js, maakt de schermen), de <s
 (FastAPI, bevat alle regels en praat met de database) en de <strong>database</strong> (PostgreSQL).
 Vooraan staat <strong>Nginx</strong>, dat HTTPS afhandelt en het verkeer verdeelt. Daarnaast zijn er een
 paar externe koppelingen: <strong>Resend</strong> voor uitgaande mail, een <strong>Raspberry Pi</strong> die
-scanbestanden aanlevert, en <strong>GitHub Actions</strong> dat nieuwe versies automatisch installeert.
+scanbestanden aanlevert, <strong>RWCrew Pi</strong> (de RFID-app van Atelier, die de gewone API gebruikt), en <strong>GitHub Actions</strong> dat nieuwe versies automatisch installeert.
 Zowel de website als de telefoon-app gebruiken exact dezelfde frontend, backend en database.
 </div>
 
@@ -354,7 +359,7 @@ IP-adres van de server, Nginx neemt het verzoek aan en stuurt het door naar de f
   <text x="67" y="239" text-anchor="middle" class="t-mini">QR-code op karblad</text>
   <rect class="box-oranje" x="8" y="300" width="118" height="60" rx="7"/>
   <text x="67" y="325" text-anchor="middle" class="t-titel">Raspberry Pi</text>
-  <text x="67" y="343" text-anchor="middle" class="t-mini">Scans CSV's</text>
+  <text x="67" y="343" text-anchor="middle" class="t-mini">Scans CSV's · RWCrew Pi</text>
   <!-- server -->
   <rect class="zone" x="160" y="18" width="380" height="400" rx="10"/>
   <text x="172" y="36" class="t-zone">HOSTINGER VPS (UBUNTU + DOCKER)</text>
@@ -426,12 +431,13 @@ eigen pakket met zijn endpoints, regels, PDF-generatoren en importfuncties. De b
 <table>
   <caption>Groepen van endpoints in de backend</caption>
   <tr><th style="width:42%">Adres</th><th>Wat</th></tr>
-  <tr><td><code>/api/auth/*</code></td><td>Inloggen, sessie vernieuwen, uitloggen, wachtwoord wijzigen, "wie ben ik"</td></tr>
+  <tr><td><code>/api/auth/*</code></td><td>Inloggen, sessie vernieuwen, uitloggen, wachtwoord wijzigen, "wie ben ik"; <code>/api/auth/token*</code> = dezelfde login met tokens in de body (RWCrew Pi)</td></tr>
   <tr><td><code>/api/admin/*</code></td><td>Superbeheerder: gebruikers, moduletoegang, inloghistoriek</td></tr>
   <tr><td><code>/api/modules</code></td><td>Lijst van modules (voor de tegels)</td></tr>
   <tr><td><code>/api/modules/module-N/*</code></td><td>De endpoints van module N, met haar eigen rechten</td></tr>
   <tr><td><code>/api/public/intervention-requests/*</code></td><td>Publiek interventieformulier (geen login, wel snelheidslimiet)</td></tr>
   <tr><td><code>/api/public/tagscan-intake</code></td><td>Ontvangst van CSV-bestanden van de Raspberry Pi (API-sleutel)</td></tr>
+  <tr><td><code>/api/public/wristband-scan</code></td><td>Polsbandscans van het polsbandbedrijf (token per omgeving), voor de balies van Atelier</td></tr>
   <tr><td><code>/api/health</code></td><td>"Leeft de backend?" Voor controles.</td></tr>
 </table>
 
@@ -447,6 +453,8 @@ meteen welke tabellen bij elkaar horen, en kunnen twee modules nooit per ongeluk
   <tr><td><code>KarTracker_</code></td><td>KarTracker (module 2)</td><td><code>KarTracker_karren</code>, <code>KarTracker_kar_actions</code></td></tr>
   <tr><td><code>InterventionRequests_</code></td><td>Interventie Aanvragen (module 3)</td><td><code>InterventionRequests_request</code>, <code>InterventionRequests_status</code></td></tr>
   <tr><td><code>StockMaster_</code></td><td>StockMaster (module 4)</td><td><code>StockMaster_document</code>, <code>StockMaster_movement</code>, <code>StockMaster_balance</code></td></tr>
+  <tr><td><code>Atelier_</code></td><td>Atelier (module 5)</td><td><code>Atelier_article</code>, <code>Atelier_handout</code>, <code>Atelier_stock_balance</code></td></tr>
+  <tr><td><code>Wristband_</code></td><td>Polsbandscans (gedeeld door de balies)</td><td><code>Wristband_scan</code>, <code>Wristband_scanner</code></td></tr>
   <tr><td><code>AltsienSelect_</code></td><td>Altsien Select (module 8)</td><td><code>AltsienSelect_step_progress</code>, <code>AltsienSelect_special_requests</code></td></tr>
   <tr><td><code>MasterData_</code></td><td>MasterData (module 9)</td><td><code>MasterData_team</code>, <code>MasterData_season</code>, <code>MasterData_festival</code></td></tr>
 </table>
@@ -463,6 +471,7 @@ De volledige lijst van tabellen vind je in de map <code>backend/app/db/models/</
   <tr><td><strong>Let's Encrypt</strong></td><td>Gratis HTTPS-certificaten, vernieuwd door certbot op de server.</td><td>Op de server</td></tr>
   <tr><td><strong>Resend</strong></td><td>Verstuurt mails (nieuwe interventie-aanvraag) via een HTTP-API.</td><td><code>RESEND_API_KEY</code>, <code>MAIL_FROM</code> (domein geverifieerd via DNS)</td></tr>
   <tr><td><strong>Raspberry Pi</strong></td><td>Staat bij de RFID-scanners en stuurt CSV-bestanden door naar Scans.</td><td><code>scripts/pi-watcher/</code>, API-sleutel per scanner</td></tr>
+  <tr><td><strong>RWCrew Pi</strong></td><td>Aanraak-app met RFID-lezer voor Atelier (koppelen, uitgifte &amp; inname, massa-inname). Gebruikt de gewone API met het account van de gebruiker (Bearer-token).</td><td>Aparte repo <code>RWRaspiTagScanner</code>; updates via GitHub Release</td></tr>
   <tr><td><strong>OpenStreetMap</strong></td><td>Kaartachtergrond voor de Kar Map (via de bibliotheek Leaflet).</td><td>Geen sleutel nodig</td></tr>
 </table>
 

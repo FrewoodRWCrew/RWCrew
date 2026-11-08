@@ -211,7 +211,7 @@ op welke omgeving een bestand uiteindelijk terechtkomt.
 <div class="module-kaart m-atelier">
   <div><span class="vak-titel">Waarvoor</span><p>De werkkledij (T-shirts, hoodies, schorten, …) die medewerkers van sommige ploegen bij het begin van hun shift ophalen en na de shift terugbrengen.</p></div>
   <div><span class="vak-titel">Voor wie</span><p>Het atelierteam aan de balie en in de winkel, en de organisatie die de reservaties invult.</p></div>
-  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-atelier">Atelier</span>. Enkel op de computer.</p></div>
+  <div><span class="vak-titel">Waar</span><p>Tegel <span class="mod m-atelier">Atelier</span> op de computer (de balie ook op een laptop of tablet), en <strong>RWCrew Pi</strong>: een aanraakscherm met RFID-lezer. Niet in de telefoon-app.</p></div>
   <div><span class="vak-titel">Seizoen</span><p>Eigen keuzelijsten <em>Seizoen</em> en <em>Festival</em> bovenaan de schermen die ze nodig hebben.</p></div>
 </div>
 
@@ -220,6 +220,7 @@ Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en we
 (<em>Reservaties</em>). De winkel legt elke dag klaar wat nodig is (<em>Voorbereiden</em>). Aan de <strong>balie</strong> begint elke transactie met
 <span class="knop">Ophalen</span> of <span class="knop">Terugbrengen</span>. Wat terugkomt gaat naar <em>Te wassen</em>, en na het wassen weer naar
 <em>Beschikbaar</em>. De medewerkers zijn geen RWCrew-gebruikers: ze worden herkend aan hun voornaam en familienaam, of aan hun polsband.
+Elk kledingstuk kan een <strong>RFID-tag</strong> hebben: op RWCrew Pi leg je de stukken dan gewoon op de lezer in plaats van te typen.
 </div>
 
 <h2 id="s-at-schermen">De schermen</h2>
@@ -232,6 +233,7 @@ Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en we
   <tr><td>Uitgifte &amp; inname</td><td>De balie: kledij meegeven en terugnemen (zie <a class="ref" href="#s-at-balie"></a>).</td></tr>
   <tr><td>Openstaand</td><td>Alle kledij die opgehaald werd maar nog niet terug is, per ploeg en per persoon, met filters op festival, dag en elke kolom, en een Excel-download. Per persoon <em>Inname</em> en <em>Afboeken</em>.</td></tr>
   <tr><td>Retourproblemen</td><td>Wat teruggebracht werd met een retourstatus (bijvoorbeeld beschadigd), met filters en een Excel-download.</td></tr>
+  <tr><td>Tag-historiek</td><td>Alles wat één kledingstuk meemaakte, op basis van zijn RFID-tag (EPC): elke uitgifte en inname, en of dat op de website of op de Pi gebeurde.</td></tr>
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Reservaties</td></tr>
   <tr><td>Reservaties</td><td>Per festival en per ploeg het aantal personen, een opmerking en het pakket.</td></tr>
   <tr><td>Voorbereiden</td><td>Wat de winkel elke festivaldag klaarlegt: totalen per artikel met geschatte maten, en een bundel per ploeg. Picklijst als PDF.</td></tr>
@@ -249,6 +251,11 @@ Per festival leg je vast hoeveel mensen van elke ploeg kledij nodig hebben en we
   <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Instellingen</td></tr>
   <tr><td>Instellingen</td><td>Of een polsbandnummer verplicht is bij Ophalen. De scanners en ontvangen berichten staan in de module Scans.</td></tr>
   <tr><td>Test-scan</td><td>Een polsbandscan naspelen zonder het polsbandbedrijf (zie <a class="ref" href="#s-at-polsband"></a>).</td></tr>
+  <tr><td>E-mails</td><td>De tekst van de mails <em>Uitgifte</em> en <em>Inname</em> die een persoon na Ophalen en Terugbrengen krijgt.</td></tr>
+  <tr><td colspan="2" style="background:#fdecec;font-weight:600;color:#b91c1c">Op RWCrew Pi (Raspberry Pi met RFID-lezer)</td></tr>
+  <tr><td>Uitgifte &amp; inname</td><td>Dezelfde balie, maar de stukken worden gelezen in plaats van getypt (zie <a class="ref" href="#s-at-pi"></a>).</td></tr>
+  <tr><td>RFID-tags koppelen</td><td>Nieuwe kledingstukken hun tag geven: artikel en maat kiezen, de stukken op de lezer leggen.</td></tr>
+  <tr><td>Massa-inname</td><td>Een bak vuile kledij van een ploeg in één keer innemen.</td></tr>
 </table>
 
 <h2 id="s-at-reservaties">Reservaties en voorbereiden</h2>
@@ -286,13 +293,16 @@ er genoeg zijn maar nog niet alles gewassen of terug is. Kies een dag en klik op
 </ol>
 <div class="kader letop"><span class="kader-titel"></span>
 Een artikel dat de persoon nog niet terugbracht, kan niet opnieuw meegegeven worden. Een oranje kader toont wat de persoon nog heeft, met de knop
-<span class="knop">Eerst terugbrengen</span>. Alle andere artikelen kan de persoon wel ophalen, ook meerdere keren per dag. Komen er meer mensen van
-een ploeg dan gereserveerd, dan kleurt de teller oranje, maar uitgeven blijft mogelijk.
+<span class="knop">Eerst terugbrengen</span>. Alle andere artikelen kan de persoon wel ophalen, ook meerdere keren per dag.
+<strong>De reservatie is een limiet</strong>: hebben al evenveel mensen van de ploeg op dit festival kledij als gereserveerd, dan weigert de balie een
+<em>nieuwe</em> persoon. Enkel wie het recht <em>Wijzigen</em> op Uitgifte &amp; inname heeft, kan toch uitgeven; anders verhoog je eerst de reservatie.
 </div>
 <p><strong>Terugbrengen</strong></p>
 <ol class="stappen">
   <li>Zoek de persoon op naam, e-mailadres of polsbandnummer (enkel wie nog kledij heeft).</li>
   <li>Alle stuks staan aangevinkt; vink af wat niet terug is. Dat blijft openstaan, en de balie vraagt eerst bevestiging.</li>
+  <li>Heeft een stuk een probleem (beschadigd, zeer vuil…), kies dan een <em>retourstatus</em>. Het stuk gaat gewoon naar de was en staat op
+  <em>Retourproblemen</em>.</li>
   <li>Klik op <span class="knop">Terugnemen</span>: de stuks gaan naar <em>Te wassen</em>.</li>
 </ol>
 <p>Komt iets nooit terug, klik dan op <span class="menu">Openstaand</span> bij de persoon op <span class="knop">Afboeken</span> en vink de stuks aan: ze verlaten de stock definitief met de reden "Niet teruggebracht" en de persoon kan dat artikel opnieuw ophalen. Dat kan niet ongedaan gemaakt worden.
@@ -322,6 +332,33 @@ Op <span class="menu">Instellingen<span class="sep">›</span>Instellingen</span
 een naam (bijvoorbeeld "Balie 1") en zie je alle ontvangen berichten, ook de geweigerde. "geen ploeg met deze naam" betekent dat de ploegnaam van het
 bedrijf niet overeenkomt met een ploeg in MasterData: de balie kiest de ploeg dan zelf. De echte koppeling met het bedrijf volgt vanaf mei 2027; tot dan speel je
 berichten na met <span class="menu">Instellingen<span class="sep">›</span>Test-scan</span>, via een formulier of een JSON-bestand.
+</div>
+
+<h2 id="s-at-pi">Met de RFID-lezer: RWCrew Pi</h2>
+<p><strong>RWCrew Pi</strong> is een aanraakscherm met een RFID-lezer aan de balie of in het atelier. Je meldt aan met je eigen RWCrew-account en
+kiest de omgeving (productie of test). De Pi werkt rechtstreeks op RWCrew: dezelfde regels, mails en rechten als de website, en wat je er boekt, zie
+je meteen op <em>Openstaand</em>, <em>Boekingen</em> (label <em>Pi</em>) en <em>Tag-historiek</em>. Je ziet een tegel per scherm waarvoor je rol
+rechten heeft.</p>
+<table>
+  <caption>De schermen van Atelier op RWCrew Pi</caption>
+  <tr><th style="width:22%">Scherm</th><th>Zo werkt het</th></tr>
+  <tr><td>Uitgifte &amp; inname</td><td>Kies één keer seizoen, festival, dag en de polsbandscanner van de balie. Elke polsbandscan verschijnt als kaart met
+  <span class="knop">Ophalen</span> en <span class="knop">Terugbrengen</span>. Leg de stukken op de lezer: <strong>groen</strong> wordt geboekt,
+  <strong>oranje</strong> niet (met de reden, bijvoorbeeld "tweede stuk van dit artikel"). Bij Terugbrengen tik je een stuk zonder tag met de hand aan.
+  Tik <span class="knop">Bevestigen</span> of druk op de bevestigknop.</td></tr>
+  <tr><td>RFID-tags koppelen</td><td>Kies het artikel en de maat, leg de nieuwe stukken op de lezer en tik <span class="knop">Koppelen</span>. Een tag die per
+  ongeluk mee gelezen werd, vink je af.</td></tr>
+  <tr><td>Massa-inname</td><td>Zet de bak van een ploeg op de lezer: het grote getal toont de gelezen tags, rechts de stukken per persoon. Een rode regel
+  (onbekende tag, of een stuk dat niet uitgegeven is) blokkeert: haal dat stuk eruit en tik <span class="knop">Opnieuw lezen</span>. Elke persoon met
+  een e-mailadres krijgt de gewone Inname-mail.</td></tr>
+</table>
+<figure class="diagram" data-soort="scherm" id="fig-scr-at-pi-balie">
+  <img src="afbeeldingen/56-atelier-pi-balie.png" alt="">
+  <figcaption>RWCrew Pi · Ophalen: links de persoon en het pakket, rechts de gelezen stukken.</figcaption>
+</figure>
+<div class="kader letop"><span class="kader-titel"></span>
+Een <strong>rode balk</strong> "Geen verbinding met RWCrew" betekent dat er niets geboekt wordt. Het klokje bovenaan toont de <em>Geschiedenis</em> van
+deze Pi (90 dagen, ook geweigerde boekingen); de officiële historiek per stuk staat op <em>Tag-historiek</em> in RWCrew.
 </div>
 
 <!-- ===================================================================== -->
@@ -356,7 +393,8 @@ De eerste keer dat je een QR-code scant of een locatie opslaat, vraagt de telefo
 
 <h2 id="s-tel-schermen">Wat kun je op de telefoon?</h2>
 <p>Na het inloggen zie je <em>"Hallo, [je naam]"</em>, een keuzelijst voor het jaartal en de tegels van de modules die een telefoonversie hebben.
-De telefoonversie bevat bewust enkel het werk dat je op het terrein doet: niets verwijderen en geen PDF's (dat doe je op de computer).</p>
+De telefoonversie bevat bewust enkel het werk dat je op het terrein doet: niets verwijderen en geen PDF's (dat doe je op de computer).
+<strong>Atelier</strong> zit niet in de telefoon-app: daarvoor gebruik je de website of RWCrew Pi (zie <a class="ref" href="#s-at-pi"></a>).</p>
 <table class="niet-breken">
   <caption>De schermen van de telefoon-app</caption>
   <tr><th style="width:22%">Module</th><th style="width:22%">Scherm</th><th>Wat je doet</th></tr>

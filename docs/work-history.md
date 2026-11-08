@@ -3,6 +3,38 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-08 — Atelier documentation refresh (help manual, handbooks, RWCrew Pi screenshots)
+**Request:** Check and update the Atelier documentation with up-to-date screenshots, including the related Atelier
+functionality on the phone app and the Raspberry Pi app.
+**Plan:** Atelier has no phone screens → say so explicitly (no phone code). Refresh the in-app manual (nl/en) with a new
+chapter for RWCrew Pi and its screenshots; add a dev screenshot tool in `RWRaspiTagScanner`; bring the user handbook and
+the developer handbook up to date; rebuild both PDFs.
+**Changes:**
+- `backend/app/help/content/module_5/{nl,en}.md`: intro (block 6 on the Pi, "not in the phone app"), new chapter
+  `[pi]` "Atelier op de Raspberry Pi" (login, desk with the reader, history, settings; always shown), the desk chapter's
+  Pi paragraph moved there, screenshots added to Link RFID tags, Mass return and Tag history, Pi-only rights in Roles.
+- `module_5/images/`: all web shots retaken; new `tag-history.png` and 11 `pi-*.png`.
+- `frontend/scripts/help-screenshots.mjs`: `tag-history.png` (EPC from `HELP_SHOTS_EPC`, default the Pi demo's first EPC).
+- `RWRaspiTagScanner`: `rwpi/main.py` split into `build()` + `main()`; new `tools/screenshots.py` (runs the app with the
+  test reader against localhost, demo with fake people "Lotte Voorbeeld"/"Bram Proef" and fake EPCs, Pi settings and
+  history in a temp folder); README line. Not committed (separate repo).
+- User handbook (`docs/gebruikershandleiding/`): Atelier chapter ("Waar", screens table + Tag-historiek, E-mails and the
+  Pi screens, reservation = limit, return status step, new section "Met de RFID-lezer: RWCrew Pi" with a figure),
+  phone chapter note, rights table now lists all 25 Atelier screens, FAQ (scan not shown → Scans module, "reservatie
+  volzet", Pi orange/red lines), glossary (Massa-inname, Retourstatus, RWCrew Pi, EPC), season checklist.
+- Developer handbook (`docs/handleiding/`): Atelier block 6, no phone screens, RWCrew Pi in the architecture text/diagram,
+  endpoints (`/api/auth/token*`, `/api/public/wristband-scan`), `Atelier_`/`Wristband_` prefixes, external services; code
+  chapter's Atelier section (limit, mails, RFID, mass return, exports, wash stats) and a new chapter "RWCrew Pi"; token
+  login in the security chapter; glossary. Shots 50–55 retaken, new 56–57 (Pi).
+- Both PDFs rebuilt (`RWCrew-Gebruikershandleiding.pdf` 56 p., `RWCrew-Ontwikkelaarshandleiding-v2.pdf` 128 p.).
+- `CLAUDE.md`: where the Pi shots come from.
+**Verification:** `pytest tests/help` 28 passed; Atelier help PDF built in nl and en (all chapters, plus the `pi` topic
+alone) and the Pi pages looked at; both handbooks built without unresolved references, new pages looked at; Pi repo
+`pytest tests` 16 passed; the screenshot tool ran end to end three times. Local database dumped before the Pi demo and
+restored afterwards (12 hand-outs, 9 tags as before); temporary screenshot user removed.
+**Notes:** The Pi shots show the "LOKAAL" environment badge (taken on localhost). The phone app's screen table in the user
+handbook still doesn't list StockMaster's Spraaktelling (outside this request).
+
 ## 2026-11-08 — StockMaster Spraaktelling on iPhone: investigation (on hold, not solved)
 **Request:** The phone's voice count only records one article; find out how to test it further and make the
 microphone work for several articles on iOS.

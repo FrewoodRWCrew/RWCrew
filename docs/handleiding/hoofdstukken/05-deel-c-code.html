@@ -29,7 +29,7 @@ module</strong> georganiseerd: wie aan module 3 werkt, vindt alles in mappen met
 │   └── scripts/              <span class="c">deploy.sh, create-readonly-db-user.sh</span>
 ├── .github/workflows/        <span class="c">deploy-test.yml, deploy-production.yml</span>
 ├── docs/                     <span class="c">documentatie (PDF's, rollenpatroon, deze handleiding)</span>
-├── scripts/pi-watcher/       <span class="c">script voor de Raspberry Pi (Scans)</span>
+├── scripts/pi-watcher/       <span class="c">script voor de CSV-Raspberry Pi (Scans); RWCrew Pi = aparte repo</span>
 ├── docker-compose.yml        <span class="c">lokaal: alleen PostgreSQL (poort 5433)</span>
 ├── docker-compose.prod.yml   <span class="c">server: db + backend + frontend (test én productie)</span>
 ├── .env.test.example         <span class="c">voorbeeld-instellingen voor test</span>
@@ -330,7 +330,24 @@ nooit gewijzigd of verwijderd; een correctie is een tegenboeking (<code>reverse_
   scanner (<code>Wristband_scanner</code>, op <code>data.device.id</code>) en zoekt de ploeg op naam. De balie vraagt elke 2 seconden de wachtende
   scans van haar scanner op (<code>GET /desk/scans?device_id=</code>); een transactie die een scan gebruikt, stuurt <code>scan_id</code> mee.</li>
   <li><strong>Instelling</strong>: <code>Atelier_settings</code> (één rij) met <code>wristband_required</code>, de schakelaar "Polsband verplicht bij Ophalen".</li>
+  <li><strong>Reservatie als limiet</strong>: zodra evenveel personen van de ploeg op het festival nu kledij hebben
+  (<code>desk_service.persons_holding</code>) als gereserveerd, weigert Ophalen een nieuwe persoon (<code>reservation_full</code>); enkel wie
+  "wijzigen" heeft op <code>atelier.desk</code> mag met <code>confirm_over_reservation</code> toch uitgeven.</li>
+  <li><strong>Mails</strong>: na Ophalen en Terugbrengen een Uitgifte- of Inname-mail (<code>module_5/notifications.py</code>, teksten in
+  <code>Atelier_mail_template</code>, scherm Instellingen › E-mails). Terugbrengen gaat per persoon (<code>POST /desk/persons/{id}/return</code>): één
+  transactie, één mail.</li>
+  <li><strong>RFID per stuk</strong>: <code>Tagscan_rfid_tag.atelier_article_size_id</code> zegt welk stuk een tag is,
+  <code>Atelier_handout_line.rfid_tag_id</code> + <code>handout_epc</code> welk stuk uitging (en <code>return_epc</code> bij een inname met de Pi).
+  Alleen <code>module_5/rfid_service.py</code> koppelt tags (<code>POST /rfid/assign</code>) en zoekt gelezen EPC's op (<code>POST /rfid/resolve</code>);
+  een tag is een Atelier-stuk <em>of</em> een StockMaster-product/kar, nooit beide. <code>GET /rfid/history?epc=</code> voedt het scherm
+  Tag-historiek. Massa-inname (<code>POST /desk/mass-return</code>, <code>desk_service.mass_return</code>) neemt een hele bak in één transactie in;
+  één tag die geen uitgegeven stuk is, weigert de hele bak.</li>
+  <li><strong>Overzichten</strong>: Openstaand en Retourproblemen maken hun Excel uit de getoonde lijnen (<code>desk_export.py</code>); de
+  wasstatistiek van de KPI-pagina komt uit <code>wash_stats.py</code> (niets opgeslagen). <code>Atelier_handout.source</code> en
+  <code>Atelier_handout_line.return_source</code> zeggen <code>web</code> of <code>pi</code>.</li>
 </ul>
+<p>Atelier heeft <strong>geen telefoonschermen</strong>: de balie werkt op de website (pc, laptop, tablet) of op RWCrew Pi
+(<a class="ref" href="#h-rwcrew-pi"></a>).</p>
 
 <h2 id="s-be-pdf-excel">PDF's, Excel en QR-codes</h2>
 <ul>
@@ -580,7 +597,8 @@ voorbeelden zijn meestal voor Radix geschreven, en twee verschillen zijn verrade
 
 <div class="kader kort"><span class="kader-titel"></span>
 De telefoon-app is een <strong>Progressive Web App</strong>: een apart deel van de website onder <code>/m</code>, met alleen de
-telefoonschermen (inloggen, moduletegels, KarTracker en Interventie Aanvragen). Je installeert ze met "Zet op beginscherm".
+telefoonschermen (inloggen, moduletegels, KarTracker, Interventie Aanvragen en de Spraaktelling van StockMaster; Atelier zit er
+niet in). Je installeert ze met "Zet op beginscherm".
 Er is geen App Store, geen aparte API en geen aparte release: dezelfde endpoints, dezelfde login en dezelfde rechten als de
 website. Ook de telefooncode is per module georganiseerd.
 </div>
@@ -680,3 +698,55 @@ gebruik je de Cloudflare-tunnel (zie <a class="ref" href="#s-lokaal-telefoon"></
 <code>Landing_login_history.source</code>. Het toesteltype (desktop, mobile, tablet) wordt afgeleid uit de User-Agent door
 <code>backend/app/shared/device.py</code>; de ruwe User-Agent wordt bewaard zodat later opnieuw ingedeeld kan worden.
 Een iPad met iPadOS 13 of later doet zich voor als Mac en telt dus als "desktop".</p>
+
+<!-- ===================================================================== -->
+<h1 class="hoofdstuk" id="h-rwcrew-pi">RWCrew Pi: de Raspberry Pi-app van Atelier</h1>
+<div class="doelgroep ontwikkelaars">Ontwikkelaars</div>
+
+<div class="kader kort"><span class="kader-titel"></span>
+RWCrew Pi is een aanraak-app (PySide6/QML, 7 inch, 800×480) op een Raspberry Pi met een UHF RFID-lezer (Chafon CF-E714). Ze staat in de
+<strong>aparte repository <code>RWRaspiTagScanner</code></strong> (map <code>rwpi/</code>), zodat enkel Pi-code op een Pi komt. Ze werkt live op de
+gegevens van RWCrew via de <strong>gewone HTTPS-API</strong>, met het eigen account van de gebruiker; nooit met een rechtstreekse databaseverbinding.
+Vandaag bevat ze enkel Atelier: Uitgifte &amp; inname, RFID-tags koppelen en Massa-inname.
+</div>
+
+<h2 id="s-pi-login">Inloggen met een token</h2>
+<p>De Pi logt in met <code>POST /api/auth/token</code> (client <code>"pi"</code> in de inloghistoriek) en krijgt dezelfde JWT's als de website, maar
+in de body. Bij elk verzoek stuurt ze <code>Authorization: Bearer &lt;access&gt;</code>; <code>landing/deps.py get_current_user</code> leest die header vóór
+de cookie. Vernieuwen gaat met <code>POST /api/auth/token/refresh</code> (geroteerd zoals de cookie), afmelden met <code>/token/logout</code>. Dezelfde
+grenzen (15 minuten / 6 uur) en dezelfde rechten: de tegels volgen de moduletoegang, de Atelier-schermen de Atelier-rol. De schermen
+<code>atelier.tags</code> en <code>atelier.massreturn</code> bestaan enkel op de Pi.</p>
+
+<h2 id="s-pi-structuur">Structuur</h2>
+<figure class="code"><span class="bestand">RWRaspiTagScanner/</span><pre>rwpi/
+├── main.py               <span class="c">build(): controllers + QML; main() start de app</span>
+├── config.py             <span class="c">instellingen van deze Pi (.ini), nooit een wachtwoord of token</span>
+├── api/client.py         <span class="c">API-client (enkel standaardbibliotheek), Bearer + vernieuwen</span>
+├── hardware/rfid/        <span class="c">driver CF-E714 + RfidReader / FakeReader (pc zonder lezer)</span>
+├── hardware/gpio/        <span class="c">zoemer, LED's, bevestigknop (gpiozero; niets op een pc)</span>
+├── shared/               <span class="c">sessie, teksten nl/en, iconen, geschiedenis, e-mail maskeren</span>
+├── modules/registry.py   <span class="c">de tegels van de startpagina</span>
+├── modules/atelier/      <span class="c">desk.py, tags.py, mass_return.py, review.py (regels), rights.py</span>
+└── qml/                  <span class="c">de schermen</span>
+tools/screenshots.py      <span class="c">schermafbeeldingen voor de handleiding (zie hieronder)</span></pre></figure>
+<p>De regels op de Pi (<code>review.py</code>: groen/oranje/rood per gelezen tag) leggen enkel uit; de server beslist. E-mailadressen worden in Python
+gemaskeerd vóór ze de schermen bereiken. Een nieuw Pi-scherm = een controller in <code>rwpi/modules/&lt;module&gt;/</code>, een QML-scherm, teksten in
+<code>shared/i18n.py</code> en een tegel; een nieuwe Atelier-schermsleutel krijgt ook een hoofdstuk in de handleiding.</p>
+
+<h2 id="s-pi-ontwikkelen">Ontwikkelen en schermafbeeldingen</h2>
+<p>Op een pc: <code>python -m rwpi --windowed --fake-reader --dev</code> (lokaal = <code>http://127.0.0.1:8020</code>); EPC's "lees" je dan in het
+vak Testlezer van de instellingen. <code>tools/screenshots.py --out &lt;map&gt;</code> start dezelfde app met de testlezer tegen de lokale RWCrew,
+speelt een demo af met verzonnen personen (Lotte Voorbeeld, Bram Proef) en verzonnen EPC's, en bewaart elk scherm als <code>pi-*.png</code> voor de
+Atelier-handleiding. De demo boekt echt op de lokale database: maak er eerst een dump van en zet die daarna terug. De instellingen en
+geschiedenis van die run komen in een tijdelijke map, niet in die van de ontwikkelaar. Updates naar de Pi's gaan via een GitHub Release
+(<code>update_check.sh</code>).</p>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-pi-balie">
+  <img src="afbeeldingen/56-atelier-pi-balie.png" alt="">
+  <figcaption>RWCrew Pi · Uitgifte &amp; inname: de gelezen stukken van een persoon, groen = wordt geboekt, oranje = niet (met de reden).</figcaption>
+</figure>
+
+<figure class="diagram" data-soort="scherm" id="fig-scr-pi-massa">
+  <img src="afbeeldingen/57-atelier-pi-massa-inname.png" alt="">
+  <figcaption>RWCrew Pi · Massa-inname: een hele bak in één keer, per persoon gegroepeerd.</figcaption>
+</figure>

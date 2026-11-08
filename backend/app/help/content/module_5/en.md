@@ -2,7 +2,9 @@
 
 In Atelier the atelier team keeps track of work clothing during the festival days. Team members who work at a place with its own clothing (VIP, RW terrace, ...) get that clothing (T-shirts, hoodies, ...) at the start of their shift and hand it back after the shift. Atelier records what was handed out and returned, so everything stays traceable.
 
-> This module is built in blocks. Ready now: the master data (articles and sizes), the reservations (persons and package per team per festival), the stock (receipt, washing, write-off, count, to order), the counter (pick up and return) and the wristband scans (at the counter and through Test scan; the scans themselves are in the Scans module). Next comes following every piece of clothing by RFID (Scans).
+> This module is built in blocks. Ready now: the master data (articles and sizes), the reservations (persons and package per team per festival), the stock (receipt, washing, write-off, count, to order), the counter (pick up and return), the wristband scans (at the counter and through Test scan; the scans themselves are in the Scans module) and following every piece of clothing by its RFID tag with the **Raspberry Pi (RWCrew Pi)**: linking tags, hand-out and return with the reader, mass return and the Tag history.
+
+> Atelier is **not in the phone app**. At the counter you work on the website (on a PC, laptop or tablet) or on RWCrew Pi with the RFID reader (see **Atelier on the Raspberry Pi**).
 
 ## [overview | atelier.kpi] KPI overview
 Atelier's start page. The **Counter** block shows how many pieces were handed out today, how many pieces aren't back yet and how many persons still have clothing. The **Master data** block shows how many active articles and sizes there are and how many article sizes can be handed out. The **Reservations** block shows, per festival of the chosen **season**, the persons and pieces per day, the number of teams with a reservation and how many of those have no package yet. The **Forgotten?** column counts the teams that have a reservation at another festival of this season but nothing here yet (no persons, no note). Click the number for their names and a link to that festival's reservations. If a team really isn't coming, enter 0 persons with a note (e.g. "not coming"). The **Stock** block shows the pieces that are available, to be washed and handed out, and how many sizes are below their minimum stock. The **Washed** block shows for the same season how many pieces were washed: the total, and per festival per day. A wash counts for the festival running that day; what was washed in the days after a festival is listed under **No festival** of that season. Undone washes don't count.
@@ -37,7 +39,7 @@ An article the person hasn't returned yet can't be handed out again. An orange b
 
 With the Edit right you can **cancel** a hand-out of which nothing came back yet (the pieces go back to available).
 
-**On the Raspberry Pi (RWCrew Pi)**: with the RFID reader the same happens without typing. Pick the season, festival, day and the counter's wristband scanner once (remembered). Every wristband scan shows as a card with **Pick up**, **Return** and **Ignore**; the email address is shown, as on the website, but only partly (e.g. fr***@gm***.com). For Pick up you put the pieces on the reader: every piece with a tag (see **Link RFID tags**) shows at once, green when it will be booked, orange with the reason when it can't (not in the package, still held, second piece of the same article, out with someone else, no stock). For Return the pieces read are ticked (also pieces that went out without a tag, per article); you can still tick or untick by hand and pick a return status. **Confirm** books it, with the same rules, mails and rights as on the website. Without a connection to RWCrew nothing is booked (red bar).
+**On the Raspberry Pi (RWCrew Pi)** the same happens with the RFID reader, without typing: putting the pieces on the reader is enough. See the chapter **Atelier on the Raspberry Pi**.
 
 ![The counter: Pick up or Return](desk.png)
 
@@ -55,6 +57,46 @@ The **Excel** button downloads what's on screen, including the filters you use (
 
 All clothing that came back with a **return status**, newest first: status, article, size, festival, team, person, wristband, day, when it was returned and who booked it. Pick the festival and optionally the day at the top, or **All festivals** for the whole season (then filter per festival in the **Festival** column); every column has a text filter. This screen is read-only: a piece that can't be used any more is booked out via **Write-off**. The **Excel** button downloads what's on screen, including the filters you use.
 
+## [pi] Atelier on the Raspberry Pi (RWCrew Pi)
+RWCrew Pi is a touch screen (7 inch) with an RFID reader, at the counter or in the atelier. It works directly on RWCrew's data, with **the same rules, mails and rights** as the website; only reading the tags happens on the Pi. What the Pi books shows on the website right away (Outstanding, Bookings with the **Pi** label, Tag history).
+
+### Logging in
+- Log in with your **own RWCrew account** (email address and password) and pick the **environment**: Production or Test. As on the website you stay logged in for at most 6 hours.
+- You see a tile per module you have access to. In Atelier you see a tile per screen your role may view: **Hand-out & return**, **Link RFID tags** and **Mass return**.
+- At the top are always the environment, the reader and connection status, the **History** (clock), the **Settings** (gear) and **Log out**.
+- A **red bar** "No connection with RWCrew" means nothing is booked until the connection is back.
+
+![Logging in on RWCrew Pi](pi-login.png)
+
+![Atelier's tiles on the Pi](pi-atelier.png)
+
+### Hand-out & return with the reader
+1. The first time, pick the **season**, **festival**, **day** and this counter's **wristband scanner** and tap **Start**. The Pi remembers it; **Change** (bottom right) picks again. A wristband scanner is only in the list after its first scan.
+2. Every wristband scan shows as a card with name, team, wristband number and the masked email address (e.g. lo***@ex***.com), with **Pick up**, **Return** and the cross (ignore). When RWCrew doesn't recognise the team, you pick it.
+3. **Pick up**: put the pieces on the reader. On the left the person, the team's package and the counter "x / y persons holding" (the reservation is a limit here too). On the right every piece read: **green** = will be booked, **orange** with the reason = won't be booked (not in the package, still held, second piece of the same article, out with someone else, no stock in that size). Tap **Confirm** or press the confirm button (or the foot pedal).
+4. **Return**: on the left the tags read, on the right what the person **still has**. Pieces read are ticked; tap a piece that went out without a tag (or whose tag wasn't read) by hand. Optionally pick a **remark** (return status) per piece. **Confirm** books it; what isn't ticked stays outstanding.
+5. After booking the Pi briefly shows the result (and whether a mail goes out) and waits for the next scan. **Read again** starts reading from scratch; **Cancel** goes back without booking.
+
+When the person already has another wristband at this festival, the Pi first asks **Confirm anyway**. When the reservation is full, only someone with the Edit right on Hand-out & return can **Hand out anyway**.
+
+![Setting up the counter](pi-desk-setup.png)
+
+![A wristband scan is waiting](pi-desk-waiting.png)
+
+![Pick up: the pieces read](pi-desk-handout.png)
+
+![Return](pi-desk-return.png)
+
+### History
+The clock shows what **this Pi** did in the last 90 days: every pick-up, return and link, also refused ones and ones without a connection, with the pieces and their EPC. Filter on type or search a name or EPC. The official history per piece is in RWCrew, on **Tag history**.
+
+![The Pi's history](pi-history.png)
+
+### Settings
+The gear (also before logging in): language and theme; the **scanner name and location** (noted on the tag in Scans > Tag management with every action); the reader (connect or disconnect, reader info, the **RF power** — low = only the pieces on the counter are read —, the **antennas** 1–4 and the activity and communication log); an optional EPC prefix; and the pins of the buzzer, green and red LED and confirm button or foot pedal.
+
+![The Pi's settings](pi-settings.png)
+
 ## [tags | atelier.tags] Link RFID tags (Raspberry Pi)
 This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID reader, not on the website. It gives new clothing pieces their RFID tag: from then on the tag says which **article in which size** the piece is.
 
@@ -64,6 +106,8 @@ This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID re
 4. Tap **Link**: only the ticked tags are linked. When some ticked tags are already another piece, the Pi asks first whether to change them anyway.
 
 The View right shows the screen, Create allows linking. The stock itself doesn't change: it stays counted per size; the tag only says which physical piece is with whom.
+
+![Linking RFID tags on the Pi](pi-tags.png)
 
 ## [massreturn | atelier.massreturn] Mass return (Raspberry Pi)
 This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID reader. During the day a team collects its dirty clothing in a **box** and brings it to the atelier: Mass return takes the whole box back in one go, without putting every person through the desk.
@@ -75,12 +119,18 @@ This screen only exists in the **Raspberry Pi app (RWCrew Pi)** with the RFID re
 
 The View right shows the tile, Create allows confirming. **Tag history** shows these returns with the **Pi** label.
 
+![Mass return: a red tag blocks](pi-mass-return-blocked.png)
+
+![Mass return: ready to confirm](pi-mass-return.png)
+
 ## [taghistory | atelier.taghistory] Tag history
 Everything one piece of clothing went through, by its **RFID tag (EPC)**. Type or paste the tag number and click **Search**; from **Outstanding** and **Return issues** you can also open it by clicking an EPC.
 
 At the top is the tag as **Scans > Tag management** knows it now: which piece (article and size), its status and when, by which scanner and where it was last read. Below it every **hand-out and return** with that EPC, newest first: when handed out and returned (or still out, written off, cancelled), person, team, festival, day, piece, who booked it and any return status. A label shows **where** it was booked: **Pi** (RWCrew Pi with the RFID reader) or **Website** (the desk on the website).
 
 The tag number is **stored with** every hand-out and return made with the Pi: even when the tag is later deleted in Tag management or linked to another piece, the history stays right. This screen is read-only.
+
+![Tag history](tag-history.png)
 
 ## [reservations | atelier.reservations] Reservations
 Everything per festival on one page: per team **how many people** need clothing and **what each person gets** (the package, e.g. 2 T-shirts and 1 hoodie). A team works **every festival day** with that number of people and returns the clothing **every evening**, so every day needs *persons × package* again. The size isn't part of the package: it is picked at the counter.
@@ -229,6 +279,8 @@ A role decides what someone may do in Atelier, per screen: **View**, **Create**,
 3. Save the permissions.
 
 The **Write off** button on Outstanding follows the Create right on the **Write-off** screen. Someone who only works the desk has enough with the desk screens: the festivals are loaded along with them.
+
+**Link RFID tags** and **Mass return** are Raspberry Pi (RWCrew Pi) screens: they don't exist on the website, but their rights are set here. On the Pi, **Hand-out & return** uses the same rights as the website's counter. **Tag history** is a normal website screen.
 
 ![Roles](roles.png)
 

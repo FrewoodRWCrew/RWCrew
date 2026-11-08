@@ -608,7 +608,10 @@ accent colour). Every module with its own screens has one: Scans (module-1), Kar
   (`frontend/scripts/help-screenshots.mjs`, playwright-core + the installed Edge, needs `HELP_SHOTS_EMAIL` /
   `HELP_SHOTS_PASSWORD` of a local login that sees every screen). Re-run it after a screen changes. Easiest login: the
   temporary user of `docs/handleiding/screenshot_user.py setup` (all modules, all rights; `cleanup` afterwards); while its
-  `.screenshot-namen.json` exists, the script masks real names/emails/phones on the shots.
+  `.screenshot-namen.json` exists, the script masks real names/emails/phones on the shots. Atelier's RWCrew Pi shots
+  (`pi-*.png`) come from `RWRaspiTagScanner/tools/screenshots.py` (demo with fake people/EPCs that books on the local
+  database: `pg_dump` it first and restore afterwards); run it before `help:screenshots`, whose `tag-history.png` uses
+  the demo's first EPC.
 - **The two handbooks** (`docs/RWCrew-Gebruikershandleiding.pdf`, `docs/RWCrew-Ontwikkelaarshandleiding-v2.pdf`) are HTML
   chapters in `docs/gebruikershandleiding/` and `docs/handleiding/`, built with their `build_pdf.py` (headless Edge);
   developer-handbook screenshots via `docs/handleiding/screenshots.py`. Update them when a module or screen is added.
