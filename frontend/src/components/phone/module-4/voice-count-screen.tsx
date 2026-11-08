@@ -80,7 +80,22 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
   const tStock = useTranslations("stockMaster");
   const locale = useLocale();
   const { selectedSeasonId } = useSelectedSeason();
-  const debugMode = useSearchParams().get("debug") === "1";
+  // The speech log: ?debug=1, or 5 taps on the text under the microphone (the
+  // iPhone home-screen app has no address bar to add ?debug=1 to).
+  const debugParam = useSearchParams().get("debug") === "1";
+  const [debugToggled, setDebugToggled] = useState(false);
+  const debugTapsRef = useRef<number[]>([]);
+  const debugMode = debugParam || debugToggled;
+
+  /** One tap on the text under the microphone: 5 within 3 seconds switch the log on/off. */
+  function countDebugTap() {
+    const now = Date.now();
+    debugTapsRef.current = [...debugTapsRef.current.filter((time) => now - time < 3000), now];
+    if (debugTapsRef.current.length >= 5) {
+      debugTapsRef.current = [];
+      setDebugToggled((current) => !current);
+    }
+  }
   const dictationFirst = useSyncExternalStore(subscribeNever, isIosHomeScreenApp, () => false);
 
   const [kar, setKar] = useState<StockMasterVoiceCountKar | null>(null);
@@ -311,7 +326,7 @@ export function VoiceCountScreen({ lookups }: { lookups: StockMasterVoiceCountLo
             >
               {speech.listening ? <MicOff className="size-12 animate-pulse" /> : <Mic className="size-12" />}
             </button>
-            <p className="min-h-10 text-center text-sm text-muted-foreground">
+            <p className="min-h-10 text-center text-sm text-muted-foreground select-none" onClick={countDebugTap}>
               {speech.listening ? speech.interimText || t("listening") : t("tapToTalkHint")}
             </p>
           </div>
