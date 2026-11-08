@@ -859,6 +859,8 @@ class RfidResolvedTag(BaseModel):
     open_line_id: int | None
     person_id: int | None
     person_name: str | None
+    # The team the piece was handed out for (when it is out).
+    team_name: str | None = None
     # "not_atelier": what the tag belongs to (product name, "Kar 36"); None = free to link.
     assigned_to: str | None = None
 

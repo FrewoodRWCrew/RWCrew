@@ -86,6 +86,8 @@ class ResolvedTag:
     open_line_id: int | None = None
     person_id: int | None = None
     person_name: str | None = None
+    # The team the piece was handed out for (shown next to the person on the Pi).
+    team_name: str | None = None
     # A registered tag that isn't an Atelier piece: what it belongs to ("Bekers",
     # "Kar 36"); None = free, so "Tags koppelen" may still link it.
     assigned_to: str | None = None
@@ -155,10 +157,13 @@ def resolve(db: Session, epcs: list[str], limit: int = MAX_EPCS) -> list[Resolve
         )
         line = open_line_of_tag(db, tag.id)
         if line is not None:
-            person = db.get(AtelierPerson, db.get(AtelierHandout, line.handout_id).person_id)
+            handout = db.get(AtelierHandout, line.handout_id)
+            person = db.get(AtelierPerson, handout.person_id)
+            team = db.get(Team, handout.team_id)
             resolved.open_line_id = line.id
             resolved.person_id = person.id
             resolved.person_name = person.full_name
+            resolved.team_name = team.name if team is not None else None
         result.append(resolved)
     return result
 

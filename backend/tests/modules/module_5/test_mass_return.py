@@ -59,6 +59,9 @@ def test_mass_return_books_per_person(as_atelier: TestClient, db_session: Sessio
                                       sent: list[OutgoingMail]) -> None:
     _two_persons_out(as_atelier, world, desk)
     assert _stock(as_atelier, desk["m"]) == (1, 0, 2)
+    # The read tags say who has the piece and for which team.
+    out = _resolve(as_atelier, ["TS-1"])["TS-1"]
+    assert (out["person_name"], out["team_name"]) == ("Jan Peeters", "RW terras")
     sent.clear()
 
     booked = _mass_return(as_atelier, ["TS-1", "SCH-1", "TS-2", "TS-1"], reader={"name": "Pi 1", "location": "Atelier"})

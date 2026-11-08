@@ -3,6 +3,15 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-08 — Massa-inname: team name next to the person
+**Request:** On the Pi's Massa-inname screen, show the ploeg behind the person's name in the grouping.
+**Plan:** `/rfid/resolve` also returns the hand-out's team; the Pi shows "Name · Ploeg" in the person header.
+**Changes:** backend `rfid_service.ResolvedTag` + `RfidResolvedTag` get `team_name` (optional);
+Pi `review.review_mass_return` (person row `team_name`, distinct teams joined), `MassReturnScreen.qml` header.
+**Verification:** module-5 tests 93 passed (resolve's `team_name` asserted in `test_mass_return.py`); Pi tests 16
+passed; screen rendered offscreen with fake data.
+**Notes:** Needs the backend on TEST before the Pi shows the team (an older server simply sends none).
+
 ## 2026-11-08 — Atelier Pi: Massa-inname (mass return of a team's box)
 **Request:** A third tile in the Pi's Atelier app: a team collects its dirty clothing in a box during the day; the Pi
 reads all tags, finds who each piece was handed out to and books the return per person (product + tag), with a big
