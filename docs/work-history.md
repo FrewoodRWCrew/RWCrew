@@ -3,6 +3,41 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-08 — StockMaster Spraaktelling on iPhone: investigation (on hold, not solved)
+**Request:** The phone's voice count only records one article; find out how to test it further and make the
+microphone work for several articles on iOS.
+**Plan:** No plan mode; step by step: test the parser apart from the speech recognition, then diagnose the iPhone's
+speech recognition with an on-screen event log and fix what it shows.
+**Changes (uncommitted on `develop`, kept for the next attempt):**
+- `use-speech-recognition.ts`: one recognition object reused per screen (fresh one only when stuck/refused); the stop
+  tap finishes the turn itself on iOS (iOS often sends no "end" after `stop()`, which left the button stuck on
+  "Ik luister…"); elsewhere a 2 s wait for "end"; `spent` flag on iOS after a turn.
+- `voice-count-screen.tsx`: hidden log switch (5 taps on the text under the microphone, for the home-screen app that
+  has no address bar for `?debug=1`); on iOS saves kar + direction + lines in sessionStorage after each turn and
+  reloads itself; screen renders only in the browser so it can start from that saved count.
+- `messages/nl.json`, `en.json`: `stockMaster.phone.voiceCount.preparingMic`.
+**Verification (tests done, iPhone, localhost via cloudflare tunnel, `?debug=1` / log switch):**
+1. **Parser alone** (Node 24 running `voice-count-parser.ts` on the 12 local products): several articles in one sentence
+   work ("3 emmers, 2 sponzen en 4 balpennen" → 3 lines; number words and "Vijf emmers. Twee sponzen." too).
+   Bugs found: product first, number after ("emmer 3 spons 2") attaches each number to the *next* product;
+   "dozen" is a filler word, so "drie dozen" (product Box) is dropped.
+2. **First phone test was on the server, not the new code**: localhost wasn't running, so the iPhone used the
+   test/production app. Always check which environment the phone is on before testing a local change.
+3. **Home-screen app, new code, log**: turn 1 `start` → `audiostart` → results → `end` → line added (works).
+   Turn 2 (reused object) and turn 3 (new object): `start` → `audiostart` → **no result at all** (12 s / 27 s) until
+   stopped. The stop fix works (button comes back), but no words arrive.
+4. **Safari (not home-screen)**: same — only the first turn gets words.
+5. **Safari, pull-to-refresh after a failed turn**: the next turn works again, once.
+6. **Automatic reload between turns** (the change above): **does not work** — not further diagnosed (no log of it yet).
+**Notes / to retake later:**
+- Conclusion so far: on this iPhone the Web Speech API gives words only on the first turn per page load, in Safari and
+  in the home-screen app alike; a reused or new recognition object makes no difference.
+- Next time first get the log of the auto-reload attempt (does the screen reload? does it come back on the kar? does
+  the first turn after the reload get `result` lines? does Safari ask the microphone permission again?).
+- Other options: keep the first turn running for the whole kar (`continuous` on iOS, a line after each pause, using
+  interim text); or make the "Dicteren of typen" box (keyboard microphone, not affected) the main input on iPhone.
+- Also still to fix: the parser's product-first bug and "dozen" as filler. Changelog line 62 stays `in_progress`.
+
 ## 2026-11-08 — Massa-inname: team name next to the person
 **Request:** On the Pi's Massa-inname screen, show the ploeg behind the person's name in the grouping.
 **Plan:** `/rfid/resolve` also returns the hand-out's team; the Pi shows "Name · Ploeg" in the person header.
