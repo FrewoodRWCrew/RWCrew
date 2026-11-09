@@ -777,5 +777,16 @@
     "title": "Atelier documentation refresh (web, Pi, handbooks)",
     "description": "The Atelier help manual, user handbook and developer handbook are brought up to date with new screenshots, including the RWCrew Pi screens and a note that Atelier has no phone screens.",
     "commits": []
+  },
+  {
+    "id": 64,
+    "issues": [],
+    "date": "2026-11-09",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "StockMaster",
+    "title": "StockMaster on the RWCrew Pi (live RFID bookings, tag places)",
+    "description": "A StockMaster module on the Raspberry Pi books stock live through the API with per-piece tag places, replacing the CSV route.",
+    "commits": []
   }
 ]
