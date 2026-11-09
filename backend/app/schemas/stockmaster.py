@@ -9,6 +9,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.schemas.tagscan import RfidReaderInput
 from app.schemas.intervention_requests import (  # noqa: F401  (re-exported for the router)
     CreateOrGrantUserRequest,
     InterventionRequestsUserSummaryResponse as UserSummaryResponse,
@@ -128,34 +129,6 @@ class BookInImportResponse(BaseModel):
 
     lines: list[BookInImportLine]
     errors: list[BookInImportError]
-
-
-class TagscanBookInProblem(BaseModel):
-    """A scanned "Book In" line that can't be booked yet: "code|param"."""
-
-    line_id: int
-    line_number: int
-    epc: str
-    detail: str
-
-
-class TagscanBookInFile(BaseModel):
-    """One scanned file's waiting "Book In" lines as basket lines (product +
-    number of distinct tags), the line ids they came from, and its problem lines.
-    """
-
-    header_data_id: int
-    filename: str
-    scanned_at: datetime
-    line_ids: list[int]
-    lines: list[BookInImportLine]
-    problems: list[TagscanBookInProblem]
-
-
-class TagscanBookInCountResponse(BaseModel):
-    """How many scanned "Book In" lines are waiting (StockMaster's banner)."""
-
-    count: int
 
 
 class AlertsResponse(BaseModel):
@@ -320,9 +293,6 @@ class BookingRequest(BaseModel):
     reason_id: int | None = None
     comment: str | None = None
     lines: list[BookingLineRequest] = []
-    # Inboeken from a TagScan scan: the scanned lines the basket came from,
-    # marked "loaded" together with the booking.
-    tagscan_line_ids: list[int] = []
 
 
 class ReverseRequest(BaseModel):
@@ -581,3 +551,147 @@ class VoiceCountResponse(BaseModel):
     cancelled_at: datetime | None
     total_quantity: int
     lines: list[VoiceCountLineResponse]
+
+
+# --- RFID on the RWCrew Pi (rfid_router.py, tag_service.py, tag_booking.py) -
+
+
+class StockRfidEpcsRequest(BaseModel):
+    """The EPCs the Pi read (a full kar can mean many)."""
+
+    epcs: list[str] = Field(max_length=1000)
+
+
+class StockRfidResolvedTag(BaseModel):
+    """One read EPC: what it is and, for a product piece, its last known place."""
+
+    epc: str
+    # unknown / atelier / kar_tag / unassigned / inactive / product
+    state: str
+    rfid_tag_id: int | None = None
+    product_id: int | None = None
+    product_name: str | None = None
+    is_blocked: bool = False
+    stock_return_to: str | None = None
+    kar_id: int | None = None
+    kar_nummer: str | None = None
+    kar_is_out: bool = False
+    # free / kar / out / written_off; None = unknown.
+    place: str | None = None
+    place_kar_id: int | None = None
+    place_kar_nummer: str | None = None
+    place_trip_id: int | None = None
+    assigned_to: str | None = None
+
+
+class StockRfidProductOption(BaseModel):
+    """A product in the Pi's pickers (Tags koppelen, Product toevoegen)."""
+
+    product_id: int
+    name: str
+    type_name: str | None
+    bin_label: str | None
+    is_blocked: bool
+    is_consumable: bool
+    is_tag_managed: bool
+    stock_return_to: str
+    free: int
+    # Pieces with an active RFID tag.
+    tagged: int
+
+
+class StockRfidAssignRequest(BaseModel):
+    """Tags koppelen: link the read tags to one product."""
+
+    epcs: list[str] = Field(min_length=1, max_length=1000)
+    product_id: int
+    # Also take over tags linked to another product (the Pi asks first).
+    replace: bool = False
+    reader: RfidReaderInput | None = None
+
+
+class StockPlaceTag(BaseModel):
+    """A tag last known in a place (what a Pi screen expects to read)."""
+
+    epc: str
+    rfid_tag_id: int
+    product_id: int
+
+
+class TagBookingLine(BaseModel):
+    """Untagged pieces added by hand ("Product toevoegen"); on Kar terug the
+    destination is the product's (also for its tagged pieces); on a count,
+    quantity 0 without tags = counted, none found."""
+
+    product_id: int
+    quantity: int = Field(ge=0)
+    destination: Literal["kar", "free"] | None = None
+
+
+class TagMissingLine(BaseModel):
+    """Kar vertrekt: pieces the kar should hold that weren't there."""
+
+    product_id: int
+    quantity: int = Field(gt=0)
+    destination: Literal["free", "written_off"]
+
+
+class TagBookingRequest(BaseModel):
+    """One booking made on the RWCrew Pi with the read tags."""
+
+    action: BookingAction
+    season_id: int
+    kar_id: int | None = None
+    team_id: int | None = None
+    festival_id: int | None = None
+    reference: str | None = Field(default=None, max_length=255)
+    reason_id: int | None = None
+    comment: str | None = None
+    # Product tags read (a kar's own tag may be in it: it is skipped).
+    epcs: list[str] = Field(default=[], max_length=1000)
+    lines: list[TagBookingLine] = []
+    missing: list[TagMissingLine] = []
+    reader: RfidReaderInput | None = None
+
+
+class TagBookingResponse(BaseModel):
+    """The booking made, and the corrections Kar vertrekt made first."""
+
+    document: DocumentResponse
+    corrections: list[DocumentResponse] = []
+    pieces: int
+    tags: int
+
+
+class StockTagEventResponse(BaseModel):
+    """One Pi booking that moved a tag (Tag-historiek)."""
+
+    document_id: int
+    doc_number: str
+    doc_type: str
+    status: str
+    created_at: datetime
+    created_by_name: str | None
+    source: str | None
+    from_place: str | None
+    from_kar_nummer: str | None
+    to_place: str | None
+    to_kar_nummer: str | None
+    counted: bool
+
+
+class StockTagHistoryResponse(BaseModel):
+    """A product tag now, and every Pi booking that moved it (newest first)."""
+
+    epc: str
+    rfid_tag_id: int | None = None
+    status: str | None = None
+    product_id: int | None = None
+    product_name: str | None = None
+    place: str | None = None
+    place_kar_nummer: str | None = None
+    place_at: datetime | None = None
+    last_read_at: datetime | None = None
+    last_reader_id: str | None = None
+    last_location: str | None = None
+    events: list[StockTagEventResponse] = []

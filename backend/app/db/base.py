@@ -78,6 +78,7 @@ from app.db.models.stockmaster_kar_requirement import StockMasterKarRequirement 
 from app.db.models.stockmaster_kar_manual_request import StockMasterKarManualRequest  # noqa: F401
 from app.db.models.stockmaster_kar_trip import StockMasterKarTrip  # noqa: F401
 from app.db.models.stockmaster_movement import StockMasterMovement  # noqa: F401
+from app.db.models.stockmaster_movement_tag import StockMasterMovementTag  # noqa: F401
 from app.db.models.stockmaster_reason import StockMasterReason  # noqa: F401
 from app.db.models.stockmaster_role import StockMasterRole  # noqa: F401
 from app.db.models.stockmaster_role_permission import StockMasterRolePermission  # noqa: F401

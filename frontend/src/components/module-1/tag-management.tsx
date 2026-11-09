@@ -7,7 +7,7 @@
 // under the header; the surrounding Table component already scrolls
 // horizontally (see ui/table.tsx) so the wide row stays usable.
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Pencil, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
@@ -130,6 +130,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
   const [karFilter, setKarFilter] = useState(ALL_VALUE);
   const [csvCommentFilter, setCsvCommentFilter] = useState("");
   const [atelierPieceFilter, setAtelierPieceFilter] = useState("");
+  const [stockPlaceFilter, setStockPlaceFilter] = useState("");
   const [serialNumberFilter, setSerialNumberFilter] = useState("");
   const [dateRegisteredFilter, setDateRegisteredFilter] = useState("");
   const [dateAssignedFilter, setDateAssignedFilter] = useState("");
@@ -153,6 +154,17 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
     return kars.find((kar) => kar.id === karId)?.kar_nummer ?? "";
   }
 
+  /** "Kar 12", "Onderweg (kar 12)", "Vrije stock"… — where the RWCrew Pi
+   *  last saw a product tag; "Onbekend" for a product tag it never booked,
+   *  nothing for a tag without a product. */
+  const stockPlaceLabelFor = useCallback(
+    (tag: RfidTag) => {
+      if (tag.stock_place) return t(`stockPlace.${tag.stock_place}`, { kar: tag.stock_place_kar ?? "?" });
+      return tag.assigned_product_id != null ? t("stockPlace.unknown") : "";
+    },
+    [t],
+  );
+
   const filteredTags = useMemo(() => {
     return tags.filter((tag) => {
       if (epcFilter && !tag.epc_uid.toLowerCase().includes(epcFilter.toLowerCase())) return false;
@@ -161,6 +173,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
       if (karFilter !== ALL_VALUE && String(tag.kar_id ?? "") !== karFilter) return false;
       if (!textMatches(tag.csv_comment_cell, csvCommentFilter)) return false;
       if (!textMatches(tag.atelier_piece, atelierPieceFilter)) return false;
+      if (!textMatches(stockPlaceLabelFor(tag), stockPlaceFilter)) return false;
       if (!textMatches(tag.assigned_serial_number, serialNumberFilter)) return false;
       if (!textMatches(formatDate(tag.date_registered), dateRegisteredFilter)) return false;
       if (!textMatches(tag.date_assigned, dateAssignedFilter)) return false;
@@ -184,6 +197,8 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
     karFilter,
     csvCommentFilter,
     atelierPieceFilter,
+    stockPlaceFilter,
+    stockPlaceLabelFor,
     serialNumberFilter,
     dateRegisteredFilter,
     dateAssignedFilter,
@@ -278,6 +293,7 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnKar")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnCsvComment")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAtelierPiece")}</TableHead>
+              <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnStockPlace")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnAssignedSerialNumber")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateRegistered")}</TableHead>
               <TableHead className="sticky top-0 z-20 bg-background font-bold underline">{t("columnDateAssigned")}</TableHead>
@@ -382,6 +398,15 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                   className="h-8 w-full min-w-32 font-normal"
                   value={atelierPieceFilter}
                   onChange={(event) => setAtelierPieceFilter(event.target.value)}
+                />
+              </TableHead>
+              <TableHead className="sticky top-10 z-20 bg-background">
+                <Input
+                  aria-label={t("filterStockPlace")}
+                  placeholder={t("filterStockPlace")}
+                  className="h-8 w-full min-w-32 font-normal"
+                  value={stockPlaceFilter}
+                  onChange={(event) => setStockPlaceFilter(event.target.value)}
                 />
               </TableHead>
               <TableHead className="sticky top-10 z-20 bg-background">
@@ -522,6 +547,8 @@ export function TagManagement({ initialTags, products, kars }: TagManagementProp
                 <TableCell className="text-muted-foreground">{tag.csv_comment_cell}</TableCell>
                 {/* Linked on the Raspberry Pi app (Atelier's "RFID-tags koppelen") — not editable here. */}
                 <TableCell className="text-muted-foreground">{tag.atelier_piece}</TableCell>
+                {/* Set by StockMaster bookings on the RWCrew Pi — not editable here. */}
+                <TableCell className="text-muted-foreground">{stockPlaceLabelFor(tag)}</TableCell>
                 <TableCell className="text-muted-foreground">{tag.assigned_serial_number}</TableCell>
                 <TableCell className="text-muted-foreground">
                   {formatDate(tag.date_registered)}

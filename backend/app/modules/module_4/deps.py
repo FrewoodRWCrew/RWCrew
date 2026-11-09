@@ -141,6 +141,32 @@ def require_any_screen_permission(*checks: tuple[str, PermissionAction]):
     return dependency
 
 
+# --- Booking rights --------------------------------------------------------
+
+# Which screen's "create" right allows which booking (the website's booking
+# panels and the RWCrew Pi's StockMaster tiles share these).
+ACTION_SCREENS: dict[str, str] = {
+    "book_in": "stockmaster.stock",
+    "book_out": "stockmaster.stock",
+    "kar_load": "stockmaster.kars",
+    "kar_unload": "stockmaster.kars",
+    "kar_dispatch": "stockmaster.kars",
+    "kar_return": "stockmaster.kars",
+    "count": "stockmaster.count",
+}
+# "Te bestellen" can book in the delivered goods too.
+ORDER_NEEDS_SCREEN_KEY = "stockmaster.orderneeds"
+
+
+def ensure_booking_right(db: Session, user: User, action: str) -> None:
+    """Refuse (403 "not_allowed") a booking the user's role doesn't allow."""
+    allowed = user_can(db, user, ACTION_SCREENS[action], "create")
+    if action == "book_in" and not allowed:
+        allowed = user_can(db, user, ORDER_NEEDS_SCREEN_KEY, "create")
+    if not allowed:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="not_allowed")
+
+
 # --- Season lock -----------------------------------------------------------
 
 

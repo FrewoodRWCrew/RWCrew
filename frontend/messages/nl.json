@@ -54,8 +54,7 @@
     "noAccess": "Je hebt nog geen toegang tot een module. Vraag de beheerder om je toegang te geven.",
     "pendingWork": {
       "tagscan": "Scans: {count, plural, one {# lijn wacht} other {# lijnen wachten}} op verwerking",
-      "open": "Bekijken",
-      "stockmaster": "StockMaster: {count, plural, one {# gescand stuk wacht} other {# gescande stuks wachten}} om ingeboekt te worden"
+      "open": "Bekijken"
     }
   },
   "sidebar": {
@@ -341,6 +340,7 @@
       "columnKar": "Karnummer",
       "columnCsvComment": "CSV Comment",
       "columnAtelierPiece": "Atelier-stuk",
+      "columnStockPlace": "Plaats (StockMaster)",
       "columnAssignedSerialNumber": "Serienummer",
       "columnDateRegistered": "Registratiedatum",
       "columnDateAssigned": "Toewijzingsdatum",
@@ -362,6 +362,7 @@
       "filterKar": "Karnummer",
       "filterCsvComment": "Zoek CSV Comment",
       "filterAtelierPiece": "Zoek Atelier-stuk",
+      "filterStockPlace": "Zoek plaats",
       "filterAssignedSerialNumber": "Zoek op serienummer",
       "filterDateRegistered": "Zoek op registratiedatum",
       "filterDateAssigned": "Zoek op toewijzingsdatum",
@@ -423,7 +424,14 @@
       "deleteSelectedConfirmTitle": "Geselecteerde tags verwijderen?",
       "deleteSelectedConfirmDescription": "Dit verwijdert {count, plural, one {# tag} other {# tags}} definitief. Gescande regels die eraan gekoppeld zijn verliezen hun koppeling. Dit kan niet ongedaan worden gemaakt.",
       "tagsDeleted": "{count, plural, one {# tag verwijderd.} other {# tags verwijderd.}}",
-      "deleteSelectedFailed": "Verwijderen van de geselecteerde tags is mislukt."
+      "deleteSelectedFailed": "Verwijderen van de geselecteerde tags is mislukt.",
+      "stockPlace": {
+        "free": "Vrije stock",
+        "kar": "Kar {kar}",
+        "out": "Onderweg (kar {kar})",
+        "written_off": "Afgeboekt",
+        "unknown": "Onbekend"
+      }
     },
     "scanners": {
       "title": "Scanners",
@@ -613,9 +621,7 @@
       "productMissingHint": "Kies een product voor elk bestand.",
       "fileLineCount": "{count, plural, one {# lijn} other {# lijnen}}",
       "columnCsvComment": "Product / opmerkingen (CSV)",
-      "csvCommentLabel": "CSV product / opmerkingen",
-      "bookInInStockMaster": "Book In: wordt ingeboekt via StockMaster",
-      "openStockMaster": "Open Inboeken"
+      "csvCommentLabel": "CSV product / opmerkingen"
     },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
@@ -2679,13 +2685,30 @@
       "team_not_found": "Deze ploeg bestaat niet meer.",
       "festival_not_found": "Dit festival bestaat niet meer.",
       "trip_not_found": "De rit van deze kar werd niet gevonden.",
-      "tagscan_already_booked": "Deze gescande lijnen werden intussen al ingeboekt of geannuleerd. Laad de scan opnieuw.",
       "manual_request_not_found": "Deze manuele aanvraag bestaat niet meer.",
       "kar_has_deliveries": "{p1} kreeg al een nalevering op deze rit. Maak die eerst ongedaan.",
       "trip_other_season": "Kar {p1} vertrok in een ander seizoen. Kies dat seizoen voor een nalevering.",
       "voice_count_not_found": "Deze spraaktelling bestaat niet (meer).",
       "voice_count_not_new": "Deze spraaktelling is niet meer nieuw en kan niet geannuleerd worden.",
-      "voice_count_empty": "Een spraaktelling heeft minstens één lijn nodig."
+      "voice_count_empty": "Een spraaktelling heeft minstens één lijn nodig.",
+      "too_many_tags": "Te veel tags in één keer (maximum {p1}).",
+      "no_tags": "Er zijn geen tags gelezen.",
+      "tag_unknown": "Tag {p1} staat niet in het tagregister.",
+      "tag_no_product": "Tag {p1} is nog aan geen product gekoppeld.",
+      "tag_is_atelier_piece": "Tag {p1} is een Atelier-stuk, geen StockMaster-product.",
+      "tag_is_kar": "Tag {p1} is de tag van kar {p2}.",
+      "tag_inactive": "Tag {p1} is niet actief (verloren, beschadigd of buiten gebruik).",
+      "tag_other_product": "Tag {p1} is al gekoppeld aan {p2}.",
+      "tag_already_in_stock": "Tag {p1} ligt al in de vrije stock.",
+      "tag_in_kar": "Tag {p1} zit in kar {p2}.",
+      "tag_in_other_kar": "Tag {p1} zit in een andere kar ({p2}).",
+      "tag_already_in_kar": "Tag {p1} zit al in kar {p2}.",
+      "tag_on_trip": "Tag {p1} is onderweg met kar {p2}.",
+      "tag_on_other_trip": "Tag {p1} is onderweg met een andere kar ({p2}).",
+      "tag_written_off": "Tag {p1} is afgeboekt.",
+      "missing_unresolved": "{p1}: er ontbreken {p2} stuks — kies of ze terug naar de vrije stock gaan of afgeboekt worden.",
+      "missing_too_many": "{p1}: er zijn meer ontbrekende stuks opgegeven dan er ontbreken.",
+      "invalid_action": "Onbekende boeking."
     },
     "booking": {
       "quantityTooLow": "Vul een heel aantal vanaf 1 in.",
@@ -2745,13 +2768,7 @@
       "leavesWithKar": "Dit vertrekt met de kar",
       "karEmpty": "De kar is leeg: hij vertrekt zonder inhoud.",
       "stillMissing": "Let op: de kar mist nog {count, plural, one {# stuk} other {# stuks}} van zijn benodigdheden.",
-      "summary": "{products, plural, one {# product} other {# producten}} · {pieces, plural, one {# stuk} other {# stuks}}",
-      "scanLoad": "Laden uit scan",
-      "scanFrom": "Uit scan: {files}",
-      "scanDrop": "Niet aan de scan koppelen",
-      "scanErrorsTitle": "Niet gebruikte gescande lijnen (die blijven wachten)",
-      "scanErrorRow": "{file}, lijn {row}: {message}",
-      "scanAdded": "{count, plural, =0 {Geen inboekbare producten in de scan} one {# product toegevoegd uit de scan} other {# producten toegevoegd uit de scan}}"
+      "summary": "{products, plural, one {# product} other {# producten}} · {pieces, plural, one {# stuk} other {# stuks}}"
     },
     "count": {
       "modeFree": "Vrije voorraad",
@@ -3064,30 +3081,6 @@
       "userSaved": "Toegang gegeven.",
       "userSaveFailed": "Geven van toegang is mislukt."
     },
-    "tagscanBookIn": {
-      "bannerText": "{count, plural, one {# gescande lijn (Book In) wacht} other {# gescande lijnen (Book In) wachten}} om ingeboekt te worden.",
-      "bannerOpen": "Bekijken",
-      "dialogTitle": "Scans die wachten om ingeboekt te worden",
-      "dialogDescription": "Scans-lijnen met de actie \"Book In\", per gescand bestand. Elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. \"Laden in Inboeken\" zet ze in de mand van Inboeken; ze worden pas geboekt als je daar bevestigt. Lijnen met een onbekende tag of een tag zonder product blijven wachten: registreer de tag en laad opnieuw, of annuleer de lijn (reden verplicht).",
-      "loading": "Laden...",
-      "nothingWaiting": "Er wachten geen scans.",
-      "loadFailed": "De wachtende scans konden niet geladen worden.",
-      "scannedAt": "Gescand {date}",
-      "columnProduct": "Product",
-      "columnQuantity": "Aantal",
-      "columnActions": "Acties",
-      "problemsTitle": "Nog niet inboekbaar ({count})",
-      "noBookableLines": "Geen inboekbare tags in dit bestand.",
-      "loadFile": "Laden in Inboeken",
-      "loadAll": "Alles laden in Inboeken ({count})",
-      "cancelButton": "Annuleren",
-      "cancelReason": "Reden van annulering",
-      "confirmCancel": "Bevestigen",
-      "back": "Terug",
-      "commentRequired": "Geef een reden op.",
-      "lineCancelled": "Lijn geannuleerd.",
-      "cancelFailed": "De lijn kon niet geannuleerd worden."
-    },
     "products": {
       "title": "Producten",
       "description": "Beheer de lijst van producten die in de app gebruikt worden.",
@@ -3363,6 +3356,40 @@
       "cancelTitle": "Spraaktelling annuleren?",
       "cancelDescription": "De telling van kar {kar} blijft zichtbaar als \"Geannuleerd\" en kan later niet meer geboekt worden.",
       "cancelled": "Telling van kar {kar} geannuleerd."
+    },
+    "tagHistory": {
+      "title": "Tag-historiek",
+      "description": "Waar een product met een RFID-tag (EPC) volgens de RWCrew Pi het laatst was, en elke Pi-boeking die het verplaatste. Boekingen op de website verplaatsen geen tags.",
+      "epcLabel": "EPC (tagnummer)",
+      "epcPlaceholder": "Typ of plak het tagnummer…",
+      "search": "Zoeken",
+      "loading": "Bezig met laden…",
+      "failed": "Het ophalen is mislukt.",
+      "notFound": "Deze EPC staat niet in Tagbeheer (Scans).",
+      "noEvents": "Deze tag werd nog niet met de RWCrew Pi geboekt.",
+      "tagCard": "In Tagbeheer",
+      "product": "Product",
+      "noProduct": "Geen product",
+      "status": "Status",
+      "place": "Laatst gekende plaats",
+      "lastRead": "Laatst gelezen",
+      "lastReader": "door {reader}",
+      "at": "op {location}",
+      "events": "{count, plural, one {# boeking} other {# boekingen}}",
+      "when": "Wanneer",
+      "booking": "Boeking",
+      "from": "Van",
+      "to": "Naar",
+      "bookedBy": "Geboekt door",
+      "reversed": "Ongedaan gemaakt",
+      "placeOnly": "Enkel plaats",
+      "places": {
+        "free": "Vrije stock",
+        "kar": "Kar {kar}",
+        "out": "Onderweg (kar {kar})",
+        "written_off": "Afgeboekt",
+        "unknown": "Onbekend"
+      }
     }
   },
   "karTracker": {

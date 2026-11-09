@@ -54,8 +54,7 @@
     "noAccess": "You don't have access to any module yet. Ask your administrator to grant you access.",
     "pendingWork": {
       "tagscan": "Scans: {count, plural, one {# line is} other {# lines are}} waiting to be processed",
-      "open": "Review",
-      "stockmaster": "StockMaster: {count, plural, one {# scanned piece is} other {# scanned pieces are}} waiting to be booked in"
+      "open": "Review"
     }
   },
   "sidebar": {
@@ -341,6 +340,7 @@
       "columnKar": "Kar number",
       "columnCsvComment": "CSV Comment",
       "columnAtelierPiece": "Atelier piece",
+      "columnStockPlace": "Place (StockMaster)",
       "columnAssignedSerialNumber": "Serial Number",
       "columnDateRegistered": "Date Registered",
       "columnDateAssigned": "Date Assigned",
@@ -362,6 +362,7 @@
       "filterKar": "Kar number",
       "filterCsvComment": "Search CSV Comment",
       "filterAtelierPiece": "Search Atelier piece",
+      "filterStockPlace": "Search place",
       "filterAssignedSerialNumber": "Search Serial Number",
       "filterDateRegistered": "Search Date Registered",
       "filterDateAssigned": "Search Date Assigned",
@@ -423,7 +424,14 @@
       "deleteSelectedConfirmTitle": "Delete selected tags?",
       "deleteSelectedConfirmDescription": "This will permanently remove {count, plural, one {# tag} other {# tags}}. Scanned lines matched to them lose their link. This cannot be undone.",
       "tagsDeleted": "{count, plural, one {# tag deleted.} other {# tags deleted.}}",
-      "deleteSelectedFailed": "Failed to delete the selected tags."
+      "deleteSelectedFailed": "Failed to delete the selected tags.",
+      "stockPlace": {
+        "free": "Free stock",
+        "kar": "Kar {kar}",
+        "out": "Out (kar {kar})",
+        "written_off": "Written off",
+        "unknown": "Unknown"
+      }
     },
     "scanners": {
       "title": "Scanners",
@@ -613,9 +621,7 @@
       "productMissingHint": "Choose a product for every file.",
       "fileLineCount": "{count, plural, one {# line} other {# lines}}",
       "columnCsvComment": "Product / comments (CSV)",
-      "csvCommentLabel": "CSV product / comments",
-      "bookInInStockMaster": "Book In: booked in via StockMaster",
-      "openStockMaster": "Open Inboeken"
+      "csvCommentLabel": "CSV product / comments"
     },
     "dataUploadDownload": {
       "title": "Data Upload/Download",
@@ -2679,13 +2685,30 @@
       "team_not_found": "This team no longer exists.",
       "festival_not_found": "This festival no longer exists.",
       "trip_not_found": "This cart's trip wasn't found.",
-      "tagscan_already_booked": "These scanned lines were already booked in or cancelled in the meantime. Load the scan again.",
       "manual_request_not_found": "This manual request no longer exists.",
       "kar_has_deliveries": "{p1} already got a follow-up delivery on this trip. Undo that first.",
       "trip_other_season": "Cart {p1} left in another season. Choose that season for a follow-up delivery.",
       "voice_count_not_found": "This voice count does not exist (any more).",
       "voice_count_not_new": "This voice count is no longer new and cannot be cancelled.",
-      "voice_count_empty": "A voice count needs at least one line."
+      "voice_count_empty": "A voice count needs at least one line.",
+      "too_many_tags": "Too many tags at once (maximum {p1}).",
+      "no_tags": "No tags were read.",
+      "tag_unknown": "Tag {p1} is not in the tag register.",
+      "tag_no_product": "Tag {p1} isn't linked to a product yet.",
+      "tag_is_atelier_piece": "Tag {p1} is an Atelier piece, not a StockMaster product.",
+      "tag_is_kar": "Tag {p1} is the tag of kar {p2}.",
+      "tag_inactive": "Tag {p1} isn't active (lost, damaged or retired).",
+      "tag_other_product": "Tag {p1} is already linked to {p2}.",
+      "tag_already_in_stock": "Tag {p1} is already in free stock.",
+      "tag_in_kar": "Tag {p1} is in kar {p2}.",
+      "tag_in_other_kar": "Tag {p1} is in another kar ({p2}).",
+      "tag_already_in_kar": "Tag {p1} is already in kar {p2}.",
+      "tag_on_trip": "Tag {p1} is out with kar {p2}.",
+      "tag_on_other_trip": "Tag {p1} is out with another kar ({p2}).",
+      "tag_written_off": "Tag {p1} has been written off.",
+      "missing_unresolved": "{p1}: {p2} pieces are missing — choose whether they go back to free stock or are written off.",
+      "missing_too_many": "{p1}: more missing pieces were given than are missing.",
+      "invalid_action": "Unknown booking."
     },
     "booking": {
       "quantityTooLow": "Enter a whole quantity from 1.",
@@ -2745,13 +2768,7 @@
       "leavesWithKar": "This leaves with the cart",
       "karEmpty": "The cart is empty: it leaves without contents.",
       "stillMissing": "Note: the cart still misses {count, plural, one {# piece} other {# pieces}} of its needs.",
-      "summary": "{products, plural, one {# product} other {# products}} · {pieces, plural, one {# piece} other {# pieces}}",
-      "scanLoad": "Load from scan",
-      "scanFrom": "From scan: {files}",
-      "scanDrop": "Don't link to the scan",
-      "scanErrorsTitle": "Scanned lines that were not used (they stay waiting)",
-      "scanErrorRow": "{file}, line {row}: {message}",
-      "scanAdded": "{count, plural, =0 {No bookable products in the scan} one {# product added from the scan} other {# products added from the scan}}"
+      "summary": "{products, plural, one {# product} other {# products}} · {pieces, plural, one {# piece} other {# pieces}}"
     },
     "count": {
       "modeFree": "Free stock",
@@ -3064,30 +3081,6 @@
       "userSaved": "Access granted.",
       "userSaveFailed": "Failed to grant access."
     },
-    "tagscanBookIn": {
-      "bannerText": "{count, plural, one {# scanned line (Book In) is} other {# scanned lines (Book In) are}} waiting to be booked in.",
-      "bannerOpen": "Review",
-      "dialogTitle": "Scans waiting to be booked in",
-      "dialogDescription": "Scans lines with the action \"Book In\", per scanned file. Every tag counts as one piece of the product it is assigned to in TagManagement. \"Load into Inboeken\" puts them in the Inboeken basket; they are only booked when you confirm there. Lines with an unknown tag or a tag without product stay waiting: register the tag and load again, or cancel the line (a reason is required).",
-      "loading": "Loading...",
-      "nothingWaiting": "No scans are waiting.",
-      "loadFailed": "Failed to load the waiting scans.",
-      "scannedAt": "Scanned {date}",
-      "columnProduct": "Product",
-      "columnQuantity": "Quantity",
-      "columnActions": "Actions",
-      "problemsTitle": "Not bookable yet ({count})",
-      "noBookableLines": "No bookable tags in this file.",
-      "loadFile": "Load into Inboeken",
-      "loadAll": "Load all into Inboeken ({count})",
-      "cancelButton": "Cancel",
-      "cancelReason": "Reason for cancelling",
-      "confirmCancel": "Confirm",
-      "back": "Back",
-      "commentRequired": "Please enter a reason.",
-      "lineCancelled": "Line cancelled.",
-      "cancelFailed": "Failed to cancel the line."
-    },
     "products": {
       "title": "Products",
       "description": "Manage the list of products used throughout the app.",
@@ -3363,6 +3356,40 @@
       "cancelTitle": "Cancel voice count?",
       "cancelDescription": "The count of kar {kar} stays visible as \"Cancelled\" and can no longer be booked later.",
       "cancelled": "Count of kar {kar} cancelled."
+    },
+    "tagHistory": {
+      "title": "Tag history",
+      "description": "Where a product with an RFID tag (EPC) was last seen by the RWCrew Pi, and every Pi booking that moved it. Bookings on the website don't move tags.",
+      "epcLabel": "EPC (tag number)",
+      "epcPlaceholder": "Type or paste the tag number…",
+      "search": "Search",
+      "loading": "Loading…",
+      "failed": "Loading failed.",
+      "notFound": "This EPC is not in Tag management (Scans).",
+      "noEvents": "This tag hasn't been booked with the RWCrew Pi yet.",
+      "tagCard": "In Tag management",
+      "product": "Product",
+      "noProduct": "No product",
+      "status": "Status",
+      "place": "Last known place",
+      "lastRead": "Last read",
+      "lastReader": "by {reader}",
+      "at": "at {location}",
+      "events": "{count, plural, one {# booking} other {# bookings}}",
+      "when": "When",
+      "booking": "Booking",
+      "from": "From",
+      "to": "To",
+      "bookedBy": "Booked by",
+      "reversed": "Undone",
+      "placeOnly": "Place only",
+      "places": {
+        "free": "Free stock",
+        "kar": "Kar {kar}",
+        "out": "Out (kar {kar})",
+        "written_off": "Written off",
+        "unknown": "Unknown"
+      }
     }
   },
   "karTracker": {

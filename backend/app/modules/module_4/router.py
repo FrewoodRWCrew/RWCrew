@@ -33,7 +33,6 @@ from app.db.models.stockmaster_role import StockMasterRole
 from app.db.models.stockmaster_role_permission import StockMasterRolePermission
 from app.db.models.stockmaster_screen import StockMasterScreen
 from app.db.models.stockmaster_user_role import StockMasterUserRole
-from app.db.models.tag_line_data import TagLineData
 from app.db.models.team import Team
 from app.db.models.user import User
 from app.db.models.user_module_access import UserModuleAccess
@@ -47,6 +46,7 @@ from app.modules.module_4.booking_import import (
 )
 from app.modules.module_4.deps import (
     MODULE_KEY,
+    ensure_booking_right,
     ensure_season_editable,
     get_season_or_404,
     get_user_role,
@@ -78,14 +78,7 @@ from app.modules.module_4.stock_queries import (
     count_below_minimum,
     list_documents,
 )
-from app.modules.module_1.line_processing import cancel_line_processing
 from app.modules.module_4.stock_service import BookingLine, BookingOrigin, CountLine, StockError
-from app.modules.module_4.tagscan_book_in import (
-    count_waiting_lines,
-    get_waiting_line,
-    list_waiting_files,
-    mark_lines_booked,
-)
 from app.schemas.masterdata import SeasonResponse
 from app.schemas.stockmaster import (
     AlertsResponse,
@@ -118,11 +111,8 @@ from app.schemas.stockmaster import (
     ScreenResponse,
     SetRolePermissionsRequest,
     SetUserRoleRequest,
-    TagscanBookInCountResponse,
-    TagscanBookInFile,
     UserSummaryResponse,
 )
-from app.schemas.tagscan import LineProcessCancelRequest
 
 router = APIRouter(prefix="/api/modules/module-4", tags=["StockMaster"])
 
@@ -142,17 +132,6 @@ ORDER_NEEDS_SCREEN = "stockmaster.orderneeds"
 BOOKINGS_SCREEN = "stockmaster.bookings"
 REASONS_SCREEN = "stockmaster.reasons"
 KPI_SCREEN = "stockmaster.kpi"
-
-# Which screen's "create" right allows which booking.
-ACTION_SCREENS: dict[str, str] = {
-    "book_in": STOCK_SCREEN,
-    "book_out": STOCK_SCREEN,
-    "kar_load": KARS_SCREEN,
-    "kar_unload": KARS_SCREEN,
-    "kar_dispatch": KARS_SCREEN,
-    "kar_return": KARS_SCREEN,
-    "count": COUNT_SCREEN,
-}
 
 Locale = Literal["nl", "en"]
 
@@ -623,46 +602,6 @@ def import_book_in(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="import_unreadable") from None
 
 
-# --- Inboeken from a TagScan scan ---------------------------------------------
-# Scanned "Book In" lines that are still waiting, as basket lines per file
-# (see tagscan_book_in.py). Nothing is booked here; the booking itself marks
-# the lines "loaded".
-
-
-@router.get("/tagscan-book-in/count", response_model=TagscanBookInCountResponse)
-def count_tagscan_book_in(
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_module_access),
-) -> TagscanBookInCountResponse:
-    """How many scanned "Book In" lines are waiting — plain module access,
-    since the banner showing it appears on every StockMaster screen.
-    """
-    return TagscanBookInCountResponse(count=count_waiting_lines(db))
-
-
-@router.get("/tagscan-book-in", response_model=list[TagscanBookInFile])
-def list_tagscan_book_in(
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_book_in),
-) -> list[TagscanBookInFile]:
-    """Every scanned file with waiting "Book In" lines, as basket lines."""
-    return list_waiting_files(db)
-
-
-@router.post("/tagscan-book-in/lines/{line_id}/cancel", status_code=status.HTTP_204_NO_CONTENT)
-def cancel_tagscan_book_in_line(
-    line_id: int,
-    payload: LineProcessCancelRequest,
-    db: Session = Depends(get_db),
-    _user: User = Depends(require_book_in),
-) -> Response:
-    """Skip one waiting "Book In" line for good, with the user's reason."""
-    if get_waiting_line(db, line_id) is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Line not found")
-    cancel_line_processing(db, line_id, payload.comment.strip())
-    return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
 @router.get("/alerts", response_model=AlertsResponse)
 def get_alerts(
     db: Session = Depends(get_db),
@@ -699,7 +638,7 @@ def get_kar_detail(
 
 def _ensure_can_load_kars(db: Session, user: User) -> None:
     """Manual requests are part of Kar laden: they need the same right as booking it."""
-    if not user_can(db, user, ACTION_SCREENS["kar_load"], "create"):
+    if not user_can(db, user, KARS_SCREEN, "create"):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="not_allowed")
 
 
@@ -781,13 +720,7 @@ def create_booking(
     terug, Kar uitladen or Telling). It's always stored under the logged-in
     user — taken from the session here, never from the request.
     """
-    screen = ACTION_SCREENS[payload.action]
-    allowed = user_can(db, current_user, screen, "create")
-    # "Te bestellen" can book in the delivered goods too.
-    if payload.action == "book_in" and not allowed:
-        allowed = user_can(db, current_user, ORDER_NEEDS_SCREEN, "create")
-    if not allowed:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="not_allowed")
+    ensure_booking_right(db, current_user, payload.action)
 
     season = get_season_or_404(db, payload.season_id)
     ensure_season_editable(db, current_user, season)
@@ -795,23 +728,10 @@ def create_booking(
     lines = [BookingLine(line.product_id, line.quantity, line.destination) for line in payload.lines]
     try:
         if payload.action == "book_in":
-            # From a TagScan scan: remember the scan file (when there's one)
-            # and mark its lines "loaded" in this same transaction.
-            origin = None
-            if payload.tagscan_line_ids:
-                header_ids = {
-                    line.header_data_id
-                    for line in db.scalars(select(TagLineData).where(TagLineData.id.in_(payload.tagscan_line_ids)))
-                }
-                origin = BookingOrigin(
-                    source="tagscan", tagscan_header_id=next(iter(header_ids)) if len(header_ids) == 1 else None
-                )
             document = stock_service.book_in(
                 db, current_user, season, lines,
-                reference=payload.reference, reason_id=payload.reason_id, comment=payload.comment, origin=origin,
+                reference=payload.reference, reason_id=payload.reason_id, comment=payload.comment,
             )
-            if payload.tagscan_line_ids:
-                mark_lines_booked(db, payload.tagscan_line_ids, document)
         elif payload.action == "book_out":
             document = stock_service.book_out(
                 db, current_user, season, lines,

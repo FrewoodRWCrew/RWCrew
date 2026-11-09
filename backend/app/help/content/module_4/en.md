@@ -84,7 +84,7 @@ Goods arrive (delivery, purchase) and go to the **free stock** on their fixed lo
 
 > Blocked products can't be booked in. When a whole order arrives, start from **To order**: the quantities are then already filled in.
 
-**From a scan.** Scans lines with the action **Book In** show up in a teal bar at the top of every StockMaster screen (and on the start page). Click **Review** (or **Load from scan** on Book in): per scanned file you see the products and quantities — every tag counts as one piece of the product it is linked to in TagManagement. **Load into Inboeken** puts them in the booking list; check them and confirm as usual. Only then are the scanned lines marked as processed. Lines with an unknown tag or a tag without product stay waiting: link the tag in TagManagement and load again, or cancel the line with a reason.
+**With RFID tags.** Products with an RFID tag are booked in on the RWCrew Pi (see the chapter StockMaster on the RWCrew Pi).
 
 ## [kar-load | stockmaster.kars] 2. Load cart
 Fill a cart from the free stock (or from another cart).
@@ -207,6 +207,32 @@ All bookings, newest first, with who made them and when.
 ![The bookings](bookings.png)
 
 > Undo isn't possible once the goods have been booked further (e.g. the cart has already left). Undo that later booking first.
+
+## [pi] StockMaster on the RWCrew Pi
+With the RWCrew Pi (the Raspberry Pi with an RFID reader and touchscreen) you book products that carry an RFID tag straight into StockMaster: every tag read is one piece of the product it is linked to. No CSV files go to Scans any more; the booking is in **Bookings** at once (source "pi"), in your name.
+
+1. Log in on the Pi with your own RWCrew account and tap the **StockMaster** tile.
+2. Choose the booking: **Book in**, **Load kar**, **Kar leaves**, **Kar returns**, **Unload kar**, **Scrap** (write off with a reason) or **Count**.
+3. Choose the kar when needed — if the Pi reads the kar's own tag, it is chosen at once — and read the pieces.
+4. Add products without a tag with **Add product** (product + quantity).
+5. Check the list and tap **Confirm** (or press the confirm button).
+
+Every tag remembers its **last known place**: free stock, in a kar, out with a kar, or written off. Only bookings on the Pi move tags; a booking on the website moves quantities, not which tags. A tag is therefore only refused on a clear contradiction (e.g. booking in a tag that is in a kar, or unloading it from the wrong kar). A **Count** on the Pi puts the places right again.
+
+**Kar leaves** on the Pi compares what you read with what the kar holds according to the stock. Extra pieces are loaded into the kar first. For missing pieces you choose per product: **back to free stock** or **write off** (with a reason). Then the whole kar leaves. Those corrections are separate bookings (comment/reference "Kar vertrekt <kar>"): **Undo** of the departure leaves them; undo each of them separately when needed.
+
+> Undoing a Pi booking also puts the tags back in their previous place, as long as they weren't booked on the Pi again since.
+
+## [pi-tags | stockmaster.tags] Link tags and write EPC (RWCrew Pi)
+On the Pi, under **StockMaster**:
+
+- **Link tags**: choose a product, read the new tags (optionally with a prefix and/or suffix as a filter and an expected count) and tap **Link**. New tags go into Tag management (Scans). A tag of another product only changes after confirming; its place then becomes unknown. Atelier pieces and a kar's tags can't be linked. Right: **Create** on RFID tags (Pi).
+- **Write EPC**: read one tag and write a new EPC number onto it (with the access password), or write advanced data to a memory bank. Right: **Edit** on RFID tags (Pi).
+
+> When the tag is already in Tag management, the old EPC number stays there: change it there or link the tag again.
+
+## [taghistory | stockmaster.taghistory] Tag history
+Type or paste a tag's EPC number and click **Search**. You see the product, the status, the **last known place** and when and where the tag was last read, and below every Pi booking that moved the tag (newest first): from which place to which. "Place only" means only the place changed (e.g. a count where the quantity matched).
 
 ## [voice-counts | stockmaster.voicecount] Voice counts
 Count kars with your voice on the phone (the app on your home screen, see Mobile App), for products without an RFID tag.

@@ -11,8 +11,6 @@ import { getModuleAccentStyle } from "@/lib/module-theme";
 import type { StockMasterMyPermissions } from "@/lib/types";
 import { MinimumStockBanner } from "@/components/module-4/minimum-stock-banner";
 import { StockMasterSidebar } from "@/components/module-4/stockmaster-sidebar";
-import { canBook } from "@/components/module-4/stockmaster-common";
-import { TagscanBookInBanner } from "@/components/module-4/tagscan-book-in-banner";
 import { STOCKMASTER_HELP_ROUTES } from "@/components/module-4/stockmaster-help";
 import { ScreenHelpButton } from "@/components/shared/module-help";
 
@@ -47,7 +45,6 @@ export default async function StockMasterLayout({ children }: StockMasterLayoutP
       <div className="min-w-0 flex-1 p-6">
         <ScreenHelpButton moduleKey="module-4" routes={STOCKMASTER_HELP_ROUTES} className="-mt-4 mb-1" />
         <MinimumStockBanner canOpen={permissions.viewable_screen_keys.includes("stockmaster.stock")} />
-        <TagscanBookInBanner canOpen={canBook(permissions, "book_in")} />
         {children}
       </div>
     </div>

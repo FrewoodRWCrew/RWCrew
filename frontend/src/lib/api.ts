@@ -44,6 +44,7 @@ import type {
   AtelierRole,
   AtelierReturnIssue,
   AtelierTagHistory,
+  StockMasterTagHistory,
   AtelierReturnStatus,
   AtelierReturnStatusInput,
   AtelierSize,
@@ -191,7 +192,6 @@ import type {
   WarehouseImportResponse,
   ZoneImportResponse,
   StockMasterBookInImport,
-  StockMasterTagscanBookInFile,
   StockMasterCountSheetLine,
   StockMasterDashboard,
   StockMasterProductStats,
@@ -3335,22 +3335,9 @@ async function uploadBookInExcel(path: string, file: File): Promise<StockMasterB
   return (await response.json()) as StockMasterBookInImport;
 }
 
-/** How many scanned TagScan "Book In" lines are waiting (StockMaster's banner). */
-export function getStockMasterTagscanBookInCount(): Promise<{ count: number }> {
-  return apiFetch<{ count: number }>(`${STOCKMASTER_BASE}/tagscan-book-in/count`);
-}
-
-/** Every scanned file with waiting "Book In" lines, as basket lines. */
-export function listStockMasterTagscanBookIn(): Promise<StockMasterTagscanBookInFile[]> {
-  return apiFetch<StockMasterTagscanBookInFile[]>(`${STOCKMASTER_BASE}/tagscan-book-in`);
-}
-
-/** Skip one waiting "Book In" line for good, with a reason. */
-export function cancelStockMasterTagscanBookInLine(lineId: number, comment: string): Promise<void> {
-  return apiFetch<void>(`${STOCKMASTER_BASE}/tagscan-book-in/lines/${lineId}/cancel`, {
-    method: "POST",
-    body: JSON.stringify({ comment }),
-  });
+/** Tag-historiek: a product tag now, and every RWCrew Pi booking that moved it. */
+export function getStockMasterTagHistory(epc: string): Promise<StockMasterTagHistory> {
+  return apiFetch<StockMasterTagHistory>(`${STOCKMASTER_BASE}/rfid/history?epc=${encodeURIComponent(epc)}`);
 }
 
 export function getStockMasterAlerts(): Promise<{ below_minimum_count: number }> {

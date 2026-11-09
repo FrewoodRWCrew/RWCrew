@@ -52,6 +52,29 @@ class RfidTag(Base):
         ForeignKey("Atelier_article_size.id"), nullable=True, index=True
     )
 
+    # StockMaster's per-piece trace (module_4/tag_service.py is the only
+    # writer): the LAST KNOWN place of a product tag, set only by bookings
+    # made on the RWCrew Pi — web bookings move quantities, not tags, so this
+    # is "where the Pi last saw it", never a hard truth.
+    #   free         free stock in the warehouse
+    #   kar          loaded in kar stock_kar_id (standing in the warehouse)
+    #   out          left the warehouse with kar stock_kar_id on trip stock_trip_id
+    #   written_off  booked out (Scrap / Uitboeken / a Kar vertrekt correction)
+    #   NULL         unknown (every tag before its first Pi booking)
+    stock_place: Mapped[str | None] = mapped_column(String(12), nullable=True)
+    stock_kar_id: Mapped[int | None] = mapped_column(
+        ForeignKey("KarTracker_karren.id", ondelete="SET NULL"), nullable=True, index=True
+    )
+    stock_trip_id: Mapped[int | None] = mapped_column(
+        ForeignKey("StockMaster_kar_trip.id", ondelete="SET NULL"), nullable=True
+    )
+    # The booking that set the place (a reversal only restores the place when
+    # the tag hasn't moved since that booking).
+    stock_document_id: Mapped[int | None] = mapped_column(
+        ForeignKey("StockMaster_document.id", ondelete="SET NULL"), nullable=True
+    )
+    stock_place_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+
     # Set automatically the moment the row is created.
     date_registered: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)
     date_assigned: Mapped[date | None] = mapped_column(Date, nullable=True)

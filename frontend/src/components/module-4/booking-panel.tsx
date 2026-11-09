@@ -20,9 +20,6 @@
 // - Kar terug: what left with the kar, each line going back into the kar or
 //   to free stock as the product is set up, so only differences are typed;
 // - Inboeken from "Te bestellen": ?prefill=<product>:<qty>,...;
-// - Inboeken from a TagScan scan: ?tagscan=<file ids> (from the "scans
-//   waiting" dialog) puts those files' "Book In" lines in the basket, like
-//   the Excel upload; the booking then marks those scan lines "loaded";
 // - ?kar=<id> and ?product=<id> from the buttons on the other screens.
 //
 // Kar laden opens on a loading overview of every kar (kar-load-overview.tsx,
@@ -34,11 +31,11 @@
 // rows by "Vul aan met wat ontbreekt"; products are added by hand in a pop-up.
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, FileSpreadsheet, FileText, ListPlus, PackageOpen, ScanLine, Trash2, Upload, X } from "lucide-react";
+import { ArrowLeft, FileSpreadsheet, FileText, ListPlus, PackageOpen, Trash2, Upload, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import { Link } from "@/i18n/navigation";
 import {
   addStockMasterManualRequest,
   createStockMasterBooking,
@@ -48,7 +45,6 @@ import {
   getStockMasterStock,
   importStockMasterBookIn,
   listStockMasterKars,
-  listStockMasterTagscanBookIn,
   reverseStockMasterBooking,
   stockMasterBookingPdfUrl,
   stockMasterBookInTemplateUrl,
@@ -93,7 +89,6 @@ import {
   hasRight,
   stockErrorMessage,
 } from "@/components/module-4/stockmaster-common";
-import { openTagscanBookInDialog } from "@/components/module-4/tagscan-book-in-banner";
 
 interface BookingPanelProps {
   action: Exclude<StockMasterAction, "count">;
@@ -114,15 +109,7 @@ interface BasketLine {
   source?: KarLoadSource;
 }
 
-/** A scanned line that couldn't go into the basket (Inboeken from a scan). */
-interface ScanProblem {
-  lineId: number;
-  filename: string;
-  lineNumber: number;
-  detail: string;
-}
-
-/** Add imported lines (Excel or scan) to the basket, summing a product already there. */
+/** Add imported lines (Excel) to the basket, summing a product already there. */
 function mergeIntoBasket(current: BasketLine[], imported: { product_id: number; quantity: number }[]): BasketLine[] {
   const merged = [...current];
   for (const line of imported) {
@@ -149,8 +136,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const tAction = useTranslations(`stockMaster.actions.${action}`);
   const locale = useLocale();
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const pathname = usePathname();
   const seasonId = useStockMasterSeasonId(seasons);
   const season = seasons.find((item) => item.id === seasonId) ?? null;
 
@@ -183,14 +168,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
   const [isImporting, setIsImporting] = useState(false);
   const [importErrors, setImportErrors] = useState<StockMasterBookInImport["errors"]>([]);
   const importInputRef = useRef<HTMLInputElement>(null);
-  // Inboeken from a TagScan scan: the scan lines the basket came from (sent
-  // with the booking, which marks them "loaded"), their file names, and the
-  // scanned lines that couldn't be used.
-  const [scanLineIds, setScanLineIds] = useState<number[]>([]);
-  const [scanFilenames, setScanFilenames] = useState<string[]>([]);
-  const [scanProblems, setScanProblems] = useState<ScanProblem[]>([]);
-  // The ?tagscan= value already loaded, so it's used only once.
-  const scanParamUsed = useRef<string | null>(null);
   // The kar whose needs/contents were already put in the basket.
   const prefilledForKar = useRef<number | null>(null);
   // Kar laden: the checked rows of the table (row keys) and the "Manueel product toevoegen" pop-up.
@@ -453,55 +430,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
     }
   }
 
-  /** Inboeken from a TagScan scan: ?tagscan=<file ids> puts those files'
-   *  waiting "Book In" lines in the basket (once per value), then drops
-   *  the parameter from the address so a reload doesn't add them again. */
-  const scanParam = action === "book_in" ? searchParams.get("tagscan") : null;
-  useEffect(() => {
-    if (!scanParam || scanParam === "open" || scanParamUsed.current === scanParam) return;
-    scanParamUsed.current = scanParam;
-    const headerIds = new Set(scanParam.split(",").map(Number).filter(Boolean));
-
-    listStockMasterTagscanBookIn()
-      .then((files) => {
-        // Only files not linked yet: the same scan never goes in twice.
-        const chosen = files.filter(
-          (file) => headerIds.has(file.header_data_id) && !scanFilenames.includes(file.filename),
-        );
-        const imported = chosen.flatMap((file) => file.lines);
-        setLines((current) => mergeIntoBasket(current, imported));
-        setScanLineIds((current) => [...current, ...chosen.flatMap((file) => file.line_ids)]);
-        setScanFilenames((current) => [...current, ...chosen.map((file) => file.filename)]);
-        setScanProblems((current) => [
-          ...current,
-          ...chosen.flatMap((file) =>
-            file.problems.map((problem) => ({
-              lineId: problem.line_id,
-              filename: file.filename,
-              lineNumber: problem.line_number,
-              detail: problem.detail,
-            })),
-          ),
-        ]);
-        const productCount = new Set(imported.map((line) => line.product_id)).size;
-        if (productCount > 0) toast.success(t("booking.scanAdded", { count: productCount }));
-        else toast.info(t("booking.scanAdded", { count: 0 }));
-      })
-      .catch((error) => toast.error(stockErrorMessage(t, error)))
-      .finally(() => {
-        const params = new URLSearchParams(searchParams.toString());
-        params.delete("tagscan");
-        const query = params.toString();
-        router.replace(query ? `${pathname}?${query}` : pathname);
-      });
-  }, [scanParam, scanFilenames, searchParams, router, pathname, t]);
-
-  /** Stop linking the basket to the scan: its lines stay waiting in TagScan. */
-  function dropScanLink() {
-    setScanLineIds([]);
-    setScanFilenames([]);
-    setScanProblems([]);
-  }
 
   /** One problem row of the upload as readable text ("code|param" → translation). */
   function importErrorText(detail: string): string {
@@ -649,7 +577,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
         reference: reference.trim() || null,
         reason_id: reasonId,
         comment: comment.trim() || null,
-        tagscan_line_ids: action === "book_in" ? scanLineIds : [],
         lines: usesBasket
           ? activeLines
               .filter((line) => action !== "kar_return" || line.quantity > 0)
@@ -663,7 +590,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
       // Start the next booking with a clean basket.
       setLines([]);
       setSelectedIds(new Set());
-      dropScanLink();
       setReference("");
       setComment("");
       setReasonId(null);
@@ -1096,11 +1022,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
                         <Upload />
                         {t("booking.importUpload")}
                       </Button>
-                      {/* Inboeken from a TagScan scan: opens the "scans waiting" dialog. */}
-                      <Button variant="outline" size="sm" onClick={openTagscanBookInDialog}>
-                        <ScanLine />
-                        {t("booking.scanLoad")}
-                      </Button>
                       <input
                         ref={importInputRef}
                         type="file"
@@ -1115,50 +1036,6 @@ export function BookingPanel({ action, seasons, permissions }: BookingPanelProps
                       />
                     </div>
                     <p className="text-xs text-muted-foreground">{t("booking.importHint")}</p>
-                    {/* The scan(s) this basket came from; booking marks their lines "loaded". */}
-                    {scanFilenames.length > 0 && (
-                      <div className="flex w-fit items-center gap-2 rounded-md border bg-muted/50 px-3 py-1 text-sm">
-                        <ScanLine className="size-4 text-muted-foreground" />
-                        <span>
-                          {t("booking.scanFrom", {
-                            files: scanFilenames.join(", "),
-                          })}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={dropScanLink}
-                          aria-label={t("booking.scanDrop")}
-                          title={t("booking.scanDrop")}
-                        >
-                          <X className="size-4" />
-                        </button>
-                      </div>
-                    )}
-                    {scanProblems.length > 0 && (
-                      <div className="rounded-md border border-orange-500/40 bg-orange-500/10 px-3 py-2 text-sm text-orange-700 dark:text-orange-300">
-                        <div className="flex items-start justify-between gap-2">
-                          <span className="font-semibold">{t("booking.scanErrorsTitle")}</span>
-                          <button
-                            type="button"
-                            onClick={() => setScanProblems([])}
-                            aria-label={t("booking.importClose")}
-                          >
-                            <X className="size-4" />
-                          </button>
-                        </div>
-                        <ul className="mt-1 list-disc pl-5">
-                          {scanProblems.map((problem) => (
-                            <li key={problem.lineId}>
-                              {t("booking.scanErrorRow", {
-                                file: problem.filename,
-                                row: problem.lineNumber,
-                                message: importErrorText(problem.detail),
-                              })}
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
                     {importErrors.length > 0 && (
                       <div className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
                         <div className="flex items-start justify-between gap-2">

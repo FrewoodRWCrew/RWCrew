@@ -41,7 +41,7 @@ Scanned lines with an action (e.g. **Assignment**: create tags for a product) wa
 
 - A line you don't want to process is **cancelled** with a reason (required). It then gets the status Cancelled.
 - A tag that already has a product is never changed.
-- Lines with the action **Book In** are counted here too, but are booked in with StockMaster (**Open Inboeken** in their file block); **Process all** leaves them alone.
+- Lines with the action **Book In** (and other stock actions of the old scanner app) are no longer processed or counted: StockMaster books straight from the RWCrew Pi.
 - Processing needs the **Edit** right on Tag Linedata and **Create** on TagManagement (tags are created). Cancelling needs Edit on Tag Linedata.
 
 ## [files | tagscan.dashboard] CSV Source Files

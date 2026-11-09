@@ -23,6 +23,7 @@ from app.schemas.intervention_requests import (  # noqa: F401  (re-exported for 
     SetUserRoleRequest,
 )
 from app.schemas.masterdata import ImportOutcome
+from app.schemas.tagscan import RfidReaderInput  # noqa: F401  (shared with StockMaster's Pi bookings)
 
 # --- Masterdata (block 1): sizes and articles ---------------------------------
 
@@ -608,14 +609,6 @@ class DeskContextResponse(BaseModel):
 
 # Where a desk booking was made: the website's desk or RWCrew Pi.
 BookingSource = Literal["web", "pi"]
-
-
-class RfidReaderInput(BaseModel):
-    """The Pi's RFID reader (its settings screen): noted on the tags it read
-    in TagScan's register (last reader, last location, last read)."""
-
-    name: str | None = Field(default=None, max_length=255)
-    location: str | None = Field(default=None, max_length=255)
 
 
 class HandoutLineInput(BaseModel):

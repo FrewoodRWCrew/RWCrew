@@ -98,7 +98,7 @@ def test_chapters_follow_the_viewable_screens() -> None:
     topics = [chapter.topic for chapter in visible_chapters(manual, {"stockmaster.stock"})]
 
     # The general chapters plus the ones about the stock screen only.
-    assert topics == ["start", "booking", "stock", "book-in", "book-out"]
+    assert topics == ["start", "booking", "stock", "book-in", "book-out", "pi"]
 
 
 @pytest.mark.parametrize("locale", LOCALES)

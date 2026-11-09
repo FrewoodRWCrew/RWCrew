@@ -162,6 +162,15 @@ class FileContentResponse(BaseModel):
     truncated: bool
 
 
+class RfidReaderInput(BaseModel):
+    """The Pi's RFID reader (its settings screen): noted on the tags it read
+    in TagScan's register (last reader, last location, last read). Sent by
+    the RWCrew Pi with every Atelier and StockMaster action."""
+
+    name: str | None = Field(default=None, max_length=255)
+    location: str | None = Field(default=None, max_length=255)
+
+
 class RfidTagResponse(BaseModel):
     """One RFID tag, as shown on the TagManagement screen."""
 
@@ -188,6 +197,12 @@ class RfidTagResponse(BaseModel):
     # The Atelier piece this tag is sewn into, e.g. "T-shirt M" (read-only:
     # linked on the Raspberry Pi app's "RFID-tags koppelen").
     atelier_piece: str | None = None
+    # StockMaster's last known place of a product tag (read-only, set only by
+    # bookings on the RWCrew Pi): free / kar / out / written_off, None =
+    # unknown; with the kar's number for "kar" and "out".
+    stock_place: str | None = None
+    stock_place_kar: str | None = None
+    stock_place_at: datetime | None = None
 
 
 class RfidTagCreateRequest(BaseModel):

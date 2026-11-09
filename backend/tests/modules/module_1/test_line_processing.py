@@ -74,17 +74,17 @@ def test_pending_only_counts_new_assignment_lines(client: TestClient, db_session
     assert sorted(row["epc"] for row in pending) == ["E2AAA", "E2BBB"]
 
 
-def test_book_in_lines_are_counted_but_left_for_stockmaster(
+def test_book_in_lines_are_no_longer_waiting_work(
     client: TestClient, db_session: Session, scan_dirs: Path
 ) -> None:
-    # "Book In" lines are waiting work too, but StockMaster books them in —
-    # processing here never touches them.
+    # "Book In" from a CSV is retired (StockMaster books live on the RWCrew
+    # Pi): such lines are neither counted as waiting nor processed.
     product = _create_product(db_session, name="KBC Lint")
     _write_csv(scan_dirs, "scan.csv", [("E2AAA", "Assignment"), ("E2BBB", "Book In")])
     sync_screens(db_session)
     _admin_client(client, db_session)
     client.post(f"{BASE}/header-data/scan")
-    assert client.get(f"{BASE}/line-data/pending/count").json() == {"count": 2}
+    assert client.get(f"{BASE}/line-data/pending/count").json() == {"count": 1}
 
     header_id = _header_id(db_session, "scan.csv")
     response = client.post(
@@ -92,7 +92,7 @@ def test_book_in_lines_are_counted_but_left_for_stockmaster(
     )
 
     assert [row["epc"] for row in response.json()["results"]] == ["E2AAA"]
-    assert response.json()["remaining_count"] == 1
+    assert response.json()["remaining_count"] == 0
     assert _lines_by_epc(db_session)["E2BBB"].process_status == "new"
 
 

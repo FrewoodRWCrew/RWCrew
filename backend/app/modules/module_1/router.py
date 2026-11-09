@@ -74,6 +74,7 @@ from app.modules.module_1.line_processing import (
     process_pending_lines,
 )
 from app.modules.module_1.tag_line_data import list_line_data, sync_line_data
+from app.modules.module_4.tag_service import forget_place, place_kar_numbers
 from app.schemas.tagscan import (
     CreateOrGrantUserRequest,
     FileContentResponse,
@@ -513,10 +514,14 @@ def _atelier_piece_labels(db: Session) -> dict[int, str]:
     return {article_size_id: f"{article_name} {size_name}" for article_size_id, article_name, size_name in rows}
 
 
-def _tag_response(tag: RfidTag, labels: dict[int, str]) -> RfidTagResponse:
-    """A tag for TagManagement, with its Atelier piece (if any) as text."""
+def _tag_response(tag: RfidTag, labels: dict[int, str], kar_numbers: dict[int, str]) -> RfidTagResponse:
+    """A tag for TagManagement, with its Atelier piece (if any) as text and
+    the kar number of its StockMaster place (set by the RWCrew Pi)."""
     return RfidTagResponse.model_validate(tag, from_attributes=True).model_copy(
-        update={"atelier_piece": labels.get(tag.atelier_article_size_id) if tag.atelier_article_size_id else None}
+        update={
+            "atelier_piece": labels.get(tag.atelier_article_size_id) if tag.atelier_article_size_id else None,
+            "stock_place_kar": kar_numbers.get(tag.stock_kar_id) if tag.stock_kar_id else None,
+        }
     )
 
 
@@ -534,7 +539,9 @@ def list_tags(
 ) -> list[RfidTagResponse]:
     """List every registered RFID tag, for the TagManagement screen's table."""
     labels = _atelier_piece_labels(db)
-    return [_tag_response(tag, labels) for tag in db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all()]
+    tags = db.scalars(select(RfidTag).order_by(RfidTag.epc_uid)).all()
+    kar_numbers = place_kar_numbers(db, tags)
+    return [_tag_response(tag, labels, kar_numbers) for tag in tags]
 
 
 @router.post("/tags", response_model=RfidTagResponse, status_code=status.HTTP_201_CREATED)
@@ -557,7 +564,7 @@ def create_tag(
         ) from error
 
     db.refresh(new_tag)
-    return _tag_response(new_tag, {})
+    return _tag_response(new_tag, {}, {})
 
 
 @router.put("/tags/{tag_id}", response_model=RfidTagResponse)
@@ -575,6 +582,9 @@ def update_tag(
     _validate_tag_lookup_ids(db, payload)
     _check_not_atelier_piece(tag, payload)
 
+    # Another product: the tag's StockMaster place belonged to the old one.
+    if payload.assigned_product_id != tag.assigned_product_id:
+        forget_place(tag)
     for field, value in payload.model_dump().items():
         setattr(tag, field, value)
 
@@ -587,7 +597,7 @@ def update_tag(
         ) from error
 
     db.refresh(tag)
-    return _tag_response(tag, _atelier_piece_labels(db))
+    return _tag_response(tag, _atelier_piece_labels(db), place_kar_numbers(db, [tag]))
 
 
 def _unlink_tag_lines(db: Session, tag_ids: list[int]) -> None:

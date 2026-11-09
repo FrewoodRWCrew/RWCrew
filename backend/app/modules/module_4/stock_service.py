@@ -21,11 +21,11 @@
 #
 # The functions below don't depend on a web request (the user and season
 # are passed in) and never commit: the caller commits once everything
-# succeeded. That way the screens and, later, automated bookings from
-# TagScan CSVs (module_1/line_processing.py) follow exactly the same rules.
+# succeeded. That way the website's screens and the RWCrew Pi's bookings
+# with RFID tags (tag_booking.py) follow exactly the same rules.
 
 from collections.abc import Iterable
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 from sqlalchemy import select
@@ -85,22 +85,21 @@ class StockError(Exception):
 
 @dataclass
 class BookingLine:
-    """One product line as entered on a booking screen (or, later, grouped
-    from a TagScan CSV).
+    """One product line as entered on a booking screen (or counted from the
+    tags read on the RWCrew Pi).
     """
 
     product_id: int
     quantity: int
     # Only on "Kar terug": where the returned pieces go ("kar" or "free").
     destination: str | None = None
-    # Later: the TagScan scan lines this line was booked from.
-    tagscan_line_ids: list[int] = field(default_factory=list)
 
 
 @dataclass
 class BookingOrigin:
-    """Where a booking came from: a screen ("manual") or, later, an
-    automated TagScan run with its scan file.
+    """Where a booking came from: a website screen ("manual") or the
+    RWCrew Pi ("pi"). tagscan_header_id is only set on old bookings made from
+    a TagScan CSV, before the Pi booked live.
     """
 
     source: str = "manual"
@@ -287,31 +286,16 @@ def _merge_lines(lines: Iterable[BookingLine]) -> list[BookingLine]:
         key = (line.product_id, line.destination)
         if key in merged:
             merged[key].quantity += line.quantity
-            merged[key].tagscan_line_ids.extend(line.tagscan_line_ids)
         else:
-            merged[key] = BookingLine(line.product_id, line.quantity, line.destination, list(line.tagscan_line_ids))
+            merged[key] = BookingLine(line.product_id, line.quantity, line.destination)
     if not merged:
         raise StockError("no_lines")
     return list(merged.values())
 
 
 def _moves_for(lines: list[BookingLine], from_bucket: str, from_kar_id: int | None, to_bucket: str, to_kar_id: int | None) -> list[_Move]:
-    """The same from/to for every line. A line booked from several TagScan
-    lines keeps the link on its first one (the rest are linked by the
-    document's scan file).
-    """
-    return [
-        _Move(
-            line.product_id,
-            line.quantity,
-            from_bucket,
-            from_kar_id,
-            to_bucket,
-            to_kar_id,
-            line.tagscan_line_ids[0] if line.tagscan_line_ids else None,
-        )
-        for line in lines
-    ]
+    """The same from/to for every line."""
+    return [_Move(line.product_id, line.quantity, from_bucket, from_kar_id, to_bucket, to_kar_id) for line in lines]
 
 
 def _ensure_not_blocked(db: Session, lines: list[BookingLine]) -> None:
@@ -526,6 +510,68 @@ def dispatch_kar(
     return document
 
 
+@dataclass
+class DispatchResult:
+    """"Kar vertrekt" with corrections: the departure and the bookings that
+    first put the kar's contents right (each its own document)."""
+
+    dispatch: StockMasterDocument
+    unloaded: StockMasterDocument | None = None
+    written_off: StockMasterDocument | None = None
+    loaded: StockMasterDocument | None = None
+
+    @property
+    def corrections(self) -> list[StockMasterDocument]:
+        """The correction bookings that were made, in booking order."""
+        return [document for document in (self.unloaded, self.written_off, self.loaded) if document is not None]
+
+
+def dispatch_kar_corrected(
+    db: Session,
+    user: User,
+    season: Season,
+    kar_id: int,
+    *,
+    to_free: Iterable[BookingLine] = (),
+    written_off: Iterable[BookingLine] = (),
+    extra: Iterable[BookingLine] = (),
+    reason_id: int | None = None,
+    team_id: int | None = None,
+    festival_id: int | None = None,
+    reference: str | None = None,
+    comment: str | None = None,
+    origin: BookingOrigin | None = None,
+) -> DispatchResult:
+    """Kar vertrekt on the RWCrew Pi ("correct, then book"): what the kar
+    should hold but wasn't there goes back to free stock or is written off
+    (with a reason), the extra pieces that were read are loaded, and then the
+    whole — now correct — kar leaves. All in the caller's one transaction:
+    if any step is refused, nothing is booked. The corrections are ordinary
+    bookings (reference "Kar vertrekt <kar>"), each undone on its own.
+    """
+    kar = get_kar(db, kar_id)
+    ensure_kar_in_warehouse(db, kar)
+    to_free, written_off, extra = list(to_free), list(written_off), list(extra)
+    correction_reference = f"Kar vertrekt {kar.kar_nummer}"
+    result = DispatchResult(dispatch=None)  # type: ignore[arg-type]
+    if to_free:
+        result.unloaded = unload_kar(db, user, season, kar.id, to_free, comment=correction_reference, origin=origin)
+    if written_off:
+        result.written_off = book_out(
+            db, user, season, written_off,
+            reason_id=reason_id, from_kar_id=kar.id, reference=correction_reference, comment=comment, origin=origin,
+        )
+    if extra:
+        result.loaded = load_kar(
+            db, user, season, kar.id, extra, reference=correction_reference, comment=comment, origin=origin
+        )
+    result.dispatch = dispatch_kar(
+        db, user, season, kar.id,
+        team_id=team_id, festival_id=festival_id, reference=reference, comment=comment, origin=origin,
+    )
+    return result
+
+
 def _trip_deliveries(db: Session, trip: StockMasterKarTrip) -> list[int]:
     """Ids of the posted (not undone) follow-up deliveries to a kar on this trip."""
     return list(
@@ -631,10 +677,12 @@ def count_stock(
     reason_id: int | None = None,
     comment: str | None = None,
     origin: BookingOrigin | None = None,
+    allow_no_differences: bool = False,
 ) -> StockMasterDocument:
     """Telling: compare the counted quantities with the expected ones (free
     stock, or one kar) and book only the differences. Refused when nothing
-    differs.
+    differs — unless `allow_no_differences` (a count on the RWCrew Pi: even
+    when every quantity matched, it records where the read tags are).
     """
     kar = None
     if kar_id is not None:
@@ -658,7 +706,7 @@ def count_stock(
             moves.append(_Move(line.product_id, difference, EXTERNAL, None, bucket, place_kar_id))
         elif difference < 0:
             moves.append(_Move(line.product_id, -difference, bucket, place_kar_id, EXTERNAL, None))
-    if not moves:
+    if not moves and not allow_no_differences:
         raise StockError("no_differences")
 
     document = _new_document(
@@ -773,4 +821,10 @@ def reverse_document(
         trip_to_reopen.return_document_id = None
         trip_to_reopen.returned_at = None
     db.flush()
+
+    # RFID tags the booking moved (made on the RWCrew Pi) go back too.
+    # Imported here: tag_service itself builds on this module.
+    from app.modules.module_4.tag_service import reverse_places
+
+    reverse_places(db, document, reversal)
     return reversal

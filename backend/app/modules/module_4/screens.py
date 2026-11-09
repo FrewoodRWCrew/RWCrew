@@ -42,7 +42,11 @@ class ScreenDefinition:
 #   the "Masterdata" group (moved here from MasterData, module-9);
 # - dataupload: bulk XLSX import/export of those five lists;
 # - voicecount: counting a kar by voice on the phone ("create") and the
-#   desktop "Spraaktellingen" list ("view"; "edit" = cancel a count).
+#   desktop "Spraaktellingen" list ("view"; "edit" = cancel a count);
+# - tags: the RWCrew Pi's RFID tag tools — "view" = the tile, "create" = Tags
+#   koppelen (link read tags to a product), "edit" = EPC schrijven (program a
+#   tag's EPC). The Pi's booking tiles use stock / kars / count's "create";
+# - taghistory: Tag-historiek, the trace of a product tag by its EPC.
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.kpi", label="KPI", sort_order=1),
     ScreenDefinition(key="stockmaster.stock", label="Stock overview", sort_order=2),
@@ -62,6 +66,8 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.product-limits", label="Product limits", sort_order=16),
     ScreenDefinition(key="stockmaster.dataupload", label="Data Upload/Download", sort_order=17),
     ScreenDefinition(key="stockmaster.voicecount", label="Voice count", sort_order=18),
+    ScreenDefinition(key="stockmaster.tags", label="RFID tags (Pi)", sort_order=19),
+    ScreenDefinition(key="stockmaster.taghistory", label="Tag history", sort_order=20),
 ]
 
 

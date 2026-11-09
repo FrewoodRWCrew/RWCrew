@@ -12,10 +12,10 @@
 # lines with any other action simply stay "new" until their own handler
 # exists.
 #
-# "Book In" lines are the exception: they're waiting work too (counted in
-# TagScan's banner), but StockMaster carries them out — they fill its
-# Inboeken basket (module_4/tagscan_book_in.py), so this module never
-# processes them itself.
+# "Book In" (and the other stock actions of the old CSV scanner app) are no
+# longer carried out from CSVs: StockMaster bookings are made live on the
+# RWCrew Pi (module_4/tag_booking.py). Such lines simply stay "new", like any
+# other action without a handler, and aren't counted as waiting work.
 #
 # Kept free of FastAPI/routing concerns (mirrors tag_import.py), so it's
 # easy to unit test on its own.
@@ -111,16 +111,6 @@ def _process_assignment(db: Session, line: TagLineData, context: ProcessContext)
     return "exists", f"Tag already assigned to {other_name} — not changed"
 
 
-# Lowercased CSV "Action" spellings that mean "book these pieces in" —
-# handled by StockMaster's Inboeken, not by a handler here.
-BOOK_IN_ACTIONS = ("book in", "book_in", "bookin", "book-in")
-
-
-def is_book_in_action(action: str | None) -> bool:
-    """Whether a line's free-text CSV action is "Book In" (any spelling above)."""
-    return action is not None and action.strip().lower() in BOOK_IN_ACTIONS
-
-
 # Lowercased CSV "Action" value → the handler that carries it out.
 PROCESSABLE_ACTIONS: dict[str, Callable[[Session, TagLineData, ProcessContext], tuple[str, str]]] = {
     ACTION_ASSIGNMENT: _process_assignment,
@@ -139,10 +129,8 @@ def pending_filter(actions):
 
 
 def _pending_filter():
-    """TagScan's waiting lines: an action with a handler here, or "Book In"
-    (waiting for StockMaster).
-    """
-    return pending_filter([*PROCESSABLE_ACTIONS, *BOOK_IN_ACTIONS])
+    """TagScan's waiting lines: an action with a handler here."""
+    return pending_filter(PROCESSABLE_ACTIONS)
 
 
 def count_pending_lines(db: Session) -> int:

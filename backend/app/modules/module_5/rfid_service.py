@@ -15,7 +15,7 @@
 # Nothing here commits: the router does.
 
 from dataclasses import dataclass, field
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -35,6 +35,8 @@ from app.db.models.product import Product
 from app.db.models.rfid_tag import RfidTag
 from app.db.models.team import Team
 from app.db.models.user import User
+from app.modules.module_1.tag_trace import Reader, touch  # noqa: F401  (re-exported for the routers)
+from app.modules.module_1.tag_trace import clean_epcs as _clean_epcs
 from app.modules.module_5.stock_service import StockError
 
 # What a read EPC turned out to be (ResolvedTag.state):
@@ -47,27 +49,6 @@ PIECE = "piece"  # an Atelier piece that can be booked
 MAX_EPCS = 200
 # A mass return reads a whole box of clothing, so it may send more at once.
 MASS_RETURN_MAX_EPCS = 500
-
-
-@dataclass
-class Reader:
-    """The RFID reader that read the tags: the Pi's scanner name and location
-    (its settings screen), noted on the tags in TagScan's register."""
-
-    name: str | None = None
-    location: str | None = None
-
-
-def touch(tag: RfidTag, reader: Reader | None) -> None:
-    """Note on the tag's row in TagScan's register that this reader read it
-    just now (nothing without a reader: e.g. the website's desk)."""
-    if reader is None:
-        return
-    tag.last_read_at = datetime.now(timezone.utc)
-    if reader.name:
-        tag.last_reader_id = reader.name[:255]
-    if reader.location:
-        tag.last_location = reader.location[:255]
 
 
 @dataclass
@@ -108,10 +89,7 @@ def tagged_counts(db: Session) -> dict[int, int]:
 def clean_epcs(epcs: list[str], limit: int = MAX_EPCS) -> list[str]:
     """The EPCs as stored by TagScan (trimmed), each once, in reading order;
     refused when there are more than `limit`."""
-    cleaned = list(dict.fromkeys(epc.strip() for epc in epcs if epc and epc.strip()))
-    if len(cleaned) > limit:
-        raise StockError("too_many_tags", limit)
-    return cleaned
+    return _clean_epcs(epcs, limit, lambda limit: StockError("too_many_tags", limit))
 
 
 def open_line_of_tag(db: Session, tag_id: int) -> AtelierHandoutLine | None:

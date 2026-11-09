@@ -401,6 +401,12 @@ export interface RfidTag {
   /** The Atelier piece this tag is sewn into, e.g. "T-shirt M" (read-only:
    * linked on the Raspberry Pi app's "RFID-tags koppelen"). */
   atelier_piece: string | null;
+  /** StockMaster's last known place (set by bookings on the RWCrew Pi):
+   *  free / kar / out / written_off, null = unknown; read-only. */
+  stock_place: "free" | "kar" | "out" | "written_off" | null;
+  /** The kar number for "kar" and "out". */
+  stock_place_kar: string | null;
+  stock_place_at: string | null;
 }
 
 /** The fields sent to create or fully update an RFID tag. */
@@ -2540,25 +2546,6 @@ export interface StockMasterBookInImport {
   errors: { row_number: number; detail: string }[];
 }
 
-/** A scanned "Book In" line that can't be booked yet ("code|param" detail). */
-export interface StockMasterTagscanBookInProblem {
-  line_id: number;
-  line_number: number;
-  epc: string;
-  detail: string;
-}
-
-/** One scanned file's waiting "Book In" lines, as basket lines. */
-export interface StockMasterTagscanBookInFile {
-  header_data_id: number;
-  filename: string;
-  scanned_at: string;
-  /** The scan lines the basket lines came from (sent along with the booking). */
-  line_ids: number[];
-  lines: { product_id: number; quantity: number }[];
-  problems: StockMasterTagscanBookInProblem[];
-}
-
 export interface StockMasterTrip {
   trip_id: number;
   team_id: number | null;
@@ -2673,8 +2660,42 @@ export interface StockMasterBookingInput {
   reason_id?: number | null;
   comment?: string | null;
   lines: StockMasterBookingLineInput[];
-  /** Inboeken from a TagScan scan: the scanned lines the basket came from. */
-  tagscan_line_ids?: number[];
+}
+
+/** A product tag's last known place (StockMaster on the RWCrew Pi); null = unknown. */
+export type StockMasterTagPlace = "free" | "kar" | "out" | "written_off";
+
+/** One RWCrew Pi booking that moved a tag. */
+export interface StockMasterTagEvent {
+  document_id: number;
+  doc_number: string;
+  doc_type: StockMasterDocType;
+  status: "posted" | "reversed";
+  created_at: string;
+  created_by_name: string | null;
+  source: string | null;
+  from_place: StockMasterTagPlace | null;
+  from_kar_nummer: string | null;
+  to_place: StockMasterTagPlace | null;
+  to_kar_nummer: string | null;
+  /** False when only the place changed (no quantity was booked for it). */
+  counted: boolean;
+}
+
+/** Tag-historiek of one EPC. */
+export interface StockMasterTagHistory {
+  epc: string;
+  rfid_tag_id: number | null;
+  status: string | null;
+  product_id: number | null;
+  product_name: string | null;
+  place: StockMasterTagPlace | null;
+  place_kar_nummer: string | null;
+  place_at: string | null;
+  last_read_at: string | null;
+  last_reader_id: string | null;
+  last_location: string | null;
+  events: StockMasterTagEvent[];
 }
 
 export interface StockMasterMovement {

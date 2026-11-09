@@ -84,7 +84,7 @@ Goederen komen binnen (levering, aankoop) en gaan naar de **vrije voorraad** op 
 
 > Geblokkeerde producten kunnen niet ingeboekt worden. Komt een volledige bestelling binnen, start dan vanuit **Te bestellen**: de aantallen staan dan al klaar.
 
-**Vanuit een scan.** Scans-lijnen met de actie **Book In** verschijnen in een groenblauwe balk bovenaan elk StockMaster-scherm (en op de startpagina). Klik op **Bekijken** (of op **Laden uit scan** bij Inboeken): per gescand bestand zie je de producten en aantallen — elke tag telt als één stuk van het product waaraan hij in TagManagement gekoppeld is. **Laden in Inboeken** zet ze in de boekingslijst; controleer en bevestig zoals gewoonlijk. Pas dan worden de gescande lijnen als verwerkt gemarkeerd. Lijnen met een onbekende tag of een tag zonder product blijven wachten: koppel de tag in TagManagement en laad opnieuw, of annuleer de lijn met een reden.
+**Met RFID-tags.** Producten met een RFID-tag boek je in op de RWCrew Pi (zie het hoofdstuk StockMaster op de RWCrew Pi).
 
 ## [kar-load | stockmaster.kars] 2. Kar laden
 Vul een kar vanuit de vrije voorraad (of vanuit een andere kar).
@@ -207,6 +207,32 @@ Alle boekingen, de nieuwste eerst, met wie ze deed en wanneer.
 ![De boekingen](bookings.png)
 
 > Ongedaan maken gaat niet als de goederen intussen al verder geboekt zijn (bv. de kar is al vertrokken). Maak dan eerst die latere boeking ongedaan.
+
+## [pi] StockMaster op de RWCrew Pi
+Met de RWCrew Pi (de Raspberry Pi met RFID-lezer en touchscreen) boek je producten met een RFID-tag rechtstreeks in StockMaster: elke gelezen tag is één stuk van het product waaraan hij gekoppeld is. Er gaan geen CSV-bestanden meer naar Scans; de boeking staat meteen in **Boekingen** (bron "pi"), op jouw naam.
+
+1. Log op de Pi in met je eigen RWCrew-account en tik op de tegel **StockMaster**.
+2. Kies de boeking: **Inboeken**, **Kar laden**, **Kar vertrekt**, **Kar terug**, **Kar uitladen**, **Scrap** (afboeken met een reden) of **Telling**.
+3. Kies (indien nodig) de kar — leest de Pi de tag van de kar zelf, dan is die meteen gekozen — en lees de stukken.
+4. Producten zonder tag tel je erbij met **Product toevoegen** (product + aantal).
+5. Controleer de lijst en tik op **Bevestigen** (of druk op de bevestigknop).
+
+Elke tag onthoudt zijn **laatst gekende plaats**: vrije stock, in een kar, onderweg met een kar, of afgeboekt. Alleen boekingen op de Pi verplaatsen tags; een boeking op de website verplaatst aantallen, niet welke tags. Een tag wordt daarom alleen geweigerd bij een duidelijke tegenstrijdigheid (bv. inboeken van een tag die in een kar zit, of uitladen uit de verkeerde kar). Een **Telling** op de Pi zet de plaatsen weer juist.
+
+**Kar vertrekt** op de Pi vergelijkt wat je las met wat de kar volgens de stock bevat. Extra stukken worden eerst in de kar geladen. Voor ontbrekende stukken kies je per product: **terug naar vrije stock** of **afboeken** (met een reden). Daarna vertrekt de hele kar. Die correcties zijn aparte boekingen (opmerking/referentie "Kar vertrekt <kar>"): **Ongedaan maken** van het vertrek laat ze staan; maak ze indien nodig elk apart ongedaan.
+
+> Ongedaan maken van een Pi-boeking zet ook de tags terug op hun vorige plaats, zolang ze sindsdien niet opnieuw op de Pi geboekt werden.
+
+## [pi-tags | stockmaster.tags] Tags koppelen en EPC schrijven (RWCrew Pi)
+Op de Pi, onder **StockMaster**:
+
+- **Tags koppelen**: kies een product, lees de nieuwe tags (optioneel met een voor- en/of achtervoegsel als filter en een verwacht aantal) en tik op **Koppelen**. Nieuwe tags komen in Tagbeheer (Scans). Een tag van een ander product wordt alleen omgezet na bevestiging; zijn plaats wordt dan onbekend. Atelier-stukken en tags van een kar kunnen niet gekoppeld worden. Recht: **Aanmaken** op RFID-tags (Pi).
+- **EPC schrijven**: lees één tag en schrijf er een nieuw EPC-nummer op (met het toegangswachtwoord), of schrijf geavanceerd naar een geheugenbank. Recht: **Wijzigen** op RFID-tags (Pi).
+
+> Staat de tag al in Tagbeheer, dan blijft daar het oude EPC-nummer staan: pas het daar aan of koppel de tag opnieuw.
+
+## [taghistory | stockmaster.taghistory] Tag-historiek
+Typ of plak het EPC-nummer van een tag en klik op **Zoeken**. Je ziet het product, de status, de **laatst gekende plaats** en wanneer en waar de tag het laatst gelezen werd, en daaronder elke Pi-boeking die de tag verplaatste (nieuwste eerst): van welke plaats naar welke. "Enkel plaats" betekent dat alleen de plaats wijzigde (bv. een telling waarbij het aantal klopte).
 
 ## [voice-counts | stockmaster.voicecount] Spraaktellingen
 Karren tellen met je stem, op de telefoon (de app op je beginscherm, zie Mobile App), voor producten zonder RFID-tag.

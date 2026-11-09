@@ -17,7 +17,7 @@
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
 import { toast } from "sonner";
-import { Link, useRouter } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   ApiError,
   cancelTagLineProcessing,
@@ -50,23 +50,10 @@ interface PendingActionsDialogProps {
   onChanged: () => void;
 }
 
-/** The CSV action spellings that mean "Book In" (handled by StockMaster),
- * the same list as the backend's BOOK_IN_ACTIONS (line_processing.py). */
-const BOOK_IN_ACTIONS = ["book in", "book_in", "bookin", "book-in"];
-
-function isBookInAction(action: string | null): boolean {
-  return action !== null && BOOK_IN_ACTIONS.includes(action.trim().toLowerCase());
-}
-
-/** StockMaster's Inboeken with the "scans waiting" dialog open. */
-const STOCKMASTER_BOOK_IN_HREF = "/modules/module-4/book-in?tagscan=open";
-
-/** All waiting lines of one scanned file (its "Book In" lines form a block of their own). */
+/** All waiting lines of one scanned file. */
 interface FileGroup {
   key: string;
   headerId: number;
-  /** Book In lines: booked in via StockMaster, not processed here. */
-  isBookIn: boolean;
   filename: string;
   /** The CSV's "product / comments" value(s) — hints which product to pick. */
   csvComments: string[];
@@ -120,14 +107,12 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
   const fileGroups = useMemo<FileGroup[]>(() => {
     const groups = new Map<string, FileGroup>();
     for (const line of lines) {
-      const isBookIn = isBookInAction(line.action);
-      const key = `${line.header_data_id}-${isBookIn ? "book-in" : "process"}`;
+      const key = String(line.header_data_id);
       let group = groups.get(key);
       if (!group) {
         group = {
           key,
           headerId: line.header_data_id,
-          isBookIn,
           filename: line.header_filename,
           csvComments: [],
           lines: [],
@@ -142,8 +127,7 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
     return [...groups.values()];
   }, [lines]);
 
-  // Only the files processed here; Book In blocks go to StockMaster.
-  const processableGroups = fileGroups.filter((group) => !group.isBookIn);
+  const processableGroups = fileGroups;
   const processableLineCount = processableGroups.reduce((total, group) => total + group.lines.length, 0);
   const allFilesHaveProduct = processableGroups.every((group) => productByHeader[group.headerId] != null);
 
@@ -308,48 +292,35 @@ export function PendingActionsDialog({ open, onOpenChange, onChanged }: PendingA
                                   {t("csvCommentLabel")}: {group.csvComments.join(" / ")}
                                 </span>
                               )}
-                              {group.isBookIn ? (
-                                // Book In: booked in via StockMaster's Inboeken.
-                                <div className="ml-auto flex items-center gap-2">
-                                  <span className="text-sm text-muted-foreground">{t("bookInInStockMaster")}</span>
-                                  <Link
-                                    href={STOCKMASTER_BOOK_IN_HREF}
-                                    className="text-sm font-semibold underline underline-offset-2"
-                                  >
-                                    {t("openStockMaster")} →
-                                  </Link>
-                                </div>
-                              ) : (
-                                <div className="ml-auto flex items-center gap-2">
-                                  <span className="text-sm font-medium">{t("columnProduct")} *</span>
-                                  <SearchableSelect
-                                    value={chosenProductId != null ? String(chosenProductId) : null}
-                                    onValueChange={(value) =>
-                                      setProductByHeader((current) => ({
-                                        ...current,
-                                        [group.headerId]: Number(value),
-                                      }))
-                                    }
-                                    aria-label={t("chooseProduct")}
-                                    className={cn("h-8 w-56", chosenProductId == null && "border-orange-500")}
-                                    renderValue={(value: string | null) =>
-                                      products.find((product) => String(product.id) === value)?.name ??
-                                      t("chooseProduct")
-                                    }
-                                    options={products.map((product) => ({
-                                      value: String(product.id),
-                                      label: product.name,
-                                    }))}
-                                  />
-                                  <Button
-                                    size="sm"
-                                    disabled={isProcessing || chosenProductId == null}
-                                    onClick={() => processFiles([group.headerId])}
-                                  >
-                                    {t("processFileButton")}
-                                  </Button>
-                                </div>
-                              )}
+                              <div className="ml-auto flex items-center gap-2">
+                                <span className="text-sm font-medium">{t("columnProduct")} *</span>
+                                <SearchableSelect
+                                  value={chosenProductId != null ? String(chosenProductId) : null}
+                                  onValueChange={(value) =>
+                                    setProductByHeader((current) => ({
+                                      ...current,
+                                      [group.headerId]: Number(value),
+                                    }))
+                                  }
+                                  aria-label={t("chooseProduct")}
+                                  className={cn("h-8 w-56", chosenProductId == null && "border-orange-500")}
+                                  renderValue={(value: string | null) =>
+                                    products.find((product) => String(product.id) === value)?.name ??
+                                    t("chooseProduct")
+                                  }
+                                  options={products.map((product) => ({
+                                    value: String(product.id),
+                                    label: product.name,
+                                  }))}
+                                />
+                                <Button
+                                  size="sm"
+                                  disabled={isProcessing || chosenProductId == null}
+                                  onClick={() => processFiles([group.headerId])}
+                                >
+                                  {t("processFileButton")}
+                                </Button>
+                              </div>
                             </div>
                           </TableCell>
                         </TableRow>
