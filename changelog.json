@@ -781,9 +781,9 @@
   {
     "id": 64,
     "issues": [],
-    "date": "2026-11-09",
+    "date": "2026-11-10",
     "type": "feature",
-    "status": "in_progress",
+    "status": "done",
     "module": "StockMaster",
     "title": "StockMaster on the RWCrew Pi (live RFID bookings, tag places)",
     "description": "A StockMaster module on the Raspberry Pi books stock live through the API with per-piece tag places, replacing the CSV route.",
