@@ -809,7 +809,9 @@
     "module": "KarTracker",
     "title": "Karblad redesign (professional A4, no karcode)",
     "description": "The karblad stuck on each kar gets a clean black-and-white A4 layout with a large kar number, the first festival's terrain position and distribution point, and no longer shows the lock code.",
-    "commits": []
+    "commits": [
+      "fd31f296c20c882e70467e085da6ab77077683f3"
+    ]
   },
   {
     "id": 67,
@@ -820,6 +822,19 @@
     "module": "KarTracker",
     "title": "Karblad: one block per festival, internal delivery info small",
     "description": "The karblad shows each festival as its own readable block ordered by delivery date, with the distribution point and terrain position moved to a small internal line at the bottom.",
+    "commits": [
+      "fd31f296c20c882e70467e085da6ab77077683f3"
+    ]
+  },
+  {
+    "id": 68,
+    "issues": [],
+    "date": "2026-11-11",
+    "type": "update",
+    "status": "done",
+    "module": "KarTracker",
+    "title": "Karblad: finishing touches, always one A4 page",
+    "description": "The karblad gets a rounded RW logo and festival blocks, a smaller kar number, a \"Festival seizoen\" title, a self-inventory tip under the QR code and no print date, and is guaranteed to stay one A4 page per kar.",
     "commits": []
   }
 ]
