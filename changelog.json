@@ -788,5 +788,16 @@
     "title": "StockMaster on the RWCrew Pi (live RFID bookings, tag places)",
     "description": "A StockMaster module on the Raspberry Pi books stock live through the API with per-piece tag places, replacing the CSV route.",
     "commits": []
+  },
+  {
+    "id": 65,
+    "issues": [],
+    "date": "2026-11-11",
+    "type": "feature",
+    "status": "in_progress",
+    "module": "StockMaster",
+    "title": "Karblad QR page + public Kar inventaris",
+    "description": "The karblad QR code opens a kar page with two tiles (intervention request, kar inventory) where a team unlocks its kar with the lock code and logs a count of what is in it, shown to StockMaster staff without changing stock.",
+    "commits": []
   }
 ]
