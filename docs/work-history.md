@@ -3,6 +3,35 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-11 — Karblad: aflever zone box, type in the footer, location "description (name)"
+**Request:** Remove the type box (type small bottom right in the footer, where the print date was), show the aflever
+zone (first festival) in that box instead, ploegnaam 20 % bigger, and per festival block the location as the
+description with the afleverlocatie name in brackets behind it.
+**Plan:**
+- Hero box = AFLEVER ZONE (`kar.aflever_zone`); info panel keeps only VERENIGING at 16.8 pt (was 14), full width.
+- Footer right "Type: <type>"; router builds the karblad location as `"{description} ({name})"` (name alone
+  without description). Kar Planning grid and QR prefill unchanged.
+**Changes:** `backend/app/modules/module_2/karblad_pdf.py`, `backend/app/modules/module_2/router.py`
+(`print_kar_planning`), `backend/tests/modules/module_2/test_kar_planning.py` (zone box, footer type, location
+format asserts), help manual module_2 nl/en.
+**Verification:** test_kar_planning 12 passed; full backend suite 1056 passed; sample renders (2 and 14 festivals) checked:
+zone box, bigger ploeg fits the panel, "... (OUTS_11)" locations, "Type: Box" bottom right, one page per kar.
+
+## 2026-11-11 — Karblad: aesthetic touches + rule "one karblad = one A4 page"
+**Request:** Small aesthetic changes: RW logo (top left) with rounded corners, kar number 15 % smaller, festival blocks
+with small rounded corners, no print date, "Festival seizoen" before the year, a very small hint under the help box's
+QR code that the team can do a self-inventory with it. Plus a standing rule: one karblad may never be bigger than one A4.
+**Plan:**
+- Logo gets a PIL rounded-rectangle alpha mask; kar number max 93.5 pt (was 110); cards use fpdf2 `round_corners`.
+- Footer keeps only DP/terreinpositie; header title "Festival seizoen {season}" (nl) / "Festival season {season}" (en).
+- Help QR 38 mm at the top of the box, two 6 pt lines under it ("Tip: Doe zelf de inventaris van je kar / met deze QR-code.").
+- Rule enforced: `build_karbladen_pdf` raises when pages != karren; stress test; rule in CLAUDE.md + memory.
+**Changes:** `backend/app/modules/module_2/karblad_pdf.py`; `backend/tests/modules/module_2/test_kar_planning.py`
+(title/hint/no print date asserts + `test_karblad_is_never_more_than_one_a4_page_per_kar`: 30 festivals, very long
+texts, 3 karren → 3 A4 pages); help manual module_2 nl/en; `CLAUDE.md` (new "KarTracker (module-2): Karblad" section).
+**Verification:** test_kar_planning 12 passed; full backend suite 1056 passed; sample renders (2 and 14
+festivals) checked in greyscale: rounded logo and cards, smaller number, no print date, hint readable inside the box.
+
 ## 2026-11-11 — Karblad: one block per festival, internal delivery info small at the bottom
 **Request:** Follow-up on the karblad redesign: the festival table cut the location off ("...Haac..."). Split it into a
 block per festival, ordered by date, everything easily readable. Distributiepunt and Terreinpositie are TeamKar-internal

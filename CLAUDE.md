@@ -285,6 +285,13 @@ festival; route prefix `/modules/module-2/planning-analyses/`.
   `delivery_planning_pdf.py`): one table (Stop, location, karren, Levertoer, "Geleverd" box) + optional route map with
   a numbered badge per stop and the dashed route 1 → n; printing a subset keeps the screen's stop numbers.
 
+## KarTracker (module-2): Karblad
+
+The kar sheet stuck on every kar (`module_2/karblad_pdf.py`, printed from Kar Planning, black & white). **Rule: one
+karblad = exactly one A4 page per kar, never more**, whatever the data: fixed bands, auto page break off, festival
+blocks shrink/wrap/cut instead of growing; `build_karbladen_pdf` raises when the page count differs from the karren
+and `test_karblad_is_never_more_than_one_a4_page_per_kar` stress-tests it. It never prints the karcode.
+
 ## KarTracker (module-2): Karcode
 
 **The stored code is the truth**: `KarTracker_karren.kar_code` (String 20, typed by hand on KarManagement or via the kar

@@ -799,8 +799,8 @@ def print_kar_planning(
             )
         ):
             plans[(plan.team_id, plan.festival_id)] = {
-                # "name — description", the same label the Kar Planning grid shows.
-                "location": f"{plan.name} — {plan.description}" if plan.description else plan.name,
+                # On the karblad: "description (name)", the readable part first.
+                "location": f"{plan.description} ({plan.name})" if plan.description else plan.name,
                 "location_name": plan.name,
                 "zone": plan.zone_name,
                 "distributiepunt": plan.distributiepunt_name,

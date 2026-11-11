@@ -402,6 +402,7 @@ def test_print_uses_selected_season_and_first_festival_and_hides_kar_code(
     first_location = _create_location(db_session, name="Poort 9")
     second_location = _create_location(db_session, name="Poort 1")
     first_location.terrein_positie = 4
+    first_location.description = "Hoofdingang"
     second_location.terrein_positie = 12
     db_session.add_all(
         [
@@ -424,13 +425,55 @@ def test_print_uses_selected_season_and_first_festival_and_hides_kar_code(
 
     assert response.status_code == 200
     content = _pdf_text(response.content)
-    # Title = the selected season's name.
-    assert b"(2027)" in content
-    assert b"(2026)" not in content
+    # Title = "Festival seizoen" + the selected season's name.
+    assert b"(Festival seizoen 2027)" in content
+    assert b"2026)" not in content
+    # The self-inventory hint under the help box's QR code; no print date.
+    assert b"(Tip: Doe zelf de inventaris van je kar)" in content
+    assert b"Afgedrukt op" not in content
     # Distribution point and terrain position of the first active festival's location.
     assert b"(DP Poort 9)" in content
     assert b"(4)" in content
     assert b"(DP Poort 1)" not in content
+    # The aflever zone sits in the box next to the kar number; the type is in the footer.
+    assert b"(Zone Poort 9)" in content
+    assert b"(Type:)" in content
+    assert b"(TYPE)" not in content
+    # Location = "description (name)" (fpdf2 escapes the brackets).
+    assert b"(Hoofdingang \(Poort 9\))" in content
     # No lock code, no karcode label.
     assert b"2111" not in content
     assert b"Karcode" not in content
+
+
+def test_karblad_is_never_more_than_one_a4_page_per_kar() -> None:
+    # Rule: one karblad = one A4 page, whatever the data. Extreme input: many
+    # festivals and very long names everywhere.
+    long_text = "Heel lange naam die echt nergens op past " * 6
+    festivals = [
+        KarbladFestival(
+            name=f"{long_text} {index}",
+            zone_name=long_text,
+            location=long_text,
+            delivery_date=date(2026, 6, 1 + index % 28),
+            pickup_date=date(2026, 7, 1 + index % 28),
+        )
+        for index in range(30)
+    ]
+    kar = KarbladData(
+        kar_nummer="B123456789",
+        team_name=long_text,
+        transport_type=long_text,
+        festivals=festivals,
+        qr_url="https://rwcrew.eu/nl/kar?" + "x" * 300,
+        aflever_zone=long_text,
+        distribution_point=long_text,
+        terrein_positie=123456,
+    )
+
+    pdf = build_karbladen_pdf([kar, kar, kar], long_text, "nl")
+
+    assert _page_count(pdf) == 3
+    # Every page is A4 portrait (595.28 x 841.89 pt).
+    boxes = re.findall(rb"/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]", pdf)
+    assert boxes and all((float(w), float(h)) == (595.28, 841.89) for w, h in boxes)

@@ -4,18 +4,23 @@
 # and to print cleanly on a black-and-white printer (no colour at all).
 #
 # Page, top to bottom:
-#   - header: RW logo, the selected season's name (the year) and a QR code
+#   - header: RW logo (rounded corners), "Festival seizoen <season>" and a QR code
 #     carrying just the kar number (for scanning the kar);
-#   - the kar number, very large, with the kar's transport type;
-#   - an info panel: Vereniging and Aflever zone (of the afleverlocatie at
-#     the season's first active festival);
+#   - the kar number, very large, with the Aflever zone (of the
+#     afleverlocatie at the season's first active festival) in a box;
+#   - an info panel with the Vereniging (the kar's team);
 #   - the delivery schedule: one block per festival, ordered by delivery
 #     date, laid out in a grid that always fits the page;
 #   - a help box whose QR code opens the public kar page (no login) with its
 #     two tiles, Interventie aanvragen and Kar inventaris, prefilled for this
-#     kar (see build_kar_qr_url);
+#     kar (see build_kar_qr_url), with a small hint under it that the team
+#     can count its own kar there (Kar inventaris);
 #   - a small footer with TeamKar's internal delivery info (Distributiepunt
-#     and Terreinpositie of that same location) and the print date.
+#     and Terreinpositie of that same location) and, right, the kar's
+#     transport type.
+# Rule: one karblad is ALWAYS exactly one A4 page, whatever the data —
+# every band has a fixed height and content shrinks/wraps/cuts instead of
+# growing; build_karbladen_pdf refuses a PDF with more pages than karren.
 # The kar's lock code (karcode) is deliberately NOT printed: this sheet hangs
 # on the kar, so printing it would defeat the lock.
 #
@@ -29,9 +34,8 @@ from functools import lru_cache
 from urllib.parse import urlencode
 
 from fpdf import FPDF
-from PIL import Image
+from PIL import Image, ImageDraw
 
-from app.core.timezone import belgian_now
 from app.modules.module_4.pdf_layout import draw_qr
 from app.shared.pdf_common import (
     ASSETS_DIR,
@@ -80,8 +84,9 @@ CARD_FULL_H = 40.0
 LABELS = {
     "nl": {
         "subtitle": "Karblad",
+        "season_title": "Festival seizoen {season}",
         "kar_box": "KAR / BOX",
-        "type": "TYPE",
+        "type_footer": "Type:",
         "association": "VERENIGING",
         "zone": "AFLEVER ZONE",
         "distribution_point": "Distributiepunt:",
@@ -95,14 +100,16 @@ LABELS = {
         "help_line_1": "Iets te kort? Vragen over het materiaal?",
         "help_line_2": "Scan de QR-code met je smartphone.",
         "help_line_3": "Vraag een interventie aan of geef de inhoud van je kar door.",
-        "printed_on": "Afgedrukt op {date}",
+        "qr_hint_1": "Tip: Doe zelf de inventaris van je kar",
+        "qr_hint_2": "met deze QR-code.",
         "weekdays": ["ma", "di", "wo", "do", "vr", "za", "zo"],
         "months": ["jan", "feb", "mrt", "apr", "mei", "jun", "jul", "aug", "sep", "okt", "nov", "dec"],
     },
     "en": {
         "subtitle": "Cart sheet",
+        "season_title": "Festival season {season}",
         "kar_box": "KAR / BOX",
-        "type": "TYPE",
+        "type_footer": "Type:",
         "association": "ASSOCIATION",
         "zone": "DELIVERY ZONE",
         "distribution_point": "Distribution point:",
@@ -116,7 +123,8 @@ LABELS = {
         "help_line_1": "Missing something? Questions about the equipment?",
         "help_line_2": "Scan the QR code with your smartphone.",
         "help_line_3": "Request an intervention or report what is in your kar.",
-        "printed_on": "Printed on {date}",
+        "qr_hint_1": "Tip: Take your kar's inventory yourself",
+        "qr_hint_2": "with this QR code.",
         "weekdays": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
         "months": ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
     },
@@ -181,12 +189,20 @@ def build_kar_qr_url(
 
 @lru_cache(maxsize=1)
 def _rw_logo() -> Image.Image | None:
-    """The RW logo in greyscale, shrunk once for printing (None if missing)."""
+    """The RW logo in greyscale with rounded corners, shrunk once for
+    printing (None if missing). The corners are made transparent with an
+    alpha mask, which fpdf2 embeds as a soft mask."""
     if not RW_LOGO.exists():
         return None
     logo = Image.open(RW_LOGO).convert("L")
     logo.thumbnail((RW_LOGO_PRINT_PX, RW_LOGO_PRINT_PX), Image.Resampling.LANCZOS)
-    return logo
+    # Rounded-rectangle mask: opaque inside, transparent in the corners.
+    mask = Image.new("L", logo.size, 0)
+    radius = round(min(logo.size) * 0.14)
+    ImageDraw.Draw(mask).rounded_rectangle((0, 0, logo.width - 1, logo.height - 1), radius=radius, fill=255)
+    rounded = logo.convert("LA")
+    rounded.putalpha(mask)
+    return rounded
 
 
 def _format_date(value: date | None, labels: dict) -> str:
@@ -266,8 +282,8 @@ def _text(
 
 
 def _draw_header(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
-    """RW logo, the season's name with "Karblad" under it, the kar-number QR
-    code right, and a heavy rule under it all."""
+    """RW logo, "Festival seizoen <season>" with "Karblad" under it, the
+    kar-number QR code right, and a heavy rule under it all."""
     logo = _rw_logo()
     text_left = MARGIN
     if logo is not None:
@@ -276,7 +292,9 @@ def _draw_header(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
 
     qr_size = 26.0
     text_w = PAGE_W - MARGIN - qr_size - 4 - text_left
-    _text(pdf, text_left, HEADER_TOP + 3, text_w, 12, title, style="B", size=28)
+    heading = pdf_text(labels["season_title"].format(season=title))
+    heading_size = _fit_font_size(pdf, heading, "B", 28, text_w - 1, 14)
+    _text(pdf, text_left, HEADER_TOP + 3, text_w, 12, heading, style="B", size=heading_size)
     _text(pdf, text_left, HEADER_TOP + 16, text_w, 7, labels["subtitle"], size=13, color=MUTED_TEXT)
 
     # Just the kar number, so scanning it identifies the kar.
@@ -288,50 +306,47 @@ def _draw_header(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
 
 
 def _draw_hero(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
-    """The kar number as large as fits, with its transport type in an
-    outlined box on the right."""
-    type_w = 52.0
-    number_w = CONTENT_W - type_w - 8
+    """The kar number as large as fits, with the aflever zone (first
+    active festival) in an outlined box on the right."""
+    box_w = 52.0
+    number_w = CONTENT_W - box_w - 8
 
     _text(pdf, MARGIN, HERO_TOP + 1, number_w, 6, labels["kar_box"], style="B", size=10,
           color=MUTED_TEXT, spacing=1.2)
     number = pdf_text(kar.kar_nummer)
-    size = _fit_font_size(pdf, number, "B", 110, number_w, 40)
+    # 93.5 pt = 85 % of the original 110 pt; long numbers still shrink.
+    size = _fit_font_size(pdf, number, "B", 93.5, number_w, 34)
     pdf.set_font("Helvetica", "B", size)
     pdf.set_text_color(*BLACK)
     pdf.set_xy(MARGIN - 1.5, HERO_TOP + 8)
     pdf.cell(number_w, 40, number, align="L")
 
-    # Transport type: outlined box, small label over a bold value.
-    box_x = PAGE_W - MARGIN - type_w
+    # Aflever zone: outlined box, small label over a bold value.
+    box_x = PAGE_W - MARGIN - box_w
     box_y = HERO_TOP + 14
     pdf.set_draw_color(*BLACK)
     pdf.set_line_width(0.6)
-    pdf.rect(box_x, box_y, type_w, 24, style="D", round_corners=True, corner_radius=2.5)
-    _text(pdf, box_x, box_y + 3, type_w, 5, labels["type"], style="B", size=8, color=MUTED_TEXT,
+    pdf.rect(box_x, box_y, box_w, 24, style="D", round_corners=True, corner_radius=2.5)
+    _text(pdf, box_x, box_y + 3, box_w, 5, labels["zone"], style="B", size=8, color=MUTED_TEXT,
           align="C", spacing=1.2)
-    type_size = _fit_font_size(pdf, pdf_text(kar.transport_type), "B", 18, type_w - 6, 9)
-    _text(pdf, box_x, box_y + 10, type_w, 10, kar.transport_type, style="B", size=type_size, align="C")
+    zone = pdf_text(kar.aflever_zone) if kar.aflever_zone not in (None, "") else "-"
+    zone_size = _fit_font_size(pdf, zone, "B", 18, box_w - 6, 9)
+    _text(pdf, box_x, box_y + 10, box_w, 10, zone, style="B", size=zone_size, align="C")
 
 
 def _draw_info_panel(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
-    """A grey panel with the team and the delivery zone side by side."""
+    """A grey panel with the kar's team (ploegnaam) across the full width."""
     pdf.set_fill_color(*PANEL_FILL)
     pdf.rect(MARGIN, INFO_TOP, CONTENT_W, INFO_H, style="F", round_corners=True, corner_radius=2.5)
 
-    cells = (
-        (labels["association"], kar.team_name),
-        (labels["zone"], kar.aflever_zone),
-    )
-    column_w = CONTENT_W / 2
-    for index, (label, value) in enumerate(cells):
-        x = MARGIN + 5 + index * column_w
-        y = INFO_TOP + 3
-        width = column_w - 8
-        _text(pdf, x, y, width, 4, label, style="B", size=7.5, color=MUTED_TEXT, spacing=0.8)
-        shown = pdf_text(value) if value not in (None, "") else "-"
-        value_size = _fit_font_size(pdf, shown, "B", 14, width - 1, 9)
-        _text(pdf, x, y + 4.5, width, 7, shown, style="B", size=value_size)
+    x = MARGIN + 5
+    y = INFO_TOP + 3
+    width = CONTENT_W - 10
+    _text(pdf, x, y, width, 4, labels["association"], style="B", size=7.5, color=MUTED_TEXT, spacing=0.8)
+    shown = pdf_text(kar.team_name) if kar.team_name not in (None, "") else "-"
+    # 16.8 pt = 120 % of the earlier 14 pt; a long name still shrinks.
+    value_size = _fit_font_size(pdf, shown, "B", 16.8, width - 1, 10.8)
+    _text(pdf, x, y + 4.5, width, 8, shown, style="B", size=value_size)
 
 
 def _sorted_festivals(festivals: list[KarbladFestival]) -> list[KarbladFestival]:
@@ -362,13 +377,15 @@ def _draw_festival_card(
     scale = min(1.0, h / CARD_FULL_H)
     pad = 4 * scale
 
-    # Outline and the black name bar.
-    pdf.set_draw_color(*BLACK)
-    pdf.set_line_width(0.4)
-    pdf.rect(x, y, w, h, style="D")
+    # The black name bar (rounded top corners), then the rounded outline
+    # over it so the edge stays crisp.
+    radius = 1.8 * scale
     bar_h = 8 * scale
     pdf.set_fill_color(*BLACK)
-    pdf.rect(x, y, w, bar_h, style="F")
+    pdf.rect(x, y, w, bar_h, style="F", round_corners=("TOP_LEFT", "TOP_RIGHT"), corner_radius=radius)
+    pdf.set_draw_color(*BLACK)
+    pdf.set_line_width(0.4)
+    pdf.rect(x, y, w, h, style="D", round_corners=True, corner_radius=radius)
     name = pdf_text(festival.name)
     name_size = _fit_font_size(pdf, name, "B", 13 * scale, w - 2 * pad, 9 * scale)
     _text(pdf, x + pad, y, w - 2 * pad, bar_h, name, style="B", size=name_size, color=WHITE)
@@ -440,12 +457,13 @@ def _draw_schedule(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
 
 def _draw_help_box(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
     """Outlined box: the help text left, the public kar page's QR code
-    right, the TeamKar logo bottom left."""
+    right with a tiny self-inventory hint under it, the TeamKar logo
+    bottom left."""
     pdf.set_draw_color(*BLACK)
     pdf.set_line_width(0.6)
     pdf.rect(MARGIN, HELP_TOP, CONTENT_W, HELP_H, style="D", round_corners=True, corner_radius=3)
 
-    qr_size = 42.0
+    qr_size = 38.0
     text_x = MARGIN + 7
     text_w = CONTENT_W - qr_size - 18
     line_1 = pdf_text(labels["help_line_1"])
@@ -460,13 +478,21 @@ def _draw_help_box(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
         pdf.image(logo, x=text_x - 1, y=HELP_TOP + HELP_H - logo_h - 3, h=logo_h, w=logo_h * TEAMKAR_LOGO_RATIO)
 
     if kar.qr_url:
-        draw_qr(pdf, kar.qr_url, PAGE_W - MARGIN - qr_size - 4, HELP_TOP + (HELP_H - qr_size) / 2, qr_size)
+        qr_x = PAGE_W - MARGIN - qr_size - 6
+        qr_y = HELP_TOP + 3
+        draw_qr(pdf, kar.qr_url, qr_x, qr_y, qr_size)
+        # Very small, centred under the QR: the team can count its kar there.
+        hint_w = qr_size + 10
+        hint_x = qr_x - 5
+        for index, key in enumerate(("qr_hint_1", "qr_hint_2")):
+            _text(pdf, hint_x, qr_y + qr_size + 0.6 + index * 2.6, hint_w, 2.6, labels[key], size=6,
+                  color=FOOTER_TEXT, align="C")
 
 
-def _draw_footer(pdf: FPDF, kar: KarbladData, printed_on: str, labels: dict) -> None:
-    """A thin grey line; left, small, TeamKar's internal delivery info
-    (distribution point and terrain position, only needed while
-    delivering); right the print date."""
+def _draw_footer(pdf: FPDF, kar: KarbladData, labels: dict) -> None:
+    """A thin grey line and under it, small, TeamKar's internal delivery
+    info (distribution point and terrain position, only needed while
+    delivering) left and the kar's transport type right."""
     pdf.set_draw_color(*BORDER_COLOR)
     pdf.set_line_width(0.2)
     pdf.line(MARGIN, FOOTER_Y - 0.5, PAGE_W - MARGIN, FOOTER_Y - 0.5)
@@ -487,11 +513,18 @@ def _draw_footer(pdf: FPDF, kar: KarbladData, printed_on: str, labels: dict) -> 
         _text(pdf, x + label_w, FOOTER_Y, value_w + 1, 5, shown, style="B", size=7.5, color=FOOTER_TEXT)
         x += label_w + value_w + 6
 
-    _text(pdf, MARGIN + CONTENT_W / 2, FOOTER_Y, CONTENT_W / 2, 5,
-          labels["printed_on"].format(date=printed_on), size=7.5, color=MUTED_TEXT, align="R")
+    # "Type: Box", right-aligned: label normal, value bold.
+    type_value = pdf_text(kar.transport_type) if kar.transport_type else "-"
+    pdf.set_font("Helvetica", "B", 7.5)
+    value_w = min(60.0, pdf.get_string_width(type_value) + 1.5)
+    pdf.set_font("Helvetica", "", 7.5)
+    label_w = pdf.get_string_width(pdf_text(labels["type_footer"])) + 1.2
+    value_x = PAGE_W - MARGIN - value_w
+    _text(pdf, value_x - label_w, FOOTER_Y, label_w + 1, 5, labels["type_footer"], size=7.5, color=FOOTER_TEXT)
+    _text(pdf, value_x, FOOTER_Y, value_w + 1, 5, type_value, style="B", size=7.5, color=FOOTER_TEXT)
 
 
-def _draw_page(pdf: FPDF, kar: KarbladData, title: str, labels: dict, printed_on: str) -> None:
+def _draw_page(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
     """One kar's page."""
     pdf.add_page()
     _draw_header(pdf, kar, title, labels)
@@ -499,21 +532,26 @@ def _draw_page(pdf: FPDF, kar: KarbladData, title: str, labels: dict, printed_on
     _draw_info_panel(pdf, kar, labels)
     _draw_schedule(pdf, kar, labels)
     _draw_help_box(pdf, kar, labels)
-    _draw_footer(pdf, kar, printed_on, labels)
+    _draw_footer(pdf, kar, labels)
 
 
 def build_karbladen_pdf(karren: list[KarbladData], title: str, locale: str = "nl") -> bytes:
     """A PDF with one karblad page per entry of `karren`, in the given
     order. `title` (the selected season's name) heads every page."""
     labels = LABELS.get(locale, LABELS["nl"])
-    printed_on = belgian_now().strftime("%d-%m-%Y")
 
     pdf = FPDF(orientation="P", unit="mm", format="A4")
     # Every element is placed at an absolute position, so fpdf2 must never
     # start an extra page on its own when a cell reaches the bottom.
     pdf.set_auto_page_break(auto=False)
-    pdf.set_title(pdf_text(f"{labels['subtitle']} {title}"))
+    pdf.set_title(pdf_text(f"{labels['subtitle']} - {labels['season_title'].format(season=title)}"))
     for kar in karren:
-        _draw_page(pdf, kar, title, labels, printed_on)
+        _draw_page(pdf, kar, title, labels)
+
+    # Rule: one karblad is never more than one A4 page. Should a layout
+    # change ever make a kar spill over, fail loudly instead of printing
+    # extra sheets.
+    if pdf.pages_count != len(karren):
+        raise RuntimeError(f"karblad PDF has {pdf.pages_count} pages for {len(karren)} karren")
 
     return bytes(pdf.output())
