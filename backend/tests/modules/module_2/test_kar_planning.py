@@ -18,7 +18,7 @@ from app.db.models.kartracker_user_role import KarTrackerUserRole
 from app.db.models.product import Product
 from app.db.models.team import Team
 from app.db.models.team_festival import TeamFestival
-from app.modules.module_2.karblad_pdf import KarbladData, KarbladFestival, build_karbladen_pdf, build_request_url
+from app.modules.module_2.karblad_pdf import KarbladData, KarbladFestival, build_karbladen_pdf, build_kar_qr_url
 from app.modules.module_2.screens import sync_screens
 from tests.modules.module_2.conftest import (
     create_kartracker_module,
@@ -327,16 +327,16 @@ def test_user_without_karplanning_permission_cannot_print(client: TestClient, db
     assert response.status_code == 403
 
 
-def test_request_url_prefills_known_fields_and_skips_blanks() -> None:
-    url = build_request_url("https://rwcrew.eu/", "nl", 7, "B051", "Inside Merch A-terrein", "INSI_39")
+def test_kar_qr_url_prefills_known_fields_and_skips_blanks() -> None:
+    url = build_kar_qr_url("https://rwcrew.eu/", "nl", 7, "B051", "Inside Merch A-terrein", "INSI_39")
     assert url == (
-        "https://rwcrew.eu/nl/intervention-request?"
+        "https://rwcrew.eu/nl/kar?"
         "team_id=7&cart_number=B051&delivery_location=Inside+Merch+A-terrein&zone=INSI_39"
     )
 
     # A kar without a team or plan only carries its number.
-    assert build_request_url("https://rwcrew.eu", "en", None, "B002", None, None) == (
-        "https://rwcrew.eu/en/intervention-request?cart_number=B002"
+    assert build_kar_qr_url("https://rwcrew.eu", "en", None, "B002", None, None) == (
+        "https://rwcrew.eu/en/kar?cart_number=B002"
     )
 
 

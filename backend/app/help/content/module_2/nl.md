@@ -67,7 +67,7 @@ Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg
 
 ![Kar Planning](kar-planning.png)
 
-Het karblad toont het karnummer, de ploeg en per festival waar en wanneer de kar geleverd en opgehaald wordt. Rechtsboven staat een QR-code met het karnummer (voor KarScan), lager een QR-code naar het formulier om een interventie aan te vragen voor die ploeg.
+Het karblad toont het karnummer, de ploeg en per festival waar en wanneer de kar geleverd en opgehaald wordt. Rechtsboven staat een QR-code met het karnummer (voor KarScan), lager een QR-code naar de kar-pagina (zonder login) met twee tegels: **Interventie aanvragen** en **Kar inventaris** (de ploeg telt wat er in de kar zit, zie de handleiding van StockMaster). Oudere karbladen openen dezelfde pagina.
 
 > Kar Planning is enkel om te bekijken. Wijzig karren in **KarManagement** en afleverlocaties in **Plan a kar**.
 

@@ -165,3 +165,44 @@
 tr[data-status-color] > td {
   color: inherit !important;
 }
+/* The public kar page (karblad QR code: /kar, its intervention form and Kar
+   inventaris) uses the RWCrew Pi app's look (RWRaspiTagScanner rwpi/qml/
+   Theme.qml): near-black surfaces, rounded cards, big touch targets. Light
+   mode follows the Pi's light theme. Used as Tailwind arbitrary values, e.g.
+   bg-[var(--kq-surface)] (see components/shared/kar-qr/kar-qr-shell.tsx). */
+.kar-qr {
+  --kq-bg: #f3f4f7;
+  --kq-surface: #ffffff;
+  --kq-raised: #f8f9fb;
+  --kq-border: #e2e5eb;
+  --kq-text: #111827;
+  --kq-muted: #6b7280;
+  --kq-faint: #a3aab8;
+  --kq-ok: #16a34a;
+  --kq-warn: #ea580c;
+  --kq-danger: #dc2626;
+  --kq-info: #2563eb;
+  --kq-teal: #0d9488;
+  --kq-orange: #ea580c;
+  --kq-soft-alpha: 10%;
+}
+.dark .kar-qr {
+  --kq-bg: #0b0d12;
+  --kq-surface: #151922;
+  --kq-raised: #1d2230;
+  --kq-border: #2a3142;
+  --kq-text: #f4f5f7;
+  --kq-muted: #9aa3b5;
+  --kq-faint: #5c6577;
+  --kq-soft-alpha: 16%;
+}
+
+/* A wrong lock code shakes the code boxes (kar-code-entry.tsx). */
+@keyframes kq-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+.kq-shake {
+  animation: kq-shake 0.4s ease-in-out;
+}

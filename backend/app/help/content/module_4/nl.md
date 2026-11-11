@@ -248,6 +248,18 @@ Op dit scherm zie je alle opgeslagen tellingen van het seizoen. Klik op de datum
 
 > Spraaktellingen veranderen de voorraad (nog) niet: het boeken ervan volgt later. De microfoonknop werkt in Chrome op Android en Safari op iPhone, met internet, de microfoon toegestaan en (iPhone) Dicteren aan. Het vak Dicteren of typen werkt altijd.
 
+## [kar-inventories | stockmaster.karinventories] Kar inventarissen
+Ploegen tellen zelf wat er in hun kar zit, op het einde van het festival en voor we ze ophalen. Ze hebben daarvoor geen RWCrew-login nodig.
+
+1. De ploeg scant de onderste QR-code op het **karblad** en kiest op de kar-pagina de tegel **Kar inventaris**.
+2. Ze geven de **code van het slot** van de kar (de Karcode op KarManagement). Na 5 foute codes wacht de kar 15 minuten.
+3. Per product zien ze hoeveel er **met de kar vertrokken** is (Kar vertrekt plus de naleveringen; staat de kar in het magazijn: wat er volgens het magazijn in zit) en vullen ze in hoeveel ze tellen. Een product dat niet op de lijst staat voegen ze toe met **Extra product**.
+4. Met hun naam (verplicht) en eventueel een opmerking slaan ze op. Ze zien ook hun vorige inventarissen van die kar.
+
+Op dit scherm zie je alle inventarissen van het seizoen: datum, kar, ploeg, wie telde, **Vertrokken**, **Geteld** en het **Verschil** (oranje = minder, blauw = meer, groen = alles terug). Klik op de datum voor de producten en de opmerking. Filter met de vakken boven de kolommen; **Excel** downloadt de getoonde inventarissen.
+
+> Een kar inventaris is enkel ter info: de voorraad verandert niet. Een kar zonder Karcode kan niet geopend worden.
+
 ## [products | stockmaster.products] Producten
 Alle producten met hun foto, type, magazijn, categorie en eigenschappen.
 

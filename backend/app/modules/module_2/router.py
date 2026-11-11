@@ -70,7 +70,7 @@ from app.modules.module_2.karblad_pdf import (
     KarbladData,
     KarbladFestival,
     build_karbladen_pdf,
-    build_request_url,
+    build_kar_qr_url,
 )
 from app.modules.module_2.delivery_planning_pdf import build_delivery_planning_pdf
 from app.modules.module_2.initial_delivery_service import build_initial_delivery
@@ -830,7 +830,7 @@ def print_kar_planning(
                 festivals=festivals,
                 aflever_zone=first_plan["zone"] if first_plan else None,
                 distribution_point=first_plan["distributiepunt"] if first_plan else None,
-                request_url=build_request_url(
+                qr_url=build_kar_qr_url(
                     payload.site_url,
                     payload.locale,
                     kar.team_id,

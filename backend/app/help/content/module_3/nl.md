@@ -5,7 +5,7 @@ Interventies registreert en volgt de interventieaanvragen van de verenigingen op
 ## [start] Zo werkt Interventies
 Een aanvraag komt op drie manieren binnen, en volgt daarna altijd dezelfde weg:
 
-1. **Openbaar formulier**: een medewerker van de ploeg scant de QR-code op de kar en vult het formulier in, zonder in te loggen.
+1. **Openbaar formulier**: een medewerker van de ploeg scant de QR-code op de kar, kiest de tegel **Interventie aanvragen** en vult het formulier in, zonder in te loggen.
 2. **Interventieaanvragen**: iemand van de organisatie registreert de aanvraag zelf, bv. na een telefoontje.
 3. **Gsm-app**: in de gsm-app (Interventies > Akties) maak je een aanvraag aan onderweg.
 

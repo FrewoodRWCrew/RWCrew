@@ -125,7 +125,7 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   per product per place; `kar_id` NULL = free; emptied rows are deleted) is updated in the same transaction
   after `SELECT … FOR UPDATE`, so stock never goes negative. Nothing is edited or deleted: "Ongedaan maken"
   = `reverse_document` (a `reversal` document). The service never commits — the router (or, later, an
-  automated TagScan handler in `module_1/line_processing.py`) does; a `StockError("code", *params)` becomes
+  RWCrew Pi's `module_4/rfid_router.py`) does; a `StockError("code", *params)` becomes
   HTTP detail `"code|param|…"`, translated by the frontend under `stockMaster.errors.<code>` — a new code
   needs a translation in both languages.
 - **The booked-by user is always the session user** (`created_by` + `created_by_name` snapshot on documents
@@ -141,12 +141,32 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
 - **Kar needs** (`StockMaster_kar_requirement`, per season + kar) only through `module_4/requirement_service.py`
   — Altsien Select's Products wizard step reuses it (no module-8 copy of the data, see "Altsien Select"). They pre-fill
   "Kar laden", drive the kar cards' "18 / 20" and "Te bestellen" (needs − free − in kars).
-- **Inboeken from a TagScan scan** (`module_4/tagscan_book_in.py`): waiting TagScan lines with action "Book In" become
-  basket lines per scanned file (each distinct EPC = 1 piece of its tag's *current* product; unknown tag / no product
-  = problem lines that stay `new`). Teal banner on every StockMaster screen (`tagscan-book-in-banner.tsx`) + a pill on
-  the landing page; "Load into Inboeken" → `book-in?tagscan=<header ids>`. The booking request carries
-  `tagscan_line_ids`; `mark_lines_booked` marks them `loaded` in the booking's transaction (refuses with
-  `tagscan_already_booked` if any is no longer waiting) and the document gets `source="tagscan"`.
+- **StockMaster on the RWCrew Pi (RFID, 2026-11-09)** replaces the old CSV route (Pi → CSV → TagScan "Book In" →
+  Inboeken basket; retired: `tagscan_book_in.py`, its banner, landing pill and `tagscan_line_ids` are gone). The Pi
+  books live through `module_4/rfid_router.py` (own APIRouter on the module-4 prefix, included in `main.py`):
+  `POST /rfid/resolve` (≤1000 EPCs; view on stock/kars/count/tags), `GET /rfid/products` (pickers, `tagged` count),
+  `GET /rfid/place-tags`, `POST /rfid/assign` (Tags koppelen, `stockmaster.tags` create), `POST /rfid/bookings`
+  (`TagBookingRequest`: action, season, kar, reason, `epcs`, `lines` = untagged pieces / Kar terug destinations,
+  `missing` = Kar vertrekt's choices, `reader`; same rights + season lock as `POST /bookings` via
+  `deps.ensure_booking_right`) and `GET /rfid/history` (`stockmaster.taghistory`, web page `/modules/module-4/tag-history`).
+  One product tag = one piece of `Tagscan_rfid_tag.assigned_product_id`; quantity = tags + untagged lines; documents get
+  `source="pi"`. `module_4/tag_booking.py` turns a Pi booking into `stock_service` calls; **`module_4/tag_service.py` is
+  the only writer of the tag places**.
+- **Tag places = last known place** (`Tagscan_rfid_tag.stock_place` free/kar/out/written_off, NULL = unknown, +
+  `stock_kar_id`, `stock_trip_id`, `stock_document_id`, `stock_place_at`; trace per tag per booking in
+  `StockMaster_movement_tag`, migration `a3d8f6c2e914`). **Only Pi bookings move tags**; web bookings move quantities, so
+  a place can be stale: `tag_service.check_places` only refuses clear contradictions (`tag_already_in_stock`,
+  `tag_in_kar`, `tag_in_other_kar`, `tag_already_in_kar`, `tag_on_trip`, `tag_on_other_trip`, `tag_written_off`; all
+  translated under `stockMaster.errors` and in the Pi's `errors`). Unknown places are accepted everywhere; a kar that
+  left since makes its tags "out", a closed trip makes them unknown (`PlaceBook`); a Pi **Telling** is the authority
+  (read tags get the place, known-but-unread ones of the counted products become unknown; `count_stock(...,
+  allow_no_differences=True)`). Changing a tag's product (Tagbeheer, Tags koppelen with replace) forgets its place.
+  `reverse_document` calls `tag_service.reverse_places`: tags go back only while that booking is still their latest
+  (`from_document_id` hands them back to the previous one). Tagbeheer shows the place ("Plaats" column).
+- **Kar vertrekt on the Pi = "correct, then book"**: `stock_service.dispatch_kar_corrected` in one transaction —
+  missing pieces back to free stock (`unload_kar`) or written off (`book_out`, reason required), extra pieces loaded
+  (`load_kar`), then `dispatch_kar`. `missing` must cover the shortfall exactly (`missing_unresolved` /
+  `missing_too_many`). The corrections are separate documents ("Kar vertrekt <kar>"); undoing the departure leaves them.
 - **Kar laden's "Karinhoud" table** (`components/module-4/kar-load-table.tsx`): one row per product + Bron; rows from
   the kar needs ("Altsien Select") plus **manual requests** (`StockMaster_kar_manual_request`, per season + kar +
   product, written only by `module_4/manual_request_service.py`, `POST/DELETE /kars/{id}/manual-requests`, same right
@@ -182,6 +202,32 @@ Same custom-roles-per-screen system as module-8 (`StockMaster_*` roles tables, `
   (`components/module-4/kar-load-overview.tsx`: per kar the needed product types fully loaded and the pieces, from
   `KarSummaryResponse`). Kar laden opens on that overview; "Laden" opens the booking panel with `?kar=<id>`
   (`kar-load-screen.tsx` switches on `?kar=`/`?product=`/`?from=`).
+
+## Karblad QR: public kar page + Kar inventaris (StockMaster)
+
+The karblad's lower QR code (`module_2/karblad_pdf.py` `build_kar_qr_url`) opens **`/<locale>/kar?team_id=&cart_number=&
+delivery_location=&zone=`**: a public page (no login, `(public)` route group) with two tiles, **Interventie aanvragen**
+(`/kar/intervention-request`, the unchanged `PublicInterventionRequestForm`) and **Kar inventaris** (`/kar/inventory`).
+Old karbladen point to `/intervention-request`, which now only redirects to `/kar` with the same query. The query helpers
+are `lib/kar-qr-params.ts`; the tiles pass the query on. Look = the RWCrew Pi's (`.kar-qr` colour tokens in `globals.css`,
+copied from the Pi's `Theme.qml`; shell/landing in `components/shared/kar-qr/`).
+
+- **Kar inventaris** = a team counts its own kar before pick-up. **No RWCrew login or rights**: the kar's lock code
+  (`KarTracker_karren.kar_code`) is the key. `POST /api/public/stockmaster/kar-inventory/unlock` → a 2 h JWT (`typ =
+  "kar_inventory"`, kar id, fingerprint of the code: changing the code ends sessions) sent as `X-Kar-Inventory-Token`
+  (`?token=` for product pictures). Unknown kar and wrong code give the same `wrong_code`; `no_code` for a kar without a
+  code; per IP 10 tries/min and per kar 5 wrong codes → 15 min lock (`too_many_tries|seconds`, in memory via
+  `app/shared/rate_limit.py`, also used by module-3's public form; one uvicorn process).
+- **Expected** per product = what left with the kar on its open trip (`stock_service.dispatched_lines`, incl. naleveringen),
+  else the kar's warehouse contents. Recomputed on save, never taken from the phone. Every list line needs a count (the
+  screen offers "save as 0"); extra products (not blocked, not on the list) get expected 0.
+- Stored only by `module_4/kar_inventory_service.py` in `StockMaster_kar_inventory` + `_line` (snapshots of kar number,
+  team, product names; season = the trip's, else the last open one; migration `c8b774a60c98`). **Informative only: never
+  changes stock, tags or trips.** Public endpoints in `module_4/public_kar_inventory_router.py`; errors under
+  `stockMaster.publicInventory.errors.<code>`. Screens in `components/module-4/public-kar-inventory/` (token kept per kar in
+  sessionStorage, `kar-inventory-token.ts`).
+- **Staff screen** "Kar inventarissen" (`/modules/module-4/kar-inventories`, screen `stockmaster.karinventories`, view only,
+  `module_4/kar_inventory_router.py`: list per season, detail, Excel of the shown ids).
 
 ## KarTracker (module-2): Leveringsvolgorde
 
@@ -476,8 +522,10 @@ applications, on the team fiche and in the Teams XLSX (`aliases` column, `;`-sep
 ## RWCrew Pi (Raspberry Pi app, separate repo `RWRaspiTagScanner`)
 
 A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in the **separate repo**
-`RWRaspiTagScanner` (`rwpi/`; the old CSV app stays next to it), so only Pi code goes to a Pi (updates = GitHub Release,
-`update_check.sh`). It works **live on RWCrew's data through the normal HTTPS API** — never a direct database connection
+`RWRaspiTagScanner` (`rwpi/`; the old CSV app was removed on 2026-11-09), so only Pi code goes to a Pi (updates = GitHub
+Release, `update_check.sh` restarts `rwcrew-pi.service`). Modules: **StockMaster** (module-4, teal, see "StockMaster
+(module-4)": seven booking tiles on one controller `modules/stockmaster/transaction.py` + `TransactionScreen.qml`,
+Tags koppelen, EPC schrijven with the reader's `singleTag`/`writeEpc`/`writeData` + `toolResult`) and **Atelier**. It works **live on RWCrew's data through the normal HTTPS API** — never a direct database connection
 (Postgres only listens on 127.0.0.1, and the rules live in the services). Built 2026-11-05, see `docs/work-history.md`.
 
 - **Login = the operator's own account**: `POST /api/auth/token` (client `"pi"` in the login history) gives the same JWTs
@@ -519,10 +567,14 @@ A stand-alone PySide6/QML touch app (7" 800×480, Chafon CF-E714 UHF reader) in 
   info, RF power kept on the reader, antennas 1–4, activity + communication log via `ReaderBase` in
   `rwpi/hardware/rfid/reader.py`) and the scanner name + location (`config.scanner()`, default = the old app's scanner
   name). `rwpi/shared/history.py` keeps the Pi's own log (`~/.local/state/rwcrew-pi/history.jsonl`, 90 days) of every
-  Ophalen/Terugbrengen/Koppelen incl. refused and offline ones, shown on `HistoryScreen.qml` (header clock icon).
+  Ophalen/Terugbrengen/Koppelen/StockMaster booking (`stock`, with `action`, `kar`, `count`)/EPC write (`write`) incl.
+  refused and offline ones, shown on `HistoryScreen.qml` (header clock icon).
   Gotchas: QML screen switches from inside a signal handler of the screen being destroyed go through `Qt.callLater`;
   PySide6 `Property` with notify must be declared on the class that declares the signal (not in a subclass), else
-  random crashes.
+  random crashes. The reader is shared: `shared/tag_reading.py` `TagCollector` only stops it when it started it last,
+  and StockMaster's screens leave with a ticket (`enter` → `leaveScreen(ticket)`) so a closing screen can't stop the
+  next one. Test drivers that drive the app with a Python `QTimer` must keep their driver object referenced (an
+  unreferenced one is garbage-collected mid-run → Qt access violation / hang; `tools/screenshots.py` keeps `demo`).
 - **Pi structure**: `rwpi/api` (client), `hardware/rfid` + `hardware/gpio` (buzzer/LEDs/confirm button, gpiozero;
   no-ops on a PC), `shared/` (session, i18n nl/en, icons via an image provider — no shader effects), `modules/registry.py`
   (tiles) + `modules/<module>/` controllers, `qml/` screens. New Pi screens (Wassen, Ontvangst…) = controller + QML + texts
@@ -542,9 +594,8 @@ Lines start `new` at scan time; the file's status is derived from its lines
   that product, fills the product in on a registered tag without one, and never changes a tag that already has a
   product. **Adding an action** = one `_process_<action>(db, line, context)` returning `(outcome, comment)` + a dict
   entry (extend `ProcessContext` for extra user input); lines with an action without a handler simply stay `new`.
-- **`Book In` lines** (`BOOK_IN_ACTIONS`: "book in"/"book_in"/"bookin"/"book-in") count as waiting in TagScan's banner
-  but are never processed there: StockMaster books them in (see "StockMaster" below). TagScan's dialog links them to
-  Inboeken and leaves them out of "Process all".
+- **`Book In` lines** (and the old app's other stock actions) are no longer waiting work: StockMaster books live on the
+  RWCrew Pi (see "StockMaster (module-4)"). Such lines stay `new` like any action without a handler.
 - Waiting lines (`new` + action with a handler) show as a banner in TagScan's own soft blue (`module-theme.ts`) above every TagScan screen
   (`components/module-1/pending-actions-banner.tsx`, rendered by the module layout); it opens
   `pending-actions-dialog.tsx` (process all / cancel one line with a required reason). Screens that create lines

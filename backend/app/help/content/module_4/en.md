@@ -248,6 +248,18 @@ This screen shows every saved count of the season. Click the date for the produc
 
 > Voice counts don't change the stock (yet): booking them follows later. The microphone button works in Chrome on Android and Safari on iPhone, with internet, the microphone allowed and (iPhone) Dictation on. The Dictate or type box always works.
 
+## [kar-inventories | stockmaster.karinventories] Kar inventories
+Teams count what is in their own kar at the end of the festival, before it is picked up. They need no RWCrew login for this.
+
+1. The team scans the lower QR code on the **kar sheet** and picks the **Kar inventory** tile on the kar page.
+2. They enter the kar's **lock code** (the Karcode on KarManagement). After 5 wrong codes the kar waits 15 minutes.
+3. Per product they see how many **left with the kar** (Kar departs plus follow-up deliveries; if the kar is in the warehouse: what it holds according to the warehouse) and fill in what they count. A product that isn't on the list is added with **Extra product**.
+4. They save with their name (required) and an optional remark. They also see their earlier inventories of that kar.
+
+This screen shows every inventory of the season: date, kar, team, who counted, **Left with kar**, **Counted** and the **Difference** (orange = fewer, blue = more, green = all back). Click the date for the products and the remark. Filter with the boxes above the columns; **Excel** downloads the inventories shown.
+
+> A kar inventory is for information only: stock doesn't change. A kar without a Karcode can't be opened.
+
 ## [products | stockmaster.products] Products
 All products with their picture, type, warehouse, category and properties.
 

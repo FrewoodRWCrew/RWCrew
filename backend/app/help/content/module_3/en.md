@@ -5,7 +5,7 @@ Interventions registers and follows up the associations' intervention requests: 
 ## [start] How Interventions works
 A request comes in in three ways, and then always follows the same path:
 
-1. **Public form**: someone from the team scans the QR code on the cart and fills in the form, without logging in.
+1. **Public form**: someone from the team scans the QR code on the cart, picks the **Request an intervention** tile and fills in the form, without logging in.
 2. **Intervention requests**: someone from the organisation registers the request, e.g. after a phone call.
 3. **Phone app**: in the phone app (Interventions > Actions) you create a request on the move.
 

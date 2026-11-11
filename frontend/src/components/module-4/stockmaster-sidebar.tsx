@@ -111,6 +111,7 @@ export function StockMasterSidebar({ permissions }: StockMasterSidebarProps) {
       links: [
         ...(can("bookings") ? [{ href: `${BASE}/bookings`, label: t("bookings.title") }] : []),
         ...(can("voicecount") ? [{ href: `${BASE}/voice-counts`, label: t("voiceCounts.title") }] : []),
+        ...(can("karinventories") ? [{ href: `${BASE}/kar-inventories`, label: t("karInventories.title") }] : []),
         ...(can("taghistory") ? [{ href: `${BASE}/tag-history`, label: t("tagHistory.title") }] : []),
       ],
     },

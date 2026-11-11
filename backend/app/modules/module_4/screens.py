@@ -46,7 +46,9 @@ class ScreenDefinition:
 # - tags: the RWCrew Pi's RFID tag tools — "view" = the tile, "create" = Tags
 #   koppelen (link read tags to a product), "edit" = EPC schrijven (program a
 #   tag's EPC). The Pi's booking tiles use stock / kars / count's "create";
-# - taghistory: Tag-historiek, the trace of a product tag by its EPC.
+# - taghistory: Tag-historiek, the trace of a product tag by its EPC;
+# - karinventories: "Kar inventarissen", the counts teams made of their own kar
+#   on the public kar page (read-only list + Excel; the team itself needs no rights).
 SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.kpi", label="KPI", sort_order=1),
     ScreenDefinition(key="stockmaster.stock", label="Stock overview", sort_order=2),
@@ -68,6 +70,7 @@ SCREEN_DEFINITIONS: list[ScreenDefinition] = [
     ScreenDefinition(key="stockmaster.voicecount", label="Voice count", sort_order=18),
     ScreenDefinition(key="stockmaster.tags", label="RFID tags (Pi)", sort_order=19),
     ScreenDefinition(key="stockmaster.taghistory", label="Tag history", sort_order=20),
+    ScreenDefinition(key="stockmaster.karinventories", label="Kar inventories", sort_order=21),
 ]
 
 

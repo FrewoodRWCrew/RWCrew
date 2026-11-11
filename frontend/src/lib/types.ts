@@ -2895,3 +2895,80 @@ export interface StockMasterVoiceCount {
   total_quantity: number;
   lines: StockMasterVoiceCountLine[];
 }
+
+// --- StockMaster: Kar inventaris (public kar page, no login) ------------------
+// A team counts its own kar through the karblad's QR code (unlocked with the
+// kar's lock code); staff read the result on "Kar inventarissen".
+
+/** A correct lock code: a token for this one kar. */
+export interface KarInventoryUnlock {
+  token: string;
+  kar_nummer: string;
+  expires_in: number;
+}
+
+/** One product that should be in the kar. */
+export interface KarInventoryProductLine {
+  product_id: number;
+  name: string;
+  has_image: boolean;
+  expected: number;
+}
+
+/** One saved line of an inventory. */
+export interface KarInventoryLine {
+  id: number;
+  product_id: number | null;
+  product_name: string;
+  expected: number;
+  counted: number;
+  is_extra: boolean;
+}
+
+/** One saved inventory. */
+export interface KarInventory {
+  id: number;
+  kar_id: number;
+  kar_nummer: string;
+  season_id: number | null;
+  season_name: string | null;
+  team_name: string | null;
+  counted_by_name: string;
+  remark: string | null;
+  created_at: string;
+  total_expected: number;
+  total_counted: number;
+  lines: KarInventoryLine[];
+}
+
+/** What the public inventory screen shows after unlocking. */
+export interface KarInventoryContext {
+  kar_nummer: string;
+  team_name: string | null;
+  season_name: string | null;
+  kar_is_out: boolean;
+  dispatched_at: string | null;
+  lines: KarInventoryProductLine[];
+  history: KarInventory[];
+}
+
+/** A product the team can add as an extra line. */
+export interface KarInventoryProductOption {
+  id: number;
+  name: string;
+  has_image: boolean;
+}
+
+/** What the team counted of one product. */
+export interface KarInventoryCountInput {
+  product_id: number;
+  counted: number;
+}
+
+/** What the public screen sends on Opslaan. */
+export interface KarInventoryCreateInput {
+  counted_by_name: string;
+  remark: string | null;
+  lines: KarInventoryCountInput[];
+  extra: KarInventoryCountInput[];
+}

@@ -3,6 +3,69 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-11 — Karblad QR → public kar page with 2 tiles + Kar inventaris (StockMaster)
+**Request:** The karblad's QR code (today the public intervention form) must open a landing page with two tiles:
+intervention request (as today) and a new "Kar inventory" where the team, after entering the kar's lock code, sees per
+product what is in the kar ("Reeds in kar buiten magazijn"), fills in what it counted and saves it in a new log table;
+informative only, no StockMaster actions; previous inventories visible; beautiful, in the RWCrew Pi app's style.
+**Plan:**
+- Public route group: `/kar` landing (2 tiles), `/kar/intervention-request` (existing form moved), `/kar/inventory`;
+  the old `/intervention-request` redirects to `/kar` so printed karbladen keep working; karblad QR points to `/kar`.
+- No login or rights for the team: lock code → short-lived token; brute-force guard per IP and per kar.
+- Expected = what left with the kar (open trip incl. naleveringen; the user chose this over the Kar laden column, which
+  only counts closed trips), else its warehouse contents; name required, remark, extra products.
+- New StockMaster tables + read-only staff screen "Kar inventarissen" with Excel.
+**Changes:**
+- Backend: models `stockmaster_kar_inventory(_line).py` + migration `c8b774a60c98`; `module_4/kar_inventory_service.py`,
+  `public_kar_inventory_router.py` (`/api/public/stockmaster/kar-inventory`: unlock, context, products, image, save),
+  `kar_inventory_router.py` (`/kar-inventories` list/detail/export); screen `stockmaster.karinventories`;
+  `app/shared/rate_limit.py` (module-3's public form now uses it too); `karblad_pdf.build_kar_qr_url` (was
+  `build_request_url`).
+- Frontend: `(public)/kar/**`, redirect on `(public)/intervention-request`, `components/shared/kar-qr/` (Pi-style shell +
+  landing), `components/module-4/public-kar-inventory/` (code entry, counting screen, history, token store),
+  `components/module-4/kar-inventories-list.tsx` + page, sidebar/help route/fallback screen, `.kar-qr` tokens in
+  `globals.css`, `public/teamkar-logo.png`, translations `karQr.*`, `stockMaster.publicInventory.*`,
+  `stockMaster.karInventories.*`; Interventies' "test public form" link → `/kar/intervention-request`.
+- Help manuals: StockMaster chapter `kar-inventories` (nl/en), KarTracker karblad text, Interventies public form text.
+**Verification:** new `tests/modules/module_4/test_public_kar_inventory.py` (9 tests: code/lock/token rules, expected =
+dispatched + nalevering or warehouse contents, save checks, no stock rows created, history, staff rights/export); full
+backend suite 1054 passed; `tsc --noEmit` and eslint clean. Localhost (Edge, 390 px + desktop): old URL redirects, landing,
+intervention form prefilled, wrong code shakes, B017 unlocked with its code, counting/badges/"save as 0"/success/history
+work; the test inventory was deleted from the local database afterwards.
+**Notes:** No screenshots in the manual chapter yet (`npm run help:screenshots module-4` when wanted). The app's splash
+screen (4 s) also shows on the public pages, as it did on the old form. Not committed yet.
+
+## 2026-11-10 — StockMaster on the RWCrew Pi (live RFID bookings, tag places), CSV route retired
+**Request:** Replace the Pi → CSV → TagScan approach for StockMaster with direct bookings, as a second module in the
+RWCrew Pi app with the old CSV app's functions and the Atelier module's look and feel.
+**Plan:** Pi screens Inboeken, Kar laden, Kar vertrekt, Kar terug, Kar uitladen, Scrap, Telling, Tags koppelen, EPC
+schrijven; kar chosen by its own tag or from a list; full per-piece tracking as "last known place" (only Pi bookings move
+tags, only clear contradictions refused, unknown accepted, Telling = authority); Kar vertrekt "correct, then book"
+(missing → free stock or written off per product, extras loaded); untagged pieces added by hand; StockMaster teal on the
+Pi, Atelier's Massa-inname to cyan; old CSV route retired now.
+**Changes:**
+- Backend: migration `a3d8f6c2e914` (`Tagscan_rfid_tag.stock_*` + `StockMaster_movement_tag`); `module_1/tag_trace.py`
+  (Reader/touch/clean_epcs shared with Atelier); `module_4/tag_service.py`, `tag_booking.py`, `rfid_router.py`
+  (`/rfid/resolve|products|place-tags|assign|bookings|history`); `stock_service.dispatch_kar_corrected`,
+  `count_stock(allow_no_differences)`, reversal moves tags back; `deps.ensure_booking_right` (shared with `POST /bookings`);
+  screen keys `stockmaster.tags`, `stockmaster.taghistory`; Tagbeheer `stock_place*` fields; CSV Book In removed
+  (`tagscan_book_in.py`, `BookingRequest.tagscan_line_ids`, `BOOK_IN_ACTIONS`); help chapters `pi`, `pi-tags`, `taghistory`.
+- Web: Tagbeheer "Plaats" column, StockMaster Tag-historiek page (`/modules/module-4/tag-history`), new error texts;
+  TagScan Book In banner/dialog/landing pill and booking-panel scan links removed.
+- Pi (`RWRaspiTagScanner`): `rwpi/modules/stockmaster/` (rights, transaction, tags, write, review),
+  `qml/modules/stockmaster/` (StockHome, TransactionScreen, ProductAddDialog, TagsScreen, WriteScreen), shared
+  `TagCollector`, `ReadingBadge`/`NumberPad`/`NumberField` components, reader write tools, history kinds `stock`/`write`,
+  texts nl/en; old CSV app files and the tracked `Github Token.txt` removed; `update_check.sh` restarts only `rwcrew-pi`.
+**Verification:** backend `pytest` 1045 passed (24 new in `tests/modules/module_4/test_rfid.py`); frontend `tsc` and
+`eslint` clean; Pi `pytest` 34 passed (18 new in `tests/test_stockmaster.py`); an end-to-end run of the Pi app (fake
+reader) against the local backend booked Inboeken → Kar laden (kar via its tag) → Kar vertrekt with a written-off
+correction → Kar terug → Telling → Scrap, a blocked tag, EPC schrijven and the history; tag places and documents checked
+in the database. The local database was dumped first and restored afterwards.
+**Notes:** Pis still running the old app need `bash deploy/install-rwpi.sh` once before the next Release. The token that
+was in `Github Token.txt` stays in the Pi repo's git history: rotate it. Pi screenshots for the StockMaster manual and
+the two handbooks are not updated yet. The e2e found a driver bug (an unreferenced Python driver object is
+garbage-collected → Qt crash); `tools/screenshots.py` had the same latent bug and is fixed.
+
 ## 2026-11-08 — Atelier documentation refresh (help manual, handbooks, RWCrew Pi screenshots)
 **Request:** Check and update the Atelier documentation with up-to-date screenshots, including the related Atelier
 functionality on the phone app and the Raspberry Pi app.

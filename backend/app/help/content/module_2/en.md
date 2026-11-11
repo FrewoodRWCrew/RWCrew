@@ -67,7 +67,7 @@ An overview of the whole fleet: per kar the kar number, status, team, transport 
 
 ![Kar Planning](kar-planning.png)
 
-The kar sheet shows the kar number, the team and per festival where and when the kar is delivered and picked up. At the top right is a QR code with the kar number (for KarScan), lower down a QR code to the form to request an intervention for that team.
+The kar sheet shows the kar number, the team and per festival where and when the kar is delivered and picked up. At the top right is a QR code with the kar number (for KarScan), lower down a QR code to the kar page (no login) with two tiles: **Request an intervention** and **Kar inventory** (the team counts what is in the kar, see the StockMaster manual). Older kar sheets open the same page.
 
 > Kar Planning is view-only. Change karren in **KarManagement** and delivery locations in **Plan a kar**.
 

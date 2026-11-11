@@ -215,6 +215,11 @@ import type {
   StockMasterVoiceCount,
   StockMasterVoiceCountInput,
   StockMasterVoiceCountLookups,
+  KarInventory,
+  KarInventoryContext,
+  KarInventoryCreateInput,
+  KarInventoryProductOption,
+  KarInventoryUnlock,
 } from "./types";
 
 /** Thrown whenever the backend responds with an error status code. */
@@ -3599,4 +3604,80 @@ export function moduleHelpPdfUrl(moduleKey: string, locale: string, topic?: stri
   const query = new URLSearchParams({ locale });
   if (topic) query.set("topic", topic);
   return `${API_BASE_URL}/api/modules/${moduleKey}/help/pdf?${query.toString()}`;
+}
+
+// --- StockMaster: Kar inventaris (public kar page, no login) ------------------
+// The karblad's QR code → /kar → "Kar inventaris". No cookies and no session
+// refresh: the kar's lock code gives a short-lived token for that one kar
+// (sent as X-Kar-Inventory-Token). See module_4/public_kar_inventory_router.py.
+
+const KAR_INVENTORY_BASE = "/api/public/stockmaster/kar-inventory";
+
+async function karInventoryFetch<TResponse>(path: string, token: string | null, init?: RequestInit): Promise<TResponse> {
+  const response = await fetch(`${API_BASE_URL}${KAR_INVENTORY_BASE}${path}`, {
+    ...init,
+    credentials: "omit",
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { "X-Kar-Inventory-Token": token } : {}),
+      ...init?.headers,
+    },
+  });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+  return (await response.json()) as TResponse;
+}
+
+/** Check the kar's lock code; a token for this kar when it is right. */
+export function unlockKarInventory(karNumber: string, code: string): Promise<KarInventoryUnlock> {
+  return karInventoryFetch<KarInventoryUnlock>("/unlock", null, {
+    method: "POST",
+    body: JSON.stringify({ kar_nummer: karNumber, code }),
+  });
+}
+
+/** The unlocked kar: what should be in it and its earlier inventories. */
+export function getKarInventoryContext(token: string): Promise<KarInventoryContext> {
+  return karInventoryFetch<KarInventoryContext>("", token);
+}
+
+/** Every unblocked product, for adding an extra line. */
+export function listKarInventoryProducts(token: string): Promise<KarInventoryProductOption[]> {
+  return karInventoryFetch<KarInventoryProductOption[]>("/products", token);
+}
+
+/** A product's picture (an <img> can't send the header, so the token goes in the URL). */
+export function karInventoryProductImageUrl(productId: number, token: string): string {
+  return `${API_BASE_URL}${KAR_INVENTORY_BASE}/products/${productId}/image?token=${encodeURIComponent(token)}`;
+}
+
+/** Save the team's count. */
+export function saveKarInventory(token: string, payload: KarInventoryCreateInput): Promise<KarInventory> {
+  return karInventoryFetch<KarInventory>("", token, { method: "POST", body: JSON.stringify(payload) });
+}
+
+// --- StockMaster: Kar inventarissen (staff screen) ----------------------------
+
+/** Every inventory of a season, newest first. */
+export function listStockMasterKarInventories(seasonId: number): Promise<KarInventory[]> {
+  return apiFetch<KarInventory[]>(`${STOCKMASTER_BASE}/kar-inventories?season_id=${seasonId}`);
+}
+
+/** Excel of the inventories the screen shows. */
+export async function exportStockMasterKarInventories(ids: number[], locale: string): Promise<Blob> {
+  const response = await fetchWithRefresh(`${API_BASE_URL}${STOCKMASTER_BASE}/kar-inventories/export`, {
+    method: "POST",
+    credentials: "include",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids, locale }),
+  });
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => null);
+    const message = typeof errorBody?.detail === "string" ? errorBody.detail : `Request failed with status ${response.status}`;
+    throw new ApiError(message, response.status);
+  }
+  return response.blob();
 }

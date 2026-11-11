@@ -535,7 +535,7 @@ export function InterventionRequestsManagement({
                 Uses the first known team so clicking it also proves the
                 Ploeg/Karnr/Afleverplaats/Zone pre-fill actually works. */}
             <a
-              href={`/${locale}/intervention-request?${new URLSearchParams({
+              href={`/${locale}/kar/intervention-request?${new URLSearchParams({
                 ...(teams[0] ? { team_id: String(teams[0].id) } : {}),
                 cart_number: "TEST-01",
                 delivery_location: "Testlocatie",

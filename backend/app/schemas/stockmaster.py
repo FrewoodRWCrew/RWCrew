@@ -695,3 +695,110 @@ class StockTagHistoryResponse(BaseModel):
     last_reader_id: str | None = None
     last_location: str | None = None
     events: list[StockTagEventResponse] = []
+
+
+# --- Kar inventaris (public kar page, no login) ------------------------------
+# A team counts its own kar through the karblad's QR code; StockMaster staff
+# read the result on "Kar inventarissen". Informative only (no stock changes).
+
+
+class KarInventoryUnlockRequest(BaseModel):
+    """The kar (from the QR code) and the lock code the team typed."""
+
+    kar_nummer: str = Field(min_length=1, max_length=50)
+    code: str = Field(min_length=1, max_length=20)
+
+
+class KarInventoryUnlockResponse(BaseModel):
+    """A short-lived token for this one kar (sent back in X-Kar-Inventory-Token)."""
+
+    token: str
+    kar_nummer: str
+    expires_in: int
+
+
+class KarInventoryProductLine(BaseModel):
+    """One product that should be in the kar: what left with it (or what it
+    holds in the warehouse)."""
+
+    product_id: int
+    name: str
+    has_image: bool
+    expected: int
+
+
+class KarInventoryLineResponse(BaseModel):
+    """One saved line of an inventory."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    product_id: int | None
+    product_name: str
+    expected: int
+    counted: int
+    is_extra: bool
+
+
+class KarInventoryResponse(BaseModel):
+    """One saved inventory with its lines and totals."""
+
+    id: int
+    kar_id: int
+    kar_nummer: str
+    season_id: int | None
+    season_name: str | None
+    team_name: str | None
+    counted_by_name: str
+    remark: str | None
+    created_at: datetime
+    total_expected: int
+    total_counted: int
+    lines: list[KarInventoryLineResponse]
+
+
+class KarInventoryContextResponse(BaseModel):
+    """What the public inventory screen shows after unlocking: the kar, what
+    should be in it, and its earlier inventories (newest first)."""
+
+    kar_nummer: str
+    team_name: str | None
+    season_name: str | None
+    # True while the kar is out on a trip (the list = what left with it);
+    # False = it stands in the warehouse (the list = what it holds there).
+    kar_is_out: bool
+    dispatched_at: datetime | None
+    lines: list[KarInventoryProductLine]
+    history: list[KarInventoryResponse]
+
+
+class KarInventoryProductOption(BaseModel):
+    """A product the team can add as an extra line."""
+
+    id: int
+    name: str
+    has_image: bool
+
+
+class KarInventoryCountInput(BaseModel):
+    """What the team counted of one product."""
+
+    product_id: int
+    counted: int = Field(ge=0, le=100_000)
+
+
+class KarInventoryCreateRequest(BaseModel):
+    """What the public screen sends on Opslaan. `lines` must hold every
+    product of the kar's list; `extra` the products the team added."""
+
+    counted_by_name: str = Field(min_length=1, max_length=100)
+    remark: str | None = Field(default=None, max_length=2000)
+    lines: list[KarInventoryCountInput] = Field(default_factory=list, max_length=500)
+    extra: list[KarInventoryCountInput] = Field(default_factory=list, max_length=50)
+
+
+class KarInventoryExportRequest(BaseModel):
+    """The inventories the staff screen shows (its filters are client-side)."""
+
+    ids: list[int] = Field(max_length=5000)
+    locale: str = "nl"

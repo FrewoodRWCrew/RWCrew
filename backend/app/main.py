@@ -34,6 +34,8 @@ from app.modules.module_4.product_masterdata_router import router as module_4_pr
 from app.modules.module_4.router import router as module_4_router
 from app.modules.module_4.voice_count_router import router as module_4_voice_count_router
 from app.modules.module_4.rfid_router import router as module_4_rfid_router
+from app.modules.module_4.kar_inventory_router import router as module_4_kar_inventory_router
+from app.modules.module_4.public_kar_inventory_router import router as module_4_public_kar_inventory_router
 from app.modules.module_4.screens import sync_screens as sync_stockmaster_screens
 from app.modules.module_5.desk_router import router as module_5_desk_router
 from app.modules.module_5.masterdata_router import router as module_5_masterdata_router
@@ -114,6 +116,8 @@ app.include_router(module_4_router)
 app.include_router(module_4_product_masterdata_router)
 app.include_router(module_4_voice_count_router)
 app.include_router(module_4_rfid_router)
+app.include_router(module_4_kar_inventory_router)
+app.include_router(module_4_public_kar_inventory_router)
 app.include_router(module_5_router)
 app.include_router(module_5_masterdata_router)
 app.include_router(module_5_reservation_router)

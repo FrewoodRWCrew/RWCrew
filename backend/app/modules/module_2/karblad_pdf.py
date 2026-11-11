@@ -3,8 +3,9 @@
 # shows the kar/box number, which team (Vereniging) it belongs to, and for
 # every festival of the season where and when it is delivered and picked up.
 # Two QR codes sit on the page: top right carries just the kar number (for
-# scanning the kar), the lower one opens the public Intervention Request
-# form prefilled for this kar's team (see build_request_url).
+# scanning the kar), the lower one opens the public kar page (no login) with
+# its two tiles, Interventie aanvragen and Kar inventaris, prefilled for this
+# kar (see build_kar_qr_url).
 #
 # Uses fpdf2 (pure Python, same library as module_3/intervention_request_pdf.py)
 # and segno for the QR codes (also pure Python, no compiled dependency — see
@@ -106,8 +107,8 @@ class KarbladData:
     team_name: str | None
     transport_type: str
     festivals: list[KarbladFestival] = field(default_factory=list)
-    # Where the lower QR code points to.
-    request_url: str = ""
+    # Where the lower QR code points to (the public kar page).
+    qr_url: str = ""
     # The zone shown next to "Aflever Zone" and the distribution point in the
     # footer are both taken from the first festival with a planned location.
     aflever_zone: str | None = None
@@ -121,7 +122,7 @@ class KarbladData:
     kar_code: str | None = None
 
 
-def build_request_url(
+def build_kar_qr_url(
     site_url: str,
     locale: str,
     team_id: int | None,
@@ -129,9 +130,11 @@ def build_request_url(
     delivery_location: str | None,
     zone: str | None,
 ) -> str:
-    """The public Intervention Request form (no login needed) with the
-    fields we already know prefilled: team, kar number, and the delivery
-    location/zone. Blank values are left out of the query string.
+    """The public kar page (no login needed: Interventie aanvragen + Kar
+    inventaris) with the fields we already know, which its tiles pass on to
+    the forms: team, kar number, and the delivery location/zone. Blank values
+    are left out of the query string. Older karbladen point to
+    /intervention-request, which the frontend redirects to this page.
     """
     params = {
         "team_id": team_id,
@@ -140,7 +143,7 @@ def build_request_url(
         "zone": zone,
     }
     query = urlencode({key: value for key, value in params.items() if value not in (None, "")})
-    return f"{site_url.rstrip('/')}/{locale}/intervention-request?{query}"
+    return f"{site_url.rstrip('/')}/{locale}/kar?{query}"
 
 
 def _safe(text: str | None) -> str:
@@ -297,12 +300,12 @@ def _draw_page(pdf: FPDF, kar: KarbladData, title: str, labels: dict) -> None:
     _cell(pdf, TABLE_X, 176.0, LABEL_W, 11, labels["remarks"], size=10)
     _cell(pdf, VALUE_X, 176.0, VALUE_W, 11, kar.remarks, size=10, align="L")
 
-    # --- Help box with the lower QR (opens the prefilled intervention request) ---
+    # --- Help box with the lower QR (opens the public kar page) ---
     pdf.rect(TABLE_X, 187.0, TABLE_W, 47.0)
     _cell(pdf, TABLE_X, 189.0, TABLE_W, 6, labels["help_line_1"], style="B", size=12, border=False)
     _cell(pdf, TABLE_X, 195.0, TABLE_W, 6, labels["help_line_2"], style="B", size=12, border=False)
-    if kar.request_url:
-        _draw_qr(pdf, kar.request_url, TABLE_X + (TABLE_W - 30) / 2, 203.0, 30.0)
+    if kar.qr_url:
+        _draw_qr(pdf, kar.qr_url, TABLE_X + (TABLE_W - 30) / 2, 203.0, 30.0)
     if TEAMKAR_LOGO.exists():
         pdf.image(str(TEAMKAR_LOGO), x=FRAME_X + 2.5, y=221.0, w=19.0)
 
