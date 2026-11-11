@@ -794,7 +794,7 @@
     "issues": [],
     "date": "2026-11-11",
     "type": "feature",
-    "status": "in_progress",
+    "status": "done",
     "module": "StockMaster",
     "title": "Karblad QR page + public Kar inventaris",
     "description": "The karblad QR code opens a kar page with two tiles (intervention request, kar inventory) where a team unlocks its kar with the lock code and logs a count of what is in it, shown to StockMaster staff without changing stock.",
