@@ -805,7 +805,7 @@
     "issues": [],
     "date": "2026-11-11",
     "type": "update",
-    "status": "in_progress",
+    "status": "done",
     "module": "KarTracker",
     "title": "Karblad redesign (professional A4, no karcode)",
     "description": "The karblad stuck on each kar gets a clean black-and-white A4 layout with a large kar number, the first festival's terrain position and distribution point, and no longer shows the lock code.",
