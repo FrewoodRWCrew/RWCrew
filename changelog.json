@@ -816,7 +816,7 @@
     "issues": [],
     "date": "2026-11-11",
     "type": "update",
-    "status": "in_progress",
+    "status": "done",
     "module": "KarTracker",
     "title": "Karblad: one block per festival, internal delivery info small",
     "description": "The karblad shows each festival as its own readable block ordered by delivery date, with the distribution point and terrain position moved to a small internal line at the bottom.",
