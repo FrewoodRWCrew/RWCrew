@@ -305,7 +305,7 @@ function KarFormDialog({ kar, defaultOpen, trigger, onSaved, karStatuses, produc
           </div>
           {/* The lock code as physically set — typed by hand. The formula
               (Instellingen > Karcode formule) only calculates; this stored
-              value is what the Ploegfiche and the Karblad print. */}
+              value is what the Ploegfiche prints (never the Karblad). */}
           <div className="flex flex-col gap-2">
             <Label htmlFor="kar-code">{t("karCodeLabel")}</Label>
             <Input

@@ -67,7 +67,7 @@ An overview of the whole fleet: per kar the kar number, status, team, transport 
 
 ![Kar Planning](kar-planning.png)
 
-The kar sheet shows the kar number, the team and per festival where and when the kar is delivered and picked up. At the top right is a QR code with the kar number (for KarScan), lower down a QR code to the kar page (no login) with two tiles: **Request an intervention** and **Kar inventory** (the team counts what is in the kar, see the StockMaster manual). Older kar sheets open the same page.
+The kar sheet is a black-and-white A4 that hangs on the kar. At the top is the year (the selected season), below it the kar number in large print with its type, the team and the delivery zone (of the delivery location at the year's first festival). Below that is one block per festival, ordered by delivery date, with the delivery, the pick-up, the zone and the full location. Small at the bottom are the distribution point and terrain position: internal info for TeamKar during delivery. The kar code (the lock's code) is deliberately not on it. At the top right is a QR code with the kar number (for KarScan), lower down a QR code to the kar page (no login) with two tiles: **Request an intervention** and **Kar inventory** (the team counts what is in the kar, see the StockMaster manual). Older kar sheets open the same page.
 
 > Kar Planning is view-only. Change karren in **KarManagement** and delivery locations in **Plan a kar**.
 
@@ -194,7 +194,7 @@ The fleet: every kar with its kar number, status, team, transport type, last loc
 3. Search or filter with the fields under the column titles.
 4. **Delete** removes a kar from the fleet for good.
 
-**Kar code**: the code of the combination lock as it is actually set on the kar. This stored code is shown on the Team sheet (Altsien Select) and the karblad. The formula under Settings only calculates a code: a new formula doesn't change the stored codes. When you change a kar's lock, update its code here. Also possible through the kar Excel (column `kar_code`; empty = unchanged).
+**Kar code**: the code of the combination lock as it is actually set on the kar. This stored code is shown on the Team sheet (Altsien Select), but deliberately not on the kar sheet: that hangs on the kar itself. The formula under Settings only calculates a code: a new formula doesn't change the stored codes. When you change a kar's lock, update its code here. Also possible through the kar Excel (column `kar_code`; empty = unchanged).
 
 ![KarManagement](kar-management.png)
 

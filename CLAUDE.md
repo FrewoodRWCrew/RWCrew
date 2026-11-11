@@ -288,8 +288,8 @@ festival; route prefix `/modules/module-2/planning-analyses/`.
 ## KarTracker (module-2): Karcode
 
 **The stored code is the truth**: `KarTracker_karren.kar_code` (String 20, typed by hand on KarManagement or via the kar
-Excel column `kar_code`, empty cell = unchanged) is what the Ploegfiche (screen, PDF, so the ploegfiche mail) and the
-Karblad print. Migration `e5b9c3d7a428` filled every kar once with the formula (`formula_code_for_kar_nummer`: digits
+Excel column `kar_code`, empty cell = unchanged) is what the Ploegfiche (screen, PDF, so the ploegfiche mail) prints. The
+Karblad deliberately does **not** print it (it hangs on the kar). Migration `e5b9c3d7a428` filled every kar once with the formula (`formula_code_for_kar_nummer`: digits
 of the kar number, B001 → 1); changing the formula never changes stored codes — only the Karcode Simulator uses it.
 `PUT /karren` without `kar_code` keeps the stored code.
 

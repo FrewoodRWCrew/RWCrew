@@ -67,7 +67,7 @@ Een overzicht van het hele wagenpark: per kar het karnummer, de status, de ploeg
 
 ![Kar Planning](kar-planning.png)
 
-Het karblad toont het karnummer, de ploeg en per festival waar en wanneer de kar geleverd en opgehaald wordt. Rechtsboven staat een QR-code met het karnummer (voor KarScan), lager een QR-code naar de kar-pagina (zonder login) met twee tegels: **Interventie aanvragen** en **Kar inventaris** (de ploeg telt wat er in de kar zit, zie de handleiding van StockMaster). Oudere karbladen openen dezelfde pagina.
+Het karblad is een A4 in zwart-wit dat op de kar hangt. Bovenaan staat het jaar (het geselecteerde seizoen), daaronder het karnummer in grote letters met het type, de ploeg en de aflever zone (van de afleverlocatie op het eerste festival van het jaar). Daaronder staat per festival een blok, gesorteerd op leverdatum, met de levering, de ophaling, de zone en de volledige locatie. Klein onderaan staan het distributiepunt en de terreinpositie: interne info voor TeamKar bij de levering. De karcode (code van het slot) staat er bewust niet op. Rechtsboven staat een QR-code met het karnummer (voor KarScan), lager een QR-code naar de kar-pagina (zonder login) met twee tegels: **Interventie aanvragen** en **Kar inventaris** (de ploeg telt wat er in de kar zit, zie de handleiding van StockMaster). Oudere karbladen openen dezelfde pagina.
 
 > Kar Planning is enkel om te bekijken. Wijzig karren in **KarManagement** en afleverlocaties in **Plan a kar**.
 
@@ -194,7 +194,7 @@ Het wagenpark: elke kar met zijn karnummer, status, ploeg, transporttype, laatst
 3. Zoek of filter met de velden onder de kolomtitels.
 4. **Verwijderen** haalt een kar definitief uit het wagenpark.
 
-**Karcode**: de code van het cijferslot zoals die echt op de kar ingesteld is. Deze opgeslagen code staat op de Ploegfiche (Altsien Select) en op het karblad. De formule onder Instellingen rekent enkel een code uit: een nieuwe formule wijzigt de opgeslagen codes niet. Verander je het slot van een kar, pas dan hier de code aan. Ook via de kar-Excel (kolom `kar_code`; leeg = ongewijzigd).
+**Karcode**: de code van het cijferslot zoals die echt op de kar ingesteld is. Deze opgeslagen code staat op de Ploegfiche (Altsien Select), maar bewust niet op het karblad: dat hangt op de kar zelf. De formule onder Instellingen rekent enkel een code uit: een nieuwe formule wijzigt de opgeslagen codes niet. Verander je het slot van een kar, pas dan hier de code aan. Ook via de kar-Excel (kolom `kar_code`; leeg = ongewijzigd).
 
 ![KarManagement](kar-management.png)
 

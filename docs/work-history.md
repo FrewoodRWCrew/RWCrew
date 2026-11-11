@@ -3,6 +3,45 @@
 One entry per plan that was accepted and carried out, newest on top. Rules and entry format: see
 "Work history (plan log)" in `CLAUDE.md`.
 
+## 2026-11-11 — Karblad: one block per festival, internal delivery info small at the bottom
+**Request:** Follow-up on the karblad redesign: the festival table cut the location off ("...Haac..."). Split it into a
+block per festival, ordered by date, everything easily readable. Distributiepunt and Terreinpositie are TeamKar-internal
+delivery info: print them small, not in the big info panel.
+**Plan:**
+- Festival cards (black name bar; Levering / Ophaling / Zone side by side; full location wrapped over max 2 lines),
+  sorted by delivery date (no date last), in a grid of 1/2/3/4 columns by festival count, scaled to fit one page.
+- Info panel: only Vereniging + Aflever zone in one row; DP + terreinpositie as a small line in the footer.
+**Changes:** `backend/app/modules/module_2/karblad_pdf.py` (`_draw_schedule` rewritten, new `_draw_festival_card`,
+`_sorted_festivals`, `_grid_columns`, `_wrap_lines`; info panel one row; footer with the internal line instead of
+"TeamKar · RWCrew"; table constants removed), new test in `tests/modules/module_2/test_kar_planning.py` (date order +
+full location), help manuals module_2 nl/en karblad paragraph. Router unchanged.
+**Verification:** `test_kar_planning.py` 11 passed, help tests 28 passed, full backend suite; greyscale renders of 2
+festivals given out of order (sorted correctly, full "OUTS_11 - Outside Zone Blauw Burenloket Haacht - …" location),
+4, 7 (incl. one without dates) and 14 festivals: one page per kar, all readable.
+**Notes:** Festivals with the same delivery date keep their start-date order.
+
+## 2026-11-11 — Karblad redesign: professional black-and-white A4, no karcode
+**Request:** The karblad hangs on every kar and is very visible: review its look and feel for a professional A4, and the
+karcode (lock code) may no longer be printed. Follow-ups during planning: black-and-white print; replace the empty Pick Orde /
+Rit / Opmerkingen fields by the Terreinpositie and Distributiepunt of the afleverlocatie at the season's first active
+festival; RW logo top left (user provides it); year = the selected season; help text "Iets te kort? Vragen over het materiaal?".
+**Plan:**
+- Rewrite `karblad_pdf.py`: header (RW logo in greyscale, season name, "Karblad", kar-number QR), very large kar number +
+  Type box, grey info panel (Vereniging, Aflever zone, Distributiepunt, Terreinpositie), festival table (black heading
+  row, zebra rows, short dates, shrinks for many festivals so it stays one page), help box with the public kar page QR +
+  TeamKar logo, footer with print date. Reuse `pdf_common` and `pdf_layout.draw_qr`.
+- Router: drop `kar_code`; zone/distributiepunt/terreinpositie from the first active festival's plan.
+**Changes:** `backend/app/modules/module_2/karblad_pdf.py` (rewritten; `KarbladData` lost `kar_code`, `pick_order`,
+`route`, `remarks`, got `terrein_positie`), `module_2/router.py` `print_kar_planning`, `tests/modules/module_2/test_kar_planning.py`
+(karcode test replaced by an endpoint test: selected season as title, first festival's DP + terreinpositie, no karcode;
+many-festivals test now 14), help manuals module_2 nl/en, CLAUDE.md Karcode section, comment in `kar-management.tsx`.
+No migration, no frontend change.
+**Verification:** module-2 tests (10 in `test_kar_planning.py`) and the full backend suite; sample PDFs (4 festivals, kar
+without team, 14 festivals with long names) rendered to PNG in greyscale and checked page by page: one page per kar,
+nothing past the margins, no karcode.
+**Notes:** The RW logo the user supplied is added as `backend/app/assets/rw-logo.png` (447×447 PNG, printed in
+greyscale; without the file the header starts with the year). The QR link's prefilled location still uses the first festival *with* a plan (unchanged).
+
 ## 2026-11-11 — Karblad QR → public kar page with 2 tiles + Kar inventaris (StockMaster)
 **Request:** The karblad's QR code (today the public intervention form) must open a landing page with two tiles:
 intervention request (as today) and a new "Kar inventory" where the team, after entering the kar's lock code, sees per

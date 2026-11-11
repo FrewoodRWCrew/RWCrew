@@ -731,11 +731,15 @@ def print_kar_planning(
     _user: User = Depends(require_screen_permission("kartracker.karplanning", "view")),
 ) -> Response:
     """The Kar Planning "Print" button: one PDF page (a "karblad") per
-    selected kar, in kar-number order. Each page lists, per active festival
-    of the season, the afleverlocatie planned for the kar's team plus the
-    festival's delivery/pick-up dates, and carries two QR codes (the kar
-    number, and the public Intervention Request form prefilled for the team).
-    A POST because the list of selected kar ids doesn't fit a URL.
+    selected kar, in kar-number order, titled with the selected season's
+    name. Each page lists, per active festival of the season, the
+    afleverlocatie planned for the kar's team plus the festival's
+    delivery/pick-up dates, shows the zone, distribution point and terrain
+    position of the team's location at the season's first active festival,
+    and carries two QR codes (the kar number, and the public kar page
+    prefilled for the team). The kar's lock code is never printed: the
+    sheet hangs on the kar. A POST because the list of selected kar ids
+    doesn't fit a URL.
     """
     season = db.get(Season, payload.season_id)
     if season is None:
@@ -744,7 +748,6 @@ def print_kar_planning(
     karren = db.execute(
         select(
             KarTrackerKar.kar_nummer,
-            KarTrackerKar.kar_code,
             KarTrackerKar.team_id,
             Team.name.label("team_name"),
             Product.name.label("transport_type_name"),
@@ -769,7 +772,7 @@ def print_kar_planning(
     # (team_id, festival_id) -> planned location (with its zone and
     # distribution point), for the teams of the selected karren only.
     team_ids = {kar.team_id for kar in karren if kar.team_id is not None}
-    plans: dict[tuple[int, int], dict[str, str | None]] = {}
+    plans: dict[tuple[int, int], dict] = {}
     if team_ids and festival_rows:
         for plan in db.execute(
             select(
@@ -777,6 +780,7 @@ def print_kar_planning(
                 KarTrackerKarAfleverlocatie.festival_id,
                 KarTrackerAfleverlocatie.name,
                 KarTrackerAfleverlocatie.description,
+                KarTrackerAfleverlocatie.terrein_positie,
                 KarTrackerZone.name.label("zone_name"),
                 KarTrackerDistributiepunt.name.label("distributiepunt_name"),
             )
@@ -800,14 +804,15 @@ def print_kar_planning(
                 "location_name": plan.name,
                 "zone": plan.zone_name,
                 "distributiepunt": plan.distributiepunt_name,
+                "terrein_positie": plan.terrein_positie,
             }
 
     pages: list[KarbladData] = []
     for kar in karren:
         festivals: list[KarbladFestival] = []
-        # The first festival with a planned location decides the page-level
-        # zone, distribution point and the prefilled location of the QR link.
-        first_plan: dict[str, str | None] | None = None
+        # The first festival with a planned location decides the prefilled
+        # location of the QR link.
+        first_plan: dict | None = None
         for festival in festival_rows:
             plan = plans.get((kar.team_id, festival.id)) if kar.team_id is not None else None
             if plan is not None and first_plan is None:
@@ -821,15 +826,23 @@ def print_kar_planning(
                     pickup_date=festival.pickup_date,
                 )
             )
+        # The page's zone, distribution point and terrain position belong to
+        # the season's first active festival (blank if the team planned
+        # nothing there).
+        opening_plan = (
+            plans.get((kar.team_id, festival_rows[0].id))
+            if kar.team_id is not None and festival_rows
+            else None
+        )
         pages.append(
             KarbladData(
                 kar_nummer=kar.kar_nummer,
-                kar_code=kar.kar_code,
                 team_name=kar.team_name,
                 transport_type=kar.transport_type_name,
                 festivals=festivals,
-                aflever_zone=first_plan["zone"] if first_plan else None,
-                distribution_point=first_plan["distributiepunt"] if first_plan else None,
+                aflever_zone=opening_plan["zone"] if opening_plan else None,
+                distribution_point=opening_plan["distributiepunt"] if opening_plan else None,
+                terrein_positie=opening_plan["terrein_positie"] if opening_plan else None,
                 qr_url=build_kar_qr_url(
                     payload.site_url,
                     payload.locale,

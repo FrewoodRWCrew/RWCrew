@@ -5,6 +5,7 @@
 # "kartracker.karmanagement" itself.
 
 import re
+import zlib
 from datetime import date
 
 from fastapi.testclient import TestClient
@@ -340,8 +341,19 @@ def test_kar_qr_url_prefills_known_fields_and_skips_blanks() -> None:
     )
 
 
+def _pdf_text(pdf_bytes: bytes) -> bytes:
+    """The drawn content of a PDF: its streams are Flate-compressed, so
+    inflate every one of them (text shows up as "(...) Tj" in there)."""
+    return b"".join(
+        zlib.decompress(stream)
+        for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", pdf_bytes, re.DOTALL)
+        if stream[:1] == b"x"
+    )
+
+
 def test_karblad_pdf_handles_many_festivals_and_non_latin1_text() -> None:
-    festivals = [KarbladFestival(name=f"Fest {index}", zone_name="Z", location="Poort — Ł") for index in range(6)]
+    # 14 festivals and unprintable characters still give exactly one page per kar.
+    festivals = [KarbladFestival(name=f"Fest {index}", zone_name="Z", location="Poort — Ł") for index in range(14)]
     kar = KarbladData(kar_nummer="B001", team_name="Chiro Łódź", transport_type="Box", festivals=festivals)
 
     pdf = build_karbladen_pdf([kar, kar], "Rock Werchter 2026", "en")
@@ -350,19 +362,75 @@ def test_karblad_pdf_handles_many_festivals_and_non_latin1_text() -> None:
     assert _page_count(pdf) == 2
 
 
-def test_karblad_pdf_prints_the_stored_kar_code() -> None:
-    kar = KarbladData(kar_nummer="B001", team_name="Chiro", transport_type="Box", kar_code="2111")
+def test_karblad_festival_blocks_follow_delivery_date_and_show_the_full_location() -> None:
+    location = "OUTS_11 - Outside Zone Blauw Burenloket Haacht - naast de grote parking"
+    # Given out of order, and one festival without a delivery date.
+    festivals = [
+        KarbladFestival(name="Rock Werchter", location=location, delivery_date=date(2026, 6, 29)),
+        KarbladFestival(name="Zonder datum", location=location),
+        KarbladFestival(name="Parklife", location=location, delivery_date=date(2026, 6, 20)),
+    ]
+    kar = KarbladData(kar_nummer="B001", team_name="Chiro", transport_type="Box", festivals=festivals)
 
-    pdf = build_karbladen_pdf([kar], "Rock Werchter 2026", "nl")
+    content = _pdf_text(build_karbladen_pdf([kar], "2026", "nl"))
 
-    # The page content is Flate-compressed: inflate every stream and look
-    # for the code and its label in the drawn text.
-    import zlib
+    # Blocks are drawn by delivery date; no date comes last.
+    positions = [content.index(f"({name})".encode()) for name in ("Parklife", "Rock Werchter", "Zonder datum")]
+    assert positions == sorted(positions)
+    # The location is printed in full (wrapped, never cut off with "...").
+    assert b"...) Tj" not in content
+    assert b"naast de grote parking) Tj" in content
 
-    content = b"".join(
-        zlib.decompress(stream)
-        for stream in re.findall(rb"stream\r?\n(.*?)\r?\nendstream", pdf, re.DOTALL)
-        if stream[:1] == b"x"
+
+def test_print_uses_selected_season_and_first_festival_and_hides_kar_code(
+    client: TestClient, db_session: Session
+) -> None:
+    sync_screens(db_session)
+    module = create_kartracker_module(db_session)
+    admin = create_user(db_session, email="admin@example.com", is_super_admin=True)
+    grant_module_access(db_session, admin, module)
+    login(client, "admin@example.com")
+    kar_status = _create_kar_status(db_session)
+    product = _create_product(db_session)
+    team = _create_team(db_session)
+
+    # Two seasons; only the selected one ("2027") may head the page.
+    _create_season(db_session, name="2026")
+    season = _create_season(db_session, name="2027")
+    first = _create_festival(db_session, season_id=season.id, name="TW Classic", start_date="2027-06-28")
+    second = _create_festival(db_session, season_id=season.id, name="Rock Werchter", start_date="2027-07-01")
+    first_location = _create_location(db_session, name="Poort 9")
+    second_location = _create_location(db_session, name="Poort 1")
+    first_location.terrein_positie = 4
+    second_location.terrein_positie = 12
+    db_session.add_all(
+        [
+            KarTrackerKarAfleverlocatie(
+                season_id=season.id, festival_id=first.id, team_id=team.id, afleverlocatie_id=first_location.id
+            ),
+            KarTrackerKarAfleverlocatie(
+                season_id=season.id, festival_id=second.id, team_id=team.id, afleverlocatie_id=second_location.id
+            ),
+        ]
     )
-    assert b"(2111)" in content
-    assert b"(Karcode:)" in content
+    # The kar has a lock code, which must never end up on the sheet.
+    kar = KarTrackerKar(
+        kar_nummer="B001", status_id=kar_status.id, team_id=team.id, transport_type_id=product.id, kar_code="2111"
+    )
+    db_session.add(kar)
+    db_session.commit()
+
+    response = client.post("/api/modules/module-2/kar-planning/print", json=_print_payload(season.id, [kar.id]))
+
+    assert response.status_code == 200
+    content = _pdf_text(response.content)
+    # Title = the selected season's name.
+    assert b"(2027)" in content
+    assert b"(2026)" not in content
+    # Distribution point and terrain position of the first active festival's location.
+    assert b"(DP Poort 9)" in content
+    assert b"(4)" in content
+    assert b"(DP Poort 1)" not in content
+    # No lock code, no karcode label.
+    assert b"2111" not in content
+    assert b"Karcode" not in content
