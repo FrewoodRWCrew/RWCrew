@@ -799,5 +799,16 @@
     "title": "Karblad QR page + public Kar inventaris",
     "description": "The karblad QR code opens a kar page with two tiles (intervention request, kar inventory) where a team unlocks its kar with the lock code and logs a count of what is in it, shown to StockMaster staff without changing stock.",
     "commits": []
+  },
+  {
+    "id": 66,
+    "issues": [],
+    "date": "2026-11-11",
+    "type": "update",
+    "status": "in_progress",
+    "module": "KarTracker",
+    "title": "Karblad redesign (professional A4, no karcode)",
+    "description": "The karblad stuck on each kar gets a clean black-and-white A4 layout with a large kar number, the first festival's terrain position and distribution point, and no longer shows the lock code.",
+    "commits": []
   }
 ]
