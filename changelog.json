@@ -810,5 +810,16 @@
     "title": "Karblad redesign (professional A4, no karcode)",
     "description": "The karblad stuck on each kar gets a clean black-and-white A4 layout with a large kar number, the first festival's terrain position and distribution point, and no longer shows the lock code.",
     "commits": []
+  },
+  {
+    "id": 67,
+    "issues": [],
+    "date": "2026-11-11",
+    "type": "update",
+    "status": "in_progress",
+    "module": "KarTracker",
+    "title": "Karblad: one block per festival, internal delivery info small",
+    "description": "The karblad shows each festival as its own readable block ordered by delivery date, with the distribution point and terrain position moved to a small internal line at the bottom.",
+    "commits": []
   }
 ]
