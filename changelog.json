@@ -858,5 +858,16 @@
     "title": "Walkies masterdata (step 1a)",
     "description": "Walkies gets its master data: channels, folders with their channels in order (drag and drop), accessories, distribution points, positions and persons, plus per-season boxes and walkies with a channel per festival, bulk changes, copy from last year and Excel import/export.",
     "commits": []
+  },
+  {
+    "id": 71,
+    "issues": [],
+    "date": "2026-11-14",
+    "type": "feature",
+    "status": "done",
+    "module": "Walkies",
+    "title": "Folderstructuur: print folder cards",
+    "description": "The Folderstructuur screen prints a PDF of small cards to cut out, one per active folder with its channels in order, with a chosen number of copies.",
+    "commits": []
   }
 ]
