@@ -847,5 +847,16 @@
     "title": "Karblad: aflever zone box, type in the footer",
     "description": "The karblad shows the aflever zone next to the kar number, a bigger team name, the kar type small in the footer and each location as \"description (name)\".",
     "commits": []
+  },
+  {
+    "id": 70,
+    "issues": [],
+    "date": "2026-11-14",
+    "type": "feature",
+    "status": "done",
+    "module": "Walkies",
+    "title": "Walkies masterdata (step 1a)",
+    "description": "Walkies gets its master data: channels, folders with their channels in order (drag and drop), accessories, distribution points, positions and persons, plus per-season boxes and walkies with a channel per festival, bulk changes, copy from last year and Excel import/export.",
+    "commits": []
   }
 ]
