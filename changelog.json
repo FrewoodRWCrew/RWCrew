@@ -869,5 +869,16 @@
     "title": "Folderstructuur: print folder cards",
     "description": "The Folderstructuur screen prints a PDF of small cards to cut out, one per active folder with its channels in order, with a chosen number of copies.",
     "commits": []
+  },
+  {
+    "id": 72,
+    "issues": [],
+    "date": "2026-11-14",
+    "type": "feature",
+    "status": "done",
+    "module": "Walkies",
+    "title": "Walkies: radio identity, delivery list and rental company export",
+    "description": "Walkies get a serial number, radio ID, model and scan code per season, filled from the rental company delivery list import, and an Excel/CSV programming list can be exported for the rental company.",
+    "commits": []
   }
 ]
